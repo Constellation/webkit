@@ -8386,7 +8386,7 @@ void SpeculativeJIT::compileResolveRope(Node* node)
     addSlowPathGenerator(
         slowPathCall(
             slowCases,
-            this, operationResolveRopeString, resultGPR, TrustedImmPtr::weakPointer(m_graph, m_graph.globalObjectFor(node->origin.semantic)), baseGPR));
+            this, operationResolveRopeString, resultGPR, JITCompiler::UnlinkedConstant(m_graph, m_graph.globalObjectFor(node->origin.semantic)), baseGPR));
     cellResult(resultGPR, node);
 }
 
@@ -8773,13 +8773,13 @@ void SpeculativeJIT::compileNewFunction(Node* node)
         flushRegisters();
 
         if (nodeType == NewGeneratorFunction)
-            callOperation(operationNewGeneratorFunction, resultGPR, TrustedImmPtr(&vm()), scopeGPR, TrustedImmPtr::weakPointer(m_graph, executable));
+            callOperation(operationNewGeneratorFunction, resultGPR, TrustedImmPtr(&vm()), scopeGPR, JITCompiler::UnlinkedConstant(m_graph, executable));
         else if (nodeType == NewAsyncFunction)
-            callOperation(operationNewAsyncFunction, resultGPR, TrustedImmPtr(&vm()), scopeGPR, TrustedImmPtr::weakPointer(m_graph, executable));
+            callOperation(operationNewAsyncFunction, resultGPR, TrustedImmPtr(&vm()), scopeGPR, JITCompiler::UnlinkedConstant(m_graph, executable));
         else if (nodeType == NewAsyncGeneratorFunction)
-            callOperation(operationNewAsyncGeneratorFunction, resultGPR, TrustedImmPtr(&vm()), scopeGPR, TrustedImmPtr::weakPointer(m_graph, executable));
+            callOperation(operationNewAsyncGeneratorFunction, resultGPR, TrustedImmPtr(&vm()), scopeGPR, JITCompiler::UnlinkedConstant(m_graph, executable));
         else
-            callOperation(operationNewFunction, resultGPR, TrustedImmPtr(&vm()), scopeGPR, TrustedImmPtr::weakPointer(m_graph, executable));
+            callOperation(operationNewFunction, resultGPR, TrustedImmPtr(&vm()), scopeGPR, JITCompiler::UnlinkedConstant(m_graph, executable));
         m_jit.exceptionCheck();
         cellResult(resultGPR, node);
         return;
@@ -8815,25 +8815,25 @@ void SpeculativeJIT::compileNewFunction(Node* node)
     if (nodeType == NewFunction) {
         compileNewFunctionCommon<JSFunction>(resultGPR, structure, scratch1GPR, scratch2GPR, scopeGPR, slowPath, JSFunction::allocationSize(0), executable);
             
-        addSlowPathGenerator(slowPathCall(slowPath, this, operationNewFunctionWithInvalidatedReallocationWatchpoint, resultGPR, TrustedImmPtr(&vm()), scopeGPR, TrustedImmPtr::weakPointer(m_graph, executable)));
+        addSlowPathGenerator(slowPathCall(slowPath, this, operationNewFunctionWithInvalidatedReallocationWatchpoint, resultGPR, TrustedImmPtr(&vm()), scopeGPR, JITCompiler::UnlinkedConstant(m_graph, executable)));
     }
 
     if (nodeType == NewGeneratorFunction) {
         compileNewFunctionCommon<JSGeneratorFunction>(resultGPR, structure, scratch1GPR, scratch2GPR, scopeGPR, slowPath, JSGeneratorFunction::allocationSize(0), executable);
 
-        addSlowPathGenerator(slowPathCall(slowPath, this, operationNewGeneratorFunctionWithInvalidatedReallocationWatchpoint, resultGPR, TrustedImmPtr(&vm()), scopeGPR, TrustedImmPtr::weakPointer(m_graph, executable)));
+        addSlowPathGenerator(slowPathCall(slowPath, this, operationNewGeneratorFunctionWithInvalidatedReallocationWatchpoint, resultGPR, TrustedImmPtr(&vm()), scopeGPR, JITCompiler::UnlinkedConstant(m_graph, executable)));
     }
 
     if (nodeType == NewAsyncFunction) {
         compileNewFunctionCommon<JSAsyncFunction>(resultGPR, structure, scratch1GPR, scratch2GPR, scopeGPR, slowPath, JSAsyncFunction::allocationSize(0), executable);
 
-        addSlowPathGenerator(slowPathCall(slowPath, this, operationNewAsyncFunctionWithInvalidatedReallocationWatchpoint, resultGPR, TrustedImmPtr(&vm()), scopeGPR, TrustedImmPtr::weakPointer(m_graph, executable)));
+        addSlowPathGenerator(slowPathCall(slowPath, this, operationNewAsyncFunctionWithInvalidatedReallocationWatchpoint, resultGPR, TrustedImmPtr(&vm()), scopeGPR, JITCompiler::UnlinkedConstant(m_graph, executable)));
     }
 
     if (nodeType == NewAsyncGeneratorFunction) {
         compileNewFunctionCommon<JSAsyncGeneratorFunction>(resultGPR, structure, scratch1GPR, scratch2GPR, scopeGPR, slowPath, JSAsyncGeneratorFunction::allocationSize(0), executable);
         
-        addSlowPathGenerator(slowPathCall(slowPath, this, operationNewAsyncGeneratorFunctionWithInvalidatedReallocationWatchpoint, resultGPR, TrustedImmPtr(&vm()), scopeGPR, TrustedImmPtr::weakPointer(m_graph, executable)));
+        addSlowPathGenerator(slowPathCall(slowPath, this, operationNewAsyncGeneratorFunctionWithInvalidatedReallocationWatchpoint, resultGPR, TrustedImmPtr(&vm()), scopeGPR, JITCompiler::UnlinkedConstant(m_graph, executable)));
     }
     
     cellResult(resultGPR, node);
@@ -9000,10 +9000,10 @@ void SpeculativeJIT::compileCreateActivation(Node* node)
 
 #if USE(JSVALUE64)
         callOperation(operationCreateActivationDirect,
-            resultGPR, TrustedImmPtr(&vm()), structure, scopeGPR, TrustedImmPtr::weakPointer(m_graph, table), TrustedImm64(JSValue::encode(initializationValue)));
+            resultGPR, TrustedImmPtr(&vm()), structure, scopeGPR, JITCompiler::UnlinkedConstant(m_graph, table), TrustedImm64(JSValue::encode(initializationValue)));
 #else
         callOperation(operationCreateActivationDirect,
-            resultGPR, TrustedImmPtr(&vm()), structure, scopeGPR, TrustedImmPtr::weakPointer(m_graph, table), initializationRegs);
+            resultGPR, TrustedImmPtr(&vm()), structure, scopeGPR, JITCompiler::UnlinkedConstant(m_graph, table), initializationRegs);
 #endif
         m_jit.exceptionCheck();
         cellResult(resultGPR, node);
@@ -9047,11 +9047,11 @@ void SpeculativeJIT::compileCreateActivation(Node* node)
 #if USE(JSVALUE64)
     addSlowPathGenerator(
         slowPathCall(
-            slowPath, this, operationCreateActivationDirect, resultGPR, TrustedImmPtr(&vm()), structure, scopeGPR, TrustedImmPtr::weakPointer(m_graph, table), TrustedImm64(JSValue::encode(initializationValue))));
+            slowPath, this, operationCreateActivationDirect, resultGPR, TrustedImmPtr(&vm()), structure, scopeGPR, JITCompiler::UnlinkedConstant(m_graph, table), TrustedImm64(JSValue::encode(initializationValue))));
 #else
     addSlowPathGenerator(
         slowPathCall(
-            slowPath, this, operationCreateActivationDirect, resultGPR, TrustedImmPtr(&vm()), structure, scopeGPR, TrustedImmPtr::weakPointer(m_graph, table), initializationRegs));
+            slowPath, this, operationCreateActivationDirect, resultGPR, TrustedImmPtr(&vm()), structure, scopeGPR, JITCompiler::UnlinkedConstant(m_graph, table), initializationRegs));
 #endif
 
     cellResult(resultGPR, node);
@@ -14515,7 +14515,7 @@ void SpeculativeJIT::compileNewArrayBuffer(Node* node)
 
         emitAllocateJSObject<JSArray>(resultGPR, TrustedImmPtr(structure), TrustedImmPtr(array->toButterfly()), scratch1GPR, scratch2GPR, slowCases);
 
-        addSlowPathGenerator(slowPathCall(slowCases, this, operationNewArrayBuffer, result.gpr(), TrustedImmPtr(&vm()), structure, TrustedImmPtr::weakPointer(m_graph, array)));
+        addSlowPathGenerator(slowPathCall(slowCases, this, operationNewArrayBuffer, result.gpr(), TrustedImmPtr(&vm()), structure, JITCompiler::UnlinkedConstant(m_graph, array)));
 
         DFG_ASSERT(m_graph, node, indexingMode & IsArray, indexingMode);
         cellResult(resultGPR, node);

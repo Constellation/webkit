@@ -4221,12 +4221,10 @@ void SpeculativeJIT::blessBoolean(GPRReg)
 
 void SpeculativeJIT::compileArithRandom(Node* node)
 {
-    JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
-
     flushRegisters();
 
     FPRResult result(this);
-    callOperation(operationRandom, result.fpr(), TrustedImmPtr::weakPointer(m_graph, globalObject));
+    callOperation(operationRandom, result.fpr(), JITCompiler::UnlinkedConstant(m_graph, m_graph.globalObjectFor(node->origin.semantic)));
     // operationRandom does not raise any exception.
     doubleResult(result.fpr(), node);
 }
