@@ -236,8 +236,8 @@ private:
     void finishCreation(VM&);
 
     // Used to insert a value known not to be in the table, and where we know capacity to be available.
-    template<typename Index>
-    void reinsert(Index*, const ValueType& entry);
+    template<typename Index, typename Entry>
+    void reinsert(Index*, Entry*, const ValueType& entry);
 
     // Rehash the table. Used to grow, or to recover deleted slots.
     static bool canBeFitInCompact(const ValueType& entry) { return entry.offset() <= UINT8_MAX; }
@@ -278,19 +278,11 @@ private:
     // Check if capacity is available.
     bool canInsert(const ValueType&);
 
-    // The find_iterator is a pair of a pointer to a Value* an the entry in the index.
-    // If 'find' does not find an entry then iter.first will be 0, and iter.second will
-    // give the point in m_indexVector where an entry should be inserted.
-    using find_iterator = std::pair<ValueType*, unsigned>;
+    void remove(VM&, KeyType, unsigned entryIndex, unsigned index);
+    std::tuple<unsigned, unsigned, PropertyOffset, uint8_t> find(const KeyType&);
 
-    template<typename Index>
-    ALWAYS_INLINE ValueType* getImpl(const Index*, const KeyType&);
-
-    void remove(VM&, const find_iterator&);
-    find_iterator find(const KeyType&);
-
-    template<typename Index>
-    ALWAYS_INLINE find_iterator findImpl(const Index*, const KeyType&);
+    template<typename Index, typename Entry>
+    ALWAYS_INLINE std::tuple<unsigned, unsigned, PropertyOffset, uint8_t> findImpl(const Index*, const Entry*, const KeyType&);
 
     bool isCompact() const { return m_indexVector & isCompactFlag; }
 
@@ -341,8 +333,8 @@ inline PropertyTable::const_iterator PropertyTable::end() const
     return const_iterator(tableEnd, tableEnd);
 }
 
-template<typename Index>
-PropertyTable::find_iterator PropertyTable::findImpl(const Index* indexVector, const KeyType& key)
+template<typename Index, typename Entry>
+std::tuple<unsigned, unsigned, PropertyOffset, uint8_t> PropertyTable::findImpl(const Index* indexVector, const Entry* table, const KeyType& key)
 {
     unsigned hash = IdentifierRepHash::hash(key);
 
@@ -351,11 +343,15 @@ PropertyTable::find_iterator PropertyTable::findImpl(const Index* indexVector, c
 #endif
 
     while (true) {
-        unsigned entryIndex = indexVector[hash & m_indexMask];
+        unsigned index = hash & m_indexMask;
+        unsigned entryIndex = indexVector[index];
         if (entryIndex == EmptyEntryIndex)
-            return std::make_pair((ValueType*)nullptr, hash & m_indexMask);
-        if (key == table()[entryIndex - 1].key())
-            return std::make_pair(&table()[entryIndex - 1], hash & m_indexMask);
+            return std::tuple { entryIndex, index, invalidOffset, 0 };
+        const auto& entry = table[entryIndex - 1];
+        if (key == entry.key()) {
+            ASSERT(!m_deletedOffsets || !m_deletedOffsets->contains(entry.offset()));
+            return std::tuple { entryIndex, index, entry.offset(), entry.attributes() };
+        }
 
 #if DUMP_PROPERTYMAP_STATS
         ++propertyTableStats->numCollisions;
@@ -363,21 +359,21 @@ PropertyTable::find_iterator PropertyTable::findImpl(const Index* indexVector, c
 
 #if DUMP_PROPERTYMAP_COLLISIONS
         dataLog("PropertyTable collision for ", key, " (", hash, ")\n");
-        dataLog("Collided with ", table()[entryIndex - 1].key(), "(", IdentifierRepHash::hash(table()[entryIndex - 1].key()), ")\n");
+        dataLog("Collided with ", entry.key(), "(", IdentifierRepHash::hash(entry.key()), ")\n");
 #endif
 
         hash++;
     }
 }
 
-inline PropertyTable::find_iterator PropertyTable::find(const KeyType& key)
+inline std::tuple<unsigned, unsigned, PropertyOffset, uint8_t> PropertyTable::find(const KeyType& key)
 {
     ASSERT(key);
     ASSERT(key->isAtom() || key->isSymbol());
     uintptr_t indexVector = m_indexVector;
     if (indexVector & isCompactFlag)
-        return findImpl(bitwise_cast<const uint8_t*>(indexVector & indexVectorMask), key);
-    return findImpl(bitwise_cast<const uint32_t*>(indexVector & indexVectorMask), key);
+        return findImpl(bitwise_cast<const uint8_t*>(indexVector & indexVectorMask), table(), key);
+    return findImpl(bitwise_cast<const uint32_t*>(indexVector & indexVectorMask), table(), key);
 }
 
 inline std::tuple<PropertyOffset, unsigned> PropertyTable::get(const KeyType& key)
@@ -389,37 +385,10 @@ inline std::tuple<PropertyOffset, unsigned> PropertyTable::get(const KeyType& ke
     if (!m_keyCount)
         return std::tuple { invalidOffset, 0 };
 
-    uintptr_t indexVector = m_indexVector;
-    auto* entry = (indexVector & isCompactFlag) ? getImpl(bitwise_cast<const uint8_t*>(indexVector & indexVectorMask), key) : getImpl(bitwise_cast<const uint32_t*>(indexVector & indexVectorMask), key);
-    if (!entry)
-        return std::tuple { invalidOffset, 0 };
-    return std::tuple { entry->offset(), entry->attributes() };
-}
-
-template<typename Index>
-inline PropertyTable::ValueType* PropertyTable::getImpl(const Index* indexVector, const KeyType& key)
-{
-    unsigned hash = IdentifierRepHash::hash(key);
-
-#if DUMP_PROPERTYMAP_STATS
-    ++propertyTableStats->numLookups;
-#endif
-
-    while (true) {
-        unsigned entryIndex = indexVector[hash & m_indexMask];
-        if (entryIndex == EmptyEntryIndex)
-            return nullptr;
-        if (key == table()[entryIndex - 1].key()) {
-            ASSERT(!m_deletedOffsets || !m_deletedOffsets->contains(table()[entryIndex - 1].offset()));
-            return &table()[entryIndex - 1];
-        }
-
-#if DUMP_PROPERTYMAP_STATS
-        ++propertyTableStats->numLookupProbing;
-#endif
-
-        hash++;
-    }
+    auto [entryIndex, index, offset, attributes] = find(key);
+    UNUSED_VARIABLE(entryIndex);
+    UNUSED_VARIABLE(index);
+    return std::tuple { offset, attributes };
 }
 
 inline std::tuple<PropertyOffset, unsigned, bool> WARN_UNUSED_RETURN PropertyTable::add(VM& vm, const ValueType& entry)
@@ -427,9 +396,9 @@ inline std::tuple<PropertyOffset, unsigned, bool> WARN_UNUSED_RETURN PropertyTab
     ASSERT(!m_deletedOffsets || !m_deletedOffsets->contains(entry.offset()));
 
     // Look for a value with a matching key already in the array.
-    find_iterator iter = find(entry.key());
-    if (iter.first)
-        return std::tuple { iter.first->offset(), iter.first->attributes(), false };
+    auto [entryIndex, index, offset, attributes] = find(entry.key());
+    if (offset != invalidOffset)
+        return std::tuple { offset, attributes, false };
 
 #if DUMP_PROPERTYMAP_STATS
     ++propertyTableStats->numAdds;
@@ -441,45 +410,41 @@ inline std::tuple<PropertyOffset, unsigned, bool> WARN_UNUSED_RETURN PropertyTab
     // ensure capacity is available.
     if (!canInsert(entry)) {
         rehash(vm, m_keyCount + 1, !canBeFitInCompact(entry));
-        iter = find(entry.key());
-        ASSERT(!iter.first);
+        std::tie(entryIndex, index, offset, attributes) = find(entry.key());
+        ASSERT_UNUSED(offset, offset == invalidOffset);
+        ASSERT_UNUSED(entryIndex, entryIndex == EmptyEntryIndex);
     }
 
     // Allocate a slot in the hashtable, and set the index to reference this.
-    unsigned entryIndex = usedCount() + 1;
+    entryIndex = usedCount() + 1;
     uintptr_t indexVector = m_indexVector;
     if (indexVector & isCompactFlag)
-        bitwise_cast<uint8_t*>(indexVector & indexVectorMask)[iter.second] = entryIndex;
+        bitwise_cast<uint8_t*>(indexVector & indexVectorMask)[index] = entryIndex;
     else
-        bitwise_cast<uint32_t*>(indexVector & indexVectorMask)[iter.second] = entryIndex;
-    iter.first = &table()[entryIndex - 1];
-    *iter.first = entry;
+        bitwise_cast<uint32_t*>(indexVector & indexVectorMask)[index] = entryIndex;
+    table()[entryIndex - 1] = entry;
 
     ++m_keyCount;
     
-    return std::tuple { iter.first->offset(), iter.first->attributes(), true };
+    return std::tuple { entry.offset(), entry.attributes(), true };
 }
 
-inline void PropertyTable::remove(VM& vm, const find_iterator& iter)
+inline void PropertyTable::remove(VM& vm, KeyType key, unsigned entryIndex, unsigned index)
 {
-    // Removing a key that doesn't exist does nothing!
-    if (!iter.first)
-        return;
-
 #if DUMP_PROPERTYMAP_STATS
     ++propertyTableStats->numRemoves;
 #endif
 
     // Replace this one element with the deleted sentinel. Also clear out
     // the entry so we can iterate all the entries as needed.
-    unsigned entryIndex = deletedEntryIndex();
     uintptr_t indexVector = m_indexVector;
-    if (indexVector & isCompactFlag)
-        bitwise_cast<uint8_t*>(indexVector & indexVectorMask)[iter.second] = entryIndex;
-    else
-        bitwise_cast<uint32_t*>(indexVector & indexVectorMask)[iter.second] = entryIndex;
-    iter.first->key()->deref();
-    iter.first->setKey(PROPERTY_MAP_DELETED_ENTRY_KEY);
+    if (indexVector & isCompactFlag) {
+        bitwise_cast<uint8_t*>(indexVector & indexVectorMask)[index] = deletedEntryIndex();
+    } else {
+        bitwise_cast<uint32_t*>(indexVector & indexVectorMask)[index] = deletedEntryIndex();
+    }
+    key->deref();
+    table()[entryIndex - 1].setKey(PROPERTY_MAP_DELETED_ENTRY_KEY);
 
     ASSERT(m_keyCount >= 1);
     --m_keyCount;
@@ -491,23 +456,32 @@ inline void PropertyTable::remove(VM& vm, const find_iterator& iter)
 
 inline std::tuple<PropertyOffset, unsigned> PropertyTable::take(VM& vm, const KeyType& key)
 {
-    auto iterator = find(key);
-    if (!iterator.first)
-        return std::tuple { invalidOffset, 0 };
-    PropertyOffset offset = iterator.first->offset();
-    unsigned attributes = iterator.first->attributes();
-    remove(vm, iterator);
+    auto [entryIndex, index, offset, attributes] = find(key);
+    if (offset != invalidOffset)
+        remove(vm, key, entryIndex, index);
     return std::tuple { offset, attributes };
 }
 
 inline PropertyOffset PropertyTable::updateAttributeIfExists(const KeyType& key, unsigned attributes)
 {
     uintptr_t indexVector = m_indexVector;
-    auto* entry = (indexVector & isCompactFlag) ? getImpl(bitwise_cast<const uint8_t*>(indexVector & indexVectorMask), key) : getImpl(bitwise_cast<const uint32_t*>(indexVector & indexVectorMask), key);
-    if (!entry)
-        return invalidOffset;
-    entry->setAttributes(attributes);
-    return entry->offset();
+    if (indexVector & isCompactFlag) {
+        auto [entryIndex, index, offset, oldAttributes] = findImpl(bitwise_cast<const uint8_t*>(indexVector & indexVectorMask), table(), key);
+        UNUSED_VARIABLE(index);
+        UNUSED_VARIABLE(oldAttributes);
+        if (offset == invalidOffset)
+            return invalidOffset;
+        table()[entryIndex - 1].setAttributes(attributes);
+        return offset;
+    } else {
+        auto [entryIndex, index, offset, oldAttributes] = findImpl(bitwise_cast<const uint32_t*>(indexVector & indexVectorMask), table(), key);
+        UNUSED_VARIABLE(index);
+        UNUSED_VARIABLE(oldAttributes);
+        if (offset == invalidOffset)
+            return invalidOffset;
+        table()[entryIndex - 1].setAttributes(attributes);
+        return offset;
+    }
 }
 
 // returns the number of values in the hashtable.
@@ -580,8 +554,8 @@ inline size_t PropertyTable::sizeInMemory()
 }
 #endif
 
-template<typename Index>
-inline void PropertyTable::reinsert(Index* indexVector, const ValueType& entry)
+template<typename Index, typename Entry>
+inline void PropertyTable::reinsert(Index* indexVector, Entry* table, const ValueType& entry)
 {
 #if DUMP_PROPERTYMAP_STATS
     ++propertyTableStats->numReinserts;
@@ -590,12 +564,13 @@ inline void PropertyTable::reinsert(Index* indexVector, const ValueType& entry)
     // Used to insert a value known not to be in the table, and where
     // we know capacity to be available.
     ASSERT(canInsert(entry));
-    find_iterator iter = find(entry.key());
-    ASSERT(!iter.first);
+    auto [emptyIndex, index, offset, attributes] = findImpl(indexVector, table, entry.key());
+    ASSERT_UNUSED(offset, offset == invalidOffset);
+    ASSERT_UNUSED(emptyIndex, emptyIndex == EmptyEntryIndex);
 
     unsigned entryIndex = usedCount() + 1;
-    indexVector[iter.second] = entryIndex;
-    table()[entryIndex - 1] = entry;
+    indexVector[index] = entryIndex;
+    table[entryIndex - 1] = entry;
 
     ++m_keyCount;
 }
@@ -627,12 +602,12 @@ inline void PropertyTable::rehash(VM& vm, unsigned newCapacity, bool forceNonCom
     if (isCompact) {
         for (; iter != end; ++iter) {
             ASSERT(canInsert(*iter));
-            reinsert(bitwise_cast<uint8_t*>(indexVector), *iter);
+            reinsert(bitwise_cast<uint8_t*>(indexVector), table(), *iter);
         }
     } else {
         for (; iter != end; ++iter) {
             ASSERT(canInsert(*iter));
-            reinsert(bitwise_cast<uint32_t*>(indexVector), *iter);
+            reinsert(bitwise_cast<uint32_t*>(indexVector), table(), *iter);
         }
     }
 
