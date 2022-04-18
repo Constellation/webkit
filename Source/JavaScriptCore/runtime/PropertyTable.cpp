@@ -108,17 +108,19 @@ PropertyTable::PropertyTable(VM& vm, unsigned initialCapacity, const PropertyTab
 
     if (isCompact) {
         auto* indexVector = bitwise_cast<uint8_t*>(m_indexVector & indexVectorMask);
+        auto* table = tableFromIndexVector(indexVector);
         other.forEachProperty([&](auto& entry) {
             ASSERT(canInsert(entry));
-            reinsert(indexVector, table(), entry);
+            reinsert(indexVector, table, entry);
             entry.key()->ref();
             return IterationStatus::Continue;
         });
     } else {
         auto* indexVector = bitwise_cast<uint32_t*>(m_indexVector & indexVectorMask);
+        auto* table = tableFromIndexVector(indexVector);
         other.forEachProperty([&](auto& entry) {
             ASSERT(canInsert(entry));
-            reinsert(indexVector, table(), entry);
+            reinsert(indexVector, table, entry);
             entry.key()->ref();
             return IterationStatus::Continue;
         });

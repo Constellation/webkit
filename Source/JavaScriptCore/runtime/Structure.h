@@ -78,6 +78,7 @@ static constexpr unsigned initialOutOfLineCapacity = 4;
 // initial allocation.
 static constexpr unsigned outOfLineGrowthFactor = 2;
 
+class PropertyTableEntry;
 class CompactPropertyTableEntry {
 public:
     CompactPropertyTableEntry()
@@ -91,6 +92,8 @@ public:
         ASSERT(this->attributes() == attributes);
         ASSERT(this->offset() == offset);
     }
+
+    CompactPropertyTableEntry(const PropertyTableEntry& entry);
 
     UniquedStringImpl* key() const { return m_data.pointer(); }
     void setKey(UniquedStringImpl* key) { m_data.setPointer(key); }
@@ -134,6 +137,12 @@ private:
     PropertyOffset m_offset { 0 };
     uint8_t m_attributes { 0 };
 };
+
+
+inline CompactPropertyTableEntry::CompactPropertyTableEntry(const PropertyTableEntry& entry)
+    : m_data(entry.key(), ((entry.offset() << 8) | entry.attributes()))
+{
+}
 
 class StructureFireDetail final : public FireDetail {
 public:
