@@ -375,26 +375,25 @@ public:
     static constexpr GPRReg returnValueGPR2 = X86Registers::edx; // regT1
     static constexpr GPRReg nonPreservedNonReturnGPR = X86Registers::ecx;
 
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
-        ASSERT(index < numberOfRegisters);
-        static const GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5 };
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfRegisters);
+        static constexpr GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5 };
         return registerForIndex[index];
     }
 
-    static GPRReg toArgumentRegister(unsigned)
+    static constexpr GPRReg toArgumentRegister(unsigned)
     {
-        UNREACHABLE_FOR_PLATFORM();
+        ASSERT_NOT_REACHED_UNDER_CONSTEXPR_CONTEXT();
         return InvalidGPRReg;
     }
 
-    static unsigned toIndex(GPRReg reg)
+    static constexpr unsigned toIndex(GPRReg reg)
     {
-        ASSERT(reg != InvalidGPRReg);
-        ASSERT(static_cast<int>(reg) < 8);
-        static const unsigned indexForRegister[8] = { 0, 2, 1, 3, InvalidIndex, InvalidIndex, 4, 5 };
-        unsigned result = indexForRegister[reg];
-        return result;
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(reg != InvalidGPRReg);
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(static_cast<int>(reg) < 8);
+        static constexpr unsigned indexForRegister[8] = { 0, 2, 1, 3, InvalidIndex, InvalidIndex, 4, 5 };
+        return indexForRegister[reg];
     }
 
     static const char* debugName(GPRReg reg)
@@ -420,7 +419,7 @@ public:
 class GPRInfo {
 public:
     typedef GPRReg RegisterType;
-    static constexpr unsigned numberOfRegisters = 11;
+    static constexpr unsigned numberOfRegisters = 10;
     static constexpr unsigned numberOfArgumentRegisters = NUMBER_OF_ARGUMENT_REGISTERS;
 
     // These registers match the baseline JIT.
@@ -494,36 +493,36 @@ public:
     // if we instead had a more explicit way of saying that we don't have a scratch register.
     static constexpr GPRReg patchpointScratchRegister = MacroAssembler::s_scratchRegister;
 
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
-        ASSERT(index < numberOfRegisters);
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfRegisters);
 #if !OS(WINDOWS)
-        static const GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regCS0, regCS1, regCS2 };
+        static constexpr GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regCS0, regCS1 };
 #else
-        static const GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regCS0, regCS1, regCS2, regCS3, regCS4 };
+        static constexpr GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regCS0, regCS1, regCS2, regCS3 };
 #endif
         return registerForIndex[index];
     }
     
-    static GPRReg toArgumentRegister(unsigned index)
+    static constexpr GPRReg toArgumentRegister(unsigned index)
     {
-        ASSERT(index < numberOfArgumentRegisters);
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfArgumentRegisters);
 #if !OS(WINDOWS)
-        static const GPRReg registerForIndex[numberOfArgumentRegisters] = { argumentGPR0, argumentGPR1, argumentGPR2, argumentGPR3, argumentGPR4, argumentGPR5 };
+        static constexpr GPRReg registerForIndex[numberOfArgumentRegisters] = { argumentGPR0, argumentGPR1, argumentGPR2, argumentGPR3, argumentGPR4, argumentGPR5 };
 #else
-        static const GPRReg registerForIndex[numberOfArgumentRegisters] = { argumentGPR0, argumentGPR1, argumentGPR2, argumentGPR3 };
+        static constexpr GPRReg registerForIndex[numberOfArgumentRegisters] = { argumentGPR0, argumentGPR1, argumentGPR2, argumentGPR3 };
 #endif
         return registerForIndex[index];
     }
     
-    static unsigned toIndex(GPRReg reg)
+    static constexpr unsigned toIndex(GPRReg reg)
     {
-        ASSERT(reg != InvalidGPRReg);
-        ASSERT(static_cast<int>(reg) < 16);
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(reg != InvalidGPRReg);
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(static_cast<int>(reg) < 16);
 #if !OS(WINDOWS)
-        static const unsigned indexForRegister[16] = { 0, 3, 2, 8, InvalidIndex, InvalidIndex, 1, 6, 4, 7, 5, InvalidIndex, 9, 10, InvalidIndex, InvalidIndex };
+        static constexpr unsigned indexForRegister[16] = { 0, 3, 2, 8, InvalidIndex, InvalidIndex, 1, 6, 4, 7, 5, InvalidIndex, 9, InvalidIndex, InvalidIndex, InvalidIndex };
 #else
-        static const unsigned indexForRegister[16] = { 0, 5, 1, 6, InvalidIndex, InvalidIndex, 7, 8, 2, 3, 4, InvalidIndex, 9, 10, InvalidIndex, InvalidIndex };
+        static constexpr unsigned indexForRegister[16] = { 0, 5, 1, 6, InvalidIndex, InvalidIndex, 7, 8, 2, 3, 4, InvalidIndex, 9, InvalidIndex, InvalidIndex, InvalidIndex };
 #endif
         return indexForRegister[reg];
     }
@@ -585,25 +584,25 @@ public:
     static constexpr GPRReg returnValueGPR2 = ARMRegisters::r1; // regT1
     static constexpr GPRReg nonPreservedNonReturnGPR = ARMRegisters::r5;
 
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
-        ASSERT(index < numberOfRegisters);
-        static const GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regCS0, regCS1 };
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfRegisters);
+        static constexpr GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regCS0, regCS1 };
         return registerForIndex[index];
     }
 
-    static GPRReg toArgumentRegister(unsigned index)
+    static constexpr GPRReg toArgumentRegister(unsigned index)
     {
-        ASSERT(index < numberOfArgumentRegisters);
-        static const GPRReg registerForIndex[numberOfArgumentRegisters] = { argumentGPR0, argumentGPR1, argumentGPR2, argumentGPR3 };
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfArgumentRegisters);
+        static constexpr GPRReg registerForIndex[numberOfArgumentRegisters] = { argumentGPR0, argumentGPR1, argumentGPR2, argumentGPR3 };
         return registerForIndex[index];
     }
 
-    static unsigned toIndex(GPRReg reg)
+    static constexpr unsigned toIndex(GPRReg reg)
     {
-        ASSERT(reg != InvalidGPRReg);
-        ASSERT(static_cast<int>(reg) < 16);
-        static const unsigned indexForRegister[16] =
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(reg != InvalidGPRReg);
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(static_cast<int>(reg) < 16);
+        static constexpr unsigned indexForRegister[16] =
             { 0, 1, 2, 3, 4, 5, InvalidIndex, InvalidIndex, 6, 7, 8, 9, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex };
         unsigned result = indexForRegister[reg];
         return result;
@@ -703,20 +702,20 @@ public:
     static_assert(ARM64Registers::q13 == 13);
     static_assert(ARM64Registers::q14 == 14);
     static_assert(ARM64Registers::q15 == 15);
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
         return (GPRReg)index;
     }
-    static unsigned toIndex(GPRReg reg)
+    static constexpr unsigned toIndex(GPRReg reg)
     {
         if (reg > regT15)
             return InvalidIndex;
         return (unsigned)reg;
     }
 
-    static GPRReg toArgumentRegister(unsigned index)
+    static constexpr GPRReg toArgumentRegister(unsigned index)
     {
-        ASSERT(index < numberOfArgumentRegisters);
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfArgumentRegisters);
         return toRegister(index);
     }
 
@@ -781,32 +780,31 @@ public:
     static constexpr GPRReg regCS0 = MIPSRegisters::s0;
     static constexpr GPRReg regCS1 = MIPSRegisters::s1; // constants
 
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
-        ASSERT(index < numberOfRegisters);
-        static const GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regT8, regT9, regT10 };
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfRegisters);
+        static constexpr GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regT8, regT9, regT10 };
         return registerForIndex[index];
     }
 
-    static GPRReg toArgumentRegister(unsigned index)
+    static constexpr GPRReg toArgumentRegister(unsigned index)
     {
-        ASSERT(index < numberOfArgumentRegisters);
-        static const GPRReg registerForIndex[numberOfArgumentRegisters] = { argumentGPR0, argumentGPR1, argumentGPR2, argumentGPR3 };
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfArgumentRegisters);
+        static constexpr GPRReg registerForIndex[numberOfArgumentRegisters] = { argumentGPR0, argumentGPR1, argumentGPR2, argumentGPR3 };
         return registerForIndex[index];
     }
 
-    static unsigned toIndex(GPRReg reg)
+    static constexpr unsigned toIndex(GPRReg reg)
     {
-        ASSERT(reg != InvalidGPRReg);
-        ASSERT(reg < 32);
-        static const unsigned indexForRegister[32] = {
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(reg != InvalidGPRReg);
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(reg < 32);
+        static constexpr unsigned indexForRegister[32] = {
             InvalidIndex, InvalidIndex, 0, 1, 7, 8, 9, 10,
             InvalidIndex, InvalidIndex, 2, 3, 4, 5, 6, InvalidIndex,
             InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex,
             InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex
         };
-        unsigned result = indexForRegister[reg];
-        return result;
+        return indexForRegister[reg];
     }
 
     static const char* debugName(GPRReg reg)
@@ -886,31 +884,31 @@ public:
 
     static constexpr GPRReg patchpointScratchRegister = RISCV64Registers::x30; // Should match dataTempRegister
 
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
-        ASSERT(index < numberOfRegisters);
-        static const GPRReg registerForIndex[numberOfRegisters] = {
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfRegisters);
+        static constexpr GPRReg registerForIndex[numberOfRegisters] = {
             regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7,
             regT8, regT9, regT10, regT11, regT12,
         };
         return registerForIndex[index];
     }
 
-    static GPRReg toArgumentRegister(unsigned index)
+    static constexpr GPRReg toArgumentRegister(unsigned index)
     {
-        ASSERT(index < numberOfArgumentRegisters);
-        static const GPRReg registerForIndex[numberOfArgumentRegisters] = {
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfArgumentRegisters);
+        static constexpr GPRReg registerForIndex[numberOfArgumentRegisters] = {
             argumentGPR0, argumentGPR1, argumentGPR2, argumentGPR3,
             argumentGPR4, argumentGPR5, argumentGPR6, argumentGPR7,
         };
         return registerForIndex[index];
     }
 
-    static unsigned toIndex(GPRReg reg)
+    static constexpr unsigned toIndex(GPRReg reg)
     {
-        ASSERT(reg != InvalidGPRReg);
-        ASSERT(static_cast<int>(reg) < 32);
-        static const unsigned indexForRegister[32] = {
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(reg != InvalidGPRReg);
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(static_cast<int>(reg) < 32);
+        static constexpr unsigned indexForRegister[32] = {
             InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, 8, 9, 10,
             InvalidIndex, InvalidIndex, 0, 1, 2, 3, 4, 5,
             6, 7, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex, InvalidIndex,
