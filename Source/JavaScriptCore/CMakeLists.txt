@@ -873,7 +873,6 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     jit/SnippetSlowPathCalls.h
     jit/SpillRegistersMode.h
     jit/TagRegistersMode.h
-    jit/TempRegisterSet.h
     jit/ThunkGenerator.h
 
     llint/LLIntOpcode.h
