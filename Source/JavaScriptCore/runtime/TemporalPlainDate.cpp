@@ -201,4 +201,24 @@ int32_t TemporalPlainDate::compare(TemporalPlainDate* plainDate1, TemporalPlainD
     return 0;
 }
 
+String TemporalPlainDate::monthCode() const
+{
+    return ISO8601::monthCode(m_plainDate.month());
+}
+
+uint8_t TemporalPlainDate::dayOfWeek() const
+{
+    return ISO8601::dayOfWeek(m_plainDate);
+}
+
+uint16_t TemporalPlainDate::dayOfYear() const
+{
+    return ISO8601::dayOfYear(m_plainDate);
+}
+
+uint8_t TemporalPlainDate::weekOfYear() const
+{
+    return ISO8601::weekOfYear(m_plainDate);
+}
+
 } // namespace JSC
