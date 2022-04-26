@@ -101,7 +101,7 @@ inline constexpr unsigned nextPowerOf2(unsigned v)
 //     64            48             448             1024
 //    128            96             896             2048
 //    256           192            1792             4096
-//    512           256             N/A             6144     // After 512 size, compact PropertyTable does not work. All table gets non-compact.
+//    512           384             N/A             8192     // After 512 size, compact PropertyTable does not work. All table gets non-compact.
 
 class PropertyTable final : public JSCell {
 public:

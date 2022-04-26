@@ -39,12 +39,12 @@ class JSModuleEnvironment;
 // Property attributes
 enum class PropertyAttribute : unsigned {
     None              = 0,
-    ReadOnly          = 1 << 1,  // property can be only read, not written
-    DontEnum          = 1 << 2,  // property doesn't appear in (for .. in ..)
-    DontDelete        = 1 << 3,  // property can't be deleted
-    Accessor          = 1 << 4,  // property is a getter/setter
-    CustomAccessor    = 1 << 5,
-    CustomValue       = 1 << 6,
+    ReadOnly          = 1 << 0,  // property can be only read, not written
+    DontEnum          = 1 << 1,  // property doesn't appear in (for .. in ..)
+    DontDelete        = 1 << 2,  // property can't be deleted
+    Accessor          = 1 << 3,  // property is a getter/setter
+    CustomAccessor    = 1 << 4,
+    CustomValue       = 1 << 5,
     CustomAccessorOrValue = CustomAccessor | CustomValue,
     AccessorOrCustomAccessorOrValue = Accessor | CustomAccessor | CustomValue,
     ReadOnlyOrAccessorOrCustomAccessor = ReadOnly | Accessor | CustomAccessor,
