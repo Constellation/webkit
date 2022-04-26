@@ -64,9 +64,12 @@ PropertyTable::PropertyTable(VM& vm, unsigned initialCapacity)
     , m_deletedCount(0)
 {
     ASSERT(isPowerOf2(m_indexSize));
-    bool isCompact = tableCapacity() < UINT8_MAX;
-    m_indexVector = allocateZeroedIndexVector(isCompact, m_indexSize);
+    bool isCompact = m_indexSize <= UINT8_MAX;
+    m_indexVector = allocateIndexVector(isCompact, m_indexSize);
     ASSERT(isCompact == this->isCompact());
+    withIndexVector([&](auto* vector) {
+        memset(vector, -1, m_indexSize * sizeof(std::decay_t<decltype(*vector)>));
+    });
 }
 
 PropertyTable::PropertyTable(VM& vm, const PropertyTable& other)
@@ -102,11 +105,12 @@ PropertyTable::PropertyTable(VM& vm, unsigned initialCapacity, const PropertyTab
 {
     ASSERT(isPowerOf2(m_indexSize));
     ASSERT(initialCapacity >= other.m_keyCount);
-    bool isCompact = other.isCompact() && tableCapacity() < UINT8_MAX;
-    m_indexVector = allocateZeroedIndexVector(isCompact, m_indexSize);
+    bool isCompact = other.isCompact() && m_indexSize <= UINT8_MAX;
+    m_indexVector = allocateIndexVector(isCompact, m_indexSize);
     ASSERT(this->isCompact() == isCompact);
 
     withIndexVector([&](auto* vector) {
+        memset(vector, -1, m_indexSize * sizeof(std::decay_t<decltype(*vector)>));
         auto* table = tableFromIndexVector(vector);
         other.forEachProperty([&](auto& entry) {
             ASSERT(canInsert(entry));

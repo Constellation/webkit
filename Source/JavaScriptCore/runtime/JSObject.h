@@ -1247,7 +1247,7 @@ public:
 
     static constexpr unsigned maxSizeInBytes = 512;
     static constexpr unsigned maxInlineCapacity = (maxSizeInBytes - sizeof(JSObject)) / sizeof(WriteBarrier<Unknown>);
-    static_assert(maxInlineCapacity < firstOutOfLineOffset);
+    static_assert(maxInlineCapacity <= firstOutOfLineOffset);
 
     static JSFinalObject* create(VM&, Structure*);
     static JSFinalObject* createWithButterfly(VM&, Structure*, Butterfly*);
