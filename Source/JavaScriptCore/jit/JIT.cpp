@@ -778,13 +778,26 @@ void JIT::compileAndLinkWithoutFinalizing(JITCompilationEffort effort)
 
     int frameTopOffset = stackPointerOffsetFor(m_unlinkedCodeBlock) * sizeof(Register);
     unsigned maxFrameSize = -frameTopOffset;
-    addPtr(TrustedImm32(frameTopOffset), callFrameRegister, regT1);
     JumpList stackOverflow;
-    if (UNLIKELY(maxFrameSize > Options::reservedZoneSize()))
-        stackOverflow.append(branchPtr(Above, regT1, callFrameRegister));
-    stackOverflow.append(branchPtr(Above, AbsoluteAddress(m_vm->addressOfSoftStackLimit()), regT1));
+    if (m_vm->usingAPI()) {
+        addPtr(TrustedImm32(frameTopOffset), callFrameRegister, regT1);
+        if (UNLIKELY(maxFrameSize > Options::reservedZoneSize()))
+            stackOverflow.append(branchPtr(Above, regT1, callFrameRegister));
+        stackOverflow.append(branchPtr(Above, AbsoluteAddress(m_vm->addressOfSoftStackLimit()), regT1));
+        move(regT1, stackPointerRegister);
+    } else {
+        if (UNLIKELY(maxFrameSize > Options::reservedZoneSize())) {
+            addPtr(TrustedImm32(frameTopOffset), callFrameRegister, regT1);
+            if (UNLIKELY(maxFrameSize > Options::reservedZoneSize()))
+                stackOverflow.append(branchPtr(Above, regT1, callFrameRegister));
+            stackOverflow.append(branchPtr(BelowOrEqual, regT1, TrustedImmPtr(m_vm->softStackLimit())));
+            move(regT1, stackPointerRegister);
+        } else {
+            stackOverflow.append(branchPtr(BelowOrEqual, callFrameRegister, TrustedImmPtr(bitwise_cast<uint8_t*>(m_vm->softStackLimit()) + maxFrameSize)));
+            addPtr(TrustedImm32(frameTopOffset), callFrameRegister, stackPointerRegister);
+        }
+    }
 
-    move(regT1, stackPointerRegister);
     checkStackPointerAlignment();
 
     emitSaveCalleeSaves();

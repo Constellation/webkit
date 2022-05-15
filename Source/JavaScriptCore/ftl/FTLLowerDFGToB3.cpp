@@ -275,7 +275,6 @@ public:
 
         // Stack Overflow Check.
         unsigned exitFrameSize = m_graph.requiredRegisterCountForExit() * sizeof(Register);
-        MacroAssembler::AbsoluteAddress addressOfStackLimit(vm->addressOfSoftStackLimit());
         PatchpointValue* stackOverflowHandler = m_out.patchpoint(Void);
         CallSiteIndex callSiteIndex = callSiteIndexForCodeOrigin(m_ftlState, CodeOrigin(BytecodeIndex(0)));
         stackOverflowHandler->appendSomeRegister(m_callFrame);
@@ -292,11 +291,20 @@ public:
 
                 jit.jitAssertCodeBlockOnCallFrameWithType(scratch, JITType::FTLJIT);
 
-                jit.addPtr(MacroAssembler::TrustedImm32(-maxFrameSize), fp, scratch);
                 MacroAssembler::JumpList stackOverflow;
-                if (UNLIKELY(maxFrameSize > Options::reservedZoneSize()))
-                    stackOverflow.append(jit.branchPtr(MacroAssembler::Above, scratch, fp));
-                stackOverflow.append(jit.branchPtr(MacroAssembler::Above, addressOfStackLimit, scratch));
+                if (vm->usingAPI()) {
+                    jit.addPtr(MacroAssembler::TrustedImm32(-maxFrameSize), fp, scratch);
+                    if (UNLIKELY(maxFrameSize > Options::reservedZoneSize()))
+                        stackOverflow.append(jit.branchPtr(MacroAssembler::Above, scratch, fp));
+                    stackOverflow.append(jit.branchPtr(MacroAssembler::Above, CCallHelpers::AbsoluteAddress(vm->addressOfSoftStackLimit()), scratch));
+                } else {
+                    if (UNLIKELY(maxFrameSize > Options::reservedZoneSize())) {
+                        jit.addPtr(MacroAssembler::TrustedImm32(-maxFrameSize), fp, scratch);
+                        stackOverflow.append(jit.branchPtr(MacroAssembler::Above, scratch, fp));
+                        stackOverflow.append(jit.branchPtr(MacroAssembler::BelowOrEqual, scratch, CCallHelpers::TrustedImmPtr(vm->softStackLimit())));
+                    } else
+                        stackOverflow.append(jit.branchPtr(MacroAssembler::BelowOrEqual, fp, CCallHelpers::TrustedImmPtr(bitwise_cast<uint8_t*>(vm->softStackLimit()) + maxFrameSize)));
+                }
 
                 params.addLatePath([=] (CCallHelpers& jit) {
                     AllowMacroScratchRegisterUsage allowScratch(jit);

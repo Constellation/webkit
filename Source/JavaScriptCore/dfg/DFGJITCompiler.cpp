@@ -362,10 +362,19 @@ static void emitStackOverflowCheck(JITCompiler& jit, MacroAssembler::JumpList& s
     int frameTopOffset = virtualRegisterForLocal(jit.graph().requiredRegisterCountForExecutionAndExit() - 1).offset() * sizeof(Register);
     unsigned maxFrameSize = -frameTopOffset;
 
-    jit.addPtr(MacroAssembler::TrustedImm32(frameTopOffset), GPRInfo::callFrameRegister, GPRInfo::regT1);
-    if (UNLIKELY(maxFrameSize > Options::reservedZoneSize()))
-        stackOverflow.append(jit.branchPtr(MacroAssembler::Above, GPRInfo::regT1, GPRInfo::callFrameRegister));
-    stackOverflow.append(jit.branchPtr(MacroAssembler::Above, MacroAssembler::AbsoluteAddress(jit.vm().addressOfSoftStackLimit()), GPRInfo::regT1));
+    if (jit.vm().usingAPI()) {
+        jit.addPtr(MacroAssembler::TrustedImm32(frameTopOffset), GPRInfo::callFrameRegister, GPRInfo::regT1);
+        if (UNLIKELY(maxFrameSize > Options::reservedZoneSize()))
+            stackOverflow.append(jit.branchPtr(MacroAssembler::Above, GPRInfo::regT1, GPRInfo::callFrameRegister));
+        stackOverflow.append(jit.branchPtr(MacroAssembler::Above, MacroAssembler::AbsoluteAddress(jit.vm().addressOfSoftStackLimit()), GPRInfo::regT1));
+    } else {
+        if (UNLIKELY(maxFrameSize > Options::reservedZoneSize())) {
+            jit.addPtr(MacroAssembler::TrustedImm32(frameTopOffset), GPRInfo::callFrameRegister, GPRInfo::regT1);
+            stackOverflow.append(jit.branchPtr(MacroAssembler::Above, GPRInfo::regT1, GPRInfo::callFrameRegister));
+            stackOverflow.append(jit.branchPtr(MacroAssembler::BelowOrEqual, GPRInfo::regT1, MacroAssembler::TrustedImmPtr(jit.vm().softStackLimit())));
+        } else
+            stackOverflow.append(jit.branchPtr(MacroAssembler::BelowOrEqual, GPRInfo::callFrameRegister, MacroAssembler::TrustedImmPtr(bitwise_cast<uint8_t*>(jit.vm().softStackLimit()) + maxFrameSize)));
+    }
 }
 
 void JITCompiler::compile()
