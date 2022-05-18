@@ -464,11 +464,6 @@ void Options::recomputeDependentOptions()
 
     if (!Options::useWebAssembly())
         Options::useFastTLSForWasmContext() = false;
-
-    if (Options::forceUnlinkedDFG())
-        Options::useDataICInFTL() = true;
-    else
-        Options::useDataICInFTL() = false;
     
     if (Options::dumpDisassembly()
         || Options::asyncDisassembly()
