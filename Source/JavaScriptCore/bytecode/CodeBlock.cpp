@@ -3528,7 +3528,11 @@ bool CodeBlock::useDataIC() const
             return static_cast<const DFG::JITCode*>(jitCode)->isUnlinked();
     }
 #endif
-    return JITCode::useDataIC(jitType());
+#if ENABLE(FTL_JIT)
+    if (jitType() == JITType::FTLJIT)
+        return Options::useDataICInOptimizingJIT();
+#endif
+    return true;
 }
 
 bool CodeBlock::hasInstalledVMTrapsBreakpoints() const
