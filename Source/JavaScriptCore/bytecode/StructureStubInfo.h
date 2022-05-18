@@ -164,9 +164,9 @@ public:
     {
         return JSValueRegs(
 #if USE(JSVALUE32_64)
-            valueTagGPR,
+            m_valueTagGPR,
 #endif
-            valueGPR);
+            m_valueGPR);
     }
 
     JSValueRegs propertyRegs() const
@@ -182,9 +182,9 @@ public:
     {
         return JSValueRegs(
 #if USE(JSVALUE32_64)
-            baseTagGPR,
+            m_baseTagGPR,
 #endif
-            baseGPR);
+            m_baseGPR);
     }
 
     bool thisValueIsInExtraGPR() const { return accessType == AccessType::GetByIdWithThis; }
@@ -389,16 +389,16 @@ public:
 
     RegisterSet usedRegisters;
 
-    GPRReg baseGPR { InvalidGPRReg };
-    GPRReg valueGPR { InvalidGPRReg };
+    GPRReg m_baseGPR { InvalidGPRReg };
+    GPRReg m_valueGPR { InvalidGPRReg };
     GPRReg m_extraGPR { InvalidGPRReg };
     GPRReg m_stubInfoGPR { InvalidGPRReg };
     GPRReg m_arrayProfileGPR { InvalidGPRReg };
 #if USE(JSVALUE32_64)
-    GPRReg valueTagGPR;
-    // FIXME: [32-bits] Check if StructureStubInfo::baseTagGPR is used somewhere.
+    GPRReg m_valueTagGPR;
+    // FIXME: [32-bits] Check if StructureStubInfo::m_baseTagGPR is used somewhere.
     // https://bugs.webkit.org/show_bug.cgi?id=204726
-    GPRReg baseTagGPR;
+    GPRReg m_baseTagGPR;
     GPRReg m_extraTagGPR;
 #endif
 

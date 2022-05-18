@@ -436,7 +436,7 @@ AccessGenerationResult PolymorphicAccess::regenerate(const GCSafeConcurrentJSLoc
     state.access = this;
     state.stubInfo = &stubInfo;
     
-    state.baseGPR = stubInfo.baseGPR;
+    state.baseGPR = stubInfo.m_baseGPR;
     state.extraGPR = stubInfo.m_extraGPR;
     state.valueRegs = stubInfo.valueRegs();
 
@@ -806,8 +806,8 @@ AccessGenerationResult PolymorphicAccess::regenerate(const GCSafeConcurrentJSLoc
     FixedVector<StructureID> weakStructures(WTFMove(state.weakStructures));
     if (codeBlock->useDataIC() && canBeShared) {
         SharedJITStubSet::Searcher searcher {
-            stubInfo.baseGPR,
-            stubInfo.valueGPR,
+            stubInfo.m_baseGPR,
+            stubInfo.m_valueGPR,
             stubInfo.m_extraGPR,
             stubInfo.m_stubInfoGPR,
             stubInfo.m_arrayProfileGPR,
@@ -847,7 +847,7 @@ AccessGenerationResult PolymorphicAccess::regenerate(const GCSafeConcurrentJSLoc
 
     if (codeBlock->useDataIC()) {
         if (canBeShared)
-            vm.m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(stubInfo.baseGPR, stubInfo.valueGPR, stubInfo.m_extraGPR, stubInfo.m_stubInfoGPR, stubInfo.m_arrayProfileGPR, stubInfo.usedRegisters, stub.get()));
+            vm.m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(stubInfo.m_baseGPR, stubInfo.m_valueGPR, stubInfo.m_extraGPR, stubInfo.m_stubInfoGPR, stubInfo.m_arrayProfileGPR, stubInfo.usedRegisters, stub.get()));
     }
 
     return finishCodeGeneration(WTFMove(stub));

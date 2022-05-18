@@ -131,13 +131,13 @@ public:
     {
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
-            stubInfo.baseGPR = baseRegs.payloadGPR();
-            stubInfo.valueGPR = valueRegs.payloadGPR();
+            stubInfo.m_baseGPR = baseRegs.payloadGPR();
+            stubInfo.m_valueGPR = valueRegs.payloadGPR();
             stubInfo.m_extraGPR = InvalidGPRReg;
             stubInfo.m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
-            stubInfo.baseTagGPR = baseRegs.tagGPR();
-            stubInfo.valueTagGPR = valueRegs.tagGPR();
+            stubInfo.m_baseTagGPR = baseRegs.tagGPR();
+            stubInfo.m_valueTagGPR = valueRegs.tagGPR();
             stubInfo.m_extraTagGPR = InvalidGPRReg;
 #endif
         }
@@ -272,9 +272,9 @@ public:
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
         stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
-            stubInfo.baseGPR = baseRegs.payloadGPR();
+            stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = propertyRegs.payloadGPR();
-            stubInfo.valueGPR = valueRegs.payloadGPR();
+            stubInfo.m_valueGPR = valueRegs.payloadGPR();
             stubInfo.m_stubInfoGPR = stubInfoGPR;
             stubInfo.m_arrayProfileGPR = arrayProfileGPR;
 #if USE(JSVALUE32_64)
@@ -319,13 +319,13 @@ public:
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
         stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
-            stubInfo.baseGPR = baseRegs.payloadGPR();
+            stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = propertyRegs.payloadGPR();
-            stubInfo.valueGPR = resultRegs.payloadGPR();
+            stubInfo.m_valueGPR = resultRegs.payloadGPR();
             stubInfo.m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
-            stubInfo.baseTagGPR = baseRegs.tagGPR();
-            stubInfo.valueTagGPR = resultRegs.tagGPR();
+            stubInfo.m_baseTagGPR = baseRegs.tagGPR();
+            stubInfo.m_valueTagGPR = resultRegs.tagGPR();
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
         }
@@ -362,13 +362,13 @@ public:
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
         stubInfo.hasConstantIdentifier = true;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
-            stubInfo.baseGPR = baseRegs.payloadGPR();
+            stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = InvalidGPRReg;
-            stubInfo.valueGPR = resultRegs.payloadGPR();
+            stubInfo.m_valueGPR = resultRegs.payloadGPR();
             stubInfo.m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
-            stubInfo.baseTagGPR = baseRegs.tagGPR();
-            stubInfo.valueTagGPR = resultRegs.tagGPR();
+            stubInfo.m_baseTagGPR = baseRegs.tagGPR();
+            stubInfo.m_valueTagGPR = resultRegs.tagGPR();
             stubInfo.m_extraTagGPR = InvalidGPRReg;
 #endif
         }
@@ -405,13 +405,13 @@ public:
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
         stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
-            stubInfo.baseGPR = baseRegs.payloadGPR();
+            stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = propertyRegs.payloadGPR();
-            stubInfo.valueGPR = resultRegs.payloadGPR();
+            stubInfo.m_valueGPR = resultRegs.payloadGPR();
             stubInfo.m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
-            stubInfo.baseTagGPR = baseRegs.tagGPR();
-            stubInfo.valueTagGPR = resultRegs.tagGPR();
+            stubInfo.m_baseTagGPR = baseRegs.tagGPR();
+            stubInfo.m_valueTagGPR = resultRegs.tagGPR();
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
         }
@@ -472,13 +472,13 @@ public:
         stubInfo.prototypeIsKnownObject = prototypeIsKnownObject;
         stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
-            stubInfo.baseGPR = valueGPR;
-            stubInfo.valueGPR = resultGPR;
+            stubInfo.m_baseGPR = valueGPR;
+            stubInfo.m_valueGPR = resultGPR;
             stubInfo.m_extraGPR = prototypeGPR;
             stubInfo.m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
-            stubInfo.baseTagGPR = InvalidGPRReg;
-            stubInfo.valueTagGPR = InvalidGPRReg;
+            stubInfo.m_baseTagGPR = InvalidGPRReg;
+            stubInfo.m_valueTagGPR = InvalidGPRReg;
             stubInfo.m_extraTagGPR = InvalidGPRReg;
 #endif
             stubInfo.usedRegisters.clear(resultGPR);
@@ -516,13 +516,13 @@ public:
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
         stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
-            stubInfo.baseGPR = baseRegs.payloadGPR();
+            stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = propertyRegs.payloadGPR();
-            stubInfo.valueGPR = resultRegs.payloadGPR();
+            stubInfo.m_valueGPR = resultRegs.payloadGPR();
             stubInfo.m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
-            stubInfo.baseTagGPR = baseRegs.tagGPR();
-            stubInfo.valueTagGPR = resultRegs.tagGPR();
+            stubInfo.m_baseTagGPR = baseRegs.tagGPR();
+            stubInfo.m_valueTagGPR = resultRegs.tagGPR();
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
         }
@@ -562,14 +562,14 @@ public:
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
         stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
-            stubInfo.baseGPR = baseRegs.payloadGPR();
+            stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = brandRegs.payloadGPR();
-            stubInfo.valueGPR = InvalidGPRReg;
+            stubInfo.m_valueGPR = InvalidGPRReg;
             stubInfo.m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
-            stubInfo.baseTagGPR = baseRegs.tagGPR();
+            stubInfo.m_baseTagGPR = baseRegs.tagGPR();
             stubInfo.m_extraTagGPR = brandRegs.tagGPR();
-            stubInfo.valueTagGPR = InvalidGPRReg;
+            stubInfo.m_valueTagGPR = InvalidGPRReg;
 #endif
         }
     }
