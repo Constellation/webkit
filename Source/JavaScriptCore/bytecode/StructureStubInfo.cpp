@@ -676,16 +676,18 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(const DFG::Un
     callSiteIndex = unlinkedStubInfo.callSiteIndex;
     codeOrigin = unlinkedStubInfo.codeOrigin;
     m_codePtr = slowPathStartLocation;
+
     propertyIsInt32 = unlinkedStubInfo.propertyIsInt32;
     propertyIsSymbol = unlinkedStubInfo.propertyIsSymbol;
     propertyIsString = unlinkedStubInfo.propertyIsString;
     useDataIC = true;
 
     usedRegisters = unlinkedStubInfo.usedRegisters;
-    if (accessType == AccessType::GetById && unlinkedStubInfo.bytecodeIndex.checkpoint()) {
-        // For iterator_next, we can't clobber the "dontClobberJSR" register either.
-        usedRegisters.set(BaselineJITRegisters::GetById::FastPath::dontClobberJSR);
-    }
+
+    baseGPR = unlinkedStubInfo.baseGPR;
+    regs.propertyGPR = unlinkedStubInfo.regs.propertyGPR;
+    valueGPR = unlinkedStubInfo.valueGPR;
+    m_stubInfoGPR = unlinkedStubInfo.m_stubInfoGPR;
 
     switch (accessType) {
     case AccessType::DeleteByVal:
@@ -779,142 +781,27 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(const DFG::Un
     }
 
     switch (accessType) {
-    case AccessType::DeleteByVal:
-        hasConstantIdentifier = false;
-        baseGPR = BaselineJITRegisters::DelByVal::baseJSR.payloadGPR();
-        regs.propertyGPR = BaselineJITRegisters::DelByVal::propertyJSR.payloadGPR();
-        valueGPR = BaselineJITRegisters::DelByVal::FastPath::resultJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::DelByVal::FastPath::stubInfoGPR;
-#if USE(JSVALUE32_64)
-        baseTagGPR = BaselineJITRegisters::DelByVal::baseJSR.tagGPR();
-        v.propertyTagGPR = BaselineJITRegisters::DelByVal::propertyJSR.tagGPR();
-        valueTagGPR = BaselineJITRegisters::DelByVal::FastPath::resultJSR.tagGPR();
-#endif
-        break;
     case AccessType::DeleteByID:
-        hasConstantIdentifier = true;
-        baseGPR = BaselineJITRegisters::DelById::baseJSR.payloadGPR();
-        regs.propertyGPR = InvalidGPRReg;
-        valueGPR = BaselineJITRegisters::DelById::FastPath::resultJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::DelById::FastPath::stubInfoGPR;
-#if USE(JSVALUE32_64)
-        baseTagGPR = BaselineJITRegisters::DelById::baseJSR.tagGPR();
-        v.propertyTagGPR = InvalidGPRReg;
-        valueTagGPR = BaselineJITRegisters::DelById::FastPath::resultJSR.tagGPR();
-#endif
-        break;
-    case AccessType::GetByVal:
-    case AccessType::GetPrivateName:
-        hasConstantIdentifier = false;
-        baseGPR = unlinkedStubInfo.baseGPR;
-        regs.propertyGPR = unlinkedStubInfo.regs.propertyGPR;
-        valueGPR = unlinkedStubInfo.valueGPR;
-        m_stubInfoGPR = unlinkedStubInfo.m_stubInfoGPR;
-        break;
-    case AccessType::InstanceOf:
-        hasConstantIdentifier = false;
-        prototypeIsKnownObject = false;
-        baseGPR = BaselineJITRegisters::Instanceof::valueJSR.payloadGPR();
-        valueGPR = BaselineJITRegisters::Instanceof::resultJSR.payloadGPR();
-        regs.prototypeGPR = BaselineJITRegisters::Instanceof::protoJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::Instanceof::FastPath::stubInfoGPR;
-#if USE(JSVALUE32_64)
-        baseTagGPR = BaselineJITRegisters::Instanceof::valueJSR.tagGPR();
-        valueTagGPR = InvalidGPRReg;
-        v.propertyTagGPR = BaselineJITRegisters::Instanceof::protoJSR.tagGPR();
-#endif
-        break;
-    case AccessType::InByVal:
-    case AccessType::HasPrivateName:
-    case AccessType::HasPrivateBrand:
-        hasConstantIdentifier = false;
-        baseGPR = BaselineJITRegisters::InByVal::baseJSR.payloadGPR();
-        regs.propertyGPR = BaselineJITRegisters::InByVal::propertyJSR.payloadGPR();
-        valueGPR = BaselineJITRegisters::InByVal::resultJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::InByVal::stubInfoGPR;
-#if USE(JSVALUE32_64)
-        baseTagGPR = BaselineJITRegisters::InByVal::baseJSR.tagGPR();
-        v.propertyTagGPR = BaselineJITRegisters::InByVal::propertyJSR.tagGPR();
-        valueTagGPR = BaselineJITRegisters::InByVal::resultJSR.tagGPR();
-#endif
-        break;
     case AccessType::InById:
-        hasConstantIdentifier = true;
-        regs.thisGPR = InvalidGPRReg;
-        baseGPR = BaselineJITRegisters::InById::baseJSR.payloadGPR();
-        valueGPR = BaselineJITRegisters::InById::resultJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::InById::stubInfoGPR;
-#if USE(JSVALUE32_64)
-        v.thisTagGPR = InvalidGPRReg;
-        baseTagGPR = BaselineJITRegisters::InById::baseJSR.tagGPR();
-        valueTagGPR = BaselineJITRegisters::InById::resultJSR.tagGPR();
-#endif
-        break;
     case AccessType::TryGetById:
     case AccessType::GetByIdDirect:
     case AccessType::GetById:
-        hasConstantIdentifier = true;
-        regs.thisGPR = InvalidGPRReg;
-        baseGPR = BaselineJITRegisters::GetById::baseJSR.payloadGPR();
-        valueGPR = BaselineJITRegisters::GetById::resultJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::GetById::FastPath::stubInfoGPR;
-#if USE(JSVALUE32_64)
-        v.thisTagGPR = InvalidGPRReg;
-        baseTagGPR = BaselineJITRegisters::GetById::baseJSR.tagGPR();
-        valueTagGPR = BaselineJITRegisters::GetById::resultJSR.tagGPR();
-#endif
-        break;
     case AccessType::GetByIdWithThis:
-        hasConstantIdentifier = true;
-        baseGPR = BaselineJITRegisters::GetByIdWithThis::baseJSR.payloadGPR();
-        valueGPR = BaselineJITRegisters::GetByIdWithThis::resultJSR.payloadGPR();
-        regs.thisGPR = BaselineJITRegisters::GetByIdWithThis::thisJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::GetByIdWithThis::FastPath::stubInfoGPR;
-#if USE(JSVALUE32_64)
-        baseTagGPR = BaselineJITRegisters::GetByIdWithThis::baseJSR.tagGPR();
-        valueTagGPR = BaselineJITRegisters::GetByIdWithThis::resultJSR.tagGPR();
-        v.thisTagGPR = BaselineJITRegisters::GetByIdWithThis::thisJSR.tagGPR();
-#endif
-        break;
     case AccessType::PutById:
         hasConstantIdentifier = true;
-        regs.thisGPR = InvalidGPRReg;
-        baseGPR = BaselineJITRegisters::PutById::baseJSR.payloadGPR();
-        valueGPR = BaselineJITRegisters::PutById::valueJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::PutById::FastPath::stubInfoGPR;
-#if USE(JSVALUE32_64)
-        v.thisTagGPR = InvalidGPRReg;
-        baseTagGPR = BaselineJITRegisters::PutById::baseJSR.tagGPR();
-        valueTagGPR = BaselineJITRegisters::PutById::valueJSR.tagGPR();
-#endif
         break;
+    case AccessType::DeleteByVal:
+    case AccessType::GetByVal:
+    case AccessType::GetPrivateName:
+    case AccessType::InstanceOf:
+    case AccessType::InByVal:
+    case AccessType::HasPrivateName:
+    case AccessType::HasPrivateBrand:
     case AccessType::PutByVal:
     case AccessType::PutPrivateName:
-        hasConstantIdentifier = false;
-        baseGPR = BaselineJITRegisters::PutByVal::baseJSR.payloadGPR();
-        regs.propertyGPR = BaselineJITRegisters::PutByVal::propertyJSR.payloadGPR();
-        valueGPR = BaselineJITRegisters::PutByVal::valueJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::PutByVal::stubInfoGPR;
-        if (accessType == AccessType::PutByVal)
-            m_arrayProfileGPR = BaselineJITRegisters::PutByVal::profileGPR;
-#if USE(JSVALUE32_64)
-        baseTagGPR = BaselineJITRegisters::PutByVal::baseJSR.tagGPR();
-        v.propertyTagGPR = BaselineJITRegisters::PutByVal::propertyJSR.tagGPR();
-        valueTagGPR = BaselineJITRegisters::PutByVal::valueJSR.tagGPR();
-#endif
-        break;
     case AccessType::SetPrivateBrand:
     case AccessType::CheckPrivateBrand:
         hasConstantIdentifier = false;
-        valueGPR = InvalidGPRReg;
-        baseGPR = BaselineJITRegisters::PrivateBrand::baseJSR.payloadGPR();
-        regs.brandGPR = BaselineJITRegisters::PrivateBrand::brandJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::PrivateBrand::FastPath::stubInfoGPR;
-#if USE(JSVALUE32_64)
-        valueTagGPR = InvalidGPRReg;
-        baseTagGPR = BaselineJITRegisters::PrivateBrand::baseJSR.tagGPR();
-        v.brandTagGPR = BaselineJITRegisters::PrivateBrand::brandJSR.tagGPR();
-#endif
         break;
     }
 }
