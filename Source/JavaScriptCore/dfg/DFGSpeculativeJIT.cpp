@@ -4637,25 +4637,41 @@ void SpeculativeJIT::compileOverridesHasInstance(Node* node)
     unblessedBooleanResult(resultGPR, node);
 }
 
-void SpeculativeJIT::compileInstanceOfForCells(Node* node, JSValueRegs valueRegs, JSValueRegs prototypeRegs, GPRReg resultGPR, GPRReg stubInfoGPR, GPRReg scratchGPR, GPRReg scratch2GPR, JITCompiler::Jump slowCase)
+void SpeculativeJIT::compileInstanceOfForCells(Node* node, JSValueRegs valueRegs, JSValueRegs prototypeRegs, GPRReg resultGPR, GPRReg stubInfoGPR, JITCompiler::Jump slowCase)
 {
     CallSiteIndex callSiteIndex = m_jit.addCallSite(node->origin.semantic);
     
+    bool prototypeIsKnownObject = m_state.forNode(node->child2()).isType(SpecObject | ~SpecCell);
+    RegisterSet usedRegisters = this->usedRegisters();
     JITInstanceOfGenerator gen(
-        m_jit.codeBlock(), &m_jit.jitCode()->common.m_stubInfos, JITType::DFGJIT, node->origin.semantic, callSiteIndex, usedRegisters(), resultGPR,
-        valueRegs.payloadGPR(), prototypeRegs.payloadGPR(), stubInfoGPR, scratchGPR, scratch2GPR,
-        m_state.forNode(node->child2()).isType(SpecObject | ~SpecCell));
-    gen.generateFastPath(m_jit);
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, node->origin.semantic, callSiteIndex, usedRegisters, resultGPR,
+        valueRegs.payloadGPR(), prototypeRegs.payloadGPR(), stubInfoGPR, prototypeIsKnownObject);
     JITCompiler::JumpList slowCases;
-    if (!m_graph.m_plan.isUnlinked())
-        slowCases.append(gen.slowPathJump());
     slowCases.append(slowCase);
 
     std::unique_ptr<SlowPathGenerator> slowPath;
     if (m_graph.m_plan.isUnlinked()) {
+        auto [ stubInfo, stubInfoIndex, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
+        stubInfo->accessType = AccessType::InstanceOf;
+        stubInfo->codeOrigin = node->origin.semantic;
+        stubInfo->callSiteIndex = callSiteIndex;
+        stubInfo->usedRegisters = usedRegisters;
+        stubInfo->usedRegisters.clear(resultGPR);
+        stubInfo->baseRegs = valueRegs;
+        stubInfo->valueRegs = JSValueRegs { resultGPR };
+        stubInfo->propertyRegs = prototypeRegs;
+        stubInfo->m_stubInfoGPR = stubInfoGPR;
+        stubInfo->prototypeIsKnownObject = prototypeIsKnownObject;
+        stubInfo->hasConstantIdentifier = false;
+        gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
+        gen.m_unlinkedStubInfo = stubInfo;
+        ASSERT(!gen.stubInfo());
         slowPath = slowPathICCall(
-            slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationInstanceOfOptimize, resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(node->origin.semantic)), stubInfoGPR, valueRegs, prototypeRegs);
+            slowCases, this, stubInfoConstant, stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationInstanceOfOptimize, resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(node->origin.semantic)), stubInfoGPR, valueRegs, prototypeRegs);
     } else {
+        gen.generateFastPath(m_jit);
+        slowCases.append(gen.slowPathJump());
         slowPath = slowPathCall(
             slowCases, this, operationInstanceOfOptimize, resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(node->origin.semantic)), TrustedImmPtr(gen.stubInfo()), valueRegs, prototypeRegs);
     }
@@ -4674,8 +4690,6 @@ void SpeculativeJIT::compileInstanceOf(Node* node)
         SpeculateCellOperand prototype(this, node->child2());
         
         GPRTemporary result(this);
-        GPRTemporary scratch(this);
-        GPRTemporary scratch2(this);
         
         GPRReg stubInfoGPR = InvalidGPRReg;
         if (m_graph.m_plan.isUnlinked()) {
@@ -4685,10 +4699,8 @@ void SpeculativeJIT::compileInstanceOf(Node* node)
         GPRReg valueGPR = value.gpr();
         GPRReg prototypeGPR = prototype.gpr();
         GPRReg resultGPR = result.gpr();
-        GPRReg scratchGPR = scratch.gpr();
-        GPRReg scratch2GPR = scratch2.gpr();
         
-        compileInstanceOfForCells(node, JSValueRegs(valueGPR), JSValueRegs(prototypeGPR), resultGPR, stubInfoGPR, scratchGPR, scratch2GPR);
+        compileInstanceOfForCells(node, JSValueRegs(valueGPR), JSValueRegs(prototypeGPR), resultGPR, stubInfoGPR);
         
         blessedBooleanResult(resultGPR, node);
         return;
@@ -4703,7 +4715,6 @@ void SpeculativeJIT::compileInstanceOf(Node* node)
     JSValueOperand prototype(this, node->child2());
     
     GPRTemporary result(this);
-    GPRTemporary scratch(this);
     
     GPRReg stubInfoGPR = InvalidGPRReg;
     if (m_graph.m_plan.isUnlinked()) {
@@ -4714,7 +4725,6 @@ void SpeculativeJIT::compileInstanceOf(Node* node)
     JSValueRegs prototypeRegs = prototype.jsValueRegs();
     
     GPRReg resultGPR = result.gpr();
-    GPRReg scratchGPR = scratch.gpr();
     
     JITCompiler::Jump isCell = m_jit.branchIfCell(valueRegs);
     moveFalseTo(resultGPR);
@@ -4725,7 +4735,7 @@ void SpeculativeJIT::compileInstanceOf(Node* node)
     
     JITCompiler::Jump slowCase = m_jit.branchIfNotCell(prototypeRegs);
     
-    compileInstanceOfForCells(node, valueRegs, prototypeRegs, resultGPR, stubInfoGPR, scratchGPR, InvalidGPRReg, slowCase);
+    compileInstanceOfForCells(node, valueRegs, prototypeRegs, resultGPR, stubInfoGPR, slowCase);
     
     done.link(&m_jit);
     blessedBooleanResult(resultGPR, node);

@@ -290,7 +290,7 @@ public:
     
     JITInstanceOfGenerator(
         CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, GPRReg result,
-        GPRReg value, GPRReg prototype, GPRReg stubInfoGPR, GPRReg scratch1, GPRReg scratch2,
+        GPRReg value, GPRReg prototype, GPRReg stubInfoGPR,
         bool prototypeIsKnownObject = false);
     
     void generateFastPath(CCallHelpers&);

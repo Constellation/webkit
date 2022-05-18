@@ -680,6 +680,7 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(const DFG::Un
     propertyIsInt32 = unlinkedStubInfo.propertyIsInt32;
     propertyIsSymbol = unlinkedStubInfo.propertyIsSymbol;
     propertyIsString = unlinkedStubInfo.propertyIsString;
+    prototypeIsKnownObject = unlinkedStubInfo.prototypeIsKnownObject;
     hasConstantIdentifier = unlinkedStubInfo.hasConstantIdentifier;
     useDataIC = true;
 

@@ -60,15 +60,7 @@ namespace Instanceof {
     // Fast path only registers
     namespace FastPath {
         constexpr GPRReg stubInfoGPR { GPRInfo::argumentGPR1 };
-        constexpr GPRReg scratch1GPR { GPRInfo::argumentGPR0 };
-        constexpr GPRReg scratch2GPR {
-#if USE(JSVALUE64)
-            GPRInfo::regT4
-#elif USE(JSVALUE32_64)
-            GPRInfo::regT6
-#endif
-        };
-        static_assert(noOverlap(valueJSR, protoJSR, stubInfoGPR, scratch1GPR, scratch2GPR), "Required for DataIC");
+        static_assert(noOverlap(valueJSR, protoJSR, stubInfoGPR), "Required for DataIC");
     }
 
     // Slow path only registers

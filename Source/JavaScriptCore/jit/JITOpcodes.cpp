@@ -157,8 +157,6 @@ void JIT::emit_op_instanceof(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::Instanceof::valueJSR;
     using BaselineJITRegisters::Instanceof::protoJSR;
     using BaselineJITRegisters::Instanceof::FastPath::stubInfoGPR;
-    using BaselineJITRegisters::Instanceof::FastPath::scratch1GPR;
-    using BaselineJITRegisters::Instanceof::FastPath::scratch2GPR;
 
     emitGetVirtualRegister(value, valueJSR);
     emitGetVirtualRegister(proto, protoJSR);
@@ -173,8 +171,7 @@ void JIT::emit_op_instanceof(const JSInstruction* currentInstruction)
         resultJSR.payloadGPR(),
         valueJSR.payloadGPR(),
         protoJSR.payloadGPR(),
-        stubInfoGPR,
-        scratch1GPR, scratch2GPR);
+        stubInfoGPR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     stubInfo->accessType = AccessType::InstanceOf;

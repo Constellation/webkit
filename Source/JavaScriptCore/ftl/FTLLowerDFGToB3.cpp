@@ -13202,7 +13202,7 @@ IGNORE_CLANG_WARNINGS_END
         patchpoint->appendSomeRegister(prototype);
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
         patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
-        patchpoint->numGPScratchRegisters = JITCode::useDataIC(JITType::FTLJIT) ? 3 : 2;
+        patchpoint->numGPScratchRegisters = JITCode::useDataIC(JITType::FTLJIT) ? 1 : 0;
         patchpoint->resultConstraints = { ValueRep::SomeEarlyRegister };
         patchpoint->clobber(RegisterSet::macroScratchRegisters());
         
@@ -13217,9 +13217,7 @@ IGNORE_CLANG_WARNINGS_END
                 GPRReg resultGPR = params[0].gpr();
                 GPRReg valueGPR = params[1].gpr();
                 GPRReg prototypeGPR = params[2].gpr();
-                GPRReg scratchGPR = params.gpScratch(0);
-                GPRReg scratch2GPR = params.gpScratch(1);
-                GPRReg stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(2) : InvalidGPRReg;
+                GPRReg stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(0) : InvalidGPRReg;
                 
                 CCallHelpers::Jump doneJump;
                 if (!valueIsCell) {
@@ -13242,8 +13240,7 @@ IGNORE_CLANG_WARNINGS_END
                 
                 auto generator = Box<JITInstanceOfGenerator>::create(
                     jit.codeBlock(), &state->jitCode->common.m_stubInfos, JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
-                    params.unavailableRegisters(), resultGPR, valueGPR, prototypeGPR, stubInfoGPR, scratchGPR,
-                    scratch2GPR, prototypeIsObject);
+                    params.unavailableRegisters(), resultGPR, valueGPR, prototypeGPR, stubInfoGPR, prototypeIsObject);
                 generator->generateFastPath(jit);
                 if (!JITCode::useDataIC(JITType::FTLJIT))
                     slowCases.append(generator->slowPathJump());

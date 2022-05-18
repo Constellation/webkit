@@ -523,7 +523,7 @@ void JITInByIdGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, unsign
 JITInstanceOfGenerator::JITInstanceOfGenerator(
     CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex,
     const RegisterSet& usedRegisters, GPRReg result, GPRReg value, GPRReg prototype, GPRReg stubInfoGPR,
-    GPRReg scratch1, GPRReg scratch2, bool prototypeIsKnownObject)
+    bool prototypeIsKnownObject)
     : JITInlineCacheGenerator(codeBlock, stubInfos, jitType, codeOrigin, callSiteIndex, AccessType::InstanceOf, usedRegisters)
 {
     if (m_stubInfo) {
@@ -538,11 +538,6 @@ JITInstanceOfGenerator::JITInstanceOfGenerator(
 #endif
 
         m_stubInfo->usedRegisters.clear(result);
-        if (scratch1 != InvalidGPRReg)
-            m_stubInfo->usedRegisters.clear(scratch1);
-        if (scratch2 != InvalidGPRReg)
-            m_stubInfo->usedRegisters.clear(scratch2);
-
         m_stubInfo->prototypeIsKnownObject = prototypeIsKnownObject;
         m_stubInfo->hasConstantIdentifier = false;
     }

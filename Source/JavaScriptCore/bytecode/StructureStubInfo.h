@@ -482,6 +482,7 @@ struct UnlinkedStructureStubInfo {
     bool propertyIsInt32 { false };
     bool propertyIsString { false };
     bool propertyIsSymbol { false };
+    bool prototypeIsKnownObject { false };
     BytecodeIndex bytecodeIndex;
     CodeLocationLabel<JITStubRoutinePtrTag> start; // This is either the start of the inline IC for *byId caches. or the location of patchable jump for 'instanceof' caches.
     CodeLocationLabel<JSInternalPtrTag> doneLocation;
