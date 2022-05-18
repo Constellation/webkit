@@ -902,8 +902,11 @@ CodeBlock::~CodeBlock()
 #if ENABLE(DFG_JIT)
         for (auto* stubInfo : jitCode()->dfgCommon()->m_stubInfos)
             handleStubInfo(*stubInfo);
-        if (m_jitData)
-            delete bitwise_cast<DFG::JITData*>(m_jitData);
+        if (auto* jitData = dfgJITData()) {
+            for (auto& stubInfo : jitData->stubInfos())
+                handleStubInfo(stubInfo);
+            delete jitData;
+        }
 #endif
     } else {
         if (auto* jitData = baselineJITData()) {
@@ -1247,6 +1250,10 @@ void CodeBlock::propagateTransitions(const ConcurrentJSLocker&, Visitor& visitor
 #if ENABLE(DFG_JIT)
         for (auto* stubInfo : jitCode()->dfgCommon()->m_stubInfos)
             handleStubInfo(*stubInfo);
+        if (auto* jitData = dfgJITData()) {
+            for (auto& stubInfo : jitData->stubInfos())
+                handleStubInfo(stubInfo);
+        }
 #endif
     } else {
         if (auto* jitData = baselineJITData()) {
@@ -1591,6 +1598,10 @@ void CodeBlock::finalizeJITInlineCaches()
             callLinkInfo->visitWeak(vm());
         for (auto* stubInfo : dfgCommon->m_stubInfos)
             handleStubInfo(*stubInfo);
+        if (auto* jitData = dfgJITData()) {
+            for (auto& stubInfo : jitData->stubInfos())
+                handleStubInfo(stubInfo);
+        }
 #endif
     } else {
         if (auto* jitData = baselineJITData()) {
@@ -1689,6 +1700,10 @@ void CodeBlock::getICStatusMap(const ConcurrentJSLocker&, ICStatusMap& result)
             DFG::CommonData* dfgCommon = m_jitCode->dfgCommon();
             for (auto* stubInfo : dfgCommon->m_stubInfos)
                 result.add(stubInfo->codeOrigin, ICStatus()).iterator->value.stubInfo = stubInfo;
+            if (auto* jitData = dfgJITData()) {
+                for (auto& stubInfo : jitData->stubInfos())
+                    result.add(stubInfo.codeOrigin, ICStatus()).iterator->value.stubInfo = &stubInfo;
+            }
             for (auto* callLinkInfo : dfgCommon->m_callLinkInfos)
                 result.add(callLinkInfo->codeOrigin(), ICStatus()).iterator->value.callLinkInfo = callLinkInfo;
             for (auto& pair : dfgCommon->recordedStatuses.calls)
@@ -1729,6 +1744,12 @@ StructureStubInfo* CodeBlock::findStubInfo(CodeOrigin codeOrigin)
         for (auto* stubInfo : jitCode()->dfgCommon()->m_stubInfos) {
             if (stubInfo->codeOrigin == codeOrigin)
                 return stubInfo;
+        }
+        if (auto* jitData = dfgJITData()) {
+            for (auto& stubInfo : jitData->stubInfos()) {
+                if (stubInfo.codeOrigin == codeOrigin)
+                    return &stubInfo;
+            }
         }
 #endif
     } else {
@@ -1853,6 +1874,10 @@ void CodeBlock::stronglyVisitStrongReferences(const ConcurrentJSLocker& locker, 
         DFG::CommonData* dfgCommon = m_jitCode->dfgCommon();
         for (auto* stubInfo : dfgCommon->m_stubInfos)
             handleStubInfo(*stubInfo);
+        if (auto* jitData = dfgJITData()) {
+            for (auto& stubInfo : jitData->stubInfos())
+                handleStubInfo(stubInfo);
+        }
         dfgCommon->recordedStatuses.visitAggregate(visitor);
         visitOSRExitTargets(locker, visitor);
 #endif
@@ -3444,6 +3469,12 @@ std::optional<CodeOrigin> CodeBlock::findPC(void* pc)
             for (auto* stubInfo : dfgCommon->m_stubInfos) {
                 if (stubInfo->containsPC(pc))
                     return stubInfo->codeOrigin;
+            }
+            if (auto* jitData = dfgJITData()) {
+                for (auto& stubInfo : jitData->stubInfos()) {
+                    if (stubInfo.containsPC(pc))
+                        return stubInfo.codeOrigin;
+                }
             }
 #endif
         } else {

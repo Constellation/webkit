@@ -140,6 +140,8 @@ public:
         m_isInvalidated = 1;
     }
 
+    FixedVector<StructureStubInfo>& stubInfos() { return m_stubInfos; }
+
 private:
     explicit JITData(const JITCode&, ExitVector&&);
 
