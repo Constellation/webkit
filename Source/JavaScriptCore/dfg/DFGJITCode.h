@@ -50,6 +50,10 @@ namespace DFG {
 class JITCode;
 class JITCompiler;
 
+struct UnlinkedStructureStubInfo : JSC::UnlinkedStructureStubInfo {
+    CodeOrigin codeOrigin;
+};
+
 class LinkerIR {
     WTF_MAKE_NONCOPYABLE(LinkerIR);
 public:

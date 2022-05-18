@@ -285,8 +285,10 @@ private:
     {
         ASSERT(JITCode::useDataIC(JITType::DFGJIT));
         this->setUp(jit);
-        m_stubInfo->m_slowOperation = m_function;
-        jit->m_jit.move(CCallHelpers::TrustedImmPtr(m_stubInfo), m_stubInfoGPR);
+        if (m_stubInfo) {
+            m_stubInfo->m_slowOperation = m_function;
+            jit->m_jit.move(CCallHelpers::TrustedImmPtr(m_stubInfo), m_stubInfoGPR);
+        }
         if constexpr (std::is_same<ResultType, NoResultTag>::value)
             jit->callOperation<FunctionType>(m_slowPathOperationAddress, std::get<ArgumentsIndex>(m_arguments)...);
         else

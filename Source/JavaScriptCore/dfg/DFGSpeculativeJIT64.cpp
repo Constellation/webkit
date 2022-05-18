@@ -2482,6 +2482,8 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
         std::unique_ptr<SlowPathGenerator> slowPath;
         if (m_graph.m_plan.isUnlinked()) {
             auto [ stubInfo, stubInfoIndex ] = m_jit.addUnlinkedStructureStubInfo();
+            stubInfo->accessType = AccessType::GetByVal;
+            stubInfo->codeOrigin = codeOrigin;
             gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
             slowPath = slowPathICCall(
                 slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValOptimize,
