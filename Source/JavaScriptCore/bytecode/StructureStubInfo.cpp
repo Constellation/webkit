@@ -411,6 +411,79 @@ ALWAYS_INLINE void StructureStubInfo::setCacheType(const ConcurrentJSLockerBase&
     m_cacheType = newCacheType;
 }
 
+static FunctionPtr<OperationPtrTag> slowOperationFromUnlinkedStructureStubInfo(const UnlinkedStructureStubInfo& unlinkedStubInfo)
+{
+    switch (unlinkedStubInfo.accessType) {
+    case AccessType::DeleteByVal:
+        return operationDeleteByValOptimize;
+    case AccessType::DeleteByID:
+        return operationDeleteByIdOptimize;
+    case AccessType::GetByVal:
+        return operationGetByValOptimize;
+    case AccessType::InstanceOf:
+        return operationInstanceOfOptimize;
+    case AccessType::InByVal:
+        return operationInByValOptimize;
+    case AccessType::InById:
+        return operationInByIdOptimize;
+    case AccessType::GetById:
+        return operationGetByIdOptimize;
+    case AccessType::TryGetById:
+        return operationTryGetByIdOptimize;
+    case AccessType::GetByIdDirect:
+        return operationGetByIdDirectOptimize;
+    case AccessType::GetByIdWithThis:
+        return operationGetByIdWithThisOptimize;
+    case AccessType::HasPrivateName:
+        return operationHasPrivateNameOptimize;
+    case AccessType::HasPrivateBrand: 
+        return operationHasPrivateBrandOptimize;
+    case AccessType::GetPrivateName:
+        return operationGetPrivateNameOptimize;
+    case AccessType::PutById:
+        switch (unlinkedStubInfo.putKind) {
+        case PutKind::NotDirect:
+            if (unlinkedStubInfo.ecmaMode.isStrict())
+                return operationPutByIdStrictOptimize;
+            else
+                return operationPutByIdNonStrictOptimize;
+        case PutKind::Direct:
+            if (unlinkedStubInfo.ecmaMode.isStrict())
+                return operationPutByIdDirectStrictOptimize;
+            else
+                return operationPutByIdDirectNonStrictOptimize;
+        case PutKind::DirectPrivateFieldDefine:
+            return operationPutByIdDefinePrivateFieldStrictOptimize;
+        case PutKind::DirectPrivateFieldSet:
+            return operationPutByIdSetPrivateFieldStrictOptimize;
+        }
+        break;
+    case AccessType::PutByVal:
+        switch (unlinkedStubInfo.putKind) {
+        case PutKind::NotDirect:
+            if (unlinkedStubInfo.ecmaMode.isStrict())
+                return operationPutByValStrictOptimize;
+            else
+                return operationPutByValNonStrictOptimize;
+        case PutKind::Direct:
+            if (unlinkedStubInfo.ecmaMode.isStrict())
+                return operationDirectPutByValStrictOptimize;
+            else
+                return operationDirectPutByValNonStrictOptimize;
+        default:
+            RELEASE_ASSERT_NOT_REACHED();
+        }
+        break;
+    case AccessType::PutPrivateName:
+        return unlinkedStubInfo.privateFieldPutKind.isDefine() ? operationPutByValDefinePrivateFieldOptimize : operationPutByValSetPrivateFieldOptimize;
+    case AccessType::SetPrivateBrand:
+        return operationSetPrivateBrandOptimize;
+    case AccessType::CheckPrivateBrand:
+        return operationCheckPrivateBrandOptimize;
+    }
+    return { };
+}
+
 void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUnlinkedStructureStubInfo& unlinkedStubInfo)
 {
     accessType = unlinkedStubInfo.accessType;
@@ -429,96 +502,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         usedRegisters.set(BaselineJITRegisters::GetById::FastPath::dontClobberJSR);
     }
 
-    switch (accessType) {
-    case AccessType::DeleteByVal:
-        m_slowOperation = operationDeleteByValOptimize;
-        break;
-    case AccessType::DeleteByID:
-        m_slowOperation = operationDeleteByIdOptimize;
-        break;
-    case AccessType::GetByVal:
-        m_slowOperation = operationGetByValOptimize;
-        break;
-    case AccessType::InstanceOf:
-        m_slowOperation = operationInstanceOfOptimize;
-        break;
-    case AccessType::InByVal:
-        m_slowOperation = operationInByValOptimize;
-        break;
-    case AccessType::InById:
-        m_slowOperation = operationInByIdOptimize;
-        break;
-    case AccessType::GetById:
-        m_slowOperation = operationGetByIdOptimize;
-        break;
-    case AccessType::TryGetById:
-        m_slowOperation = operationTryGetByIdOptimize;
-        break;
-    case AccessType::GetByIdDirect:
-        m_slowOperation = operationGetByIdDirectOptimize;
-        break;
-    case AccessType::GetByIdWithThis:
-        m_slowOperation = operationGetByIdWithThisOptimize;
-        break;
-    case AccessType::HasPrivateName:
-        m_slowOperation = operationHasPrivateNameOptimize;
-        break;
-    case AccessType::HasPrivateBrand: 
-        m_slowOperation = operationHasPrivateBrandOptimize;
-        break;
-    case AccessType::GetPrivateName:
-        m_slowOperation = operationGetPrivateNameOptimize;
-        break;
-    case AccessType::PutById:
-        switch (unlinkedStubInfo.putKind) {
-        case PutKind::NotDirect:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                m_slowOperation = operationPutByIdStrictOptimize;
-            else
-                m_slowOperation = operationPutByIdNonStrictOptimize;
-            break;
-        case PutKind::Direct:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                m_slowOperation = operationPutByIdDirectStrictOptimize;
-            else
-                m_slowOperation = operationPutByIdDirectNonStrictOptimize;
-            break;
-        case PutKind::DirectPrivateFieldDefine:
-            m_slowOperation = operationPutByIdDefinePrivateFieldStrictOptimize;
-            break;
-        case PutKind::DirectPrivateFieldSet:
-            m_slowOperation = operationPutByIdSetPrivateFieldStrictOptimize;
-            break;
-        }
-        break;
-    case AccessType::PutByVal:
-        switch (unlinkedStubInfo.putKind) {
-        case PutKind::NotDirect:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                m_slowOperation = operationPutByValStrictOptimize;
-            else
-                m_slowOperation = operationPutByValNonStrictOptimize;
-            break;
-        case PutKind::Direct:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                m_slowOperation = operationDirectPutByValStrictOptimize;
-            else
-                m_slowOperation = operationDirectPutByValNonStrictOptimize;
-            break;
-        default:
-            RELEASE_ASSERT_NOT_REACHED();
-        }
-        break;
-    case AccessType::PutPrivateName:
-        m_slowOperation = unlinkedStubInfo.privateFieldPutKind.isDefine() ? operationPutByValDefinePrivateFieldOptimize : operationPutByValSetPrivateFieldOptimize;
-        break;
-    case AccessType::SetPrivateBrand:
-        m_slowOperation = operationSetPrivateBrandOptimize;
-        break;
-    case AccessType::CheckPrivateBrand:
-        m_slowOperation = operationCheckPrivateBrandOptimize;
-        break;
-    }
+    m_slowOperation = slowOperationFromUnlinkedStructureStubInfo(unlinkedStubInfo);
 
     switch (accessType) {
     case AccessType::DeleteByVal:
@@ -691,96 +675,7 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(const DFG::Un
     m_valueGPR = unlinkedStubInfo.m_valueGPR;
     m_stubInfoGPR = unlinkedStubInfo.m_stubInfoGPR;
 
-    switch (accessType) {
-    case AccessType::DeleteByVal:
-        m_slowOperation = operationDeleteByValOptimize;
-        break;
-    case AccessType::DeleteByID:
-        m_slowOperation = operationDeleteByIdOptimize;
-        break;
-    case AccessType::GetByVal:
-        m_slowOperation = operationGetByValOptimize;
-        break;
-    case AccessType::InstanceOf:
-        m_slowOperation = operationInstanceOfOptimize;
-        break;
-    case AccessType::InByVal:
-        m_slowOperation = operationInByValOptimize;
-        break;
-    case AccessType::InById:
-        m_slowOperation = operationInByIdOptimize;
-        break;
-    case AccessType::GetById:
-        m_slowOperation = operationGetByIdOptimize;
-        break;
-    case AccessType::TryGetById:
-        m_slowOperation = operationTryGetByIdOptimize;
-        break;
-    case AccessType::GetByIdDirect:
-        m_slowOperation = operationGetByIdDirectOptimize;
-        break;
-    case AccessType::GetByIdWithThis:
-        m_slowOperation = operationGetByIdWithThisOptimize;
-        break;
-    case AccessType::HasPrivateName:
-        m_slowOperation = operationHasPrivateNameOptimize;
-        break;
-    case AccessType::HasPrivateBrand:
-        m_slowOperation = operationHasPrivateBrandOptimize;
-        break;
-    case AccessType::GetPrivateName:
-        m_slowOperation = operationGetPrivateNameOptimize;
-        break;
-    case AccessType::PutById:
-        switch (unlinkedStubInfo.putKind) {
-        case PutKind::NotDirect:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                m_slowOperation = operationPutByIdStrictOptimize;
-            else
-                m_slowOperation = operationPutByIdNonStrictOptimize;
-            break;
-        case PutKind::Direct:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                m_slowOperation = operationPutByIdDirectStrictOptimize;
-            else
-                m_slowOperation = operationPutByIdDirectNonStrictOptimize;
-            break;
-        case PutKind::DirectPrivateFieldDefine:
-            m_slowOperation = operationPutByIdDefinePrivateFieldStrictOptimize;
-            break;
-        case PutKind::DirectPrivateFieldSet:
-            m_slowOperation = operationPutByIdSetPrivateFieldStrictOptimize;
-            break;
-        }
-        break;
-    case AccessType::PutByVal:
-        switch (unlinkedStubInfo.putKind) {
-        case PutKind::NotDirect:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                m_slowOperation = operationPutByValStrictOptimize;
-            else
-                m_slowOperation = operationPutByValNonStrictOptimize;
-            break;
-        case PutKind::Direct:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                m_slowOperation = operationDirectPutByValStrictOptimize;
-            else
-                m_slowOperation = operationDirectPutByValNonStrictOptimize;
-            break;
-        default:
-            RELEASE_ASSERT_NOT_REACHED();
-        }
-        break;
-    case AccessType::PutPrivateName:
-        m_slowOperation = unlinkedStubInfo.privateFieldPutKind.isDefine() ? operationPutByValDefinePrivateFieldOptimize : operationPutByValSetPrivateFieldOptimize;
-        break;
-    case AccessType::SetPrivateBrand:
-        m_slowOperation = operationSetPrivateBrandOptimize;
-        break;
-    case AccessType::CheckPrivateBrand:
-        m_slowOperation = operationCheckPrivateBrandOptimize;
-        break;
-    }
+    m_slowOperation = slowOperationFromUnlinkedStructureStubInfo(unlinkedStubInfo);
 }
 #endif
 
