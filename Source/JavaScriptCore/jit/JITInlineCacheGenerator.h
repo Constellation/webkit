@@ -38,6 +38,9 @@
 #include <wtf/Bag.h>
 
 namespace JSC {
+namespace DFG {
+class JITCompiler;
+}
 
 class CacheableIdentifier;
 class CallSiteIndex;
@@ -69,6 +72,9 @@ public:
         LinkBuffer& fastPathLinkBuffer, LinkBuffer& slowPathLinkBuffer,
         CodeLocationLabel<JITStubRoutinePtrTag> start);
 
+#if ENABLE(DFG_JIT)
+    void generateDFGDataICFastPath(DFG::JITCompiler&, unsigned stubInfoConstant, GPRReg stubInfoGPR);
+#endif
     void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant, GPRReg stubInfoGPR);
 
     UnlinkedStructureStubInfo* m_unlinkedStubInfo { nullptr };

@@ -272,6 +272,10 @@ void JITCompiler::link(LinkBuffer& linkBuffer)
     finalizeInlineCaches(m_instanceOfs, linkBuffer);
     finalizeInlineCaches(m_privateBrandAccesses, linkBuffer);
 
+    m_jitCode->m_unlinkedStubInfos = FixedVector<UnlinkedStructureStubInfo>(m_unlinkedStubInfos.size());
+    if (m_jitCode->m_unlinkedStubInfos.size())
+        std::move(m_unlinkedStubInfos.begin(), m_unlinkedStubInfos.end(), m_jitCode->m_unlinkedStubInfos.begin());
+
     for (auto& record : m_jsCalls) {
         auto& info = *record.info;
         info.setCodeLocations(
@@ -355,6 +359,8 @@ void JITCompiler::link(LinkBuffer& linkBuffer)
 
     if (m_pcToCodeOriginMapBuilder.didBuildMapping())
         m_jitCode->common.m_pcToCodeOriginMap = makeUnique<PCToCodeOriginMap>(WTFMove(m_pcToCodeOriginMapBuilder), linkBuffer);
+
+    m_jitCode->m_linkerIR = LinkerIR(WTFMove(m_constantPool));
 }
 
 static void emitStackOverflowCheck(JITCompiler& jit, MacroAssembler::JumpList& stackOverflow)
@@ -707,6 +713,11 @@ void JITCompiler::makeCatchOSREntryBuffer()
     }
 }
 
+void JITCompiler::loadConstant(JITConstantPool::Constant index, GPRReg dest)
+{
+    loadPtr(Address(GPRInfo::constantsRegister, JITData::offsetOfData() + sizeof(void*) * index), dest);
+}
+
 void JITCompiler::loadLinkableConstant(LinkableConstant constant, GPRReg dest)
 {
     constant.materialize(*this, dest);
@@ -717,20 +728,20 @@ void JITCompiler::storeLinkableConstant(LinkableConstant constant, Address dest)
     constant.store(*this, dest);
 }
 
-JITCompiler::LinkableConstant::LinkableConstant(Graph& graph, JSCell* cell)
+JITCompiler::LinkableConstant::LinkableConstant(JITCompiler& jit, JSCell* cell)
 {
-    graph.m_plan.weakReferences().addLazily(cell);
-    if (graph.m_plan.isUnlinked()) {
-        m_index = graph.m_plan.addToConstantPool(JITConstantPool::Type::CellPointer, cell);
+    jit.m_graph.m_plan.weakReferences().addLazily(cell);
+    if (jit.m_graph.m_plan.isUnlinked()) {
+        m_index = jit.addToConstantPool(LinkerIR::Type::CellPointer, cell);
         return;
     }
     m_pointer = cell;
 }
 
-JITCompiler::LinkableConstant::LinkableConstant(Graph& graph, void* pointer, NonCellTag)
+JITCompiler::LinkableConstant::LinkableConstant(JITCompiler& jit, void* pointer, NonCellTag)
 {
-    if (graph.m_plan.isUnlinked()) {
-        m_index = graph.m_plan.addToConstantPool(JITConstantPool::Type::NonCellPointer, pointer);
+    if (jit.m_graph.m_plan.isUnlinked()) {
+        m_index = jit.addToConstantPool(LinkerIR::Type::NonCellPointer, pointer);
         return;
     }
     m_pointer = pointer;
@@ -758,11 +769,21 @@ void JITCompiler::LinkableConstant::store(CCallHelpers& jit, CCallHelpers::Addre
     jit.storePtr(TrustedImmPtr(m_pointer), address);
 }
 
+LinkerIR::Constant JITCompiler::addToConstantPool(LinkerIR::Type type, void* payload)
+{
+    ASSERT(ptr);
+    LinkerIR::Value value { payload, type };
+    auto result = m_constantPoolMap.add(value, m_constantPoolMap.size());
+    if (result.isNewEntry)
+        m_constantPool.append(value);
+    return result.iterator->value;
+}
+
 std::tuple<UnlinkedStructureStubInfo*, JITConstantPool::Constant> JITCompiler::addUnlinkedStructureStubInfo()
 {
     void* unlinkedStubInfoIndex = bitwise_cast<void*>(static_cast<uintptr_t>(m_unlinkedStubInfos.size()));
     UnlinkedStructureStubInfo* stubInfo = &m_unlinkedStubInfos.alloc();
-    JITConstantPool::Constant stubInfoIndex = m_graph.m_plan.addToConstantPool(JITConstantPool::Type::StructureStubInfo, unlinkedStubInfoIndex);
+    JITConstantPool::Constant stubInfoIndex = addToConstantPool(JITConstantPool::Type::StructureStubInfo, unlinkedStubInfoIndex);
     return std::tuple { stubInfo, stubInfoIndex };
 }
 

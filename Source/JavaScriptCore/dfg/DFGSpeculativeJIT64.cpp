@@ -2446,7 +2446,7 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
 
         GPRTemporary stubInfo;
         GPRReg stubInfoGPR = InvalidGPRReg;
-        if (JITCode::useDataIC(JITType::DFGJIT)) {
+        if (m_graph.m_plan.isUnlinked()) {
             stubInfo = GPRTemporary(this);
             stubInfoGPR = stubInfo.gpr();
         }
@@ -2467,30 +2467,35 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
             slowCases.append(m_jit.branchIfNotCell(baseGPR));
 
         JITGetByValGenerator gen(
-            m_jit.codeBlock(), &m_jit.jitCode()->common.m_stubInfos, JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByVal, usedRegisters,
+            m_jit.codeBlock(), m_graph.m_plan.isUnlinked() ? nullptr : &m_jit.jitCode()->common.m_stubInfos, JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByVal, usedRegisters,
             JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(resultGPR), stubInfoGPR);
 
-        if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecString))
-            gen.stubInfo()->propertyIsString = true;
-        else if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecInt32Only))
-            gen.stubInfo()->propertyIsInt32 = true;
-        else if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecSymbol))
-            gen.stubInfo()->propertyIsSymbol = true;
-
-        gen.generateFastPath(m_jit);
-
-        if (!JITCode::useDataIC(JITType::DFGJIT))
-            slowCases.append(gen.slowPathJump());
+        auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
+            if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecString))
+                stubInfo->propertyIsString = true;
+            else if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecInt32Only))
+                stubInfo->propertyIsInt32 = true;
+            else if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecSymbol))
+                stubInfo->propertyIsSymbol = true;
+        };
 
         std::unique_ptr<SlowPathGenerator> slowPath;
-        if (JITCode::useDataIC(JITType::DFGJIT)) {
+        if (m_graph.m_plan.isUnlinked()) {
+            auto [ stubInfo, stubInfoIndex ] = m_jit.addUnlinkedStructureStubInfo();
+            gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
             slowPath = slowPathICCall(
                 slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValOptimize,
                 resultGPR, JITCompiler::LinkableConstant(m_graph, m_graph.globalObjectFor(codeOrigin)), stubInfoGPR, nullptr, baseGPR, propertyGPR);
+            gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
+            gen.m_unlinkedStubInfo = stubInfo;
+            configureStubInfoPropertyTypes(stubInfo);
         } else {
+            gen.generateFastPath(m_jit);
+            slowCases.append(gen.slowPathJump());
             slowPath = slowPathCall(
                 slowCases, this, operationGetByValOptimize,
                 resultGPR, JITCompiler::LinkableConstant(m_graph, m_graph.globalObjectFor(codeOrigin)), TrustedImmPtr(gen.stubInfo()), nullptr, baseGPR, propertyGPR);
+            configureStubInfoPropertyTypes(gen.stubInfo());
         }
 
         m_jit.addGetByVal(gen, slowPath.get());

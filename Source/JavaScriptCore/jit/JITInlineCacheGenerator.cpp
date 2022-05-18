@@ -32,6 +32,7 @@
 #include "CCallHelpers.h"
 #include "CacheableIdentifierInlines.h"
 #include "CodeBlock.h"
+#include "DFGJITCompiler.h"
 #include "InlineAccess.h"
 #include "JITInlines.h"
 #include "LinkBuffer.h"
@@ -44,15 +45,12 @@ JITInlineCacheGenerator::JITInlineCacheGenerator(
     const RegisterSet& usedRegisters)
     : m_jitType(jitType)
 {
-    if (JITCode::isOptimizingJIT(m_jitType)) {
+    if (stubInfos) {
+        ASSERT(JITCode::isOptimizingJIT(m_jitType));
         ASSERT_UNUSED(codeBlock, codeBlock);
-        ASSERT(stubInfos);
         m_stubInfo = stubInfos->add(accessType, codeOrigin);
         m_stubInfo->callSiteIndex = callSite;
         m_stubInfo->usedRegisters = usedRegisters;
-    } else {
-        ASSERT(!codeBlock);
-        ASSERT(!stubInfos);
     }
 }
 
@@ -67,6 +65,16 @@ void JITInlineCacheGenerator::finalize(
         m_stubInfo->m_slowPathCallLocation = slowPath.locationOf<JSInternalPtrTag>(m_slowPathCall);
     m_stubInfo->slowPathStartLocation = slowPath.locationOf<JITStubRoutinePtrTag>(m_slowPathBegin);
 }
+
+#if ENABLE(DFG_JIT)
+void JITInlineCacheGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, unsigned stubInfo, GPRReg stubInfoGPR)
+{
+    m_start = jit.label();
+    jit.loadConstant(stubInfo, stubInfoGPR);
+    jit.farJump(CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfCodePtr()), JITStubRoutinePtrTag);
+    m_done = jit.label();
+}
+#endif
 
 void JITInlineCacheGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stubInfo, GPRReg stubInfoGPR)
 {

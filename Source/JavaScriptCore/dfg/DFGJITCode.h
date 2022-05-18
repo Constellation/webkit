@@ -49,8 +49,8 @@ namespace DFG {
 
 class JITCompiler;
 
-class JITConstantPool {
-    WTF_MAKE_NONCOPYABLE(JITConstantPool);
+class LinkerIR {
+    WTF_MAKE_NONCOPYABLE(LinkerIR);
 public:
     using Constant = unsigned;
 
@@ -87,11 +87,11 @@ public:
         }
     };
 
-    JITConstantPool() = default;
-    JITConstantPool(JITConstantPool&&) = default;
-    JITConstantPool& operator=(JITConstantPool&&) = default;
+    LinkerIR() = default;
+    LinkerIR(LinkerIR&&) = default;
+    LinkerIR& operator=(LinkerIR&&) = default;
 
-    JITConstantPool(Vector<Value>&& constants)
+    LinkerIR(Vector<Value>&& constants)
         : m_constants(WTFMove(constants))
     {
     }
@@ -214,7 +214,7 @@ public:
     FixedVector<UnlinkedStructureStubInfo> m_unlinkedStubInfos;
     DFG::VariableEventStream variableEventStream;
     DFG::MinifiedGraph minifiedDFG;
-    JITConstantPool m_constantPool;
+    LinkerIR m_linkerIR;
 
 #if ENABLE(FTL_JIT)
     uint8_t neverExecutedEntry { 1 };

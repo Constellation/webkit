@@ -307,21 +307,21 @@ public:
     class LinkableConstant final : public CCallHelpers::ConstantMaterializer {
     public:
         enum NonCellTag { NonCell };
-        LinkableConstant(Graph&, JSCell*);
+        LinkableConstant(JITCompiler&, JSCell*);
 
         void materialize(CCallHelpers&, GPRReg);
         void store(CCallHelpers&, CCallHelpers::Address);
 
         template<typename T>
-        static LinkableConstant nonCellPointer(Graph& graph, T* pointer)
+        static LinkableConstant nonCellPointer(JITCompiler& jit, T* pointer)
         {
             static_assert(!std::is_base_of_v<JSCell, T>);
-            return LinkableConstant(graph, pointer, NonCell);
+            return LinkableConstant(jit, pointer, NonCell);
         }
 
-        static LinkableConstant structure(Graph& graph, RegisteredStructure structure)
+        static LinkableConstant structure(JITCompiler& jit, RegisteredStructure structure)
         {
-            return LinkableConstant(graph, structure.get());
+            return LinkableConstant(jit, structure.get());
         }
 
         bool isUnlinked() const { return m_index != UINT_MAX; }
@@ -337,12 +337,13 @@ public:
 #endif
 
     private:
-        LinkableConstant(Graph&, void*, NonCellTag);
+        LinkableConstant(JITCompiler&, void*, NonCellTag);
 
         JITConstantPool::Constant m_index { UINT_MAX };
         void* m_pointer { nullptr };
     };
 
+    void loadConstant(JITConstantPool::Constant, GPRReg);
     void loadLinkableConstant(LinkableConstant, GPRReg);
     void storeLinkableConstant(LinkableConstant, Address);
 
@@ -364,7 +365,8 @@ public:
         return CCallHelpers::branchPtr(cond, left, CCallHelpers::TrustedImmPtr(constant.pointer()));
     }
 
-    std::tuple<UnlinkedStructureStubInfo*, JITConstantPool::Constant> addUnlinkedStructureStubInfo();
+    std::tuple<UnlinkedStructureStubInfo*, LinkerIR::Constant> addUnlinkedStructureStubInfo();
+    LinkerIR::Constant addToConstantPool(LinkerIR::Type, void*);
 
 private:
     friend class OSRExitJumpPlaceholder;
@@ -442,6 +444,8 @@ private:
     Vector<DFG::OSREntryData> m_osrEntry;
     Vector<DFG::OSRExit> m_osrExit;
     Vector<DFG::SpeculationRecovery> m_speculationRecovery;
+    Vector<JITConstantPool::Value> m_constantPool;
+    HashMap<JITConstantPool::Value, LinkerIR::Constant, LinkerIR::ValueHash, LinkerIR::ValueTraits> m_constantPoolMap;
     SegmentedVector<UnlinkedStructureStubInfo> m_unlinkedStubInfos;
     
     struct ExceptionHandlingOSRExitInfo {
