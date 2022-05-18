@@ -2744,29 +2744,45 @@ void SpeculativeJIT::compilePutByVal(Node* node)
         ECMAMode ecmaMode = node->ecmaMode();
 
         JITPutByValGenerator gen(
-            m_jit.codeBlock(), &m_jit.jitCode()->common.m_stubInfos, JITType::DFGJIT, codeOrigin, callSite, AccessType::PutByVal, usedRegisters,
+            m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::PutByVal, usedRegisters,
             baseRegs, propertyRegs, valueRegs, InvalidGPRReg, stubInfoGPR);
 
-        if (m_state.forNode(child2).isType(SpecString))
-            gen.stubInfo()->propertyIsString = true;
-        else if (m_state.forNode(child2).isType(SpecInt32Only))
-            gen.stubInfo()->propertyIsInt32 = true;
-        else if (m_state.forNode(child2).isType(SpecSymbol))
-            gen.stubInfo()->propertyIsSymbol = true;
-
-        gen.generateFastPath(m_jit);
+        auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
+            if (m_state.forNode(child2).isType(SpecString))
+                stubInfo->propertyIsString = true;
+            else if (m_state.forNode(child2).isType(SpecInt32Only))
+                stubInfo->propertyIsInt32 = true;
+            else if (m_state.forNode(child2).isType(SpecSymbol))
+                stubInfo->propertyIsSymbol = true;
+        };
 
         JITCompiler::JumpList slowCases;
-        if (!m_graph.m_plan.isUnlinked())
-            slowCases.append(gen.slowPathJump());
 
         std::unique_ptr<SlowPathGenerator> slowPath;
         auto operation = isDirect ? (ecmaMode.isStrict() ? operationDirectPutByValStrictOptimize : operationDirectPutByValNonStrictOptimize) : (ecmaMode.isStrict() ? operationPutByValStrictOptimize : operationPutByValNonStrictOptimize);
         if (m_graph.m_plan.isUnlinked()) {
+            auto [ stubInfo, stubInfoIndex, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
+            stubInfo->accessType = AccessType::PutByVal;
+            stubInfo->codeOrigin = codeOrigin;
+            stubInfo->callSiteIndex = callSite;
+            stubInfo->usedRegisters = usedRegisters;
+            stubInfo->baseRegs = baseRegs;
+            stubInfo->valueRegs = valueRegs;
+            stubInfo->propertyRegs = propertyRegs;
+            stubInfo->m_stubInfoGPR = stubInfoGPR;
+            stubInfo->hasConstantIdentifier = false;
+            gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
+            gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
+            gen.m_unlinkedStubInfo = stubInfo;
+            ASSERT(!gen.stubInfo());
+            configureStubInfoPropertyTypes(stubInfo);
             slowPath = slowPathICCall(
-                slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operation,
+                slowCases, this, stubInfoConstant, stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operation,
                 NoResult, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), baseRegs, propertyRegs, valueRegs, stubInfoGPR, nullptr);
         } else {
+            gen.generateFastPath(m_jit);
+            slowCases.append(gen.slowPathJump());
+            configureStubInfoPropertyTypes(gen.stubInfo());
             slowPath = slowPathCall(
                 slowCases, this, operation,
                 NoResult, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), baseRegs, propertyRegs, valueRegs, TrustedImmPtr(gen.stubInfo()), nullptr);
@@ -4184,8 +4200,8 @@ void SpeculativeJIT::compileGetPrivateNameByVal(Node* node, JSValueRegs baseRegs
                 base, CCallHelpers::CellValue(propertyRegs.payloadGPR()));
         }
         gen.generateFastPath(m_jit);
-        configureStubInfoPropertyTypes(gen.stubInfo());
         slowCases.append(gen.slowPathJump());
+        configureStubInfoPropertyTypes(gen.stubInfo());
         return slowPathCall(
             slowCases, this, operationGetPrivateNameOptimize,
             result.regs(), JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), TrustedImmPtr(gen.stubInfo()),
