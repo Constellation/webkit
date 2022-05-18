@@ -421,6 +421,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
     codeOrigin = CodeOrigin(unlinkedStubInfo.bytecodeIndex);
     m_codePtr = slowPathStartLocation;
     propertyIsInt32 = unlinkedStubInfo.propertyIsInt32;
+    useDataIC = true;
 
     usedRegisters = RegisterSet::stubUnavailableRegisters();
     if (accessType == AccessType::GetById && unlinkedStubInfo.bytecodeIndex.checkpoint()) {
@@ -678,6 +679,7 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(const DFG::Un
     propertyIsInt32 = unlinkedStubInfo.propertyIsInt32;
     propertyIsSymbol = unlinkedStubInfo.propertyIsSymbol;
     propertyIsString = unlinkedStubInfo.propertyIsString;
+    useDataIC = true;
 
     usedRegisters = unlinkedStubInfo.usedRegisters;
     if (accessType == AccessType::GetById && unlinkedStubInfo.bytecodeIndex.checkpoint()) {

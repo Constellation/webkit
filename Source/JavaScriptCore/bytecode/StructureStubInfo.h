@@ -96,15 +96,6 @@ public:
         : codeOrigin(codeOrigin)
         , accessType(accessType)
         , bufferingCountdown(Options::repatchBufferingCountdown())
-        , resetByGC(false)
-        , tookSlowPath(false)
-        , everConsidered(false)
-        , prototypeIsKnownObject(false)
-        , sawNonCell(false)
-        , hasConstantIdentifier(true)
-        , propertyIsString(false)
-        , propertyIsInt32(false)
-        , propertyIsSymbol(false)
     {
         regs.thisGPR = InvalidGPRReg;
     }
@@ -430,15 +421,16 @@ private:
     Lock m_bufferedStructuresLock;
 public:
     CallSiteIndex callSiteIndex;
-    bool resetByGC : 1;
-    bool tookSlowPath : 1;
-    bool everConsidered : 1;
-    bool prototypeIsKnownObject : 1; // Only relevant for InstanceOf.
-    bool sawNonCell : 1;
-    bool hasConstantIdentifier : 1;
-    bool propertyIsString : 1;
-    bool propertyIsInt32 : 1;
-    bool propertyIsSymbol : 1;
+    bool resetByGC : 1 { false };
+    bool tookSlowPath : 1 { false };
+    bool everConsidered : 1 { false };
+    bool prototypeIsKnownObject : 1 { false }; // Only relevant for InstanceOf.
+    bool sawNonCell : 1 { false };
+    bool hasConstantIdentifier : 1 { true };
+    bool propertyIsString : 1 { false };
+    bool propertyIsInt32 : 1 { false };
+    bool propertyIsSymbol : 1 { false };
+    bool useDataIC : 1 { false };
 };
 
 inline CodeOrigin getStructureStubInfoCodeOrigin(StructureStubInfo& structureStubInfo)
