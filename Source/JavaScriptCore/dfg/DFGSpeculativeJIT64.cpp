@@ -169,7 +169,7 @@ void SpeculativeJIT::cachedGetById(CodeOrigin codeOrigin, GPRReg baseGPR, GPRReg
     JSValueRegs baseRegs { baseGPR };
     JSValueRegs resultRegs { resultGPR };
     JITGetByIdGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
         baseRegs, resultRegs, stubInfoGPR, type);
     
     JITCompiler::JumpList slowCases;
@@ -217,7 +217,7 @@ void SpeculativeJIT::cachedGetByIdWithThis(CodeOrigin codeOrigin, GPRReg baseGPR
     JSValueRegs resultRegs { resultGPR };
     JSValueRegs thisRegs { thisGPR };
     JITGetByIdWithThisGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
         resultRegs, baseRegs, thisRegs, stubInfoGPR);
     
     JITCompiler::JumpList slowCases;
@@ -2483,7 +2483,7 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
         JSValueRegs baseRegs { baseGPR };
         JSValueRegs propertyRegs { propertyGPR };
         JITGetByValGenerator gen(
-            m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByVal, usedRegisters,
+            m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByVal, usedRegisters,
             baseRegs, propertyRegs, resultRegs, stubInfoGPR);
 
         auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {

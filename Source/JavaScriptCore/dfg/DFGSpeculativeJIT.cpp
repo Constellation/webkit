@@ -1200,7 +1200,7 @@ void SpeculativeJIT::compileDeleteById(Node* node)
         RegisterSet usedRegisters = this->usedRegisters();
 
         JITDelByIdGenerator gen(
-            m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, node->cacheableIdentifier(),
+            m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, node->cacheableIdentifier(),
             JSValueRegs::payloadOnly(baseGPR), resultRegs, stubInfoGPR);
 
 #if USE(JSVALUE64)
@@ -1283,7 +1283,7 @@ void SpeculativeJIT::compileDeleteByVal(Node* node)
         RegisterSet usedRegisters = this->usedRegisters();
 
         JITDelByValGenerator gen(
-            m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters,
+            m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters,
             JSValueRegs::payloadOnly(baseGPR), keyRegs, resultRegs, stubInfoGPR);
 
 #if USE(JSVALUE64)
@@ -1361,7 +1361,7 @@ void SpeculativeJIT::compileInById(Node* node)
     CallSiteIndex callSite = m_jit.recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
     RegisterSet usedRegisters = this->usedRegisters();
     JITInByIdGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, node->cacheableIdentifier(),
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, node->cacheableIdentifier(),
         JSValueRegs::payloadOnly(baseGPR), resultRegs, stubInfoGPR);
 
     JITCompiler::JumpList slowCases;
@@ -1418,7 +1418,7 @@ void SpeculativeJIT::compileInByVal(Node* node)
     CallSiteIndex callSite = m_jit.recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
     RegisterSet usedRegisters = this->usedRegisters();
     JITInByValGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::InByVal, usedRegisters,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, AccessType::InByVal, usedRegisters,
         JSValueRegs::payloadOnly(baseGPR), keyRegs, resultRegs, stubInfoGPR);
 
     std::unique_ptr<SlowPathGenerator> slowPath;
@@ -1475,7 +1475,7 @@ void SpeculativeJIT::compileHasPrivate(Node* node, AccessType type)
     CallSiteIndex callSite = m_jit.recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
     RegisterSet usedRegisters = this->usedRegisters();
     JITInByValGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, type, usedRegisters,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, type, usedRegisters,
         JSValueRegs::payloadOnly(baseGPR), JSValueRegs::payloadOnly(propertyOrBrandGPR), resultRegs, stubInfoGPR);
 
     auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
@@ -2761,7 +2761,7 @@ void SpeculativeJIT::compilePutByVal(Node* node)
         ECMAMode ecmaMode = node->ecmaMode();
 
         JITPutByValGenerator gen(
-            m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::PutByVal, usedRegisters,
+            m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, AccessType::PutByVal, usedRegisters,
             baseRegs, propertyRegs, valueRegs, InvalidGPRReg, stubInfoGPR, putKind, ecmaMode, PrivateFieldPutKind::none());
 
         auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
@@ -4180,7 +4180,7 @@ void SpeculativeJIT::compileGetPrivateNameByVal(Node* node, JSValueRegs baseRegs
         slowCases.append(m_jit.branchIfNotCell(baseRegs));
 
     JITGetByValGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::GetPrivateName, usedRegisters,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, AccessType::GetPrivateName, usedRegisters,
         baseRegs, propertyRegs, resultRegs, stubInfoGPR);
 
     auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
@@ -4389,7 +4389,7 @@ void SpeculativeJIT::compilePutPrivateName(Node* node)
     RegisterSet usedRegisters = this->usedRegisters();
 
     JITPutByValGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::PutPrivateName, usedRegisters,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, AccessType::PutPrivateName, usedRegisters,
         JSValueRegs::payloadOnly(baseGPR), JSValueRegs::payloadOnly(propertyGPR), valueRegs, InvalidGPRReg, stubInfoGPR, PutKind::Direct, ECMAMode::sloppy(), node->privateFieldPutKind());
 
     auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
@@ -4479,7 +4479,7 @@ void SpeculativeJIT::compileCheckPrivateBrand(Node* node)
         slowCases.append(m_jit.branchIfNotCell(baseRegs));
 
     JITPrivateBrandAccessGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::CheckPrivateBrand, usedRegisters,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, AccessType::CheckPrivateBrand, usedRegisters,
         baseRegs, JSValueRegs::payloadOnly(brandGPR), stubInfoGPR);
 
     auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
@@ -4536,7 +4536,7 @@ void SpeculativeJIT::compileSetPrivateBrand(Node* node)
 
     JITCompiler::JumpList slowCases;
     JITPrivateBrandAccessGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::SetPrivateBrand, usedRegisters,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, AccessType::SetPrivateBrand, usedRegisters,
         JSValueRegs::payloadOnly(baseGPR), JSValueRegs::payloadOnly(brandGPR), stubInfoGPR);
 
     auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
@@ -4689,7 +4689,7 @@ void SpeculativeJIT::compileInstanceOfForCells(Node* node, JSValueRegs valueRegs
     bool prototypeIsKnownObject = m_state.forNode(node->child2()).isType(SpecObject | ~SpecCell);
     RegisterSet usedRegisters = this->usedRegisters();
     JITInstanceOfGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, node->origin.semantic, callSiteIndex, usedRegisters, resultGPR,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, node->origin.semantic, callSiteIndex, usedRegisters, resultGPR,
         valueRegs.payloadGPR(), prototypeRegs.payloadGPR(), stubInfoGPR, prototypeIsKnownObject);
     JITCompiler::JumpList slowCases;
     slowCases.append(slowCase);
@@ -15891,7 +15891,7 @@ void SpeculativeJIT::cachedPutById(CodeOrigin codeOrigin, GPRReg baseGPR, JSValu
     }
     CallSiteIndex callSite = m_jit.recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
     JITPutByIdGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
         JSValueRegs::payloadOnly(baseGPR), valueRegs, stubInfoGPR,
         scratchGPR, ecmaMode, putKind);
 

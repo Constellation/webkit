@@ -36,7 +36,6 @@
 #include "PutKind.h"
 #include "RegisterSet.h"
 #include <wtf/Bag.h>
-#include <wtf/Variant.h>
 
 namespace JSC {
 namespace DFG {
@@ -60,7 +59,7 @@ using CompileTimeStructureStubInfo = std::variant<StructureStubInfo*, BaselineUn
 class JITInlineCacheGenerator {
 protected:
     JITInlineCacheGenerator() { }
-    JITInlineCacheGenerator(CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, AccessType);
+    JITInlineCacheGenerator(CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, AccessType);
     
 public:
     StructureStubInfo* stubInfo() const { return m_stubInfo; }
@@ -98,8 +97,8 @@ public:
         else {
             stubInfo.callSiteIndex = callSiteIndex;
             stubInfo.usedRegisters = usedRegisters;
+            stubInfo.hasConstantIdentifier = true;
         }
-        stubInfo.hasConstantIdentifier = true;
     }
 
 protected:
@@ -118,7 +117,7 @@ protected:
     JITByIdGenerator() { }
 
     JITByIdGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, AccessType,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, AccessType,
         JSValueRegs base, JSValueRegs value);
 
 public:
@@ -167,7 +166,7 @@ public:
     JITGetByIdGenerator() { }
 
     JITGetByIdGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
         JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, AccessType);
     
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR);
@@ -193,7 +192,7 @@ public:
     JITGetByIdWithThisGenerator() { }
 
     JITGetByIdWithThisGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
         JSValueRegs value, JSValueRegs base, JSValueRegs thisRegs, GPRReg stubInfoGPR);
 
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR);
@@ -222,7 +221,7 @@ public:
     JITPutByIdGenerator() = default;
 
     JITPutByIdGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
         JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, GPRReg scratch, ECMAMode, PutKind);
     
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR, GPRReg scratch2GPR);
@@ -258,7 +257,7 @@ public:
     JITPutByValGenerator() = default;
 
     JITPutByValGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
         JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, PutKind, ECMAMode, PrivateFieldPutKind);
 
     CCallHelpers::Jump slowPathJump() const
@@ -277,7 +276,6 @@ public:
         JSValueRegs baseRegs, JSValueRegs propertyRegs, JSValueRegs valueRegs, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, PutKind putKind, ECMAMode ecmaMode, PrivateFieldPutKind privateFieldPutKind)
     {
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
-        stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
             stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = propertyRegs.payloadGPR();
@@ -290,6 +288,7 @@ public:
             stubInfo.valueTagGPR = valueRegs.tagGPR();
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
+            stubInfo.hasConstantIdentifier = false;
         }
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, StructureStubInfo>) {
             stubInfo.putKind = putKind;
@@ -310,7 +309,7 @@ public:
     JITDelByValGenerator() { }
 
     JITDelByValGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters,
         JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
@@ -330,7 +329,6 @@ public:
         JSValueRegs baseRegs, JSValueRegs propertyRegs, JSValueRegs resultRegs, GPRReg stubInfoGPR)
     {
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
-        stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
             stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = propertyRegs.payloadGPR();
@@ -341,6 +339,7 @@ public:
             stubInfo.m_valueTagGPR = resultRegs.tagGPR();
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
+            stubInfo.hasConstantIdentifier = false;
         }
     }
 
@@ -353,7 +352,7 @@ public:
     JITDelByIdGenerator() { }
 
     JITDelByIdGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
         JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
@@ -373,7 +372,6 @@ public:
         JSValueRegs baseRegs, JSValueRegs resultRegs, GPRReg stubInfoGPR)
     {
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
-        stubInfo.hasConstantIdentifier = true;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
             stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = InvalidGPRReg;
@@ -384,6 +382,7 @@ public:
             stubInfo.m_valueTagGPR = resultRegs.tagGPR();
             stubInfo.m_extraTagGPR = InvalidGPRReg;
 #endif
+            stubInfo.hasConstantIdentifier = true;
         }
     }
 
@@ -396,7 +395,7 @@ public:
     JITInByValGenerator() { }
 
     JITInByValGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
         JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
@@ -416,7 +415,6 @@ public:
         JSValueRegs baseRegs, JSValueRegs propertyRegs, JSValueRegs resultRegs, GPRReg stubInfoGPR)
     {
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
-        stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
             stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = propertyRegs.payloadGPR();
@@ -427,6 +425,7 @@ public:
             stubInfo.m_valueTagGPR = resultRegs.tagGPR();
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
+            stubInfo.hasConstantIdentifier = false;
         }
     }
 
@@ -438,7 +437,7 @@ public:
     JITInByIdGenerator() { }
 
     JITInByIdGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
         JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR);
 
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR);
@@ -462,7 +461,7 @@ public:
     JITInstanceOfGenerator() { }
     
     JITInstanceOfGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, GPRReg result,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, GPRReg result,
         GPRReg value, GPRReg prototype, GPRReg stubInfoGPR,
         bool prototypeIsKnownObject = false);
     
@@ -483,7 +482,6 @@ public:
     {
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
         stubInfo.prototypeIsKnownObject = prototypeIsKnownObject;
-        stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
             stubInfo.m_baseGPR = valueGPR;
             stubInfo.m_valueGPR = resultGPR;
@@ -495,6 +493,7 @@ public:
             stubInfo.m_extraTagGPR = InvalidGPRReg;
 #endif
             stubInfo.usedRegisters.clear(resultGPR);
+            stubInfo.hasConstantIdentifier = false;
         }
     }
 
@@ -507,7 +506,7 @@ public:
     JITGetByValGenerator() { }
 
     JITGetByValGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
         JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
@@ -527,7 +526,6 @@ public:
         JSValueRegs baseRegs, JSValueRegs propertyRegs, JSValueRegs resultRegs, GPRReg stubInfoGPR)
     {
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
-        stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
             stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = propertyRegs.payloadGPR();
@@ -538,6 +536,7 @@ public:
             stubInfo.m_valueTagGPR = resultRegs.tagGPR();
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
+            stubInfo.hasConstantIdentifier = false;
         }
     }
 
@@ -553,7 +552,7 @@ public:
     JITPrivateBrandAccessGenerator() { }
 
     JITPrivateBrandAccessGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
+        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
         JSValueRegs base, JSValueRegs brand, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
@@ -573,7 +572,6 @@ public:
         JSValueRegs baseRegs, JSValueRegs brandRegs, GPRReg stubInfoGPR)
     {
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
-        stubInfo.hasConstantIdentifier = false;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
             stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_extraGPR = brandRegs.payloadGPR();
@@ -584,6 +582,7 @@ public:
             stubInfo.m_extraTagGPR = brandRegs.tagGPR();
             stubInfo.m_valueTagGPR = InvalidGPRReg;
 #endif
+            stubInfo.hasConstantIdentifier = false;
         }
     }
 
