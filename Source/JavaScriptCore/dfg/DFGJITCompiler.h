@@ -450,7 +450,7 @@ private:
     Vector<DFG::SpeculationRecovery> m_speculationRecovery;
     Vector<LinkerIR::Value> m_constantPool;
     HashMap<LinkerIR::Value, LinkerIR::Constant, LinkerIR::ValueHash, LinkerIR::ValueTraits> m_constantPoolMap;
-    SegmentedVector<UnlinkedStructureStubInfo> m_unlinkedStubInfos;
+    SegmentedVector<DFG::UnlinkedStructureStubInfo> m_unlinkedStubInfos;
     
     struct ExceptionHandlingOSRExitInfo {
         OSRExitCompilationInfo& exitInfo;

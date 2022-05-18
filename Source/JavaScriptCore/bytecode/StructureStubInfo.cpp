@@ -680,6 +680,7 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(const DFG::Un
     propertyIsInt32 = unlinkedStubInfo.propertyIsInt32;
     propertyIsSymbol = unlinkedStubInfo.propertyIsSymbol;
     propertyIsString = unlinkedStubInfo.propertyIsString;
+    hasConstantIdentifier = unlinkedStubInfo.hasConstantIdentifier;
     useDataIC = true;
 
     usedRegisters = unlinkedStubInfo.usedRegisters;
@@ -777,31 +778,6 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(const DFG::Un
         break;
     case AccessType::CheckPrivateBrand:
         m_slowOperation = operationCheckPrivateBrandOptimize;
-        break;
-    }
-
-    switch (accessType) {
-    case AccessType::DeleteByID:
-    case AccessType::InById:
-    case AccessType::TryGetById:
-    case AccessType::GetByIdDirect:
-    case AccessType::GetById:
-    case AccessType::GetByIdWithThis:
-    case AccessType::PutById:
-        hasConstantIdentifier = true;
-        break;
-    case AccessType::DeleteByVal:
-    case AccessType::GetByVal:
-    case AccessType::GetPrivateName:
-    case AccessType::InstanceOf:
-    case AccessType::InByVal:
-    case AccessType::HasPrivateName:
-    case AccessType::HasPrivateBrand:
-    case AccessType::PutByVal:
-    case AccessType::PutPrivateName:
-    case AccessType::SetPrivateBrand:
-    case AccessType::CheckPrivateBrand:
-        hasConstantIdentifier = false;
         break;
     }
 }

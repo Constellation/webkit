@@ -183,6 +183,7 @@ void SpeculativeJIT::cachedGetById(CodeOrigin codeOrigin, GPRReg baseGPR, GPRReg
         stubInfo->baseRegs = JSValueRegs { baseGPR };
         stubInfo->valueRegs = JSValueRegs { resultGPR };
         stubInfo->m_stubInfoGPR = stubInfoGPR;
+        stubInfo->hasConstantIdentifier = true;
         gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfo->baseRegs, stubInfo->valueRegs, stubInfoGPR, scratchGPR);
         gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
         gen.m_unlinkedStubInfo = stubInfo;
@@ -2501,6 +2502,7 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
             stubInfo->propertyRegs = JSValueRegs { propertyGPR };
             stubInfo->valueRegs = JSValueRegs { resultGPR };
             stubInfo->m_stubInfoGPR = stubInfoGPR;
+            stubInfo->hasConstantIdentifier = false;
             gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
             gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
             gen.m_unlinkedStubInfo = stubInfo;
