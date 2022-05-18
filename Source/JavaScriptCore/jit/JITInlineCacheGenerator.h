@@ -300,6 +300,7 @@ public:
             UNUSED_PARAM(propertyRegs);
             UNUSED_PARAM(valueRegs);
             UNUSED_PARAM(stubInfoGPR);
+            UNUSED_PARAM(arrayProfileGPR);
         }
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, StructureStubInfo>) {
             stubInfo.putKind = putKind;
