@@ -2524,8 +2524,8 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
                 resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), stubInfoGPR, nullptr, baseGPR, propertyGPR);
         } else {
             gen.generateFastPath(m_jit);
-            configureStubInfoPropertyTypes(gen.stubInfo());
             slowCases.append(gen.slowPathJump());
+            configureStubInfoPropertyTypes(gen.stubInfo());
             slowPath = slowPathCall(
                 slowCases, this, operationGetByValOptimize,
                 resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), TrustedImmPtr(gen.stubInfo()), nullptr, baseGPR, propertyGPR);
