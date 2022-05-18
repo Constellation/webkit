@@ -4168,7 +4168,7 @@ void SpeculativeJIT::compileGetPrivateNameByVal(Node* node, JSValueRegs baseRegs
     auto makeSlowPathICCall = [&](auto base) {
         if (m_graph.m_plan.isUnlinked()) {
             auto [ stubInfo, stubInfoIndex, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
-            stubInfo->accessType = AccessType::GetByVal;
+            stubInfo->accessType = AccessType::GetPrivateName;
             stubInfo->codeOrigin = codeOrigin;
             stubInfo->callSiteIndex = callSite;
             stubInfo->usedRegisters = usedRegisters;
