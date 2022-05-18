@@ -718,7 +718,13 @@ void JITCompiler::makeCatchOSREntryBuffer()
 
 void JITCompiler::loadConstant(LinkerIR::Constant index, GPRReg dest)
 {
+#if USE(JSVALUE64)
     loadPtr(Address(GPRInfo::constantsRegister, JITData::offsetOfData() + sizeof(void*) * index), dest);
+#else
+    UNUSED_PARAM(index);
+    UNUSED_PARAM(dest);
+    RELEASE_ASSERT_NOT_REACHED();
+#endif
 }
 
 void JITCompiler::loadLinkableConstant(LinkableConstant constant, GPRReg dest)
