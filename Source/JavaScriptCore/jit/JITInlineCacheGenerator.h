@@ -87,9 +87,11 @@ public:
     static void setUpStubInfoImpl(StubInfo& stubInfo, AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSet& usedRegisters)
     {
         stubInfo.accessType = accessType;
-        if constexpr (std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>)
+        if constexpr (std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
             stubInfo.bytecodeIndex = codeOrigin.bytecodeIndex();
-        else {
+            UNUSED_PARAM(callSiteIndex);
+            UNUSED_PARAM(usedRegisters);
+        } else {
             stubInfo.codeOrigin = codeOrigin;
             stubInfo.callSiteIndex = callSiteIndex;
             stubInfo.usedRegisters = usedRegisters;
@@ -208,7 +210,8 @@ public:
 #if USE(JSVALUE32_64)
             stubInfo.m_extraTagGPR = thisRegs.tagGPR();
 #endif
-        }
+        } else
+            UNUSED_PARAM(thisRegs);
     }
 };
 
@@ -236,9 +239,14 @@ public:
         JITByIdGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, baseRegs, valueRegs, stubInfoGPR);
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>)
             stubInfo.usedRegisters.clear(scratchGPR);
+        else
+            UNUSED_PARAM(scratchGPR);
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, StructureStubInfo>) {
             stubInfo.ecmaMode = ecmaMode;
             stubInfo.putKind = putKind;
+        } else {
+            UNUSED_PARAM(ecmaMode);
+            UNUSED_PARAM(putKind);
         }
     }
 
@@ -279,17 +287,28 @@ public:
             stubInfo.m_stubInfoGPR = stubInfoGPR;
             if constexpr (!std::is_same_v<std::decay_t<StubInfo>, DFG::UnlinkedStructureStubInfo>)
                 stubInfo.m_arrayProfileGPR = arrayProfileGPR;
+            else
+                UNUSED_PARAM(arrayProfileGPR);
 #if USE(JSVALUE32_64)
-            stubInfo.baseTagGPR = baseRegs.tagGPR();
-            stubInfo.valueTagGPR = valueRegs.tagGPR();
+            stubInfo.m_baseTagGPR = baseRegs.tagGPR();
+            stubInfo.m_valueTagGPR = valueRegs.tagGPR();
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
             stubInfo.hasConstantIdentifier = false;
+        } else {
+            UNUSED_PARAM(baseRegs);
+            UNUSED_PARAM(propertyRegs);
+            UNUSED_PARAM(valueRegs);
+            UNUSED_PARAM(stubInfoGPR);
         }
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, StructureStubInfo>) {
             stubInfo.putKind = putKind;
             stubInfo.ecmaMode = ecmaMode;
             stubInfo.privateFieldPutKind = privateFieldPutKind;
+        } else {
+            UNUSED_PARAM(putKind);
+            UNUSED_PARAM(ecmaMode);
+            UNUSED_PARAM(privateFieldPutKind);
         }
     }
 
@@ -336,6 +355,11 @@ public:
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
             stubInfo.hasConstantIdentifier = false;
+        } else {
+            UNUSED_PARAM(baseRegs);
+            UNUSED_PARAM(propertyRegs);
+            UNUSED_PARAM(resultRegs);
+            UNUSED_PARAM(stubInfoGPR);
         }
     }
 
@@ -379,6 +403,10 @@ public:
             stubInfo.m_extraTagGPR = InvalidGPRReg;
 #endif
             stubInfo.hasConstantIdentifier = true;
+        } else {
+            UNUSED_PARAM(baseRegs);
+            UNUSED_PARAM(resultRegs);
+            UNUSED_PARAM(stubInfoGPR);
         }
     }
 
@@ -422,6 +450,11 @@ public:
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
             stubInfo.hasConstantIdentifier = false;
+        } else {
+            UNUSED_PARAM(baseRegs);
+            UNUSED_PARAM(propertyRegs);
+            UNUSED_PARAM(resultRegs);
+            UNUSED_PARAM(stubInfoGPR);
         }
     }
 
@@ -490,6 +523,11 @@ public:
 #endif
             stubInfo.usedRegisters.clear(resultGPR);
             stubInfo.hasConstantIdentifier = false;
+        } else {
+            UNUSED_PARAM(valueGPR);
+            UNUSED_PARAM(resultGPR);
+            UNUSED_PARAM(prototypeGPR);
+            UNUSED_PARAM(stubInfoGPR);
         }
     }
 
@@ -533,6 +571,11 @@ public:
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
             stubInfo.hasConstantIdentifier = false;
+        } else {
+            UNUSED_PARAM(baseRegs);
+            UNUSED_PARAM(propertyRegs);
+            UNUSED_PARAM(resultRegs);
+            UNUSED_PARAM(stubInfoGPR);
         }
     }
 
@@ -579,6 +622,10 @@ public:
             stubInfo.m_valueTagGPR = InvalidGPRReg;
 #endif
             stubInfo.hasConstantIdentifier = false;
+        } else {
+            UNUSED_PARAM(baseRegs);
+            UNUSED_PARAM(brandRegs);
+            UNUSED_PARAM(stubInfoGPR);
         }
     }
 
