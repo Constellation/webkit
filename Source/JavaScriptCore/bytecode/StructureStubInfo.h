@@ -490,6 +490,9 @@ struct UnlinkedStructureStubInfo {
     CodeLocationLabel<JITStubRoutinePtrTag> slowPathStartLocation;
 };
 
+struct BaselineUnlinkedStructureStubInfo : UnlinkedStructureStubInfo {
+};
+
 #else
 
 class StructureStubInfo;
