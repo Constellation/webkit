@@ -164,7 +164,9 @@ State::~State()
 StructureStubInfo* State::addStructureStubInfo()
 {
     ASSERT(!graph.m_plan.isUnlinked());
-    return jitCode->common.m_stubInfos.add();
+    auto* stubInfo = jitCode->common.m_stubInfos.add();
+    stubInfo->useDataIC = JITCode::useDataIC(JITType::FTLJIT);
+    return stubInfo;
 }
 
 
