@@ -35,7 +35,6 @@
 #include "JSCJSValue.h"
 #include "PutKind.h"
 #include "RegisterSet.h"
-#include <wtf/Bag.h>
 
 namespace JSC {
 namespace DFG {
@@ -59,7 +58,7 @@ using CompileTimeStructureStubInfo = std::variant<StructureStubInfo*, BaselineUn
 class JITInlineCacheGenerator {
 protected:
     JITInlineCacheGenerator() { }
-    JITInlineCacheGenerator(CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, AccessType);
+    JITInlineCacheGenerator(CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, AccessType);
     
 public:
     StructureStubInfo* stubInfo() const { return m_stubInfo; }
@@ -114,7 +113,7 @@ protected:
     JITByIdGenerator() { }
 
     JITByIdGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, AccessType,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, AccessType,
         JSValueRegs base, JSValueRegs value);
 
 public:
@@ -163,7 +162,7 @@ public:
     JITGetByIdGenerator() { }
 
     JITGetByIdGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
         JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, AccessType);
     
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR);
@@ -189,7 +188,7 @@ public:
     JITGetByIdWithThisGenerator() { }
 
     JITGetByIdWithThisGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
         JSValueRegs value, JSValueRegs base, JSValueRegs thisRegs, GPRReg stubInfoGPR);
 
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR);
@@ -218,7 +217,7 @@ public:
     JITPutByIdGenerator() = default;
 
     JITPutByIdGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
         JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, GPRReg scratch, ECMAMode, PutKind);
     
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR, GPRReg scratch2GPR);
@@ -254,7 +253,7 @@ public:
     JITPutByValGenerator() = default;
 
     JITPutByValGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
         JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, PutKind, ECMAMode, PrivateFieldPutKind);
 
     CCallHelpers::Jump slowPathJump() const
@@ -306,7 +305,7 @@ public:
     JITDelByValGenerator() { }
 
     JITDelByValGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters,
         JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
@@ -349,7 +348,7 @@ public:
     JITDelByIdGenerator() { }
 
     JITDelByIdGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
         JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
@@ -392,7 +391,7 @@ public:
     JITInByValGenerator() { }
 
     JITInByValGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
         JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
@@ -434,7 +433,7 @@ public:
     JITInByIdGenerator() { }
 
     JITInByIdGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
         JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR);
 
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR);
@@ -458,7 +457,7 @@ public:
     JITInstanceOfGenerator() { }
     
     JITInstanceOfGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, GPRReg result,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, GPRReg result,
         GPRReg value, GPRReg prototype, GPRReg stubInfoGPR,
         bool prototypeIsKnownObject = false);
     
@@ -503,7 +502,7 @@ public:
     JITGetByValGenerator() { }
 
     JITGetByValGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
         JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
@@ -549,7 +548,7 @@ public:
     JITPrivateBrandAccessGenerator() { }
 
     JITPrivateBrandAccessGenerator(
-        CodeBlock*, Bag<StructureStubInfo>*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
         JSValueRegs base, JSValueRegs brand, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const

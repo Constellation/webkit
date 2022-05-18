@@ -370,7 +370,7 @@ public:
         return CCallHelpers::branchPtr(cond, left, CCallHelpers::TrustedImmPtr(constant.pointer()));
     }
 
-    std::tuple<UnlinkedStructureStubInfo*, LinkableConstant> addUnlinkedStructureStubInfo();
+    std::tuple<CompileTimeStructureStubInfo, LinkableConstant> addStructureStubInfo();
     LinkerIR::Constant addToConstantPool(LinkerIR::Type, void*);
 
 private:

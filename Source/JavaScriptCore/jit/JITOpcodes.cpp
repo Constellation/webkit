@@ -167,14 +167,13 @@ void JIT::emit_op_instanceof(const JSInstruction* currentInstruction)
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     JITInstanceOfGenerator gen(
-        nullptr, nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex),
+        nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex),
         RegisterSet::stubUnavailableRegisters(),
         resultJSR.payloadGPR(),
         valueJSR.payloadGPR(),
         protoJSR.payloadGPR(),
         stubInfoGPR);
     gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
-    gen.m_unlinkedStubInfo = stubInfo;
 
     gen.generateBaselineDataICFastPath(*this, stubInfoIndex, stubInfoGPR);
 #if USE(JSVALUE32_64)
