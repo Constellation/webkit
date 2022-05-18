@@ -410,7 +410,7 @@ ALWAYS_INLINE void StructureStubInfo::setCacheType(const ConcurrentJSLockerBase&
     m_cacheType = newCacheType;
 }
 
-void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(CodeBlock*, UnlinkedStructureStubInfo& unlinkedStubInfo)
+void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const UnlinkedStructureStubInfo& unlinkedStubInfo)
 {
     accessType = unlinkedStubInfo.accessType;
     start = unlinkedStubInfo.start;

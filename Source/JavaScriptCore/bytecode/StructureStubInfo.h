@@ -123,7 +123,7 @@ public:
     void deref();
     void aboutToDie();
 
-    void initializeFromUnlinkedStructureStubInfo(CodeBlock*, UnlinkedStructureStubInfo&);
+    void initializeFromUnlinkedStructureStubInfo(const UnlinkedStructureStubInfo&);
 
     DECLARE_VISIT_AGGREGATE;
 

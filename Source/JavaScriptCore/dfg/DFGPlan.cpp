@@ -687,7 +687,7 @@ std::unique_ptr<JITData> Plan::finalizeJITData(const JITCode& jitCode)
 {
     auto osrExitThunk = m_vm->getCTIStub(osrExitGenerationThunkGenerator).retagged<OSRExitPtrTag>();
     auto exits = JITData::ExitVector::createWithSizeAndConstructorArguments(jitCode.m_osrExit.size(), osrExitThunk);
-    auto jitData = JITData::create(jitCode.m_linkerIR, WTFMove(exits));
+    auto jitData = JITData::create(jitCode, WTFMove(exits));
     return jitData;
 }
 

@@ -35,14 +35,28 @@
 
 namespace JSC { namespace DFG {
 
-JITData::JITData(const LinkerIR& linkerIR, ExitVector&& exits)
-    : Base(linkerIR.size())
+JITData::JITData(const JITCode& jitCode, ExitVector&& exits)
+    : Base(jitCode.m_linkerIR.size())
+    , m_stubInfos(jitCode.m_unlinkedStubInfos.size())
     , m_exits(WTFMove(exits))
 {
-    for (unsigned i = 0; i < linkerIR.size(); ++i)
-        at(i) = linkerIR.at(i).pointer();
+    for (unsigned i = 0; i < jitCode.m_linkerIR.size(); ++i) {
+        auto entry = jitCode.m_linkerIR.at(i);
+        switch (entry.type()) {
+        case LinkerIR::Type::StructureStubInfo: {
+            unsigned index = bitwise_cast<uintptr_t>(entry.pointer());
+            const UnlinkedStructureStubInfo& unlinkedStubInfo = jitCode.m_unlinkedStubInfos[index];
+            StructureStubInfo& stubInfo = m_stubInfos[index];
+            stubInfo.initializeFromUnlinkedStructureStubInfo(unlinkedStubInfo);
+            at(i) = &stubInfo;
+            break;
+        }
+        default:
+            at(i) = entry.pointer();
+            break;
+        }
+    }
 }
-
 
 JITCode::JITCode(bool isUnlinked)
     : DirectJITCode(JITType::DFGJIT)
