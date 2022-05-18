@@ -307,7 +307,11 @@ public:
     class LinkableConstant final : public CCallHelpers::ConstantMaterializer {
     public:
         enum NonCellTag { NonCell };
+        LinkableConstant() = default;
         LinkableConstant(JITCompiler&, JSCell*);
+        LinkableConstant(LinkerIR::Constant index)
+            : m_index(index)
+        { }
 
         void materialize(CCallHelpers&, GPRReg);
         void store(CCallHelpers&, CCallHelpers::Address);
@@ -365,7 +369,7 @@ public:
         return CCallHelpers::branchPtr(cond, left, CCallHelpers::TrustedImmPtr(constant.pointer()));
     }
 
-    std::tuple<UnlinkedStructureStubInfo*, LinkerIR::Constant> addUnlinkedStructureStubInfo();
+    std::tuple<UnlinkedStructureStubInfo*, LinkerIR::Constant, LinkableConstant> addUnlinkedStructureStubInfo();
     LinkerIR::Constant addToConstantPool(LinkerIR::Type, void*);
 
 private:

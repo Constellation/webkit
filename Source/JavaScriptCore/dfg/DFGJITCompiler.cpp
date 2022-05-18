@@ -778,12 +778,12 @@ LinkerIR::Constant JITCompiler::addToConstantPool(LinkerIR::Type type, void* pay
     return result.iterator->value;
 }
 
-std::tuple<UnlinkedStructureStubInfo*, LinkerIR::Constant> JITCompiler::addUnlinkedStructureStubInfo()
+std::tuple<UnlinkedStructureStubInfo*, LinkerIR::Constant, JITCompiler::LinkableConstant> JITCompiler::addUnlinkedStructureStubInfo()
 {
     void* unlinkedStubInfoIndex = bitwise_cast<void*>(static_cast<uintptr_t>(m_unlinkedStubInfos.size()));
     UnlinkedStructureStubInfo* stubInfo = &m_unlinkedStubInfos.alloc();
     LinkerIR::Constant stubInfoIndex = addToConstantPool(LinkerIR::Type::StructureStubInfo, unlinkedStubInfoIndex);
-    return std::tuple { stubInfo, stubInfoIndex };
+    return std::tuple { stubInfo, stubInfoIndex, LinkableConstant(stubInfoIndex) };
 }
 
 } } // namespace JSC::DFG

@@ -4167,7 +4167,7 @@ void SpeculativeJIT::compileGetPrivateNameByVal(Node* node, JSValueRegs baseRegs
 
     auto makeSlowPathICCall = [&](auto base) {
         if (m_graph.m_plan.isUnlinked()) {
-            auto [ stubInfo, stubInfoIndex ] = m_jit.addUnlinkedStructureStubInfo();
+            auto [ stubInfo, stubInfoIndex, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
             stubInfo->accessType = AccessType::GetByVal;
             stubInfo->codeOrigin = codeOrigin;
             stubInfo->callSiteIndex = callSite;
@@ -4181,7 +4181,7 @@ void SpeculativeJIT::compileGetPrivateNameByVal(Node* node, JSValueRegs baseRegs
             gen.m_unlinkedStubInfo = stubInfo;
             configureStubInfoPropertyTypes(stubInfo);
             return slowPathICCall(
-                slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetPrivateNameOptimize,
+                slowCases, this, stubInfoConstant, stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetPrivateNameOptimize,
                 result.regs(), JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), stubInfoGPR,
                 base, CCallHelpers::CellValue(propertyRegs.payloadGPR()));
         }
