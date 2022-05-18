@@ -467,6 +467,8 @@ void Options::recomputeDependentOptions()
 
     if (Options::forceUnlinkedDFG())
         Options::useDataICInOptimizingJIT() = true;
+    else
+        Options::useDataICInOptimizingJIT() = false;
     
     if (Options::dumpDisassembly()
         || Options::asyncDisassembly()
