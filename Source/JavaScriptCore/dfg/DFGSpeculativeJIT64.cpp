@@ -223,11 +223,11 @@ void SpeculativeJIT::cachedGetByIdWithThis(CodeOrigin codeOrigin, GPRReg baseGPR
     
     JITCompiler::JumpList slowCases;
     slowCases.append(slowPathTarget);
-    if (!JITCode::useDataIC(JITType::DFGJIT))
+    if (!m_graph.m_plan.isUnlinked())
         slowCases.append(gen.slowPathJump());
     
     std::unique_ptr<SlowPathGenerator> slowPath;
-    if (JITCode::useDataIC(JITType::DFGJIT)) {
+    if (m_graph.m_plan.isUnlinked()) {
         slowPath = slowPathICCall(
             slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByIdWithThisOptimize,
             DontSpill, ExceptionCheckRequirement::CheckNeeded,
@@ -722,7 +722,7 @@ void SpeculativeJIT::emitCall(Node* node)
     unsigned numPassedArgs = 0;
     unsigned numAllocatedArgs = 0;
 
-    auto* callLinkInfo = m_jit.jitCode()->common.addCallLinkInfo(m_currentNode->origin.semantic, JITCode::useDataIC(JITType::DFGJIT) ? CallLinkInfo::UseDataIC::Yes : CallLinkInfo::UseDataIC::No);
+    auto* callLinkInfo = m_jit.jitCode()->common.addCallLinkInfo(m_currentNode->origin.semantic, m_graph.m_plan.isUnlinked() ? CallLinkInfo::UseDataIC::Yes : CallLinkInfo::UseDataIC::No);
     
     // Gotta load the arguments somehow. Varargs is trickier.
     if (isVarargs || isForwardVarargs) {
@@ -4330,7 +4330,7 @@ void SpeculativeJIT::compile(Node* node)
             std::optional<GPRTemporary> scratch;
             GPRReg stubInfoGPR = InvalidGPRReg;
             GPRReg scratchGPR = InvalidGPRReg;
-            if (JITCode::useDataIC(JITType::DFGJIT)) {
+            if (m_graph.m_plan.isUnlinked()) {
                 stubInfo.emplace(this);
                 scratch.emplace(this);
                 stubInfoGPR = stubInfo->gpr();
@@ -4357,7 +4357,7 @@ void SpeculativeJIT::compile(Node* node)
             std::optional<GPRTemporary> scratch;
             GPRReg stubInfoGPR = InvalidGPRReg;
             GPRReg scratchGPR = InvalidGPRReg;
-            if (JITCode::useDataIC(JITType::DFGJIT)) {
+            if (m_graph.m_plan.isUnlinked()) {
                 stubInfo.emplace(this);
                 scratch.emplace(this);
                 stubInfoGPR = stubInfo->gpr();

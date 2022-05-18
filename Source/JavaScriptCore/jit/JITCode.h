@@ -166,10 +166,10 @@ public:
         if (JITCode::isBaselineCode(jitType))
             return true;
 #if CPU(X86_64) || CPU(ARM64) || CPU(RISCV64)
-        return Options::useDataICInOptimizingJIT();
-#else
-        return false;
+        if (jitType == JITType::FTLJIT)
+            return Options::useDataICInOptimizingJIT();
 #endif
+        return false;
     }
 
     virtual const DOMJIT::Signature* signature() const { return nullptr; }
