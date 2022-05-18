@@ -54,14 +54,9 @@ struct UnlinkedStructureStubInfo : JSC::UnlinkedStructureStubInfo {
     CodeOrigin codeOrigin;
     CallSiteIndex callSiteIndex;
     RegisterSet usedRegisters;
-    GPRReg baseGPR { InvalidGPRReg };
-    GPRReg valueGPR { InvalidGPRReg };
-    union {
-        GPRReg thisGPR;
-        GPRReg prototypeGPR;
-        GPRReg propertyGPR;
-        GPRReg brandGPR;
-    } regs;
+    JSValueRegs baseRegs;
+    JSValueRegs valueRegs;
+    JSValueRegs propertyRegs;
     GPRReg m_stubInfoGPR { InvalidGPRReg };
 };
 

@@ -2486,9 +2486,9 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
             stubInfo->codeOrigin = codeOrigin;
             stubInfo->callSiteIndex = callSite;
             stubInfo->usedRegisters = usedRegisters;
-            stubInfo->baseGPR  = baseGPR;
-            stubInfo->regs.propertyGPR = propertyGPR;
-            stubInfo->valueGPR = resultGPR;
+            stubInfo->baseRegs = JSValueRegs { baseGPR };
+            stubInfo->propertyRegs = JSValueRegs { propertyGPR };
+            stubInfo->valueRegs = JSValueRegs { resultGPR };
             stubInfo->m_stubInfoGPR = stubInfoGPR;
             gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
             slowPath = slowPathICCall(
