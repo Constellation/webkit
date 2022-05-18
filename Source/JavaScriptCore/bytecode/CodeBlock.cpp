@@ -3522,10 +3522,12 @@ void CodeBlock::jitNextInvocation()
 
 bool CodeBlock::useDataIC() const
 {
+#if ENABLE(DFG_JIT)
     if (jitType() == JITType::DFGJIT) {
         if (auto* jitCode = m_jitCode.get())
             return static_cast<const DFG::JITCode*>(jitCode)->isUnlinked();
     }
+#endif
     return JITCode::useDataIC(jitType());
 }
 
