@@ -35,6 +35,15 @@
 
 namespace JSC { namespace DFG {
 
+JITData::JITData(const LinkerIR& linkerIR, ExitVector&& exits)
+    : Base(linkerIR.size())
+    , m_exits(WTFMove(exits))
+{
+    for (unsigned i = 0; i < linkerIR.size(); ++i)
+        at(i) = linkerIR.at(i).pointer();
+}
+
+
 JITCode::JITCode(bool isUnlinked)
     : DirectJITCode(JITType::DFGJIT)
     , common(isUnlinked)

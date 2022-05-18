@@ -339,11 +339,11 @@ public:
     private:
         LinkableConstant(JITCompiler&, void*, NonCellTag);
 
-        JITConstantPool::Constant m_index { UINT_MAX };
+        LinkerIR::Constant m_index { UINT_MAX };
         void* m_pointer { nullptr };
     };
 
-    void loadConstant(JITConstantPool::Constant, GPRReg);
+    void loadConstant(LinkerIR::Constant, GPRReg);
     void loadLinkableConstant(LinkableConstant, GPRReg);
     void storeLinkableConstant(LinkableConstant, Address);
 
@@ -444,8 +444,8 @@ private:
     Vector<DFG::OSREntryData> m_osrEntry;
     Vector<DFG::OSRExit> m_osrExit;
     Vector<DFG::SpeculationRecovery> m_speculationRecovery;
-    Vector<JITConstantPool::Value> m_constantPool;
-    HashMap<JITConstantPool::Value, LinkerIR::Constant, LinkerIR::ValueHash, LinkerIR::ValueTraits> m_constantPoolMap;
+    Vector<LinkerIR::Value> m_constantPool;
+    HashMap<LinkerIR::Value, LinkerIR::Constant, LinkerIR::ValueHash, LinkerIR::ValueTraits> m_constantPoolMap;
     SegmentedVector<UnlinkedStructureStubInfo> m_unlinkedStubInfos;
     
     struct ExceptionHandlingOSRExitInfo {

@@ -713,7 +713,7 @@ void JITCompiler::makeCatchOSREntryBuffer()
     }
 }
 
-void JITCompiler::loadConstant(JITConstantPool::Constant index, GPRReg dest)
+void JITCompiler::loadConstant(LinkerIR::Constant index, GPRReg dest)
 {
     loadPtr(Address(GPRInfo::constantsRegister, JITData::offsetOfData() + sizeof(void*) * index), dest);
 }
@@ -779,11 +779,11 @@ LinkerIR::Constant JITCompiler::addToConstantPool(LinkerIR::Type type, void* pay
     return result.iterator->value;
 }
 
-std::tuple<UnlinkedStructureStubInfo*, JITConstantPool::Constant> JITCompiler::addUnlinkedStructureStubInfo()
+std::tuple<UnlinkedStructureStubInfo*, LinkerIR::Constant> JITCompiler::addUnlinkedStructureStubInfo()
 {
     void* unlinkedStubInfoIndex = bitwise_cast<void*>(static_cast<uintptr_t>(m_unlinkedStubInfos.size()));
     UnlinkedStructureStubInfo* stubInfo = &m_unlinkedStubInfos.alloc();
-    JITConstantPool::Constant stubInfoIndex = addToConstantPool(JITConstantPool::Type::StructureStubInfo, unlinkedStubInfoIndex);
+    LinkerIR::Constant stubInfoIndex = addToConstantPool(LinkerIR::Type::StructureStubInfo, unlinkedStubInfoIndex);
     return std::tuple { stubInfo, stubInfoIndex };
 }
 

@@ -113,9 +113,9 @@ public:
     static ptrdiff_t offsetOfExits() { return OBJECT_OFFSETOF(JITData, m_exits); }
     static ptrdiff_t offsetOfIsInvalidated() { return OBJECT_OFFSETOF(JITData, m_isInvalidated); }
 
-    static std::unique_ptr<JITData> create(unsigned poolSize, ExitVector&& exits)
+    static std::unique_ptr<JITData> create(const LinkerIR& linkerIR, ExitVector&& exits)
     {
-        return std::unique_ptr<JITData> { new (NotNull, fastMalloc(Base::allocationSize(poolSize))) JITData(poolSize, WTFMove(exits)) };
+        return std::unique_ptr<JITData> { new (NotNull, fastMalloc(Base::allocationSize(linkerIR.size()))) JITData(linkerIR, WTFMove(exits)) };
     }
 
     void setExitCode(unsigned exitIndex, MacroAssemblerCodeRef<OSRExitPtrTag> code)
@@ -132,11 +132,7 @@ public:
     }
 
 private:
-    explicit JITData(unsigned size, ExitVector&& exits)
-        : Base(size)
-        , m_exits(WTFMove(exits))
-    {
-    }
+    explicit JITData(const LinkerIR&, ExitVector&&);
 
     ExitVector m_exits;
     uint8_t m_isInvalidated { 0 };
