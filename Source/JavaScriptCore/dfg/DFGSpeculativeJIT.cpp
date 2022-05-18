@@ -1303,7 +1303,7 @@ void SpeculativeJIT::compileDeleteByVal(Node* node)
             stubInfo->usedRegisters = usedRegisters;
             stubInfo->baseRegs = JSValueRegs::payloadOnly(baseGPR);
             stubInfo->valueRegs = resultRegs;
-            stubInfo->propertyRegs = keyRegs;
+            stubInfo->extraRegs = keyRegs;
             stubInfo->m_stubInfoGPR = stubInfoGPR;
             stubInfo->hasConstantIdentifier = false;
             gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
@@ -1452,7 +1452,7 @@ void SpeculativeJIT::compileInByVal(Node* node)
         stubInfo->usedRegisters = usedRegisters;
         stubInfo->baseRegs = JSValueRegs::payloadOnly(baseGPR);
         stubInfo->valueRegs = resultRegs;
-        stubInfo->propertyRegs = keyRegs;
+        stubInfo->extraRegs = keyRegs;
         stubInfo->m_stubInfoGPR = stubInfoGPR;
         stubInfo->hasConstantIdentifier = false;
         gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
@@ -1521,7 +1521,7 @@ void SpeculativeJIT::compileHasPrivate(Node* node, AccessType type)
         stubInfo->usedRegisters = usedRegisters;
         stubInfo->baseRegs = JSValueRegs::payloadOnly(baseGPR);
         stubInfo->valueRegs = resultRegs;
-        stubInfo->propertyRegs = JSValueRegs::payloadOnly(propertyOrBrandGPR);
+        stubInfo->extraRegs = JSValueRegs::payloadOnly(propertyOrBrandGPR);
         stubInfo->m_stubInfoGPR = stubInfoGPR;
         stubInfo->hasConstantIdentifier = false;
         gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
@@ -2822,7 +2822,7 @@ void SpeculativeJIT::compilePutByVal(Node* node)
             stubInfo->usedRegisters = usedRegisters;
             stubInfo->baseRegs = baseRegs;
             stubInfo->valueRegs = valueRegs;
-            stubInfo->propertyRegs = propertyRegs;
+            stubInfo->extraRegs = propertyRegs;
             stubInfo->m_stubInfoGPR = stubInfoGPR;
             stubInfo->putKind = isDirect ? PutKind::Direct : PutKind::NotDirect;
             stubInfo->ecmaMode = ecmaMode;
@@ -4242,7 +4242,7 @@ void SpeculativeJIT::compileGetPrivateNameByVal(Node* node, JSValueRegs baseRegs
             stubInfo->callSiteIndex = callSite;
             stubInfo->usedRegisters = usedRegisters;
             stubInfo->baseRegs = baseRegs;
-            stubInfo->propertyRegs = propertyRegs;
+            stubInfo->extraRegs = propertyRegs;
             stubInfo->valueRegs = resultRegs;
             stubInfo->m_stubInfoGPR = stubInfoGPR;
             stubInfo->hasConstantIdentifier = false;
@@ -4463,7 +4463,7 @@ void SpeculativeJIT::compilePutPrivateName(Node* node)
         stubInfo->usedRegisters = usedRegisters;
         stubInfo->baseRegs = JSValueRegs::payloadOnly(baseGPR);
         stubInfo->valueRegs = valueRegs;
-        stubInfo->propertyRegs = JSValueRegs::payloadOnly(propertyGPR);
+        stubInfo->extraRegs = JSValueRegs::payloadOnly(propertyGPR);
         stubInfo->m_stubInfoGPR = stubInfoGPR;
         stubInfo->privateFieldPutKind = node->privateFieldPutKind();
         stubInfo->hasConstantIdentifier = false;
@@ -4558,7 +4558,7 @@ void SpeculativeJIT::compileCheckPrivateBrand(Node* node)
         stubInfo->callSiteIndex = callSite;
         stubInfo->usedRegisters = usedRegisters;
         stubInfo->baseRegs = baseRegs;
-        stubInfo->propertyRegs = JSValueRegs::payloadOnly(brandGPR);
+        stubInfo->extraRegs = JSValueRegs::payloadOnly(brandGPR);
         stubInfo->m_stubInfoGPR = stubInfoGPR;
         stubInfo->hasConstantIdentifier = false;
         gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
@@ -4622,7 +4622,7 @@ void SpeculativeJIT::compileSetPrivateBrand(Node* node)
         stubInfo->callSiteIndex = callSite;
         stubInfo->usedRegisters = usedRegisters;
         stubInfo->baseRegs = JSValueRegs::payloadOnly(baseGPR);
-        stubInfo->propertyRegs = JSValueRegs::payloadOnly(brandGPR);
+        stubInfo->extraRegs = JSValueRegs::payloadOnly(brandGPR);
         stubInfo->m_stubInfoGPR = stubInfoGPR;
         stubInfo->hasConstantIdentifier = false;
         gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
@@ -4781,7 +4781,7 @@ void SpeculativeJIT::compileInstanceOfForCells(Node* node, JSValueRegs valueRegs
         stubInfo->usedRegisters.clear(resultGPR);
         stubInfo->baseRegs = valueRegs;
         stubInfo->valueRegs = JSValueRegs { resultGPR };
-        stubInfo->propertyRegs = prototypeRegs;
+        stubInfo->extraRegs = prototypeRegs;
         stubInfo->m_stubInfoGPR = stubInfoGPR;
         stubInfo->prototypeIsKnownObject = prototypeIsKnownObject;
         stubInfo->hasConstantIdentifier = false;

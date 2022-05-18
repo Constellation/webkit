@@ -233,7 +233,7 @@ void SpeculativeJIT::cachedGetByIdWithThis(CodeOrigin codeOrigin, GPRReg baseGPR
         stubInfo->callSiteIndex = callSite;
         stubInfo->usedRegisters = usedRegisters;
         stubInfo->baseRegs = JSValueRegs { baseGPR };
-        stubInfo->propertyRegs = JSValueRegs { thisGPR };
+        stubInfo->extraRegs = JSValueRegs { thisGPR };
         stubInfo->valueRegs = JSValueRegs { resultGPR };
         stubInfo->m_stubInfoGPR = stubInfoGPR;
         stubInfo->hasConstantIdentifier = true;
@@ -2511,7 +2511,7 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
             stubInfo->callSiteIndex = callSite;
             stubInfo->usedRegisters = usedRegisters;
             stubInfo->baseRegs = JSValueRegs { baseGPR };
-            stubInfo->propertyRegs = JSValueRegs { propertyGPR };
+            stubInfo->extraRegs = JSValueRegs { propertyGPR };
             stubInfo->valueRegs = JSValueRegs { resultGPR };
             stubInfo->m_stubInfoGPR = stubInfoGPR;
             stubInfo->hasConstantIdentifier = false;

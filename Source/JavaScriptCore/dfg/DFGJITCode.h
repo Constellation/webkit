@@ -56,7 +56,7 @@ struct UnlinkedStructureStubInfo : JSC::UnlinkedStructureStubInfo {
     RegisterSet usedRegisters;
     JSValueRegs baseRegs;
     JSValueRegs valueRegs;
-    JSValueRegs propertyRegs;
+    JSValueRegs extraRegs;
     GPRReg m_stubInfoGPR { InvalidGPRReg };
     bool hasConstantIdentifier { false };
 };

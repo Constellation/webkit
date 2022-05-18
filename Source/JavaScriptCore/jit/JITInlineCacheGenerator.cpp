@@ -95,12 +95,12 @@ JITByIdGenerator::JITByIdGenerator(
     if (m_stubInfo) {
         m_stubInfo->baseGPR = base.payloadGPR();
         m_stubInfo->valueGPR = value.payloadGPR();
-        m_stubInfo->regs.thisGPR = InvalidGPRReg;
+        m_stubInfo->m_extraGPR = InvalidGPRReg;
         m_stubInfo->m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_stubInfo->baseTagGPR = base.tagGPR();
         m_stubInfo->valueTagGPR = value.tagGPR();
-        m_stubInfo->v.thisTagGPR = InvalidGPRReg;
+        m_stubInfo->m_extraTagGPR = InvalidGPRReg;
 #endif
     }
 }
@@ -197,9 +197,9 @@ JITGetByIdWithThisGenerator::JITGetByIdWithThisGenerator(
 {
     RELEASE_ASSERT(thisRegs.payloadGPR() != thisRegs.tagGPR());
     if (m_stubInfo) {
-        m_stubInfo->regs.thisGPR = thisRegs.payloadGPR();
+        m_stubInfo->m_extraGPR = thisRegs.payloadGPR();
 #if USE(JSVALUE32_64)
-        m_stubInfo->v.thisTagGPR = thisRegs.tagGPR();
+        m_stubInfo->m_extraTagGPR = thisRegs.tagGPR();
 #endif
     }
 }
@@ -343,13 +343,13 @@ JITDelByValGenerator::JITDelByValGenerator(CodeBlock* codeBlock, Bag<StructureSt
     if (m_stubInfo) {
         m_stubInfo->hasConstantIdentifier = false;
         m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->regs.propertyGPR = property.payloadGPR();
+        m_stubInfo->m_extraGPR = property.payloadGPR();
         m_stubInfo->valueGPR = result.payloadGPR();
         m_stubInfo->m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_stubInfo->baseTagGPR = base.tagGPR();
         m_stubInfo->valueTagGPR = result.tagGPR();
-        m_stubInfo->v.propertyTagGPR = property.tagGPR();
+        m_stubInfo->m_extraTagGPR = property.tagGPR();
 #endif
     }
 }
@@ -384,13 +384,13 @@ JITDelByIdGenerator::JITDelByIdGenerator(CodeBlock* codeBlock, Bag<StructureStub
     if (m_stubInfo) {
         m_stubInfo->hasConstantIdentifier = true;
         m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->regs.propertyGPR = InvalidGPRReg;
+        m_stubInfo->m_extraGPR = InvalidGPRReg;
         m_stubInfo->valueGPR = result.payloadGPR();
         m_stubInfo->m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_stubInfo->baseTagGPR = base.tagGPR();
         m_stubInfo->valueTagGPR = result.tagGPR();
-        m_stubInfo->v.propertyTagGPR = InvalidGPRReg;
+        m_stubInfo->m_extraTagGPR = InvalidGPRReg;
 #endif
     }
 }
@@ -421,13 +421,13 @@ JITInByValGenerator::JITInByValGenerator(CodeBlock* codeBlock, Bag<StructureStub
     if (m_stubInfo) {
         m_stubInfo->hasConstantIdentifier = false;
         m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->regs.propertyGPR = property.payloadGPR();
+        m_stubInfo->m_extraGPR = property.payloadGPR();
         m_stubInfo->valueGPR = result.payloadGPR();
         m_stubInfo->m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_stubInfo->baseTagGPR = base.tagGPR();
         m_stubInfo->valueTagGPR = result.tagGPR();
-        m_stubInfo->v.propertyTagGPR = property.tagGPR();
+        m_stubInfo->m_extraTagGPR = property.tagGPR();
 #endif
     }
 }
@@ -528,12 +528,12 @@ JITInstanceOfGenerator::JITInstanceOfGenerator(
     if (m_stubInfo) {
         m_stubInfo->baseGPR = value;
         m_stubInfo->valueGPR = result;
-        m_stubInfo->regs.prototypeGPR = prototype;
+        m_stubInfo->m_extraGPR = prototype;
         m_stubInfo->m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_stubInfo->baseTagGPR = InvalidGPRReg;
         m_stubInfo->valueTagGPR = InvalidGPRReg;
-        m_stubInfo->v.thisTagGPR = InvalidGPRReg;
+        m_stubInfo->m_extraTagGPR = InvalidGPRReg;
 #endif
 
         m_stubInfo->usedRegisters.clear(result);
@@ -570,13 +570,13 @@ JITGetByValGenerator::JITGetByValGenerator(CodeBlock* codeBlock, Bag<StructureSt
     if (m_stubInfo) {
         m_stubInfo->hasConstantIdentifier = false;
         m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->regs.propertyGPR = property.payloadGPR();
+        m_stubInfo->m_extraGPR = property.payloadGPR();
         m_stubInfo->valueGPR = result.payloadGPR();
         m_stubInfo->m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_stubInfo->baseTagGPR = base.tagGPR();
         m_stubInfo->valueTagGPR = result.tagGPR();
-        m_stubInfo->v.propertyTagGPR = property.tagGPR();
+        m_stubInfo->m_extraTagGPR = property.tagGPR();
 #endif
     }
 }
@@ -609,14 +609,14 @@ JITPutByValGenerator::JITPutByValGenerator(CodeBlock* codeBlock, Bag<StructureSt
     if (m_stubInfo) {
         m_stubInfo->hasConstantIdentifier = false;
         m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->regs.propertyGPR = property.payloadGPR();
+        m_stubInfo->m_extraGPR = property.payloadGPR();
         m_stubInfo->valueGPR = value.payloadGPR();
         m_stubInfo->m_stubInfoGPR = stubInfoGPR;
         m_stubInfo->m_arrayProfileGPR = arrayProfileGPR;
 #if USE(JSVALUE32_64)
         m_stubInfo->baseTagGPR = base.tagGPR();
         m_stubInfo->valueTagGPR = value.tagGPR();
-        m_stubInfo->v.propertyTagGPR = property.tagGPR();
+        m_stubInfo->m_extraTagGPR = property.tagGPR();
 #endif
     }
 }
@@ -648,12 +648,12 @@ JITPrivateBrandAccessGenerator::JITPrivateBrandAccessGenerator(CodeBlock* codeBl
     if (m_stubInfo) {
         m_stubInfo->hasConstantIdentifier = false;
         m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->regs.brandGPR = brand.payloadGPR();
+        m_stubInfo->m_extraGPR = brand.payloadGPR();
         m_stubInfo->valueGPR = InvalidGPRReg;
         m_stubInfo->m_stubInfoGPR = stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_stubInfo->baseTagGPR = base.tagGPR();
-        m_stubInfo->v.brandTagGPR = brand.tagGPR();
+        m_stubInfo->m_extraTagGPR = brand.tagGPR();
         m_stubInfo->valueTagGPR = InvalidGPRReg;
 #endif
     }

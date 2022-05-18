@@ -97,7 +97,6 @@ public:
         , accessType(accessType)
         , bufferingCountdown(Options::repatchBufferingCountdown())
     {
-        regs.thisGPR = InvalidGPRReg;
     }
 
     StructureStubInfo()
@@ -174,9 +173,9 @@ public:
     {
         return JSValueRegs(
 #if USE(JSVALUE32_64)
-            v.propertyTagGPR,
+            m_extraTagGPR,
 #endif
-            regs.propertyGPR);
+            m_extraGPR);
     }
 
     JSValueRegs baseRegs() const
@@ -188,7 +187,7 @@ public:
             baseGPR);
     }
 
-    bool thisValueIsInThisGPR() const { return accessType == AccessType::GetByIdWithThis; }
+    bool thisValueIsInExtraGPR() const { return accessType == AccessType::GetByIdWithThis; }
 
 #if ASSERT_ENABLED
     void checkConsistency();
@@ -360,6 +359,11 @@ public:
     static ptrdiff_t offsetOfSlowOperation() { return OBJECT_OFFSETOF(StructureStubInfo, m_slowOperation); }
     static ptrdiff_t offsetOfCountdown() { return OBJECT_OFFSETOF(StructureStubInfo, countdown); }
 
+    GPRReg thisGPR() const { return m_extraGPR; }
+    GPRReg prototypeGPR() const { return m_extraGPR; }
+    GPRReg propertyGPR() const { return m_extraGPR; }
+    GPRReg brandGPR() const { return m_extraGPR; }
+
     CodeOrigin codeOrigin;
     PropertyOffset byIdSelfOffset;
     std::unique_ptr<PolymorphicAccess> m_stub;
@@ -387,12 +391,7 @@ public:
 
     GPRReg baseGPR { InvalidGPRReg };
     GPRReg valueGPR { InvalidGPRReg };
-    union {
-        GPRReg thisGPR;
-        GPRReg prototypeGPR;
-        GPRReg propertyGPR;
-        GPRReg brandGPR;
-    } regs;
+    GPRReg m_extraGPR { InvalidGPRReg };
     GPRReg m_stubInfoGPR { InvalidGPRReg };
     GPRReg m_arrayProfileGPR { InvalidGPRReg };
 #if USE(JSVALUE32_64)
@@ -400,11 +399,7 @@ public:
     // FIXME: [32-bits] Check if StructureStubInfo::baseTagGPR is used somewhere.
     // https://bugs.webkit.org/show_bug.cgi?id=204726
     GPRReg baseTagGPR;
-    union {
-        GPRReg thisTagGPR;
-        GPRReg propertyTagGPR;
-        GPRReg brandTagGPR;
-    } v;
+    GPRReg m_extraTagGPR;
 #endif
 
     AccessType accessType;

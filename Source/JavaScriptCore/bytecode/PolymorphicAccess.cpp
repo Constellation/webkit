@@ -247,9 +247,9 @@ ScratchRegisterAllocator AccessGenerationState::makeDefaultScratchAllocator(GPRR
     ScratchRegisterAllocator allocator(stubInfo->usedRegisters);
     allocator.lock(stubInfo->baseRegs());
     allocator.lock(valueRegs);
-    allocator.lock(u.thisGPR);
+    allocator.lock(extraGPR);
 #if USE(JSVALUE32_64)
-    allocator.lock(stubInfo->v.thisTagGPR);
+    allocator.lock(stubInfo->m_extraTagGPR);
 #endif
     allocator.lock(stubInfo->m_stubInfoGPR);
     allocator.lock(stubInfo->m_arrayProfileGPR);
@@ -437,7 +437,7 @@ AccessGenerationResult PolymorphicAccess::regenerate(const GCSafeConcurrentJSLoc
     state.stubInfo = &stubInfo;
     
     state.baseGPR = stubInfo.baseGPR;
-    state.u.thisGPR = stubInfo.regs.thisGPR;
+    state.extraGPR = stubInfo.m_extraGPR;
     state.valueRegs = stubInfo.valueRegs();
 
     // Regenerating is our opportunity to figure out what our list of cases should look like. We
@@ -613,9 +613,9 @@ AccessGenerationResult PolymorphicAccess::regenerate(const GCSafeConcurrentJSLoc
 
                 if (!stubInfo.propertyIsInt32) {
 #if USE(JSVALUE64) 
-                    notInt32 = jit.branchIfNotInt32(state.u.propertyGPR);
+                    notInt32 = jit.branchIfNotInt32(state.extraGPR);
 #else
-                    notInt32 = jit.branchIfNotInt32(state.stubInfo->v.propertyTagGPR);
+                    notInt32 = jit.branchIfNotInt32(state.stubInfo->m_extraTagGPR);
 #endif
                 }
                 for (unsigned i = cases.size(); i--;) {
@@ -638,10 +638,10 @@ AccessGenerationResult PolymorphicAccess::regenerate(const GCSafeConcurrentJSLoc
 
             if (needsStringPropertyCheck) {
                 CCallHelpers::JumpList notString;
-                GPRReg propertyGPR = state.u.propertyGPR;
+                GPRReg propertyGPR = state.extraGPR;
                 if (!stubInfo.propertyIsString) {
 #if USE(JSVALUE32_64)
-                    GPRReg propertyTagGPR = state.stubInfo->v.propertyTagGPR;
+                    GPRReg propertyTagGPR = state.stubInfo->m_extraTagGPR;
                     notString.append(jit.branchIfNotCell(propertyTagGPR));
 #else
                     notString.append(jit.branchIfNotCell(propertyGPR));
@@ -671,9 +671,9 @@ AccessGenerationResult PolymorphicAccess::regenerate(const GCSafeConcurrentJSLoc
             if (needsSymbolPropertyCheck) {
                 CCallHelpers::JumpList notSymbol;
                 if (!stubInfo.propertyIsSymbol) {
-                    GPRReg propertyGPR = state.u.propertyGPR;
+                    GPRReg propertyGPR = state.extraGPR;
 #if USE(JSVALUE32_64)
-                    GPRReg propertyTagGPR = state.stubInfo->v.propertyTagGPR;
+                    GPRReg propertyTagGPR = state.stubInfo->m_extraTagGPR;
                     notSymbol.append(jit.branchIfNotCell(propertyTagGPR));
 #else
                     notSymbol.append(jit.branchIfNotCell(propertyGPR));
@@ -808,7 +808,7 @@ AccessGenerationResult PolymorphicAccess::regenerate(const GCSafeConcurrentJSLoc
         SharedJITStubSet::Searcher searcher {
             stubInfo.baseGPR,
             stubInfo.valueGPR,
-            stubInfo.regs.thisGPR,
+            stubInfo.m_extraGPR,
             stubInfo.m_stubInfoGPR,
             stubInfo.m_arrayProfileGPR,
             stubInfo.usedRegisters,
@@ -847,7 +847,7 @@ AccessGenerationResult PolymorphicAccess::regenerate(const GCSafeConcurrentJSLoc
 
     if (codeBlock->useDataIC()) {
         if (canBeShared)
-            vm.m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(stubInfo.baseGPR, stubInfo.valueGPR, stubInfo.regs.thisGPR, stubInfo.m_stubInfoGPR, stubInfo.m_arrayProfileGPR, stubInfo.usedRegisters, stub.get()));
+            vm.m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(stubInfo.baseGPR, stubInfo.valueGPR, stubInfo.m_extraGPR, stubInfo.m_stubInfoGPR, stubInfo.m_arrayProfileGPR, stubInfo.usedRegisters, stub.get()));
     }
 
     return finishCodeGeneration(WTFMove(stub));
