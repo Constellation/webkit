@@ -3530,7 +3530,7 @@ bool CodeBlock::useDataIC() const
 #endif
 #if ENABLE(FTL_JIT)
     if (jitType() == JITType::FTLJIT)
-        return Options::useDataICInOptimizingJIT();
+        return Options::useDataICInFTL();
 #endif
     return true;
 }

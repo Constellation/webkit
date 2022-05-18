@@ -466,9 +466,9 @@ void Options::recomputeDependentOptions()
         Options::useFastTLSForWasmContext() = false;
 
     if (Options::forceUnlinkedDFG())
-        Options::useDataICInOptimizingJIT() = true;
+        Options::useDataICInFTL() = true;
     else
-        Options::useDataICInOptimizingJIT() = false;
+        Options::useDataICInFTL() = false;
     
     if (Options::dumpDisassembly()
         || Options::asyncDisassembly()
