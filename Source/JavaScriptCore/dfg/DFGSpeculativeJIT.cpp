@@ -4158,7 +4158,7 @@ void SpeculativeJIT::compileGetPrivateNameByVal(Node* node, JSValueRegs baseRegs
         slowCases.append(m_jit.branchIfNotCell(baseRegs));
 
     JITGetByValGenerator gen(
-        m_jit.codeBlock(), m_graph.m_plan.isUnlinked() ? nullptr : &m_jit.jitCode()->common.m_stubInfos, JITType::DFGJIT, codeOrigin, callSite, AccessType::GetPrivateName, usedRegisters,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::GetPrivateName, usedRegisters,
         baseRegs, propertyRegs, resultRegs, stubInfoGPR);
 
     auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
@@ -4186,8 +4186,8 @@ void SpeculativeJIT::compileGetPrivateNameByVal(Node* node, JSValueRegs baseRegs
                 base, CCallHelpers::CellValue(propertyRegs.payloadGPR()));
         }
         gen.generateFastPath(m_jit);
-        slowCases.append(gen.slowPathJump());
         configureStubInfoPropertyTypes(gen.stubInfo());
+        slowCases.append(gen.slowPathJump());
         return slowPathCall(
             slowCases, this, operationGetPrivateNameOptimize,
             result.regs(), JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), TrustedImmPtr(gen.stubInfo()),

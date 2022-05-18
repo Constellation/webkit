@@ -2467,7 +2467,7 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
             slowCases.append(m_jit.branchIfNotCell(baseGPR));
 
         JITGetByValGenerator gen(
-            m_jit.codeBlock(), m_graph.m_plan.isUnlinked() ? nullptr : &m_jit.jitCode()->common.m_stubInfos, JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByVal, usedRegisters,
+            m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByVal, usedRegisters,
             JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(resultGPR), stubInfoGPR);
 
         auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
@@ -2491,19 +2491,19 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
             stubInfo->valueRegs = JSValueRegs { resultGPR };
             stubInfo->m_stubInfoGPR = stubInfoGPR;
             gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
-            slowPath = slowPathICCall(
-                slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValOptimize,
-                resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), stubInfoGPR, nullptr, baseGPR, propertyGPR);
             gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
             gen.m_unlinkedStubInfo = stubInfo;
             configureStubInfoPropertyTypes(stubInfo);
+            slowPath = slowPathICCall(
+                slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValOptimize,
+                resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), stubInfoGPR, nullptr, baseGPR, propertyGPR);
         } else {
             gen.generateFastPath(m_jit);
+            configureStubInfoPropertyTypes(gen.stubInfo());
             slowCases.append(gen.slowPathJump());
             slowPath = slowPathCall(
                 slowCases, this, operationGetByValOptimize,
                 resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), TrustedImmPtr(gen.stubInfo()), nullptr, baseGPR, propertyGPR);
-            configureStubInfoPropertyTypes(gen.stubInfo());
         }
 
         m_jit.addGetByVal(gen, slowPath.get());
