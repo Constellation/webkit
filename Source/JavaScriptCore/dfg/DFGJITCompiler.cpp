@@ -771,7 +771,6 @@ void JITCompiler::LinkableConstant::store(CCallHelpers& jit, CCallHelpers::Addre
 
 LinkerIR::Constant JITCompiler::addToConstantPool(LinkerIR::Type type, void* payload)
 {
-    ASSERT(ptr);
     LinkerIR::Value value { payload, type };
     auto result = m_constantPoolMap.add(value, m_constantPoolMap.size());
     if (result.isNewEntry)

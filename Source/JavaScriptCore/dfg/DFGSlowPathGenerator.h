@@ -283,7 +283,6 @@ private:
     template<size_t... ArgumentsIndex>
     void unpackAndGenerate(SpeculativeJIT* jit, std::index_sequence<ArgumentsIndex...>)
     {
-        ASSERT(JITCode::useDataIC(JITType::DFGJIT));
         this->setUp(jit);
         if (m_stubInfo) {
             m_stubInfo->m_slowOperation = m_function;
