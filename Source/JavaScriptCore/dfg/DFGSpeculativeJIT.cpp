@@ -15991,7 +15991,7 @@ void SpeculativeJIT::cachedPutById(CodeOrigin codeOrigin, GPRReg baseGPR, JSValu
         stubInfo->callSiteIndex = callSite;
         stubInfo->usedRegisters = usedRegisters;
         stubInfo->usedRegisters.clear(scratchGPR);
-        stubInfo->baseRegs = JSValueRegs { baseGPR };
+        stubInfo->baseRegs = JSValueRegs::payloadOnly(baseGPR);
         stubInfo->valueRegs = valueRegs;
         stubInfo->m_stubInfoGPR = stubInfoGPR;
         stubInfo->hasConstantIdentifier = true;
