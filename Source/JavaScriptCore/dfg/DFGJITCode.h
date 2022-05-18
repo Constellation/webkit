@@ -63,6 +63,30 @@ public:
 
     using Value = CompactPointerTuple<void*, Type>;
 
+    struct ValueHash {
+        static unsigned hash(const Value& p)
+        {
+            return computeHash(p.type(), p.pointer());
+        }
+
+        static bool equal(const Value& a, const Value& b)
+        {
+            return a == b;
+        }
+
+        static constexpr bool safeToCompareToEmptyOrDeleted = true;
+    };
+
+    struct ValueTraits : public WTF::GenericHashTraits<Value> {
+        static constexpr bool emptyValueIsZero = true;
+        static Value emptyValue() { return Value(); }
+        static void constructDeletedValue(Value& slot) { slot = Value(reinterpret_cast<void*>(static_cast<uintptr_t>(0x1)), Type::Invalid); }
+        static bool isDeletedValue(Value value)
+        {
+            return value == Value(reinterpret_cast<void*>(static_cast<uintptr_t>(0x1)), Type::Invalid);
+        }
+    };
+
     JITConstantPool() = default;
     JITConstantPool(JITConstantPool&&) = default;
     JITConstantPool& operator=(JITConstantPool&&) = default;
@@ -225,17 +249,5 @@ public:
 };
 
 } } // namespace JSC::DFG
-
-namespace WTF {
-
-template<typename T> struct DefaultHash;
-template<> struct DefaultHash<JSC::DFG::JITConstantPool::Value> : JSC::DFG::JITConstantPool::ValueHash { };
-
-template<typename T> struct HashTraits;
-template<> struct HashTraits<JSC::DFG::JITConstantPool::Value> : SimpleClassHashTraits<JSC::DFG::JITConstantPool::Value> {
-    static constexpr bool emptyValueIsZero = false;
-};
-
-} // namespace WTF
 
 #endif // ENABLE(DFG_JIT)

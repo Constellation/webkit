@@ -32,6 +32,7 @@
 #include "DFGDesiredWatchpoints.h"
 #include "DFGDesiredWeakReferences.h"
 #include "DFGFinalizer.h"
+#include "DFGJITCode.h"
 #include "DeferredCompilationCallback.h"
 #include "JITPlan.h"
 #include "Operands.h"
@@ -139,7 +140,7 @@ private:
 
     RefPtr<DeferredCompilationCallback> m_callback;
     Vector<JITConstantPool::Value> m_constantPool;
-    HashMap<JITConstantPool::Value, JITConstantPool::Constant> m_constantPoolMap;
+    HashMap<JITConstantPool::Value, JITConstantPool::Constant, JITConstantPool::ValueHash, JITConstantPool::ValueTraits> m_constantPoolMap;
 };
 
 #endif // ENABLE(DFG_JIT)

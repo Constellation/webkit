@@ -721,7 +721,7 @@ JITCompiler::LinkableConstant::LinkableConstant(Graph& graph, JSCell* cell)
 {
     graph.m_plan.weakReferences().addLazily(cell);
     if (graph.m_plan.isUnlinked()) {
-        m_index = graph.m_plan.addToConstantPool(JITConstantPool::CellPointer, cell);
+        m_index = graph.m_plan.addToConstantPool(JITConstantPool::Type::CellPointer, cell);
         return;
     }
     m_pointer = cell;
@@ -730,7 +730,7 @@ JITCompiler::LinkableConstant::LinkableConstant(Graph& graph, JSCell* cell)
 JITCompiler::LinkableConstant::LinkableConstant(Graph& graph, void* pointer, NonCellTag)
 {
     if (graph.m_plan.isUnlinked()) {
-        m_index = graph.m_plan.addToConstantPool(JITConstantPool::NonCellPointer, pointer);
+        m_index = graph.m_plan.addToConstantPool(JITConstantPool::Type::NonCellPointer, pointer);
         return;
     }
     m_pointer = pointer;
@@ -756,6 +756,14 @@ void JITCompiler::LinkableConstant::store(CCallHelpers& jit, CCallHelpers::Addre
     }
 #endif
     jit.storePtr(TrustedImmPtr(m_pointer), address);
+}
+
+std::tuple<UnlinkedStructureStubInfo*, JITConstantPool::Constant> JITCompiler::addUnlinkedStructureStubInfo()
+{
+    void* unlinkedStubInfoIndex = bitwise_cast<void*>(static_cast<uintptr_t>(m_unlinkedStubInfos.size()));
+    UnlinkedStructureStubInfo* stubInfo = &m_unlinkedStubInfos.alloc();
+    JITConstantPool::Constant stubInfoIndex = m_graph.m_plan.addToConstantPool(JITConstantPool::Type::StructureStubInfo, unlinkedStubInfoIndex);
+    return std::tuple { stubInfo, stubInfoIndex };
 }
 
 } } // namespace JSC::DFG
