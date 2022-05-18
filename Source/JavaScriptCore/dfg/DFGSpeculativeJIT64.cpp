@@ -177,10 +177,10 @@ void SpeculativeJIT::cachedGetById(CodeOrigin codeOrigin, GPRReg baseGPR, GPRReg
 
     std::unique_ptr<SlowPathGenerator> slowPath;
     if (m_graph.m_plan.isUnlinked()) {
-        auto [ stubInfo, stubInfoIndex, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
+        auto [ stubInfo, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
         JITGetByIdGenerator::setUpStubInfo(*stubInfo, type, codeOrigin, callSite, usedRegisters, baseRegs, resultRegs, stubInfoGPR);
-        gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, baseRegs, resultRegs, stubInfoGPR, scratchGPR);
-        gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
+        gen.generateDFGDataICFastPath(m_jit, stubInfoConstant.index(), baseRegs, resultRegs, stubInfoGPR, scratchGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
         gen.m_unlinkedStubInfo = stubInfo;
         ASSERT(!gen.stubInfo());
         slowPath = slowPathICCall(
@@ -225,10 +225,10 @@ void SpeculativeJIT::cachedGetByIdWithThis(CodeOrigin codeOrigin, GPRReg baseGPR
 
     std::unique_ptr<SlowPathGenerator> slowPath;
     if (m_graph.m_plan.isUnlinked()) {
-        auto [ stubInfo, stubInfoIndex, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
+        auto [ stubInfo, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
         JITGetByIdWithThisGenerator::setUpStubInfo(*stubInfo, AccessType::GetByIdWithThis, codeOrigin, callSite, usedRegisters, resultRegs, baseRegs, thisRegs, stubInfoGPR);
-        gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, baseRegs, resultRegs, stubInfoGPR, scratchGPR);
-        gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
+        gen.generateDFGDataICFastPath(m_jit, stubInfoConstant.index(), baseRegs, resultRegs, stubInfoGPR, scratchGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
         gen.m_unlinkedStubInfo = stubInfo;
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByIdWithThisOptimize,
@@ -2497,10 +2497,10 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
 
         std::unique_ptr<SlowPathGenerator> slowPath;
         if (m_graph.m_plan.isUnlinked()) {
-            auto [ stubInfo, stubInfoIndex, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
+            auto [ stubInfo, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
             JITGetByValGenerator::setUpStubInfo(*stubInfo, AccessType::GetByVal, codeOrigin, callSite, usedRegisters, baseRegs, propertyRegs, resultRegs, stubInfoGPR);
-            gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
-            gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
+            gen.generateDFGDataICFastPath(m_jit, stubInfoConstant.index(), stubInfoGPR);
+            gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
             gen.m_unlinkedStubInfo = stubInfo;
             configureStubInfoPropertyTypes(stubInfo);
             slowPath = slowPathICCall(

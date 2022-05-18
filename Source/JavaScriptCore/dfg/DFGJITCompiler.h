@@ -331,6 +331,7 @@ public:
         bool isUnlinked() const { return m_index != UINT_MAX; }
 
         void* pointer() const { return m_pointer; }
+        LinkerIR::Constant index() const { return m_index; }
 
 #if USE(JSVALUE64)
         Address unlinkedAddress()
@@ -369,7 +370,7 @@ public:
         return CCallHelpers::branchPtr(cond, left, CCallHelpers::TrustedImmPtr(constant.pointer()));
     }
 
-    std::tuple<UnlinkedStructureStubInfo*, LinkerIR::Constant, LinkableConstant> addUnlinkedStructureStubInfo();
+    std::tuple<UnlinkedStructureStubInfo*, LinkableConstant> addUnlinkedStructureStubInfo();
     LinkerIR::Constant addToConstantPool(LinkerIR::Type, void*);
 
 private:
