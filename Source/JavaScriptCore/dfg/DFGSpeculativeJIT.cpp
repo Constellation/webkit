@@ -2824,6 +2824,8 @@ void SpeculativeJIT::compilePutByVal(Node* node)
             stubInfo->valueRegs = valueRegs;
             stubInfo->propertyRegs = propertyRegs;
             stubInfo->m_stubInfoGPR = stubInfoGPR;
+            stubInfo->putKind = isDirect ? PutKind::Direct : PutKind::NotDirect;
+            stubInfo->ecmaMode = ecmaMode;
             stubInfo->hasConstantIdentifier = false;
             gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
             gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
