@@ -144,6 +144,10 @@ public:
             stubInfo.m_valueTagGPR = valueRegs.tagGPR();
             stubInfo.m_extraTagGPR = InvalidGPRReg;
 #endif
+        } else {
+            UNUSED_PARAM(baseRegs);
+            UNUSED_PARAM(valueRegs);
+            UNUSED_PARAM(stubInfoGPR);
         }
     }
 
