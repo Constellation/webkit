@@ -41,16 +41,13 @@
 namespace JSC {
 
 JITInlineCacheGenerator::JITInlineCacheGenerator(
-    CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, AccessType accessType,
-    const RegisterSet& usedRegisters)
+    CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, AccessType accessType)
     : m_jitType(jitType)
 {
     if (stubInfos) {
         ASSERT(JITCode::isOptimizingJIT(m_jitType));
         ASSERT_UNUSED(codeBlock, codeBlock);
         m_stubInfo = stubInfos->add(accessType, codeOrigin);
-        m_stubInfo->callSiteIndex = callSite;
-        m_stubInfo->usedRegisters = usedRegisters;
     }
 }
 
@@ -86,23 +83,12 @@ void JITInlineCacheGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned 
 }
 
 JITByIdGenerator::JITByIdGenerator(
-    CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, AccessType accessType,
-    const RegisterSet& usedRegisters, JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR)
-    : JITInlineCacheGenerator(codeBlock, stubInfos, jitType, codeOrigin, callSite, accessType, usedRegisters)
+    CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, AccessType accessType,
+    JSValueRegs base, JSValueRegs value)
+    : JITInlineCacheGenerator(codeBlock, stubInfos, jitType, codeOrigin, accessType)
     , m_base(base)
     , m_value(value)
 {
-    if (m_stubInfo) {
-        m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->valueGPR = value.payloadGPR();
-        m_stubInfo->m_extraGPR = InvalidGPRReg;
-        m_stubInfo->m_stubInfoGPR = stubInfoGPR;
-#if USE(JSVALUE32_64)
-        m_stubInfo->baseTagGPR = base.tagGPR();
-        m_stubInfo->valueTagGPR = value.tagGPR();
-        m_stubInfo->m_extraTagGPR = InvalidGPRReg;
-#endif
-    }
 }
 
 void JITByIdGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
@@ -133,9 +119,11 @@ void JITByIdGenerator::generateFastCommon(CCallHelpers& jit, size_t inlineICSize
 JITGetByIdGenerator::JITGetByIdGenerator(
     CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSet& usedRegisters,
     CacheableIdentifier propertyName, JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, AccessType accessType)
-    : JITByIdGenerator(codeBlock, stubInfos, jitType, codeOrigin, callSite, accessType, usedRegisters, base, value, stubInfoGPR)
+    : JITByIdGenerator(codeBlock, stubInfos, jitType, codeOrigin, accessType, base, value)
     , m_isLengthAccess(codeBlock && propertyName.uid() == codeBlock->vm().propertyNames->length.impl())
 {
+    if (m_stubInfo)
+        setUpStubInfo(*m_stubInfo, accessType, codeOrigin, callSite, usedRegisters, base, value, stubInfoGPR);
     RELEASE_ASSERT(base.payloadGPR() != value.tagGPR());
 }
 
@@ -193,15 +181,11 @@ void JITGetByIdGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, unsig
 JITGetByIdWithThisGenerator::JITGetByIdWithThisGenerator(
     CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSet& usedRegisters,
     CacheableIdentifier, JSValueRegs value, JSValueRegs base, JSValueRegs thisRegs, GPRReg stubInfoGPR)
-    : JITByIdGenerator(codeBlock, stubInfos, jitType, codeOrigin, callSite, AccessType::GetByIdWithThis, usedRegisters, base, value, stubInfoGPR)
+    : JITByIdGenerator(codeBlock, stubInfos, jitType, codeOrigin, AccessType::GetByIdWithThis, base, value)
 {
     RELEASE_ASSERT(thisRegs.payloadGPR() != thisRegs.tagGPR());
-    if (m_stubInfo) {
-        m_stubInfo->m_extraGPR = thisRegs.payloadGPR();
-#if USE(JSVALUE32_64)
-        m_stubInfo->m_extraTagGPR = thisRegs.tagGPR();
-#endif
-    }
+    if (m_stubInfo)
+        setUpStubInfo(*m_stubInfo, AccessType::GetByIdWithThis, codeOrigin, callSite, usedRegisters, value, base, thisRegs, stubInfoGPR);
 }
 
 void JITGetByIdWithThisGenerator::generateFastPath(CCallHelpers& jit, GPRReg scratchGPR)
@@ -249,12 +233,12 @@ JITPutByIdGenerator::JITPutByIdGenerator(
     CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSet& usedRegisters, CacheableIdentifier,
     JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, GPRReg scratch, 
     ECMAMode ecmaMode, PutKind putKind)
-        : JITByIdGenerator(codeBlock, stubInfos, jitType, codeOrigin, callSite, AccessType::PutById, usedRegisters, base, value, stubInfoGPR)
+        : JITByIdGenerator(codeBlock, stubInfos, jitType, codeOrigin, AccessType::PutById, base, value)
         , m_ecmaMode(ecmaMode)
         , m_putKind(putKind)
 {
     if (m_stubInfo)
-        m_stubInfo->usedRegisters.clear(scratch);
+        setUpStubInfo(*m_stubInfo, AccessType::PutById, codeOrigin, callSite, usedRegisters, base, value, stubInfoGPR, scratch, ecmaMode, putKind);
 }
 
 static void generatePutByIdInlineAccess(CCallHelpers& jit, GPRReg stubInfoGPR, JSValueRegs baseJSR, JSValueRegs valueJSR, GPRReg scratchGPR, GPRReg scratch2GPR)
@@ -334,24 +318,14 @@ V_JITOperation_GSsiJJC JITPutByIdGenerator::slowPathFunction()
 }
 
 JITDelByValGenerator::JITDelByValGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSet& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR)
-    : Base(codeBlock, stubInfos, jitType, codeOrigin, callSiteIndex, AccessType::DeleteByVal, usedRegisters)
+    : Base(codeBlock, stubInfos, jitType, codeOrigin, AccessType::DeleteByVal)
 {
     ASSERT(base.payloadGPR() != result.payloadGPR());
 #if USE(JSVALUE32_64)
     ASSERT(base.tagGPR() != result.tagGPR());
 #endif
-    if (m_stubInfo) {
-        m_stubInfo->hasConstantIdentifier = false;
-        m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->m_extraGPR = property.payloadGPR();
-        m_stubInfo->valueGPR = result.payloadGPR();
-        m_stubInfo->m_stubInfoGPR = stubInfoGPR;
-#if USE(JSVALUE32_64)
-        m_stubInfo->baseTagGPR = base.tagGPR();
-        m_stubInfo->valueTagGPR = result.tagGPR();
-        m_stubInfo->m_extraTagGPR = property.tagGPR();
-#endif
-    }
+    if (m_stubInfo)
+        setUpStubInfo(*m_stubInfo, AccessType::DeleteByVal, codeOrigin, callSiteIndex, usedRegisters, base, property, result, stubInfoGPR);
 }
 
 void JITDelByValGenerator::generateFastPath(CCallHelpers& jit)
@@ -375,24 +349,14 @@ void JITDelByValGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
 }
 
 JITDelByIdGenerator::JITDelByIdGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier, JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR)
-    : Base(codeBlock, stubInfos, jitType, codeOrigin, callSiteIndex, AccessType::DeleteByID, usedRegisters)
+    : Base(codeBlock, stubInfos, jitType, codeOrigin, AccessType::DeleteByID)
 {
     ASSERT(base.payloadGPR() != result.payloadGPR());
 #if USE(JSVALUE32_64)
     ASSERT(base.tagGPR() != result.tagGPR());
 #endif
-    if (m_stubInfo) {
-        m_stubInfo->hasConstantIdentifier = true;
-        m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->m_extraGPR = InvalidGPRReg;
-        m_stubInfo->valueGPR = result.payloadGPR();
-        m_stubInfo->m_stubInfoGPR = stubInfoGPR;
-#if USE(JSVALUE32_64)
-        m_stubInfo->baseTagGPR = base.tagGPR();
-        m_stubInfo->valueTagGPR = result.tagGPR();
-        m_stubInfo->m_extraTagGPR = InvalidGPRReg;
-#endif
-    }
+    if (m_stubInfo)
+        setUpStubInfo(*m_stubInfo, AccessType::DeleteByID, codeOrigin, callSiteIndex, usedRegisters, base, result, stubInfoGPR);
 }
 
 void JITDelByIdGenerator::generateFastPath(CCallHelpers& jit)
@@ -416,20 +380,10 @@ void JITDelByIdGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
 }
 
 JITInByValGenerator::JITInByValGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSet& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR)
-    : Base(codeBlock, stubInfos, jitType, codeOrigin, callSiteIndex, accessType, usedRegisters)
+    : Base(codeBlock, stubInfos, jitType, codeOrigin, accessType)
 {
-    if (m_stubInfo) {
-        m_stubInfo->hasConstantIdentifier = false;
-        m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->m_extraGPR = property.payloadGPR();
-        m_stubInfo->valueGPR = result.payloadGPR();
-        m_stubInfo->m_stubInfoGPR = stubInfoGPR;
-#if USE(JSVALUE32_64)
-        m_stubInfo->baseTagGPR = base.tagGPR();
-        m_stubInfo->valueTagGPR = result.tagGPR();
-        m_stubInfo->m_extraTagGPR = property.tagGPR();
-#endif
-    }
+    if (m_stubInfo)
+        setUpStubInfo(*m_stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, property, result, stubInfoGPR);
 }
 
 void JITInByValGenerator::generateFastPath(CCallHelpers& jit)
@@ -457,11 +411,13 @@ void JITInByValGenerator::finalize(
 JITInByIdGenerator::JITInByIdGenerator(
     CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSet& usedRegisters,
     CacheableIdentifier propertyName, JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR)
-    : JITByIdGenerator(codeBlock, stubInfos, jitType, codeOrigin, callSite, AccessType::InById, usedRegisters, base, value, stubInfoGPR)
+    : JITByIdGenerator(codeBlock, stubInfos, jitType, codeOrigin, AccessType::InById, base, value)
 {
     // FIXME: We are not supporting fast path for "length" property.
     UNUSED_PARAM(propertyName);
     RELEASE_ASSERT(base.payloadGPR() != value.tagGPR());
+    if (m_stubInfo)
+        setUpStubInfo(*m_stubInfo, AccessType::InById, codeOrigin, callSite, usedRegisters, base, value, stubInfoGPR);
 }
 
 static void generateInByIdInlineAccess(CCallHelpers& jit, GPRReg stubInfoGPR, JSValueRegs baseJSR, GPRReg scratchGPR, JSValueRegs resultJSR)
@@ -523,23 +479,10 @@ JITInstanceOfGenerator::JITInstanceOfGenerator(
     CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex,
     const RegisterSet& usedRegisters, GPRReg result, GPRReg value, GPRReg prototype, GPRReg stubInfoGPR,
     bool prototypeIsKnownObject)
-    : JITInlineCacheGenerator(codeBlock, stubInfos, jitType, codeOrigin, callSiteIndex, AccessType::InstanceOf, usedRegisters)
+    : JITInlineCacheGenerator(codeBlock, stubInfos, jitType, codeOrigin, AccessType::InstanceOf)
 {
-    if (m_stubInfo) {
-        m_stubInfo->baseGPR = value;
-        m_stubInfo->valueGPR = result;
-        m_stubInfo->m_extraGPR = prototype;
-        m_stubInfo->m_stubInfoGPR = stubInfoGPR;
-#if USE(JSVALUE32_64)
-        m_stubInfo->baseTagGPR = InvalidGPRReg;
-        m_stubInfo->valueTagGPR = InvalidGPRReg;
-        m_stubInfo->m_extraTagGPR = InvalidGPRReg;
-#endif
-
-        m_stubInfo->usedRegisters.clear(result);
-        m_stubInfo->prototypeIsKnownObject = prototypeIsKnownObject;
-        m_stubInfo->hasConstantIdentifier = false;
-    }
+    if (m_stubInfo)
+        setUpStubInfo(*m_stubInfo, AccessType::InstanceOf, codeOrigin, callSiteIndex, usedRegisters, result, value, prototype, stubInfoGPR, prototypeIsKnownObject);
 }
 
 void JITInstanceOfGenerator::generateFastPath(CCallHelpers& jit)
@@ -563,22 +506,12 @@ void JITInstanceOfGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath
 }
 
 JITGetByValGenerator::JITGetByValGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSet& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR)
-    : Base(codeBlock, stubInfos, jitType, codeOrigin, callSiteIndex, accessType, usedRegisters)
+    : Base(codeBlock, stubInfos, jitType, codeOrigin, accessType)
     , m_base(base)
     , m_result(result)
 {
-    if (m_stubInfo) {
-        m_stubInfo->hasConstantIdentifier = false;
-        m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->m_extraGPR = property.payloadGPR();
-        m_stubInfo->valueGPR = result.payloadGPR();
-        m_stubInfo->m_stubInfoGPR = stubInfoGPR;
-#if USE(JSVALUE32_64)
-        m_stubInfo->baseTagGPR = base.tagGPR();
-        m_stubInfo->valueTagGPR = result.tagGPR();
-        m_stubInfo->m_extraTagGPR = property.tagGPR();
-#endif
-    }
+    if (m_stubInfo)
+        setUpStubInfo(*m_stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, property, result, stubInfoGPR);
 }
 
 void JITGetByValGenerator::generateFastPath(CCallHelpers& jit)
@@ -602,23 +535,12 @@ void JITGetByValGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
 }
 
 JITPutByValGenerator::JITPutByValGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSet& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs value, GPRReg arrayProfileGPR, GPRReg stubInfoGPR)
-    : Base(codeBlock, stubInfos, jitType, codeOrigin, callSiteIndex, accessType, usedRegisters)
+    : Base(codeBlock, stubInfos, jitType, codeOrigin, accessType)
     , m_base(base)
     , m_value(value)
 {
-    if (m_stubInfo) {
-        m_stubInfo->hasConstantIdentifier = false;
-        m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->m_extraGPR = property.payloadGPR();
-        m_stubInfo->valueGPR = value.payloadGPR();
-        m_stubInfo->m_stubInfoGPR = stubInfoGPR;
-        m_stubInfo->m_arrayProfileGPR = arrayProfileGPR;
-#if USE(JSVALUE32_64)
-        m_stubInfo->baseTagGPR = base.tagGPR();
-        m_stubInfo->valueTagGPR = value.tagGPR();
-        m_stubInfo->m_extraTagGPR = property.tagGPR();
-#endif
-    }
+    if (m_stubInfo)
+        setUpStubInfo(*m_stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, property, value, arrayProfileGPR, stubInfoGPR);
 }
 
 void JITPutByValGenerator::generateFastPath(CCallHelpers& jit)
@@ -642,21 +564,11 @@ void JITPutByValGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
 }
 
 JITPrivateBrandAccessGenerator::JITPrivateBrandAccessGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSet& usedRegisters, JSValueRegs base, JSValueRegs brand, GPRReg stubInfoGPR)
-    : Base(codeBlock, stubInfos, jitType, codeOrigin, callSiteIndex, accessType, usedRegisters)
+    : Base(codeBlock, stubInfos, jitType, codeOrigin, accessType)
 {
     ASSERT(accessType == AccessType::CheckPrivateBrand || accessType == AccessType::SetPrivateBrand);
-    if (m_stubInfo) {
-        m_stubInfo->hasConstantIdentifier = false;
-        m_stubInfo->baseGPR = base.payloadGPR();
-        m_stubInfo->m_extraGPR = brand.payloadGPR();
-        m_stubInfo->valueGPR = InvalidGPRReg;
-        m_stubInfo->m_stubInfoGPR = stubInfoGPR;
-#if USE(JSVALUE32_64)
-        m_stubInfo->baseTagGPR = base.tagGPR();
-        m_stubInfo->m_extraTagGPR = brand.tagGPR();
-        m_stubInfo->valueTagGPR = InvalidGPRReg;
-#endif
-    }
+    if (m_stubInfo)
+        setUpStubInfo(*m_stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, brand, stubInfoGPR);
 }
 
 void JITPrivateBrandAccessGenerator::generateFastPath(CCallHelpers& jit)
