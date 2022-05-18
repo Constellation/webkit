@@ -219,22 +219,34 @@ void SpeculativeJIT::cachedGetByIdWithThis(CodeOrigin codeOrigin, GPRReg baseGPR
         usedRegisters.set(scratchGPR, false);
     
     JITGetByIdWithThisGenerator gen(
-        m_jit.codeBlock(), &m_jit.jitCode()->common.m_stubInfos, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
         JSValueRegs(resultGPR), JSValueRegs(baseGPR), JSValueRegs(thisGPR), stubInfoGPR);
-    gen.generateFastPath(m_jit, scratchGPR);
     
     JITCompiler::JumpList slowCases;
     slowCases.append(slowPathTarget);
-    if (!m_graph.m_plan.isUnlinked())
-        slowCases.append(gen.slowPathJump());
-    
+
     std::unique_ptr<SlowPathGenerator> slowPath;
     if (m_graph.m_plan.isUnlinked()) {
+        auto [ stubInfo, stubInfoIndex, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
+        stubInfo->accessType = AccessType::GetByIdWithThis;
+        stubInfo->codeOrigin = codeOrigin;
+        stubInfo->callSiteIndex = callSite;
+        stubInfo->usedRegisters = usedRegisters;
+        stubInfo->baseRegs = JSValueRegs { baseGPR };
+        stubInfo->propertyRegs = JSValueRegs { thisGPR };
+        stubInfo->valueRegs = JSValueRegs { resultGPR };
+        stubInfo->m_stubInfoGPR = stubInfoGPR;
+        stubInfo->hasConstantIdentifier = true;
+        gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfo->baseRegs, stubInfo->valueRegs, stubInfoGPR, scratchGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
+        gen.m_unlinkedStubInfo = stubInfo;
         slowPath = slowPathICCall(
-            slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByIdWithThisOptimize,
+            slowCases, this, stubInfoConstant, stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByIdWithThisOptimize,
             DontSpill, ExceptionCheckRequirement::CheckNeeded,
             resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), stubInfoGPR, baseGPR, thisGPR, identifier.rawBits());
     } else {
+        gen.generateFastPath(m_jit, scratchGPR);
+        slowCases.append(gen.slowPathJump());
         slowPath = slowPathCall(
             slowCases, this, operationGetByIdWithThisOptimize,
             DontSpill, ExceptionCheckRequirement::CheckNeeded,
