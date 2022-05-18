@@ -2484,6 +2484,12 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
             auto [ stubInfo, stubInfoIndex ] = m_jit.addUnlinkedStructureStubInfo();
             stubInfo->accessType = AccessType::GetByVal;
             stubInfo->codeOrigin = codeOrigin;
+            stubInfo->callSiteIndex = callSite;
+            stubInfo->usedRegisters = usedRegisters;
+            stubInfo->baseGPR  = baseGPR;
+            stubInfo->regs.propertyGPR = propertyGPR;
+            stubInfo->valueGPR = resultGPR;
+            stubInfo->m_stubInfoGPR = stubInfoGPR;
             gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
             slowPath = slowPathICCall(
                 slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValOptimize,

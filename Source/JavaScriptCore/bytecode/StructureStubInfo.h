@@ -46,6 +46,10 @@ namespace JSC {
 
 #if ENABLE(JIT)
 
+namespace DFG {
+struct UnlinkedStructureStubInfo;
+}
+
 class AccessCase;
 class AccessGenerationResult;
 class PolymorphicAccess;
@@ -82,6 +86,7 @@ enum class CacheType : int8_t {
 };
 
 struct UnlinkedStructureStubInfo;
+struct BaselineUnlinkedStructureStubInfo;
 
 class StructureStubInfo {
     WTF_MAKE_NONCOPYABLE(StructureStubInfo);
@@ -123,7 +128,8 @@ public:
     void deref();
     void aboutToDie();
 
-    void initializeFromUnlinkedStructureStubInfo(const UnlinkedStructureStubInfo&);
+    void initializeFromUnlinkedStructureStubInfo(const BaselineUnlinkedStructureStubInfo&);
+    void initializeFromDFGUnlinkedStructureStubInfo(const DFG::UnlinkedStructureStubInfo&);
 
     DECLARE_VISIT_AGGREGATE;
 

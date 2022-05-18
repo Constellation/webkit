@@ -47,7 +47,7 @@ JITData::JITData(const JITCode& jitCode, ExitVector&& exits)
             unsigned index = bitwise_cast<uintptr_t>(entry.pointer());
             const UnlinkedStructureStubInfo& unlinkedStubInfo = jitCode.m_unlinkedStubInfos[index];
             StructureStubInfo& stubInfo = m_stubInfos[index];
-            stubInfo.initializeFromUnlinkedStructureStubInfo(unlinkedStubInfo);
+            stubInfo.initializeFromDFGUnlinkedStructureStubInfo(unlinkedStubInfo);
             at(i) = &stubInfo;
             break;
         }
