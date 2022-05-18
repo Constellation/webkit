@@ -686,9 +686,9 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(const DFG::Un
 
     usedRegisters = unlinkedStubInfo.usedRegisters;
 
-    m_baseGPR = unlinkedStubInfo.baseRegs.payloadGPR();
-    m_extraGPR = unlinkedStubInfo.extraRegs.payloadGPR();
-    m_valueGPR = unlinkedStubInfo.valueRegs.payloadGPR();
+    m_baseGPR = unlinkedStubInfo.m_baseGPR;
+    m_extraGPR = unlinkedStubInfo.m_extraGPR;
+    m_valueGPR = unlinkedStubInfo.m_valueGPR;
     m_stubInfoGPR = unlinkedStubInfo.m_stubInfoGPR;
 
     switch (accessType) {

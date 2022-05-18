@@ -40,6 +40,7 @@
 namespace JSC {
 namespace DFG {
 class JITCompiler;
+struct UnlinkedStructureStubInfo;
 }
 
 class CacheableIdentifier;
@@ -252,7 +253,7 @@ public:
 
     JITPutByValGenerator(
         CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSet& usedRegisters,
-        JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg arrayProfileGPR, GPRReg stubInfoGPR);
+        JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, PutKind, ECMAMode, PrivateFieldPutKind);
 
     CCallHelpers::Jump slowPathJump() const
     {
@@ -267,7 +268,7 @@ public:
     template<typename StubInfo>
     static void setUpStubInfo(StubInfo& stubInfo,
         AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSet& usedRegisters,
-        JSValueRegs baseRegs, JSValueRegs propertyRegs, JSValueRegs valueRegs, GPRReg arrayProfileGPR, GPRReg stubInfoGPR)
+        JSValueRegs baseRegs, JSValueRegs propertyRegs, JSValueRegs valueRegs, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, PutKind putKind, ECMAMode ecmaMode, PrivateFieldPutKind privateFieldPutKind)
     {
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
         stubInfo.hasConstantIdentifier = false;
@@ -276,12 +277,18 @@ public:
             stubInfo.m_extraGPR = propertyRegs.payloadGPR();
             stubInfo.m_valueGPR = valueRegs.payloadGPR();
             stubInfo.m_stubInfoGPR = stubInfoGPR;
-            stubInfo.m_arrayProfileGPR = arrayProfileGPR;
+            if constexpr (!std::is_same_v<std::decay_t<StubInfo>, DFG::UnlinkedStructureStubInfo>)
+                stubInfo.m_arrayProfileGPR = arrayProfileGPR;
 #if USE(JSVALUE32_64)
             stubInfo.baseTagGPR = baseRegs.tagGPR();
             stubInfo.valueTagGPR = valueRegs.tagGPR();
             stubInfo.m_extraTagGPR = propertyRegs.tagGPR();
 #endif
+        }
+        if constexpr (!std::is_same_v<std::decay_t<StubInfo>, StructureStubInfo>) {
+            stubInfo.putKind = putKind;
+            stubInfo.ecmaMode = ecmaMode;
+            stubInfo.privateFieldPutKind = privateFieldPutKind;
         }
     }
 

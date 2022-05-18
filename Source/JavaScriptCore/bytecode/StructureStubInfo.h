@@ -395,11 +395,11 @@ public:
     GPRReg m_stubInfoGPR { InvalidGPRReg };
     GPRReg m_arrayProfileGPR { InvalidGPRReg };
 #if USE(JSVALUE32_64)
-    GPRReg m_valueTagGPR;
+    GPRReg m_valueTagGPR { InvalidGPRReg };
     // FIXME: [32-bits] Check if StructureStubInfo::m_baseTagGPR is used somewhere.
     // https://bugs.webkit.org/show_bug.cgi?id=204726
-    GPRReg m_baseTagGPR;
-    GPRReg m_extraTagGPR;
+    GPRReg m_baseTagGPR { InvalidGPRReg };
+    GPRReg m_extraTagGPR { InvalidGPRReg };
 #endif
 
     AccessType accessType;
@@ -471,7 +471,7 @@ inline auto appropriateGenericGetByIdFunction(AccessType type) -> decltype(&oper
 
 struct UnlinkedStructureStubInfo {
     AccessType accessType;
-    PutKind putKind;
+    PutKind putKind { PutKind::Direct };
     PrivateFieldPutKind privateFieldPutKind { PrivateFieldPutKind::none() };
     ECMAMode ecmaMode { ECMAMode::sloppy() };
     bool propertyIsInt32 { false };

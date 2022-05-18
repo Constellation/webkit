@@ -390,14 +390,16 @@ void JIT::emit_op_put_by_val(const JSInstruction* currentInstruction)
 
     emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), /* scratchGPR: */ stubInfoGPR);
 
+    PutKind putKind = std::is_same_v<Op, OpPutByValDirect> ? PutKind::Direct : PutKind::NotDirect;
+    ECMAMode ecmaMode = this->ecmaMode(bytecode);
     JITPutByValGenerator gen(
         nullptr, nullptr, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::PutByVal, RegisterSet::stubUnavailableRegisters(),
-        baseJSR, propertyJSR, valueJSR, profileGPR, stubInfoGPR);
+        baseJSR, propertyJSR, valueJSR, profileGPR, stubInfoGPR, putKind, ecmaMode, PrivateFieldPutKind::none());
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     stubInfo->accessType = AccessType::PutByVal;
-    stubInfo->putKind = std::is_same_v<Op, OpPutByValDirect> ? PutKind::Direct : PutKind::NotDirect;
-    stubInfo->ecmaMode = ecmaMode(bytecode);
+    stubInfo->putKind = putKind;
+    stubInfo->ecmaMode = ecmaMode;
     stubInfo->bytecodeIndex = m_bytecodeIndex;
     if (isOperandConstantInt(property))
         stubInfo->propertyIsInt32 = true;
@@ -500,7 +502,7 @@ void JIT::emit_op_put_private_name(const JSInstruction* currentInstruction)
 
     JITPutByValGenerator gen(
         nullptr, nullptr, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::PutPrivateName, RegisterSet::stubUnavailableRegisters(),
-        baseJSR, propertyJSR, valueJSR, InvalidGPRReg, stubInfoGPR);
+        baseJSR, propertyJSR, valueJSR, InvalidGPRReg, stubInfoGPR, PutKind::Direct, ECMAMode::sloppy(), bytecode.m_putKind);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     stubInfo->accessType = AccessType::PutPrivateName;

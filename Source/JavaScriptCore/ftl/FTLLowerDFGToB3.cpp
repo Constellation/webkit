@@ -4330,7 +4330,8 @@ private:
 
         State* state = &m_ftlState;
         CodeOrigin nodeSemanticOrigin = node->origin.semantic;
-        auto operation = node->privateFieldPutKind().isDefine() ? operationPutByValDefinePrivateFieldOptimize : operationPutByValSetPrivateFieldOptimize;
+        PrivateFieldPutKind privateFieldPutKind = m_node->privateFieldPutKind();
+        auto operation = privateFieldPutKind.isDefine() ? operationPutByValDefinePrivateFieldOptimize : operationPutByValSetPrivateFieldOptimize;
         patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
             AllowMacroScratchRegisterUsage allowScratch(jit);
 
@@ -4351,7 +4352,7 @@ private:
 
             auto generator = Box<JITPutByValGenerator>::create(
                 jit.codeBlock(), &state->jitCode->common.m_stubInfos, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::PutPrivateName,
-                params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(valueGPR), InvalidGPRReg, stubInfoGPR);
+                params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(valueGPR), InvalidGPRReg, stubInfoGPR, PutKind::Direct, ECMAMode::sloppy(), privateFieldPutKind);
 
             generator->stubInfo()->propertyIsSymbol = true;
 
@@ -5823,6 +5824,7 @@ IGNORE_CLANG_WARNINGS_END
             CodeOrigin nodeSemanticOrigin = node->origin.semantic;
             ECMAMode ecmaMode = m_node->ecmaMode();
             bool isDirect = m_node->op() == PutByValDirect;
+            PutKind putKind = isDirect ? PutKind::Direct : PutKind::NotDirect;
             patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
                 AllowMacroScratchRegisterUsage allowScratch(jit);
 
@@ -5843,7 +5845,7 @@ IGNORE_CLANG_WARNINGS_END
 
                 auto generator = Box<JITPutByValGenerator>::create(
                     jit.codeBlock(), &state->jitCode->common.m_stubInfos, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::PutByVal,
-                    params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(valueGPR), InvalidGPRReg, stubInfoGPR);
+                    params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(valueGPR), InvalidGPRReg, stubInfoGPR, putKind, ecmaMode, PrivateFieldPutKind::none());
 
                 generator->stubInfo()->propertyIsString = propertyIsString;
                 generator->stubInfo()->propertyIsInt32 = propertyIsInt32;

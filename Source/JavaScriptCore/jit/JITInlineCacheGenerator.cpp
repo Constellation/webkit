@@ -534,13 +534,13 @@ void JITGetByValGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
         m_stubInfo->m_codePtr = m_stubInfo->slowPathStartLocation;
 }
 
-JITPutByValGenerator::JITPutByValGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSet& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs value, GPRReg arrayProfileGPR, GPRReg stubInfoGPR)
+JITPutByValGenerator::JITPutByValGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSet& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs value, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, PutKind putKind, ECMAMode ecmaMode, PrivateFieldPutKind privateFieldPutKind)
     : Base(codeBlock, stubInfos, jitType, codeOrigin, accessType)
     , m_base(base)
     , m_value(value)
 {
     if (m_stubInfo)
-        setUpStubInfo(*m_stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, property, value, arrayProfileGPR, stubInfoGPR);
+        setUpStubInfo(*m_stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, property, value, arrayProfileGPR, stubInfoGPR, putKind, ecmaMode, privateFieldPutKind);
 }
 
 void JITPutByValGenerator::generateFastPath(CCallHelpers& jit)
