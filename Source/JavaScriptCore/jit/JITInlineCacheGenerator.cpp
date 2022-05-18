@@ -333,7 +333,7 @@ V_JITOperation_GSsiJJC JITPutByIdGenerator::slowPathFunction()
     return nullptr;
 }
 
-JITDelByValGenerator::JITDelByValGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSet& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR, GPRReg scratch)
+JITDelByValGenerator::JITDelByValGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSet& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR)
     : Base(codeBlock, stubInfos, jitType, codeOrigin, callSiteIndex, AccessType::DeleteByVal, usedRegisters)
 {
     ASSERT(base.payloadGPR() != result.payloadGPR());
@@ -351,7 +351,6 @@ JITDelByValGenerator::JITDelByValGenerator(CodeBlock* codeBlock, Bag<StructureSt
         m_stubInfo->valueTagGPR = result.tagGPR();
         m_stubInfo->v.propertyTagGPR = property.tagGPR();
 #endif
-        m_stubInfo->usedRegisters.clear(scratch);
     }
 }
 

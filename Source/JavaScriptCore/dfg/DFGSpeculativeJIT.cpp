@@ -1267,7 +1267,6 @@ void SpeculativeJIT::compileDeleteByVal(Node* node)
         SpeculateCellOperand base(this, node->child1());
         JSValueOperand key(this, node->child2(), ManualOperandSpeculation);
         JSValueRegsTemporary result(this, Reuse, key);
-        GPRTemporary scratch(this);
 
         JITCompiler::JumpList slowCases;
 
@@ -1279,7 +1278,6 @@ void SpeculativeJIT::compileDeleteByVal(Node* node)
         GPRReg baseGPR = base.gpr();
         JSValueRegs keyRegs = key.jsValueRegs();
         JSValueRegs resultRegs = result.regs();
-        GPRReg scratchGPR = scratch.gpr();
         GPRReg resultGPR = resultRegs.payloadGPR();
 
         speculate(node, node->child2());
@@ -1293,7 +1291,7 @@ void SpeculativeJIT::compileDeleteByVal(Node* node)
 
         JITDelByValGenerator gen(
             m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters,
-            JSValueRegs::payloadOnly(baseGPR), keyRegs, resultRegs, stubInfoGPR, scratchGPR);
+            JSValueRegs::payloadOnly(baseGPR), keyRegs, resultRegs, stubInfoGPR);
 
 #if USE(JSVALUE64)
         std::unique_ptr<SlowPathGenerator> slowPath;

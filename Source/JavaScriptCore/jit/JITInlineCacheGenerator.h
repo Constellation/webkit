@@ -206,7 +206,7 @@ public:
 
     JITDelByValGenerator(
         CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters,
-        JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR, GPRReg scratch);
+        JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
     {

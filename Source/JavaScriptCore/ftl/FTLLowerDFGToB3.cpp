@@ -6187,10 +6187,7 @@ IGNORE_CLANG_WARNINGS_END
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
         patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
         patchpoint->clobber(RegisterSet::macroScratchRegisters());
-        if constexpr (kind == DelByKind::ById)
-            patchpoint->numGPScratchRegisters = JITCode::useDataIC(JITType::FTLJIT) ? 1 : 0;
-        else
-            patchpoint->numGPScratchRegisters = JITCode::useDataIC(JITType::FTLJIT) ? 2 : 1;
+        patchpoint->numGPScratchRegisters = JITCode::useDataIC(JITType::FTLJIT) ? 1 : 0;
 
         RefPtr<PatchpointExceptionHandle> exceptionHandle =
             preparePatchpointForExceptions(patchpoint);
@@ -6216,16 +6213,7 @@ IGNORE_CLANG_WARNINGS_END
 
                 auto base = JSValueRegs(params[1].gpr());
                 auto returnGPR = params[0].gpr();
-                GPRReg scratchGPR = InvalidGPRReg;
-                GPRReg stubInfoGPR = InvalidGPRReg;
-                if constexpr (kind == DelByKind::ById)
-                    stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(0) : InvalidGPRReg;
-                else {
-                    scratchGPR = params.gpScratch(0);
-                    stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(1) : InvalidGPRReg;
-                    ASSERT(base.gpr() != scratchGPR);
-                    ASSERT(returnGPR != scratchGPR);
-                }
+                GPRReg stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(0) : InvalidGPRReg;
                 ASSERT(base.gpr() != returnGPR);
 
                 if (child1UseKind)
@@ -6242,7 +6230,6 @@ IGNORE_CLANG_WARNINGS_END
                     if constexpr (kind == DelByKind::ById)
                         return CCallHelpers::TrustedImmPtr(subscriptValue.rawBits());
                     else {
-                        ASSERT(scratchGPR != params[2].gpr());
                         if (child2UseKind == UntypedUse)
                             slowCases.append(jit.branchIfNotCell(JSValueRegs(params[2].gpr())));
                         return JSValueRegs(params[2].gpr());
@@ -6259,7 +6246,7 @@ IGNORE_CLANG_WARNINGS_END
                         return Box<JITDelByValGenerator>::create(
                             jit.codeBlock(), &state->jitCode->common.m_stubInfos, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
                             params.unavailableRegisters(), base,
-                            subscript, JSValueRegs(returnGPR), stubInfoGPR, scratchGPR);
+                            subscript, JSValueRegs(returnGPR), stubInfoGPR);
                     }
                 }();
 

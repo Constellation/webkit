@@ -767,7 +767,6 @@ void JIT::emit_op_del_by_val(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::DelByVal::propertyJSR;
     using BaselineJITRegisters::DelByVal::FastPath::resultJSR;
     using BaselineJITRegisters::DelByVal::FastPath::stubInfoGPR;
-    using BaselineJITRegisters::DelByVal::FastPath::scratchGPR;
 
     emitGetVirtualRegister(base, baseJSR);
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
@@ -776,7 +775,7 @@ void JIT::emit_op_del_by_val(const JSInstruction* currentInstruction)
 
     JITDelByValGenerator gen(
         nullptr, nullptr, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSet::stubUnavailableRegisters(),
-        baseJSR, propertyJSR, resultJSR, stubInfoGPR, scratchGPR);
+        baseJSR, propertyJSR, resultJSR, stubInfoGPR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     stubInfo->accessType = AccessType::DeleteByVal;
