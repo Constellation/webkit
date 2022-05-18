@@ -272,9 +272,12 @@ void JITCompiler::link(LinkBuffer& linkBuffer)
     finalizeInlineCaches(m_instanceOfs, linkBuffer);
     finalizeInlineCaches(m_privateBrandAccesses, linkBuffer);
 
-    m_jitCode->m_unlinkedStubInfos = FixedVector<UnlinkedStructureStubInfo>(m_unlinkedStubInfos.size());
-    if (m_jitCode->m_unlinkedStubInfos.size())
-        std::move(m_unlinkedStubInfos.begin(), m_unlinkedStubInfos.end(), m_jitCode->m_unlinkedStubInfos.begin());
+    if (m_graph.m_plan.isUnlinked()) {
+        m_jitCode->m_unlinkedStubInfos = FixedVector<UnlinkedStructureStubInfo>(m_unlinkedStubInfos.size());
+        if (m_jitCode->m_unlinkedStubInfos.size())
+            std::move(m_unlinkedStubInfos.begin(), m_unlinkedStubInfos.end(), m_jitCode->m_unlinkedStubInfos.begin());
+        ASSERT(m_jitCode->common.m_stubInfos.isEmpty());
+    }
 
     for (auto& record : m_jsCalls) {
         auto& info = *record.info;
@@ -780,6 +783,7 @@ LinkerIR::Constant JITCompiler::addToConstantPool(LinkerIR::Type type, void* pay
 
 std::tuple<UnlinkedStructureStubInfo*, LinkerIR::Constant, JITCompiler::LinkableConstant> JITCompiler::addUnlinkedStructureStubInfo()
 {
+    ASSERT(m_graph.m_plan.isUnlinked());
     void* unlinkedStubInfoIndex = bitwise_cast<void*>(static_cast<uintptr_t>(m_unlinkedStubInfos.size()));
     UnlinkedStructureStubInfo* stubInfo = &m_unlinkedStubInfos.alloc();
     LinkerIR::Constant stubInfoIndex = addToConstantPool(LinkerIR::Type::StructureStubInfo, unlinkedStubInfoIndex);
