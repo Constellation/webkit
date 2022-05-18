@@ -87,14 +87,11 @@ public:
     template<typename StubInfo>
     static void setUpStubInfoImpl(StubInfo& stubInfo, AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSet& usedRegisters)
     {
-        if constexpr (!std::is_same_v<std::decay_t<StubInfo>, StructureStubInfo>)
-            stubInfo.accessType = accessType;
-
-        if constexpr (std::is_same_v<std::decay_t<StubInfo>, DFG::UnlinkedStructureStubInfo>)
-            stubInfo.codeOrigin = codeOrigin;
+        stubInfo.accessType = accessType;
         if constexpr (std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>)
             stubInfo.bytecodeIndex = codeOrigin.bytecodeIndex();
         else {
+            stubInfo.codeOrigin = codeOrigin;
             stubInfo.callSiteIndex = callSiteIndex;
             stubInfo.usedRegisters = usedRegisters;
             stubInfo.hasConstantIdentifier = true;

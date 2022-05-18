@@ -41,10 +41,12 @@
 namespace JSC {
 
 JITInlineCacheGenerator::JITInlineCacheGenerator(
-    CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, CompileTimeStructureStubInfo, JITType jitType, CodeOrigin codeOrigin, AccessType accessType)
+    CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, AccessType accessType)
     : m_jitType(jitType)
 {
-    if (stubInfos) {
+    if (std::holds_alternative<StructureStubInfo*>(stubInfo))
+        m_stubInfo = std::get<StructureStubInfo*>(stubInfo);
+    if (stubInfos && !m_stubInfo) {
         ASSERT(JITCode::isOptimizingJIT(m_jitType));
         ASSERT_UNUSED(codeBlock, codeBlock);
         m_stubInfo = stubInfos->add(accessType, codeOrigin);

@@ -4042,8 +4042,9 @@ private:
                 GPRReg propertyGPR = params[2].gpr();
                 GPRReg stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(0) : InvalidGPRReg;
 
+                auto* stubInfo = state->addStructureStubInfo();
                 auto generator = Box<JITGetByValGenerator>::create(
-                    jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::GetPrivateName,
+                    jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::GetPrivateName,
                     params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(resultGPR), stubInfoGPR);
 
                 CCallHelpers::Jump notCell;
@@ -4188,8 +4189,9 @@ private:
             GPRReg brandGPR = params[1].gpr();
             GPRReg stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(0) : InvalidGPRReg;
 
+            auto* stubInfo = state->addStructureStubInfo();
             auto generator = Box<JITPrivateBrandAccessGenerator>::create(
-                jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, accessType,
+                jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, accessType,
                 params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(brandGPR), stubInfoGPR);
 
             CCallHelpers::Jump notCell;
@@ -4350,8 +4352,9 @@ private:
             GPRReg valueGPR = params[2].gpr();
             GPRReg stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(0) : InvalidGPRReg;
 
+            auto* stubInfo = state->addStructureStubInfo();
             auto generator = Box<JITPutByValGenerator>::create(
-                jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::PutPrivateName,
+                jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::PutPrivateName,
                 params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(valueGPR), InvalidGPRReg, stubInfoGPR, PutKind::Direct, ECMAMode::sloppy(), privateFieldPutKind);
 
             generator->stubInfo()->propertyIsSymbol = true;
@@ -4704,8 +4707,9 @@ private:
                     scratch2GPR = params.gpScratch(2);
                 }
 
+                auto* stubInfo = state->addStructureStubInfo();
                 auto generator = Box<JITPutByIdGenerator>::create(
-                    jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
+                    jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
                     params.unavailableRegisters(), identifier, JSValueRegs(params[0].gpr()),
                     JSValueRegs(params[1].gpr()), stubInfoGPR, GPRInfo::patchpointScratchRegister, ecmaMode,
                     putKind);
@@ -5485,8 +5489,9 @@ IGNORE_CLANG_WARNINGS_END
                 GPRReg propertyGPR = params[2].gpr();
                 GPRReg stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(0) : InvalidGPRReg;
 
+                auto* stubInfo = state->addStructureStubInfo();
                 auto generator = Box<JITGetByValGenerator>::create(
-                    jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::GetByVal,
+                    jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::GetByVal,
                     params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(resultGPR), stubInfoGPR);
 
                 generator->stubInfo()->propertyIsString = propertyIsString;
@@ -5843,8 +5848,9 @@ IGNORE_CLANG_WARNINGS_END
                 GPRReg valueGPR = params[2].gpr();
                 GPRReg stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(0) : InvalidGPRReg;
 
+                auto* stubInfo = state->addStructureStubInfo();
                 auto generator = Box<JITPutByValGenerator>::create(
-                    jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::PutByVal,
+                    jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::PutByVal,
                     params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(valueGPR), InvalidGPRReg, stubInfoGPR, putKind, ecmaMode, PrivateFieldPutKind::none());
 
                 generator->stubInfo()->propertyIsString = propertyIsString;
@@ -6240,13 +6246,15 @@ IGNORE_CLANG_WARNINGS_END
 
                 const auto generator = [&] {
                     if constexpr (kind == DelByKind::ById) {
+                        auto* stubInfo = state->addStructureStubInfo();
                         return Box<JITDelByIdGenerator>::create(
-                            jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
+                            jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
                             params.unavailableRegisters(), subscriptValue, base,
                             JSValueRegs(returnGPR), stubInfoGPR);
                     } else {
+                        auto* stubInfo = state->addStructureStubInfo();
                         return Box<JITDelByValGenerator>::create(
-                            jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
+                            jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
                             params.unavailableRegisters(), base,
                             subscript, JSValueRegs(returnGPR), stubInfoGPR);
                     }
@@ -12902,13 +12910,15 @@ IGNORE_CLANG_WARNINGS_END
 
                 const auto generator = [&] {
                     if constexpr (type == AccessType::InById) {
+                        auto* stubInfo = state->addStructureStubInfo();
                         return Box<JITInByIdGenerator>::create(
-                            jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
+                            jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
                             params.unavailableRegisters(), subscriptValue, base,
                             JSValueRegs(returnGPR), stubInfoGPR);
                     } else {
+                        auto* stubInfo = state->addStructureStubInfo();
                         return Box<JITInByValGenerator>::create(
-                            jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
+                            jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
                             type, params.unavailableRegisters(), base, subscript,
                             JSValueRegs(returnGPR), stubInfoGPR);
                     }
@@ -13227,8 +13237,9 @@ IGNORE_CLANG_WARNINGS_END
                 Box<CCallHelpers::JumpList> exceptions =
                     exceptionHandle->scheduleExitCreation(params)->jumps(jit);
                 
+                auto* stubInfo = state->addStructureStubInfo();
                 auto generator = Box<JITInstanceOfGenerator>::create(
-                    jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
+                    jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
                     params.unavailableRegisters(), resultGPR, valueGPR, prototypeGPR, stubInfoGPR, prototypeIsObject);
                 generator->generateFastPath(jit);
                 if (!JITCode::useDataIC(JITType::FTLJIT))
@@ -15120,8 +15131,9 @@ IGNORE_CLANG_WARNINGS_END
                     scratchGPR = params.gpScratch(1);
                 }
 
+                auto* stubInfo = state->addStructureStubInfo();
                 auto generator = Box<JITGetByIdGenerator>::create(
-                    jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
+                    jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
                     params.unavailableRegisters(), identifier, JSValueRegs(params[1].gpr()),
                     JSValueRegs(params[0].gpr()), stubInfoGPR, type);
 
@@ -15210,8 +15222,9 @@ IGNORE_CLANG_WARNINGS_END
                     scratchGPR = params.gpScratch(1);
                 }
 
+                auto* stubInfo = state->addStructureStubInfo();
                 auto generator = Box<JITGetByIdWithThisGenerator>::create(
-                    jit.codeBlock(), state->jitCode->common.stubInfoAllocator(), CompileTimeStructureStubInfo(), JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
+                    jit.codeBlock(), nullptr, stubInfo, JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
                     params.unavailableRegisters(), identifier, JSValueRegs(params[0].gpr()),
                     JSValueRegs(params[1].gpr()), JSValueRegs(params[2].gpr()), stubInfoGPR);
 

@@ -161,6 +161,13 @@ State::~State()
 {
 }
 
+StructureStubInfo* State::addStructureStubInfo()
+{
+    return jitCode->common.stubInfoAllocator()->add();
+}
+
+
+
 } } // namespace JSC::FTL
 
 #endif // ENABLE(FTL_JIT)
