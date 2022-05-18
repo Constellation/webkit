@@ -167,22 +167,32 @@ void SpeculativeJIT::cachedGetById(CodeOrigin codeOrigin, GPRReg baseGPR, GPRReg
             usedRegisters.set(scratchGPR, false);
     }
     JITGetByIdGenerator gen(
-        m_jit.codeBlock(), &m_jit.jitCode()->common.m_stubInfos, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
         JSValueRegs(baseGPR), JSValueRegs(resultGPR), stubInfoGPR, type);
-    gen.generateFastPath(m_jit, scratchGPR);
     
     JITCompiler::JumpList slowCases;
     slowCases.append(slowPathTarget);
-    if (!JITCode::useDataIC(JITType::DFGJIT))
-        slowCases.append(gen.slowPathJump());
 
     std::unique_ptr<SlowPathGenerator> slowPath;
-    if (JITCode::useDataIC(JITType::DFGJIT)) {
+    if (m_graph.m_plan.isUnlinked()) {
+        auto [ stubInfo, stubInfoIndex ] = m_jit.addUnlinkedStructureStubInfo();
+        stubInfo->accessType = type;
+        stubInfo->codeOrigin = codeOrigin;
+        stubInfo->callSiteIndex = callSite;
+        stubInfo->usedRegisters = usedRegisters;
+        stubInfo->baseRegs = JSValueRegs { baseGPR };
+        stubInfo->valueRegs = JSValueRegs { resultGPR };
+        stubInfo->m_stubInfoGPR = stubInfoGPR;
+        gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfo->baseRegs, stubInfo->valueRegs, stubInfoGPR, scratchGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
+        gen.m_unlinkedStubInfo = stubInfo;
         slowPath = slowPathICCall(
             slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), appropriateOptimizingGetByIdFunction(type),
             spillMode, ExceptionCheckRequirement::CheckNeeded,
             resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), stubInfoGPR, baseGPR, identifier.rawBits());
     } else {
+        gen.generateFastPath(m_jit, scratchGPR);
+        slowCases.append(gen.slowPathJump());
         slowPath = slowPathCall(
             slowCases, this, appropriateOptimizingGetByIdFunction(type),
             spillMode, ExceptionCheckRequirement::CheckNeeded,

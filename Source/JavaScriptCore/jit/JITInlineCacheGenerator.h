@@ -130,6 +130,9 @@ public:
     
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR);
     void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant, GPRReg stubInfoGPR);
+#if ENABLE(DFG_JIT)
+    void generateDFGDataICFastPath(DFG::JITCompiler&, unsigned stubInfoConstant, JSValueRegs baseJSR, JSValueRegs resultJSR, GPRReg stubInfoGPR, GPRReg scratchGPR);
+#endif
 
 private:
     bool m_isLengthAccess;
