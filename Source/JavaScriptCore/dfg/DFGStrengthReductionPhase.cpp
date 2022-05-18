@@ -1026,7 +1026,7 @@ private:
                 break;
 
             if (m_graph.m_plan.isFTL()) {
-                if (JITCode::useDataIC(JITType::FTLJIT))
+                if (Options::useDataICInOptimizingJIT())
                     break;
             }
 
