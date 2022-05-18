@@ -166,8 +166,7 @@ public:
         if (JITCode::isBaselineCode(jitType))
             return true;
 #if CPU(X86_64) || CPU(ARM64) || CPU(RISCV64)
-        if (jitType == JITType::FTLJIT)
-            return Options::useDataICInOptimizingJIT();
+        return Options::useDataICInOptimizingJIT();
 #endif
         return false;
     }

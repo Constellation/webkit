@@ -464,6 +464,9 @@ void Options::recomputeDependentOptions()
 
     if (!Options::useWebAssembly())
         Options::useFastTLSForWasmContext() = false;
+
+    if (Options::forceUnlinkedDFG())
+        Options::useDataICInOptimizingJIT() = true;
     
     if (Options::dumpDisassembly()
         || Options::asyncDisassembly()
