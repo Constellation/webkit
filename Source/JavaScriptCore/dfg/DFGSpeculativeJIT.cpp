@@ -4463,6 +4463,7 @@ void SpeculativeJIT::compilePutPrivateName(Node* node)
         stubInfo->valueRegs = valueRegs;
         stubInfo->propertyRegs = JSValueRegs::payloadOnly(propertyGPR);
         stubInfo->m_stubInfoGPR = stubInfoGPR;
+        stubInfo->privateFieldPutKind = node->privateFieldPutKind();
         stubInfo->hasConstantIdentifier = false;
         gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
         gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
