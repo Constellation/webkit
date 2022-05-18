@@ -36,6 +36,7 @@
 #include "PutKind.h"
 #include "RegisterSet.h"
 #include <wtf/Bag.h>
+#include <wtf/Variant.h>
 
 namespace JSC {
 namespace DFG {
@@ -53,6 +54,8 @@ struct BaselineUnlinkedStructureStubInfo;
 
 enum class AccessType : int8_t;
 enum class JITType : uint8_t;
+
+using CompileTimeStructureStubInfo = std::variant<StructureStubInfo*, BaselineUnlinkedStructureStubInfo*, DFG::UnlinkedStructureStubInfo*>;
 
 class JITInlineCacheGenerator {
 protected:
