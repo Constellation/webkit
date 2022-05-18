@@ -49,6 +49,36 @@ namespace DFG {
 
 class JITCompiler;
 
+class JITConstantPool {
+    WTF_MAKE_NONCOPYABLE(JITConstantPool);
+public:
+    using Constant = unsigned;
+
+    enum class Type : uint16_t {
+        Invalid,
+        StructureStubInfo,
+        CellPointer,
+        NonCellPointer,
+    };
+
+    using Value = CompactPointerTuple<void*, Type>;
+
+    JITConstantPool() = default;
+    JITConstantPool(JITConstantPool&&) = default;
+    JITConstantPool& operator=(JITConstantPool&&) = default;
+
+    JITConstantPool(Vector<Value>&& constants)
+        : m_constants(WTFMove(constants))
+    {
+    }
+
+    size_t size() const { return m_constants.size(); }
+    Value at(size_t i) const { return m_constants[i]; }
+
+private:
+    FixedVector<Value> m_constants;
+};
+
 class JITData final : public TrailingArray<JITData, void*> {
     WTF_MAKE_FAST_ALLOCATED;
     friend class LLIntOffsetsExtractor;
@@ -157,8 +187,10 @@ public:
     FixedVector<DFG::SpeculationRecovery> m_speculationRecovery;
     FixedVector<SimpleJumpTable> m_switchJumpTables;
     FixedVector<StringJumpTable> m_stringSwitchJumpTables;
+    FixedVector<UnlinkedStructureStubInfo> m_unlinkedStubInfos;
     DFG::VariableEventStream variableEventStream;
     DFG::MinifiedGraph minifiedDFG;
+    JITConstantPool m_constantPool;
 
 #if ENABLE(FTL_JIT)
     uint8_t neverExecutedEntry { 1 };
@@ -193,5 +225,17 @@ public:
 };
 
 } } // namespace JSC::DFG
+
+namespace WTF {
+
+template<typename T> struct DefaultHash;
+template<> struct DefaultHash<JSC::DFG::JITConstantPool::Value> : JSC::DFG::JITConstantPool::ValueHash { };
+
+template<typename T> struct HashTraits;
+template<> struct HashTraits<JSC::DFG::JITConstantPool::Value> : SimpleClassHashTraits<JSC::DFG::JITConstantPool::Value> {
+    static constexpr bool emptyValueIsZero = false;
+};
+
+} // namespace WTF
 
 #endif // ENABLE(DFG_JIT)

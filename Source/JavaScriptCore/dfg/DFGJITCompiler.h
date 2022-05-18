@@ -339,7 +339,7 @@ public:
     private:
         LinkableConstant(Graph&, void*, NonCellTag);
 
-        unsigned m_index { UINT_MAX };
+        JITConstantPool::Constant m_index { UINT_MAX };
         void* m_pointer { nullptr };
     };
 
@@ -363,6 +363,8 @@ public:
 #endif
         return CCallHelpers::branchPtr(cond, left, CCallHelpers::TrustedImmPtr(constant.pointer()));
     }
+
+    std::tuple<UnlinkedStructureStubInfo*, JITConstantPool::Constant> addUnlinkedStructureStubInfo();
 
 private:
     friend class OSRExitJumpPlaceholder;
@@ -440,6 +442,7 @@ private:
     Vector<DFG::OSREntryData> m_osrEntry;
     Vector<DFG::OSRExit> m_osrExit;
     Vector<DFG::SpeculationRecovery> m_speculationRecovery;
+    SegmentedVector<UnlinkedStructureStubInfo> m_unlinkedStubInfos;
     
     struct ExceptionHandlingOSRExitInfo {
         OSRExitCompilationInfo& exitInfo;

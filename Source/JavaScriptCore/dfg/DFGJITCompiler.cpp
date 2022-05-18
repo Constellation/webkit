@@ -721,7 +721,7 @@ JITCompiler::LinkableConstant::LinkableConstant(Graph& graph, JSCell* cell)
 {
     graph.m_plan.weakReferences().addLazily(cell);
     if (graph.m_plan.isUnlinked()) {
-        m_index = graph.m_plan.addLinkableConstant(cell);
+        m_index = graph.m_plan.addToConstantPool(JITConstantPool::CellPointer, cell);
         return;
     }
     m_pointer = cell;
@@ -730,7 +730,7 @@ JITCompiler::LinkableConstant::LinkableConstant(Graph& graph, JSCell* cell)
 JITCompiler::LinkableConstant::LinkableConstant(Graph& graph, void* pointer, NonCellTag)
 {
     if (graph.m_plan.isUnlinked()) {
-        m_index = graph.m_plan.addLinkableConstant(pointer);
+        m_index = graph.m_plan.addToConstantPool(JITConstantPool::NonCellPointer, pointer);
         return;
     }
     m_pointer = pointer;

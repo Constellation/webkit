@@ -102,7 +102,7 @@ public:
     DeferredCompilationCallback* callback() const { return m_callback.get(); }
     void setCallback(Ref<DeferredCompilationCallback>&& callback) { m_callback = WTFMove(callback); }
 
-    unsigned addLinkableConstant(void*);
+    JITConstantPool::Constant addToConstantPool(JITConstantPool::Type, void*);
     std::unique_ptr<JITData> finalizeJITData(const JITCode&);
 
 private:
@@ -138,7 +138,8 @@ private:
     Vector<BytecodeIndex> m_tierUpAndOSREnterBytecodes;
 
     RefPtr<DeferredCompilationCallback> m_callback;
-    HashMap<void*, unsigned> m_constantPool;
+    Vector<JITConstantPool::Value> m_constantPool;
+    HashMap<JITConstantPool::Value, JITConstantPool::Constant> m_constantPoolMap;
 };
 
 #endif // ENABLE(DFG_JIT)
