@@ -4372,23 +4372,40 @@ void SpeculativeJIT::compilePutPrivateName(Node* node)
     RegisterSet usedRegisters = this->usedRegisters();
 
     JITPutByValGenerator gen(
-        m_jit.codeBlock(), &m_jit.jitCode()->common.m_stubInfos, JITType::DFGJIT, codeOrigin, callSite, AccessType::PutPrivateName, usedRegisters,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::PutPrivateName, usedRegisters,
         JSValueRegs::payloadOnly(baseGPR), JSValueRegs::payloadOnly(propertyGPR), valueRegs, InvalidGPRReg, stubInfoGPR);
-    gen.stubInfo()->propertyIsSymbol = true;
 
-    gen.generateFastPath(m_jit);
+    auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
+        stubInfo->propertyIsSymbol = true;
+    };
 
     JITCompiler::JumpList slowCases;
-    if (!m_graph.m_plan.isUnlinked())
-        slowCases.append(gen.slowPathJump());
 
     std::unique_ptr<SlowPathGenerator> slowPath;
     auto operation = node->privateFieldPutKind().isDefine() ? operationPutByValDefinePrivateFieldOptimize : operationPutByValSetPrivateFieldOptimize;
     if (m_graph.m_plan.isUnlinked()) {
+        auto [ stubInfo, stubInfoIndex, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
+        stubInfo->accessType = AccessType::PutPrivateName;
+        stubInfo->codeOrigin = codeOrigin;
+        stubInfo->callSiteIndex = callSite;
+        stubInfo->usedRegisters = usedRegisters;
+        stubInfo->baseRegs = JSValueRegs::payloadOnly(baseGPR);
+        stubInfo->valueRegs = valueRegs;
+        stubInfo->propertyRegs = JSValueRegs::payloadOnly(propertyGPR);
+        stubInfo->m_stubInfoGPR = stubInfoGPR;
+        stubInfo->hasConstantIdentifier = false;
+        gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
+        gen.m_unlinkedStubInfo = stubInfo;
+        ASSERT(!gen.stubInfo());
+        configureStubInfoPropertyTypes(stubInfo);
         slowPath = slowPathICCall(
-            slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operation,
+            slowCases, this, stubInfoConstant, stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operation,
             NoResult, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), CCallHelpers::CellValue(baseGPR), CCallHelpers::CellValue(propertyGPR), valueRegs, stubInfoGPR, nullptr);
     } else {
+        gen.generateFastPath(m_jit);
+        slowCases.append(gen.slowPathJump());
+        configureStubInfoPropertyTypes(gen.stubInfo());
         slowPath = slowPathCall(
             slowCases, this, operation,
             NoResult, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), CCallHelpers::CellValue(baseGPR), CCallHelpers::CellValue(propertyGPR), valueRegs, TrustedImmPtr(gen.stubInfo()), nullptr);
