@@ -163,7 +163,8 @@ State::~State()
 
 StructureStubInfo* State::addStructureStubInfo()
 {
-    return jitCode->common.stubInfoAllocator()->add();
+    ASSERT(!graph.m_plan.isUnlinked());
+    return jitCode->common.m_stubInfos.add();
 }
 
 

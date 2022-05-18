@@ -789,7 +789,7 @@ std::tuple<CompileTimeStructureStubInfo, JITCompiler::LinkableConstant> JITCompi
         LinkerIR::Constant stubInfoIndex = addToConstantPool(LinkerIR::Type::StructureStubInfo, unlinkedStubInfoIndex);
         return std::tuple { stubInfo, LinkableConstant(stubInfoIndex) };
     }
-    StructureStubInfo* stubInfo = jitCode()->common.stubInfoAllocator()->add();
+    StructureStubInfo* stubInfo = jitCode()->common.m_stubInfos.add();
     return std::tuple { stubInfo, LinkableConstant() };
 }
 

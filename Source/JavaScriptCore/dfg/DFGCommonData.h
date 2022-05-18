@@ -119,13 +119,6 @@ public:
         return m_callLinkInfos.add(codeOrigin, useDataIC);
     }
 
-    Bag<StructureStubInfo>* stubInfoAllocator()
-    {
-        if (m_isUnlinked)
-            return nullptr;
-        return &m_stubInfos;
-    }
-
     RefPtr<InlineCallFrameSet> inlineCallFrames;
     Ref<CodeOriginPool> codeOrigins;
     

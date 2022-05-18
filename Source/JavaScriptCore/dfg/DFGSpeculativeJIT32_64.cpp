@@ -200,8 +200,9 @@ void SpeculativeJIT::cachedGetById(
     }
     
     CallSiteIndex callSite = m_jit.recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
+    auto [ stubInfo, stubInfoConstant ] = m_jit.addStructureStubInfo();
     JITGetByIdGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
+        m_jit.codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
         JSValueRegs(baseTagGPROrNone, basePayloadGPR), JSValueRegs(resultTagGPR, resultPayloadGPR), InvalidGPRReg, type);
     
     gen.generateFastPath(m_jit, scratchGPR);
@@ -236,8 +237,9 @@ void SpeculativeJIT::cachedGetByIdWithThis(
     RegisterSet usedRegisters = this->usedRegisters();
     
     CallSiteIndex callSite = m_jit.recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
+    auto [ stubInfo, stubInfoConstant ] = m_jit.addStructureStubInfo();
     JITGetByIdWithThisGenerator gen(
-        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
+        m_jit.codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
         JSValueRegs(resultTagGPR, resultPayloadGPR), JSValueRegs(baseTagGPROrNone, basePayloadGPR), JSValueRegs(thisTagGPR, thisPayloadGPR), InvalidGPRReg);
     
     gen.generateFastPath(m_jit, scratchGPR);
@@ -1826,8 +1828,9 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
             if (!m_state.forNode(m_graph.varArgChild(node, 0)).isType(SpecCell))
                 slowCases.append(m_jit.branchIfNotCell(baseRegs));
 
+            auto [ stubInfo, stubInfoConstant ] = m_jit.addStructureStubInfo();
             JITGetByValGenerator gen(
-                m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByVal, usedRegisters,
+                m_jit.codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByVal, usedRegisters,
                 baseRegs, propertyRegs, resultRegs, InvalidGPRReg);
 
             if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecString))
