@@ -229,7 +229,7 @@ public:
 
     JITDelByIdGenerator(
         CodeBlock*, Bag<StructureStubInfo>*, JITType, CodeOrigin, CallSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier,
-        JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR, GPRReg scratch);
+        JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
     {

@@ -375,7 +375,7 @@ void JITDelByValGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
         m_stubInfo->m_codePtr = m_stubInfo->slowPathStartLocation;
 }
 
-JITDelByIdGenerator::JITDelByIdGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier, JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR, GPRReg scratch)
+JITDelByIdGenerator::JITDelByIdGenerator(CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSet& usedRegisters, CacheableIdentifier, JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR)
     : Base(codeBlock, stubInfos, jitType, codeOrigin, callSiteIndex, AccessType::DeleteByID, usedRegisters)
 {
     ASSERT(base.payloadGPR() != result.payloadGPR());
@@ -393,7 +393,6 @@ JITDelByIdGenerator::JITDelByIdGenerator(CodeBlock* codeBlock, Bag<StructureStub
         m_stubInfo->valueTagGPR = result.tagGPR();
         m_stubInfo->v.propertyTagGPR = InvalidGPRReg;
 #endif
-        m_stubInfo->usedRegisters.clear(scratch);
     }
 }
 

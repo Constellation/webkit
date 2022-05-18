@@ -1183,7 +1183,6 @@ void SpeculativeJIT::compileDeleteById(Node* node)
         std::optional<GPRTemporary> stubInfo;
         SpeculateCellOperand base(this, node->child1());
         JSValueRegsTemporary result(this);
-        GPRTemporary scratch(this);
 
         JITCompiler::JumpList slowCases;
 
@@ -1194,7 +1193,6 @@ void SpeculativeJIT::compileDeleteById(Node* node)
         }
         JSValueRegs resultRegs = result.regs();
         GPRReg baseGPR = base.gpr();
-        GPRReg scratchGPR = scratch.gpr();
         GPRReg resultGPR = resultRegs.payloadGPR();
 
         CodeOrigin codeOrigin = node->origin.semantic;
@@ -1203,7 +1201,7 @@ void SpeculativeJIT::compileDeleteById(Node* node)
 
         JITDelByIdGenerator gen(
             m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, usedRegisters, node->cacheableIdentifier(),
-            JSValueRegs::payloadOnly(baseGPR), resultRegs, stubInfoGPR, scratchGPR);
+            JSValueRegs::payloadOnly(baseGPR), resultRegs, stubInfoGPR);
 
 #if USE(JSVALUE64)
         std::unique_ptr<SlowPathGenerator> slowPath;
@@ -1213,7 +1211,6 @@ void SpeculativeJIT::compileDeleteById(Node* node)
             stubInfo->codeOrigin = codeOrigin;
             stubInfo->callSiteIndex = callSite;
             stubInfo->usedRegisters = usedRegisters;
-            stubInfo->usedRegisters.clear(scratchGPR);
             stubInfo->baseRegs = JSValueRegs { baseGPR };
             stubInfo->valueRegs = JSValueRegs { resultGPR };
             stubInfo->m_stubInfoGPR = stubInfoGPR;

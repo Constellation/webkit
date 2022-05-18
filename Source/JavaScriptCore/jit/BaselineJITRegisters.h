@@ -311,8 +311,7 @@ namespace DelById {
     namespace FastPath {
         constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };
         constexpr GPRReg stubInfoGPR { GPRInfo::regT4 };
-        constexpr GPRReg scratchGPR { GPRInfo::regT5 };
-        static_assert(noOverlap(baseJSR, stubInfoGPR, scratchGPR), "Required for DataIC");
+        static_assert(noOverlap(baseJSR, stubInfoGPR), "Required for DataIC");
     }
 
     // Slow path only registers

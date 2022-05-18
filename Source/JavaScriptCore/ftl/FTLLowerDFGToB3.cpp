@@ -6187,7 +6187,10 @@ IGNORE_CLANG_WARNINGS_END
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
         patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
         patchpoint->clobber(RegisterSet::macroScratchRegisters());
-        patchpoint->numGPScratchRegisters = JITCode::useDataIC(JITType::FTLJIT) ? 2 : 1;
+        if constexpr (kind == DelByKind::ById)
+            patchpoint->numGPScratchRegisters = JITCode::useDataIC(JITType::FTLJIT) ? 1 : 0;
+        else
+            patchpoint->numGPScratchRegisters = JITCode::useDataIC(JITType::FTLJIT) ? 2 : 1;
 
         RefPtr<PatchpointExceptionHandle> exceptionHandle =
             preparePatchpointForExceptions(patchpoint);
@@ -6213,11 +6216,17 @@ IGNORE_CLANG_WARNINGS_END
 
                 auto base = JSValueRegs(params[1].gpr());
                 auto returnGPR = params[0].gpr();
-                auto scratchGPR = params.gpScratch(0);
-                auto stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(1) : InvalidGPRReg;
+                GPRReg scratchGPR = InvalidGPRReg;
+                GPRReg stubInfoGPR = InvalidGPRReg;
+                if constexpr (kind == DelByKind::ById)
+                    stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(0) : InvalidGPRReg;
+                else {
+                    scratchGPR = params.gpScratch(0);
+                    stubInfoGPR = JITCode::useDataIC(JITType::FTLJIT) ? params.gpScratch(1) : InvalidGPRReg;
+                    ASSERT(base.gpr() != scratchGPR);
+                    ASSERT(returnGPR != scratchGPR);
+                }
                 ASSERT(base.gpr() != returnGPR);
-                ASSERT(base.gpr() != scratchGPR);
-                ASSERT(returnGPR != scratchGPR);
 
                 if (child1UseKind)
                     slowCases.append(jit.branchIfNotCell(base));
@@ -6245,7 +6254,7 @@ IGNORE_CLANG_WARNINGS_END
                         return Box<JITDelByIdGenerator>::create(
                             jit.codeBlock(), &state->jitCode->common.m_stubInfos, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
                             params.unavailableRegisters(), subscriptValue, base,
-                            JSValueRegs(returnGPR), stubInfoGPR, scratchGPR);
+                            JSValueRegs(returnGPR), stubInfoGPR);
                     } else {
                         return Box<JITDelByValGenerator>::create(
                             jit.codeBlock(), &state->jitCode->common.m_stubInfos, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,

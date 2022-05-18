@@ -659,14 +659,13 @@ void JIT::emit_op_del_by_id(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::DelById::baseJSR;
     using BaselineJITRegisters::DelById::FastPath::resultJSR;
     using BaselineJITRegisters::DelById::FastPath::stubInfoGPR;
-    using BaselineJITRegisters::DelById::FastPath::scratchGPR;
 
     emitGetVirtualRegister(base, baseJSR);
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
     JITDelByIdGenerator gen(
         nullptr, nullptr, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSet::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident),
-        baseJSR, resultJSR, stubInfoGPR, scratchGPR);
+        baseJSR, resultJSR, stubInfoGPR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     stubInfo->accessType = AccessType::DeleteByID;
