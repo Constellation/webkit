@@ -4453,20 +4453,36 @@ void SpeculativeJIT::compileCheckPrivateBrand(Node* node)
         slowCases.append(m_jit.branchIfNotCell(baseRegs));
 
     JITPrivateBrandAccessGenerator gen(
-        m_jit.codeBlock(), &m_jit.jitCode()->common.m_stubInfos, JITType::DFGJIT, codeOrigin, callSite, AccessType::CheckPrivateBrand, usedRegisters,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::CheckPrivateBrand, usedRegisters,
         baseRegs, JSValueRegs::payloadOnly(brandGPR), stubInfoGPR);
 
-    gen.stubInfo()->propertyIsSymbol = true;
-    gen.generateFastPath(m_jit);
-    if (!m_graph.m_plan.isUnlinked())
-        slowCases.append(gen.slowPathJump());
+    auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
+        stubInfo->propertyIsSymbol = true;
+    };
 
     std::unique_ptr<SlowPathGenerator> slowPath;
     if (m_graph.m_plan.isUnlinked()) {
+        auto [ stubInfo, stubInfoIndex, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
+        stubInfo->accessType = AccessType::CheckPrivateBrand;
+        stubInfo->codeOrigin = codeOrigin;
+        stubInfo->callSiteIndex = callSite;
+        stubInfo->usedRegisters = usedRegisters;
+        stubInfo->baseRegs = baseRegs;
+        stubInfo->propertyRegs = JSValueRegs::payloadOnly(brandGPR);
+        stubInfo->m_stubInfoGPR = stubInfoGPR;
+        stubInfo->hasConstantIdentifier = false;
+        gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
+        gen.m_unlinkedStubInfo = stubInfo;
+        ASSERT(!gen.stubInfo());
+        configureStubInfoPropertyTypes(stubInfo);
         slowPath = slowPathICCall(
-            slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationCheckPrivateBrandOptimize, NoResult,
+            slowCases, this, stubInfoConstant, stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationCheckPrivateBrandOptimize, NoResult,
             JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), stubInfoGPR, baseRegs, CCallHelpers::CellValue(brandGPR));
     } else {
+        gen.generateFastPath(m_jit);
+        slowCases.append(gen.slowPathJump());
+        configureStubInfoPropertyTypes(gen.stubInfo());
         slowPath = slowPathCall(
             slowCases, this, operationCheckPrivateBrandOptimize, NoResult,
             JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), TrustedImmPtr(gen.stubInfo()), baseRegs, CCallHelpers::CellValue(brandGPR));
@@ -4501,20 +4517,36 @@ void SpeculativeJIT::compileSetPrivateBrand(Node* node)
 
     JITCompiler::JumpList slowCases;
     JITPrivateBrandAccessGenerator gen(
-        m_jit.codeBlock(), &m_jit.jitCode()->common.m_stubInfos, JITType::DFGJIT, codeOrigin, callSite, AccessType::SetPrivateBrand, usedRegisters,
+        m_jit.codeBlock(), m_jit.jitCode()->common.stubInfoAllocator(), JITType::DFGJIT, codeOrigin, callSite, AccessType::SetPrivateBrand, usedRegisters,
         JSValueRegs::payloadOnly(baseGPR), JSValueRegs::payloadOnly(brandGPR), stubInfoGPR);
 
-    gen.stubInfo()->propertyIsSymbol = true;
-    gen.generateFastPath(m_jit);
-    if (!m_graph.m_plan.isUnlinked())
-        slowCases.append(gen.slowPathJump());
+    auto configureStubInfoPropertyTypes = [&](auto* stubInfo) {
+        stubInfo->propertyIsSymbol = true;
+    };
 
     std::unique_ptr<SlowPathGenerator> slowPath;
     if (m_graph.m_plan.isUnlinked()) {
+        auto [ stubInfo, stubInfoIndex, stubInfoConstant ] = m_jit.addUnlinkedStructureStubInfo();
+        stubInfo->accessType = AccessType::SetPrivateBrand;
+        stubInfo->codeOrigin = codeOrigin;
+        stubInfo->callSiteIndex = callSite;
+        stubInfo->usedRegisters = usedRegisters;
+        stubInfo->baseRegs = JSValueRegs::payloadOnly(baseGPR);
+        stubInfo->propertyRegs = JSValueRegs::payloadOnly(brandGPR);
+        stubInfo->m_stubInfoGPR = stubInfoGPR;
+        stubInfo->hasConstantIdentifier = false;
+        gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
+        gen.m_unlinkedStubInfo = stubInfo;
+        ASSERT(!gen.stubInfo());
+        configureStubInfoPropertyTypes(stubInfo);
         slowPath = slowPathICCall(
-            slowCases, this, gen.stubInfo(), stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationSetPrivateBrandOptimize, NoResult,
+            slowCases, this, stubInfoConstant, stubInfoGPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationSetPrivateBrandOptimize, NoResult,
             JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), stubInfoGPR, CCallHelpers::CellValue(baseGPR), CCallHelpers::CellValue(brandGPR));
     } else {
+        gen.generateFastPath(m_jit);
+        slowCases.append(gen.slowPathJump());
+        configureStubInfoPropertyTypes(gen.stubInfo());
         slowPath = slowPathCall(
             slowCases, this, operationSetPrivateBrandOptimize, NoResult,
             JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(codeOrigin)), TrustedImmPtr(gen.stubInfo()), CCallHelpers::CellValue(baseGPR), CCallHelpers::CellValue(brandGPR));
