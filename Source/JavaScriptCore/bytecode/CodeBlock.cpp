@@ -3489,6 +3489,15 @@ void CodeBlock::jitNextInvocation()
     m_unlinkedCode->llintExecuteCounter().setNewThreshold(0, this);
 }
 
+bool CodeBlock::useDataIC() const
+{
+    if (jitType() == JITType::DFGJIT) {
+        if (auto* jitCode = m_jitCode.get())
+            return static_cast<const DFG::JITCode*>(jitCode)->isUnlinked();
+    }
+    return JITCode::useDataIC(jitType());
+}
+
 bool CodeBlock::hasInstalledVMTrapsBreakpoints() const
 {
 #if ENABLE(SIGNAL_BASED_VM_TRAPS)

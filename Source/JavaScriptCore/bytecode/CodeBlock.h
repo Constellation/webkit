@@ -346,11 +346,8 @@ public:
         return jitType() == JITType::BaselineJIT;
     }
 
-    bool useDataIC() const
-    {
-        return JITCode::useDataIC(jitType());
-    }
-    
+    bool useDataIC() const;
+
 #if ENABLE(JIT)
     CodeBlock* replacement();
 
