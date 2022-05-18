@@ -1211,8 +1211,8 @@ void SpeculativeJIT::compileDeleteById(Node* node)
             stubInfo->codeOrigin = codeOrigin;
             stubInfo->callSiteIndex = callSite;
             stubInfo->usedRegisters = usedRegisters;
-            stubInfo->baseRegs = JSValueRegs { baseGPR };
-            stubInfo->valueRegs = JSValueRegs { resultGPR };
+            stubInfo->baseRegs = JSValueRegs::payloadOnly(baseGPR);
+            stubInfo->valueRegs = resultRegs;
             stubInfo->m_stubInfoGPR = stubInfoGPR;
             stubInfo->hasConstantIdentifier = true;
             gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfoGPR);
