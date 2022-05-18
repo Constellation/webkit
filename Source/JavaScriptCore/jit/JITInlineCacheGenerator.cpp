@@ -235,6 +235,16 @@ void JITGetByIdWithThisGenerator::generateBaselineDataICFastPath(JIT& jit, unsig
     m_done = jit.label();
 }
 
+#if ENABLE(DFG_JIT)
+void JITGetByIdWithThisGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, unsigned stubInfoConstant, JSValueRegs baseJSR, JSValueRegs resultJSR, GPRReg stubInfoGPR, GPRReg scratchGPR)
+{
+    m_start = jit.label();
+    jit.loadConstant(stubInfoConstant, stubInfoGPR);
+    generateGetByIdInlineAccess(jit, stubInfoGPR, baseJSR, scratchGPR, resultJSR);
+    m_done = jit.label();
+}
+#endif
+
 JITPutByIdGenerator::JITPutByIdGenerator(
     CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSet& usedRegisters, CacheableIdentifier,
     JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, GPRReg scratch, 
@@ -273,6 +283,17 @@ void JITPutByIdGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stub
     generatePutByIdInlineAccess(jit, stubInfoGPR, baseJSR, valueJSR, scratchGPR, scratch2GPR);
     m_done = jit.label();
 }
+
+#if ENABLE(DFG_JIT)
+void JITPutByIdGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, unsigned stubInfoConstant, JSValueRegs baseJSR, JSValueRegs valueJSR, GPRReg stubInfoGPR, GPRReg scratchGPR, GPRReg scratch2GPR)
+{
+    m_start = jit.label();
+    jit.loadConstant(stubInfoConstant, stubInfoGPR);
+    generatePutByIdInlineAccess(jit, stubInfoGPR, baseJSR, valueJSR, scratchGPR, scratch2GPR);
+    m_done = jit.label();
+}
+#endif
+
 
 void JITPutByIdGenerator::generateFastPath(CCallHelpers& jit, GPRReg scratchGPR, GPRReg scratch2GPR)
 {
@@ -489,6 +510,16 @@ void JITInByIdGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stubI
 
     m_done = jit.label();
 }
+
+#if ENABLE(DFG_JIT)
+void JITInByIdGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, unsigned stubInfoConstant, JSValueRegs baseJSR, JSValueRegs resultJSR, GPRReg stubInfoGPR, GPRReg scratchGPR)
+{
+    m_start = jit.label();
+    jit.loadConstant(stubInfoConstant, stubInfoGPR);
+    generateInByIdInlineAccess(jit, stubInfoGPR, baseJSR, scratchGPR, resultJSR);
+    m_done = jit.label();
+}
+#endif
 
 JITInstanceOfGenerator::JITInstanceOfGenerator(
     CodeBlock* codeBlock, Bag<StructureStubInfo>* stubInfos, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex,
