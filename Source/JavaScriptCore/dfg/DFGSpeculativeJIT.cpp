@@ -15995,6 +15995,8 @@ void SpeculativeJIT::cachedPutById(CodeOrigin codeOrigin, GPRReg baseGPR, JSValu
         stubInfo->baseRegs = JSValueRegs::payloadOnly(baseGPR);
         stubInfo->valueRegs = valueRegs;
         stubInfo->m_stubInfoGPR = stubInfoGPR;
+        stubInfo->putKind = putKind;
+        stubInfo->ecmaMode = ecmaMode;
         stubInfo->hasConstantIdentifier = true;
         gen.generateDFGDataICFastPath(m_jit, stubInfoIndex, stubInfo->baseRegs, stubInfo->valueRegs, stubInfoGPR, scratchGPR, scratch2GPR);
         gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
