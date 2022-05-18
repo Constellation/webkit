@@ -41,8 +41,7 @@
 namespace JSC {
 
 JITInlineCacheGenerator::JITInlineCacheGenerator(
-    CodeBlock*, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin, AccessType)
-    : m_jitType(jitType)
+    CodeBlock*, CompileTimeStructureStubInfo stubInfo, JITType, CodeOrigin, AccessType)
 {
     std::visit(WTF::makeVisitor(
         [&](StructureStubInfo* stubInfo) {

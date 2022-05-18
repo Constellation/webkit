@@ -100,7 +100,6 @@ public:
     }
 
 protected:
-    JITType m_jitType;
     StructureStubInfo* m_stubInfo { nullptr };
 
 public:
