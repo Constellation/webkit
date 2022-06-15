@@ -601,7 +601,8 @@ void OptimizingCallLinkInfo::initializeFromDFGUnlinkedCallLinkInfo(VM& vm, const
     m_callType = unlinkedCallLinkInfo.callType;
     m_calleeGPR = unlinkedCallLinkInfo.calleeGPR;
     m_callLinkInfoGPR = unlinkedCallLinkInfo.callLinkInfoGPR;
-    m_frameShuffleData = makeUnique<CallFrameShuffleData>(*unlinkedCallLinkInfo.m_frameShuffleData);
+    if (unlinkedCallLinkInfo.m_frameShuffleData)
+        m_frameShuffleData = makeUnique<CallFrameShuffleData>(*unlinkedCallLinkInfo.m_frameShuffleData);
 }
 #endif
 
