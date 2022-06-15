@@ -376,7 +376,7 @@ public:
     }
 
     std::tuple<CompileTimeStructureStubInfo, LinkableConstant> addStructureStubInfo();
-    std::tuple<CompileTimeCallLinkInfo, LinkableConstant> addCallLinkInfo(CodeOrigin, CallLinkInfo::UseDataIC = CallLinkInfo::UseDataIC::No);
+    std::tuple<CompileTimeCallLinkInfo, LinkableConstant> addCallLinkInfo(CodeOrigin);
     LinkerIR::Constant addToConstantPool(LinkerIR::Type, void*);
 
 private:

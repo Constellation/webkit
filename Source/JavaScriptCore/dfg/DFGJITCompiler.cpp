@@ -800,7 +800,7 @@ std::tuple<CompileTimeStructureStubInfo, JITCompiler::LinkableConstant> JITCompi
     return std::tuple { stubInfo, LinkableConstant() };
 }
 
-std::tuple<CompileTimeCallLinkInfo, JITCompiler::LinkableConstant> JITCompiler::addCallLinkInfo(CodeOrigin codeOrigin, CallLinkInfo::UseDataIC useDataIC)
+std::tuple<CompileTimeCallLinkInfo, JITCompiler::LinkableConstant> JITCompiler::addCallLinkInfo(CodeOrigin codeOrigin)
 {
     if (m_graph.m_plan.isUnlinked()) {
         void* unlinkedCallLinkInfoIndex = bitwise_cast<void*>(static_cast<uintptr_t>(m_unlinkedCallLinkInfos.size()));
@@ -808,7 +808,7 @@ std::tuple<CompileTimeCallLinkInfo, JITCompiler::LinkableConstant> JITCompiler::
         LinkerIR::Constant callLinkInfoIndex = addToConstantPool(LinkerIR::Type::CallLinkInfo, unlinkedCallLinkInfoIndex);
         return std::tuple { callLinkInfo, LinkableConstant(callLinkInfoIndex) };
     }
-    auto* callLinkInfo = jitCode()->common.m_callLinkInfos.add(codeOrigin, useDataIC);
+    auto* callLinkInfo = jitCode()->common.m_callLinkInfos.add(codeOrigin, CallLinkInfo::UseDataIC::No);
     return std::tuple { callLinkInfo, LinkableConstant() };
 }
 
