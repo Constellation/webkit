@@ -69,6 +69,31 @@ struct UnlinkedStructureStubInfo : JSC::UnlinkedStructureStubInfo {
     bool hasConstantIdentifier { false };
 };
 
+struct UnlinkedCallLinkInfo : JSC::UnlinkedCallLinkInfo {
+    void setUpCall(CallLinkInfo::CallType callType, GPRReg calleeGPR)
+    {
+        this->callType = callType;
+        this->calleeGPR = calleeGPR;
+    }
+
+    void setFrameShuffleData(const CallFrameShuffleData& shuffleData)
+    {
+        m_frameShuffleData = makeUnique<CallFrameShuffleData>(shuffleData);
+        m_frameShuffleData->shrinkToFit();
+    }
+
+    void setCodeLocations(CodeLocationLabel<JSInternalPtrTag>, CodeLocationLabel<JSInternalPtrTag> doneLocation)
+    {
+        this->doneLocation = doneLocation;
+    }
+
+    CodeOrigin codeOrigin;
+    CallLinkInfo::CallType callType { CallLinkInfo::CallType::None };
+    GPRReg callLinkInfoGPR { InvalidGPRReg };
+    GPRReg calleeGPR { InvalidGPRReg };
+    std::unique_ptr<CallFrameShuffleData> m_frameShuffleData;
+};
+
 class LinkerIR {
     WTF_MAKE_NONCOPYABLE(LinkerIR);
 public:
@@ -134,7 +159,7 @@ public:
     static ptrdiff_t offsetOfExits() { return OBJECT_OFFSETOF(JITData, m_exits); }
     static ptrdiff_t offsetOfIsInvalidated() { return OBJECT_OFFSETOF(JITData, m_isInvalidated); }
 
-    static std::unique_ptr<JITData> create(const JITCode& jitCode, ExitVector&& exits);
+    static std::unique_ptr<JITData> create(VM&, const JITCode& jitCode, ExitVector&& exits);
 
     void setExitCode(unsigned exitIndex, MacroAssemblerCodeRef<OSRExitPtrTag> code)
     {
@@ -152,9 +177,10 @@ public:
     FixedVector<StructureStubInfo>& stubInfos() { return m_stubInfos; }
 
 private:
-    explicit JITData(const JITCode&, ExitVector&&);
+    explicit JITData(VM&, const JITCode&, ExitVector&&);
 
     FixedVector<StructureStubInfo> m_stubInfos;
+    FixedVector<OptimizingCallLinkInfo> m_callLinkInfos;
     ExitVector m_exits;
     uint8_t m_isInvalidated { 0 };
 };
@@ -229,6 +255,7 @@ public:
     FixedVector<SimpleJumpTable> m_switchJumpTables;
     FixedVector<StringJumpTable> m_stringSwitchJumpTables;
     FixedVector<UnlinkedStructureStubInfo> m_unlinkedStubInfos;
+    FixedVector<UnlinkedCallLinkInfo> m_unlinkedCallLinkInfos;
     DFG::VariableEventStream variableEventStream;
     DFG::MinifiedGraph minifiedDFG;
     LinkerIR m_linkerIR;
@@ -265,9 +292,9 @@ public:
 #endif // ENABLE(FTL_JIT)
 };
 
-inline std::unique_ptr<JITData> JITData::create(const JITCode& jitCode, ExitVector&& exits)
+inline std::unique_ptr<JITData> JITData::create(VM& vm, const JITCode& jitCode, ExitVector&& exits)
 {
-    return std::unique_ptr<JITData> { new (NotNull, fastMalloc(Base::allocationSize(jitCode.m_linkerIR.size()))) JITData(jitCode, WTFMove(exits)) };
+    return std::unique_ptr<JITData> { new (NotNull, fastMalloc(Base::allocationSize(jitCode.m_linkerIR.size()))) JITData(vm, jitCode, WTFMove(exits)) };
 }
 
 } } // namespace JSC::DFG

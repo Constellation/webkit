@@ -286,10 +286,11 @@ void JITCompiler::link(LinkBuffer& linkBuffer)
     }
 
     for (auto& record : m_jsCalls) {
-        auto& info = *record.info;
-        info.setCodeLocations(
-            linkBuffer.locationOf<JSInternalPtrTag>(record.slowPathStart),
-            linkBuffer.locationOf<JSInternalPtrTag>(record.doneLocation));
+        std::visit([&](auto* info) {
+            info->setCodeLocations(
+                linkBuffer.locationOf<JSInternalPtrTag>(record.slowPathStart),
+                linkBuffer.locationOf<JSInternalPtrTag>(record.doneLocation));
+        }, record.info);
     }
     
     for (auto& record : m_jsDirectCalls) {
@@ -298,6 +299,14 @@ void JITCompiler::link(LinkBuffer& linkBuffer)
             linkBuffer.locationOf<JSInternalPtrTag>(record.slowPath),
             CodeLocationLabel<JSInternalPtrTag>());
     }
+
+    if (m_graph.m_plan.isUnlinked()) {
+        m_jitCode->m_unlinkedCallLinkInfos = FixedVector<UnlinkedCallLinkInfo>(m_unlinkedCallLinkInfos.size());
+        if (m_jitCode->m_unlinkedCallLinkInfos.size())
+            std::move(m_unlinkedCallLinkInfos.begin(), m_unlinkedCallLinkInfos.end(), m_jitCode->m_unlinkedCallLinkInfos.begin());
+        ASSERT(m_jitCode->common.m_callLinkInfos.isEmpty());
+    }
+
 
     if (!m_exceptionChecks.empty())
         linkBuffer.link(m_exceptionChecks, CodeLocationLabel(vm().getCTIStub(handleExceptionGenerator).retaggedCode<NoPtrTag>()));
@@ -805,6 +814,7 @@ std::tuple<CompileTimeCallLinkInfo, JITCompiler::LinkableConstant> JITCompiler::
     if (m_graph.m_plan.isUnlinked()) {
         void* unlinkedCallLinkInfoIndex = bitwise_cast<void*>(static_cast<uintptr_t>(m_unlinkedCallLinkInfos.size()));
         UnlinkedCallLinkInfo* callLinkInfo = &m_unlinkedCallLinkInfos.alloc();
+        callLinkInfo->codeOrigin = codeOrigin;
         LinkerIR::Constant callLinkInfoIndex = addToConstantPool(LinkerIR::Type::CallLinkInfo, unlinkedCallLinkInfoIndex);
         return std::tuple { callLinkInfo, LinkableConstant(callLinkInfoIndex) };
     }

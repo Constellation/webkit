@@ -722,7 +722,7 @@ void SpeculativeJIT::emitCall(Node* node)
     unsigned numPassedArgs = 0;
     unsigned numAllocatedArgs = 0;
 
-    auto [ callLinkInfo, stubInfoConstant ] = m_jit.addCallLinkInfo(m_currentNode->origin.semantic);
+    auto [ callLinkInfo, callLinkInfoConstant ] = m_jit.addCallLinkInfo(m_currentNode->origin.semantic);
 
     // Gotta load the arguments somehow. Varargs is trickier.
     if (isVarargs || isForwardVarargs) {
@@ -962,8 +962,9 @@ void SpeculativeJIT::emitCall(Node* node)
         m_jit.addPtr(TrustedImm32(m_graph.stackPointerOffset() * sizeof(Register)), GPRInfo::callFrameRegister, JITCompiler::stackPointerRegister);
     };
     
-    if (!m_graph.m_plan.isUnlinked())
-        std::get<OptimizingCallLinkInfo*>(callLinkInfo)->setUpCall(callType, calleeGPR);
+    std::visit([&](auto* callLinkInfo) {
+        callLinkInfo->setUpCall(callType, calleeGPR);
+    }, callLinkInfo);
 
     if (node->op() == CallDirectEval) {
         // We want to call operationCallDirectEvalSloppy/operationCallDirectEvalStrict but we don't want to overwrite the parameter area in
@@ -992,7 +993,7 @@ void SpeculativeJIT::emitCall(Node* node)
         m_jit.addPtr(TrustedImm32(requiredBytes), JITCompiler::stackPointerRegister);
         m_jit.load64(JITCompiler::calleeFrameSlot(CallFrameSlot::callee), GPRInfo::regT0);
         m_jit.loadLinkableConstant(JITCompiler::LinkableConstant(m_jit, globalObject), GPRInfo::regT3);
-        m_jit.loadLinkableConstant(JITCompiler::LinkableConstant::nonCellPointer(m_jit, callLinkInfo), GPRInfo::regT2);
+        m_jit.loadLinkableConstant(callLinkInfoConstant, GPRInfo::regT2);
         m_jit.emitVirtualCallWithoutMovingGlobalObject(vm(), GPRInfo::regT2, CallMode::Regular);
         ASSERT(callLinkInfo->callMode() == CallMode::Regular);
         
@@ -1056,10 +1057,14 @@ void SpeculativeJIT::emitCall(Node* node)
     
     CCallHelpers::JumpList slowCases;
     std::optional<CCallHelpers::Jump> done;
+    if (m_graph.m_plan.isUnlinked())
+        m_jit.loadLinkableConstant(callLinkInfoConstant, callLinkInfoGPR);
     if (isTail) {
-        slowCases = CallLinkInfo::emitTailCallFastPath(m_jit, callLinkInfo, calleeGPR, callLinkInfoGPR, scopedLambda<void()>([&]{
+        slowCases = CallLinkInfo::emitTailCallFastPath(m_jit, callLinkInfo, calleeGPR, callLinkInfoGPR, scopedLambda<void()>([&, callLinkInfo = callLinkInfo]{
             if (node->op() == TailCall) {
-                callLinkInfo->setFrameShuffleData(shuffleData);
+                std::visit([&](auto* callLinkInfo) {
+                    callLinkInfo->setFrameShuffleData(shuffleData);
+                }, callLinkInfo);
                 CallFrameShuffler(m_jit, shuffleData).prepareForTailCall();
             } else {
                 m_jit.emitRestoreCalleeSaves();
@@ -1087,7 +1092,7 @@ void SpeculativeJIT::emitCall(Node* node)
             m_jit.emitRestoreCalleeSaves(); // This needs to happen after we moved calleeGPR to regT0
     }
 
-    CallLinkInfo::emitSlowPath(vm(), m_jit, callLinkInfo);
+    CallLinkInfo::emitSlowPath(vm(), m_jit, callLinkInfo, callLinkInfoGPR);
 
     if (done)
         done->link(&m_jit);

@@ -37,6 +37,9 @@
 #include <wtf/SentinelLinkedList.h>
 
 namespace JSC {
+namespace DFG {
+struct UnlinkedCallLinkInfo;
+}
 
 class CCallHelpers;
 class ExecutableBase;
@@ -48,7 +51,7 @@ enum OpcodeID : unsigned;
 struct CallFrameShuffleData;
 struct UnlinkedCallLinkInfo;
 
-using CompileTimeCallLinkInfo = std::variant<OptimizingCallLinkInfo*, UnlinkedCallLinkInfo*>;
+using CompileTimeCallLinkInfo = std::variant<OptimizingCallLinkInfo*, DFG::UnlinkedCallLinkInfo*>;
 
 class CallLinkInfo : public PackedRawSentinelNode<CallLinkInfo> {
 public:
@@ -185,6 +188,10 @@ public:
     static MacroAssembler::JumpList emitDataICFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR) WARN_UNUSED_RETURN;
     static MacroAssembler::JumpList emitTailCallDataICFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
     static void emitDataICSlowPath(VM&, CCallHelpers&, GPRReg callLinkInfoGPR);
+
+    static MacroAssembler::JumpList emitFastPath(CCallHelpers&, CompileTimeCallLinkInfo, GPRReg calleeGPR, GPRReg callLinkInfoGPR) WARN_UNUSED_RETURN;
+    static MacroAssembler::JumpList emitTailCallFastPath(CCallHelpers&, CompileTimeCallLinkInfo, GPRReg calleeGPR, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
+    static void emitSlowPath(VM&, CCallHelpers&, CompileTimeCallLinkInfo, GPRReg callLinkInfoGPR);
 #endif
 
     void revertCallToStub();
@@ -407,6 +414,7 @@ protected:
     bool m_clearedByGC : 1 { false };
     bool m_clearedByVirtual : 1 { false };
     bool m_allowStubs : 1 { true };
+    bool m_clearedByJettison : 1 { false };
     unsigned m_callType : 4 { None }; // CallType
     unsigned m_useDataIC : 1; // UseDataIC
     unsigned m_type : 1; // Type
@@ -457,6 +465,11 @@ class OptimizingCallLinkInfo final : public CallLinkInfo {
 public:
     friend class CallLinkInfo;
 
+    OptimizingCallLinkInfo()
+        : CallLinkInfo(Type::Optimizing, { }, UseDataIC::Yes)
+    {
+    }
+
     OptimizingCallLinkInfo(CodeOrigin codeOrigin, UseDataIC useDataIC)
         : CallLinkInfo(Type::Optimizing, codeOrigin, useDataIC)
     {
@@ -499,6 +512,8 @@ public:
     {
         return m_frameShuffleData.get();
     }
+
+    void initializeFromDFGUnlinkedCallLinkInfo(VM& vm, const DFG::UnlinkedCallLinkInfo&);
 
 private:
     CodeLocationNearCall<JSInternalPtrTag> m_callLocation;
