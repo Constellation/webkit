@@ -48,6 +48,8 @@ enum OpcodeID : unsigned;
 struct CallFrameShuffleData;
 struct UnlinkedCallLinkInfo;
 
+using CompileTimeCallLinkInfo = std::variant<OptimizingCallLinkInfo*, UnlinkedCallLinkInfo*>;
+
 class CallLinkInfo : public PackedRawSentinelNode<CallLinkInfo> {
 public:
     friend class LLIntOffsetsExtractor;
@@ -442,8 +444,11 @@ inline CodeOrigin getCallLinkInfoCodeOrigin(CallLinkInfo& callLinkInfo)
 }
 
 struct UnlinkedCallLinkInfo {
-    BytecodeIndex bytecodeIndex; // Currently, only used by baseline, so this can trivially produce a CodeOrigin.
     CodeLocationLabel<JSInternalPtrTag> doneLocation;
+};
+
+struct BaselineUnlinkedCallLinkInfo : public UnlinkedCallLinkInfo {
+    BytecodeIndex bytecodeIndex; // Currently, only used by baseline, so this can trivially produce a CodeOrigin.
 };
 
 #if ENABLE(JIT)

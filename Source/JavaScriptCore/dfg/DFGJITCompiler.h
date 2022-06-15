@@ -376,6 +376,7 @@ public:
     }
 
     std::tuple<CompileTimeStructureStubInfo, LinkableConstant> addStructureStubInfo();
+    std::tuple<CompileTimeCallLinkInfo, LinkableConstant> addCallLinkInfo();
     LinkerIR::Constant addToConstantPool(LinkerIR::Type, void*);
 
 private:
@@ -458,6 +459,7 @@ private:
     Vector<LinkerIR::Value> m_constantPool;
     HashMap<LinkerIR::Value, LinkerIR::Constant, LinkerIR::ValueHash, LinkerIR::ValueTraits> m_constantPoolMap;
     SegmentedVector<DFG::UnlinkedStructureStubInfo> m_unlinkedStubInfos;
+    SegmentedVector<UnlinkedCallLinkInfo> m_unlinkedCallLinkInfos;
     
     struct ExceptionHandlingOSRExitInfo {
         OSRExitCompilationInfo& exitInfo;
