@@ -169,7 +169,7 @@ StructureStubInfo* State::addStructureStubInfo()
 
 OptimizingCallLinkInfo* State::addCallLinkInfo(CodeOrigin codeOrigin)
 {
-    return jitCode->common.m_callLinkInfos.add(codeOrigin);
+    return jitCode->common.m_callLinkInfos.add(codeOrigin, CallLinkInfo::UseDataIC::No);
 }
 
 } } // namespace JSC::FTL
