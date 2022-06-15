@@ -210,13 +210,13 @@ void JIT::compileCallDirectEvalSlowCase(const JSInstruction* instruction, Vector
 }
 
 template<typename Op>
-bool JIT::compileTailCall(const Op&, BaselineUnlinkedCallLinkInfo*, unsigned)
+bool JIT::compileTailCall(const Op&, unsigned)
 {
     return false;
 }
 
 template<>
-bool JIT::compileTailCall(const OpTailCall& bytecode, BaselineUnlinkedCallLinkInfo*, unsigned callLinkInfoIndex)
+bool JIT::compileTailCall(const OpTailCall& bytecode, unsigned callLinkInfoIndex)
 {
     materializePointerIntoMetadata(bytecode, OpTailCall::Metadata::offsetOfCallLinkInfo(), BaselineJITRegisters::Call::callLinkInfoGPR);
     JumpList slowPaths = CallLinkInfo::emitTailCallDataICFastPath(*this, BaselineJITRegisters::Call::calleeJSR.payloadGPR(), BaselineJITRegisters::Call::callLinkInfoGPR, scopedLambda<void()>([&] {
@@ -253,9 +253,8 @@ void JIT::compileOpCall(const JSInstruction* instruction, unsigned callLinkInfoI
         - Caller restores callFrameRegister after return.
     */
 
-    BaselineUnlinkedCallLinkInfo* info = nullptr;
     if (opcodeID != op_call_direct_eval) {
-        info = addUnlinkedCallLinkInfo();
+        auto* info = addUnlinkedCallLinkInfo();
         info->bytecodeIndex = m_bytecodeIndex;
         ASSERT(m_callCompilationInfo.size() == callLinkInfoIndex);
         m_callCompilationInfo.append(CallCompilationInfo());
@@ -279,7 +278,7 @@ void JIT::compileOpCall(const JSInstruction* instruction, unsigned callLinkInfoI
     addSlowCase(branchIfNotCell(BaselineJITRegisters::Call::calleeJSR));
 #endif
 
-    if (compileTailCall(bytecode, info, callLinkInfoIndex))
+    if (compileTailCall(bytecode, callLinkInfoIndex))
         return;
 
     materializePointerIntoMetadata(bytecode, Op::Metadata::offsetOfCallLinkInfo(), BaselineJITRegisters::Call::callLinkInfoGPR);
