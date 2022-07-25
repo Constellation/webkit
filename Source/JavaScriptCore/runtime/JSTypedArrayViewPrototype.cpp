@@ -52,6 +52,7 @@ static JSC_DECLARE_HOST_FUNCTION(typedArrayViewProtoGetterFuncByteLength);
 static JSC_DECLARE_HOST_FUNCTION(typedArrayViewProtoGetterFuncByteOffset);
 static JSC_DECLARE_HOST_FUNCTION(typedArrayViewProtoFuncReverse);
 static JSC_DECLARE_HOST_FUNCTION(typedArrayViewProtoFuncSlice);
+static JSC_DECLARE_HOST_FUNCTION(typedArrayViewProtoFuncSubarray);
 static JSC_DECLARE_HOST_FUNCTION(typedArrayViewProtoGetterFuncToStringTag);
 
 #define CALL_GENERIC_TYPEDARRAY_PROTOTYPE_FUNCTION(functionName) do {                           \
@@ -365,17 +366,6 @@ JSC_DEFINE_HOST_FUNCTION(typedArrayViewProtoFuncReverse, (JSGlobalObject* global
     CALL_GENERIC_TYPEDARRAY_PROTOTYPE_FUNCTION(genericTypedArrayViewProtoFuncReverse);
 }
 
-JSC_DEFINE_HOST_FUNCTION(typedArrayViewPrivateFuncSubarrayCreate, (JSGlobalObject* globalObject, CallFrame* callFrame))
-{
-    VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
-    JSValue thisValue = callFrame->thisValue();
-    if (!thisValue.isObject())
-        return throwVMTypeError(globalObject, scope, "Receiver should be a typed array view but was not an object"_s);
-    scope.release();
-    CALL_GENERIC_TYPEDARRAY_PROTOTYPE_FUNCTION(genericTypedArrayViewPrivateFuncSubarrayCreate);
-}
-
 JSC_DEFINE_HOST_FUNCTION(typedArrayViewProtoFuncSlice, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
@@ -385,6 +375,17 @@ JSC_DEFINE_HOST_FUNCTION(typedArrayViewProtoFuncSlice, (JSGlobalObject* globalOb
         return throwVMTypeError(globalObject, scope, "Receiver should be a typed array view but was not an object"_s);
     scope.release();
     CALL_GENERIC_TYPEDARRAY_PROTOTYPE_FUNCTION(genericTypedArrayViewProtoFuncSlice);
+}
+
+JSC_DEFINE_HOST_FUNCTION(typedArrayViewProtoFuncSubarray, (JSGlobalObject* globalObject, CallFrame* callFrame))
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+    JSValue thisValue = callFrame->thisValue();
+    if (!thisValue.isObject())
+        return throwVMTypeError(globalObject, scope, "Receiver should be a typed array view but was not an object"_s);
+    scope.release();
+    CALL_GENERIC_TYPEDARRAY_PROTOTYPE_FUNCTION(genericTypedArrayViewProtoFuncSubarray);
 }
 
 JSC_DEFINE_HOST_FUNCTION(typedArrayViewProtoGetterFuncToStringTag, (JSGlobalObject* globalObject, CallFrame* callFrame))
@@ -468,7 +469,7 @@ void JSTypedArrayViewPrototype::finishCreation(VM& vm, JSGlobalObject* globalObj
     JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION(vm.propertyNames->set, typedArrayViewProtoFuncSet, static_cast<unsigned>(PropertyAttribute::DontEnum), 1);
     JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION(vm.propertyNames->slice, typedArrayViewProtoFuncSlice, static_cast<unsigned>(PropertyAttribute::DontEnum), 2);
     JSC_BUILTIN_FUNCTION_WITHOUT_TRANSITION("some"_s, typedArrayPrototypeSomeCodeGenerator, static_cast<unsigned>(PropertyAttribute::DontEnum));
-    JSC_BUILTIN_FUNCTION_WITHOUT_TRANSITION(vm.propertyNames->subarray, typedArrayPrototypeSubarrayCodeGenerator, static_cast<unsigned>(PropertyAttribute::DontEnum));
+    JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION(vm.propertyNames->subarray, typedArrayViewProtoFuncSubarray, static_cast<unsigned>(PropertyAttribute::DontEnum), 2);
     JSC_BUILTIN_FUNCTION_WITHOUT_TRANSITION(vm.propertyNames->toLocaleString, typedArrayPrototypeToLocaleStringCodeGenerator, static_cast<unsigned>(PropertyAttribute::DontEnum));
 
     if (Options::useChangeArrayByCopyMethods()) {

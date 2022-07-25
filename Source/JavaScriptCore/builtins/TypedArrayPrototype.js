@@ -237,23 +237,6 @@ function sort(comparator)
     return this;
 }
 
-function subarray(begin, end)
-{
-    "use strict";
-
-    if (!@isTypedArrayView(this))
-        @throwTypeError("|this| should be a typed array view");
-
-    var start = @toIntegerOrInfinity(begin);
-    var finish;
-    if (end !== @undefined)
-        finish = @toIntegerOrInfinity(end);
-
-    var constructor = @typedArraySpeciesConstructor(this);
-
-    return @typedArraySubarrayCreate.@call(this, start, finish, constructor);
-}
-
 function reduce(callback /* [, initialValue] */)
 {
     // 22.2.3.19

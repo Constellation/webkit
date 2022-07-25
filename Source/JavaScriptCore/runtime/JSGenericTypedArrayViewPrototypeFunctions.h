@@ -91,8 +91,8 @@ ALWAYS_INLINE bool speciesWatchpointIsValid(JSGlobalObject* globalObject, ViewCl
 // This implements 22.2.4.7 TypedArraySpeciesCreate
 // Note, that this function throws.
 // https://tc39.es/ecma262/#typedarray-species-create
-template<typename ViewClass, typename Functor>
-inline JSArrayBufferView* speciesConstruct(JSGlobalObject* globalObject, ViewClass* exemplar, MarkedArgumentBuffer& args, const Functor& defaultConstructor)
+template<typename ViewClass, typename Functor, typename SlowPathArgsConstructor>
+inline JSArrayBufferView* speciesConstruct(JSGlobalObject* globalObject, ViewClass* exemplar, const Functor& defaultConstructor, const SlowPathArgsConstructor& constructArgs)
 {
     VM& vm = getVM(globalObject);
     auto scope = DECLARE_THROW_SCOPE(vm);
@@ -132,10 +132,14 @@ inline JSArrayBufferView* speciesConstruct(JSGlobalObject* globalObject, ViewCla
     if (species == viewClassConstructor)
         RELEASE_AND_RETURN(scope, defaultConstructor());
 
+    MarkedArgumentBuffer args;
+    constructArgs(args);
+    RETURN_IF_EXCEPTION(scope, nullptr);
+
     JSValue result = construct(globalObject, species, args, "species is not a constructor"_s);
     RETURN_IF_EXCEPTION(scope, nullptr);
 
-    if (JSArrayBufferView* view = jsDynamicCast<JSArrayBufferView*>(result)) {
+    if (ViewClass* view = jsDynamicCast<ViewClass*>(result)) {
         if (view->type() == DataViewType) {
             throwTypeError(globalObject, scope, "species constructor did not return a TypedArray View"_s);
             return nullptr;
@@ -626,13 +630,12 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGloba
     ASSERT(end >= begin);
     size_t length = end - begin;
 
-    MarkedArgumentBuffer args;
-    args.append(jsNumber(length));
-    ASSERT(!args.hasOverflowed());
-
-    JSArrayBufferView* result = speciesConstruct(globalObject, thisObject, args, [&]() {
+    JSArrayBufferView* result = speciesConstruct(globalObject, thisObject, [&]() {
         Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType);
         return ViewClass::createUninitialized(globalObject, structure, length);
+    }, [&](MarkedArgumentBuffer& args) {
+        args.append(jsNumber(length));
+        ASSERT(!args.hasOverflowed());
     });
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     ASSERT(!result->isDetached());
@@ -704,7 +707,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGloba
 }
 
 template<typename ViewClass>
-ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncSubarrayCreate(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
+ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSubarray(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     DeferTermination deferScope(vm);
     auto scope = DECLARE_THROW_SCOPE(vm);
@@ -718,17 +721,13 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncSubarrayCreate(VM& 
     // Get the length here; later assert that the length didn't change.
     size_t thisLength = thisObject->length();
 
-    // I would assert that the arguments are integers here but that's not true since
-    // https://tc39.github.io/ecma262/#sec-tointeger allows the result of the operation
-    // to be +/- Infinity and -0.
-    ASSERT(callFrame->argument(0).isNumber());
-    ASSERT(callFrame->argument(1).isUndefined() || callFrame->argument(1).isNumber());
     size_t begin = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(0), thisLength);
-    scope.assertNoException();
+    RETURN_IF_EXCEPTION(scope, encodedJSValue());
     size_t end = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(1), thisLength, thisLength);
-    scope.assertNoException();
+    RETURN_IF_EXCEPTION(scope, encodedJSValue());
 
-    RELEASE_ASSERT(!thisObject->isDetached());
+    if (UNLIKELY(thisObject->isDetached()))
+        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
     // Clamp end to begin.
     end = std::max(begin, end);
@@ -746,32 +745,19 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncSubarrayCreate(VM& 
 
     size_t newByteOffset = thisObject->byteOffset() + offset * ViewClass::elementSize;
 
-    JSObject* defaultConstructor = globalObject->typedArrayConstructor(ViewClass::TypedArrayStorageType);
-    JSValue species = callFrame->uncheckedArgument(2);
-    if (species == defaultConstructor) {
+    scope.release();
+    return JSValue::encode(speciesConstruct(globalObject, thisObject, [&]() {
         Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType);
-
-        RELEASE_AND_RETURN(scope, JSValue::encode(ViewClass::create(
+        return ViewClass::create(
             globalObject, structure, WTFMove(arrayBuffer),
             thisObject->byteOffset() + offset * ViewClass::elementSize,
-            length)));
-    }
-
-    MarkedArgumentBuffer args;
-    args.append(vm.m_typedArrayController->toJS(globalObject, thisObject->globalObject(), arrayBuffer.get()));
-    args.append(jsNumber(newByteOffset));
-    args.append(jsNumber(length));
-    ASSERT(!args.hasOverflowed());
-
-    JSObject* result = construct(globalObject, species, args, "species is not a constructor"_s);
-    RETURN_IF_EXCEPTION(scope, { });
-
-    JSArrayBufferView* validated = validateTypedArray(globalObject, result);
-    RETURN_IF_EXCEPTION(scope, { });
-    if (contentType(validated->type()) != ViewClass::contentType)
-        return throwVMTypeError(globalObject, scope, "TypedArray.prototype.subarray constructed typed array of different content type from |this|"_s);
-
-    return JSValue::encode(validated);
+            length);
+    }, [&](MarkedArgumentBuffer& args) {
+        args.append(vm.m_typedArrayController->toJS(globalObject, thisObject->globalObject(), arrayBuffer.get()));
+        args.append(jsNumber(newByteOffset));
+        args.append(jsNumber(length));
+        ASSERT(!args.hasOverflowed());
+    }));
 }
 
 } // namespace JSC
