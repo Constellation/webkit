@@ -179,6 +179,7 @@
 #include "NumberConstructor.h"
 #include "NumberPrototype.h"
 #include "ObjCCallbackFunction.h"
+#include "ObjectAdaptiveStructureWatchpoint.h"
 #include "ObjectConstructor.h"
 #include "ObjectPropertyChangeAdaptiveWatchpoint.h"
 #include "ObjectPropertyConditionSet.h"
@@ -639,15 +640,6 @@ JSGlobalObject::JSGlobalObject(VM& vm, Structure* structure, const GlobalObjectM
     , m_varReadOnlyWatchpoint(WatchpointSet::create(IsWatched))
     , m_regExpRecompiledWatchpoint(WatchpointSet::create(IsWatched))
     , m_weakRandom(Options::forceWeakRandomSeed() ? Options::forcedWeakRandomSeed() : static_cast<unsigned>(randomNumber() * (std::numeric_limits<unsigned>::max() + 1.0)))
-    , m_arrayIteratorProtocolWatchpointSet(IsWatched)
-    , m_mapIteratorProtocolWatchpointSet(IsWatched)
-    , m_setIteratorProtocolWatchpointSet(IsWatched)
-    , m_stringIteratorProtocolWatchpointSet(IsWatched)
-    , m_mapSetWatchpointSet(IsWatched)
-    , m_setAddWatchpointSet(IsWatched)
-    , m_arrayJoinWatchpointSet(IsWatched)
-    , m_numberToStringWatchpointSet(IsWatched)
-    , m_structureCacheClearedWatchpoint(IsWatched)
     , m_runtimeFlags()
     , m_stackTraceLimit(Options::defaultErrorStackTraceLimit())
     , m_customGetterFunctionSet(vm)
@@ -2466,7 +2458,8 @@ void JSGlobalObject::clearRareData(JSCell* cell)
     jsCast<JSGlobalObject*>(cell)->m_rareData = nullptr;
 }
 
-void JSGlobalObject::tryInstallSpeciesWatchpoint(JSObject* prototype, JSObject* constructor, std::unique_ptr<ObjectPropertyChangeAdaptiveWatchpoint<InlineWatchpointSet>>& constructorWatchpoint, std::unique_ptr<ObjectPropertyChangeAdaptiveWatchpoint<InlineWatchpointSet>>& speciesWatchpoint, InlineWatchpointSet& speciesWatchpointSet)
+template<typename SpeciesWatchpoint>
+void JSGlobalObject::tryInstallSpeciesWatchpoint(JSObject* prototype, JSObject* constructor, std::unique_ptr<ObjectPropertyChangeAdaptiveWatchpoint<InlineWatchpointSet>>& constructorWatchpoint, std::unique_ptr<SpeciesWatchpoint>& speciesWatchpoint, InlineWatchpointSet& speciesWatchpointSet, SpeciesEmpty speciesEmptyMode)
 {
     RELEASE_ASSERT(!constructorWatchpoint);
     RELEASE_ASSERT(!speciesWatchpoint);
@@ -2505,19 +2498,46 @@ void JSGlobalObject::tryInstallSpeciesWatchpoint(JSObject* prototype, JSObject* 
     PropertySlot speciesSlot(constructor, PropertySlot::InternalMethodType::VMInquiry, &vm);
     constructor->getOwnPropertySlot(constructor, this, vm.propertyNames->speciesSymbol, speciesSlot);
     scope.assertNoException();
-    if (speciesSlot.slotBase() != constructor
-        || !speciesSlot.isCacheableGetter()
-        || speciesSlot.getterSetter() != speciesGetterSetter()) {
-        invalidateWatchpoint();
-        return;
+    switch (speciesEmptyMode) {
+    case SpeciesEmpty::Yes: {
+        if (!speciesSlot.isUnset()) {
+            invalidateWatchpoint();
+            return;
+        }
+        break;
+    }
+    case SpeciesEmpty::No: {
+        if (speciesSlot.slotBase() != constructor
+            || !speciesSlot.isCacheableGetter()
+            || speciesSlot.getterSetter() != speciesGetterSetter()) {
+            invalidateWatchpoint();
+            return;
+        }
+        break;
+    }
     }
 
     // Now we need to setup the watchpoints to make sure these conditions remain valid.
+
     prototypeStructure->startWatchingPropertyForReplacements(vm, constructorSlot.cachedOffset());
-    constructorStructure->startWatchingPropertyForReplacements(vm, speciesSlot.cachedOffset());
+    switch (speciesEmptyMode) {
+    case SpeciesEmpty::Yes:
+        break;
+    case SpeciesEmpty::No:
+        constructorStructure->startWatchingPropertyForReplacements(vm, speciesSlot.cachedOffset());
+        break;
+    }
 
     ObjectPropertyCondition constructorCondition = ObjectPropertyCondition::equivalence(vm, prototype, prototype, vm.propertyNames->constructor.impl(), constructor);
-    ObjectPropertyCondition speciesCondition = ObjectPropertyCondition::equivalence(vm, prototype, constructor, vm.propertyNames->speciesSymbol.impl(), speciesGetterSetter());
+    ObjectPropertyCondition speciesCondition;
+    switch (speciesEmptyMode) {
+    case SpeciesEmpty::No:
+        speciesCondition = ObjectPropertyCondition::equivalence(vm, prototype, constructor, vm.propertyNames->speciesSymbol.impl(), speciesGetterSetter());
+        break;
+    case SpeciesEmpty::Yes:
+        speciesCondition = ObjectPropertyCondition::absence(vm, prototype, constructor, vm.propertyNames->speciesSymbol.impl(), jsDynamicCast<JSObject*>(constructor->getPrototypeDirect()));
+        break;
+    }
 
     if (!constructorCondition.isWatchable(PropertyCondition::MakeNoChanges) || !speciesCondition.isWatchable(PropertyCondition::MakeNoChanges)) {
         invalidateWatchpoint();
@@ -2531,7 +2551,7 @@ void JSGlobalObject::tryInstallSpeciesWatchpoint(JSObject* prototype, JSObject* 
     constructorWatchpoint = makeUnique<ObjectPropertyChangeAdaptiveWatchpoint<InlineWatchpointSet>>(this, constructorCondition, speciesWatchpointSet);
     constructorWatchpoint->install(vm);
 
-    speciesWatchpoint = makeUnique<ObjectPropertyChangeAdaptiveWatchpoint<InlineWatchpointSet>>(this, speciesCondition, speciesWatchpointSet);
+    speciesWatchpoint = makeUnique<SpeciesWatchpoint>(this, speciesCondition, speciesWatchpointSet);
     speciesWatchpoint->install(vm);
 }
 
@@ -2540,7 +2560,7 @@ void JSGlobalObject::tryInstallArraySpeciesWatchpoint()
     RELEASE_ASSERT(!m_arrayPrototypeConstructorWatchpoint);
     RELEASE_ASSERT(!m_arrayConstructorSpeciesWatchpoint);
 
-    tryInstallSpeciesWatchpoint(arrayPrototype(), arrayConstructor(), m_arrayPrototypeConstructorWatchpoint, m_arrayConstructorSpeciesWatchpoint, m_arraySpeciesWatchpointSet);
+    tryInstallSpeciesWatchpoint(arrayPrototype(), arrayConstructor(), m_arrayPrototypeConstructorWatchpoint, m_arrayConstructorSpeciesWatchpoint, m_arraySpeciesWatchpointSet, SpeciesEmpty::No);
 }
 
 void JSGlobalObject::tryInstallArrayBufferSpeciesWatchpoint(ArrayBufferSharingMode sharingMode)
@@ -2548,7 +2568,32 @@ void JSGlobalObject::tryInstallArrayBufferSpeciesWatchpoint(ArrayBufferSharingMo
     static_assert(static_cast<unsigned>(ArrayBufferSharingMode::Default) == 0);
     static_assert(static_cast<unsigned>(ArrayBufferSharingMode::Shared) == 1);
     unsigned index = static_cast<unsigned>(sharingMode);
-    tryInstallSpeciesWatchpoint(arrayBufferPrototype(sharingMode), arrayBufferConstructor(sharingMode), m_arrayBufferPrototypeConstructorWatchpoints[index], m_arrayBufferConstructorSpeciesWatchpoints[index], arrayBufferSpeciesWatchpointSet(sharingMode));
+    tryInstallSpeciesWatchpoint(arrayBufferPrototype(sharingMode), arrayBufferConstructor(sharingMode), m_arrayBufferPrototypeConstructorWatchpoints[index], m_arrayBufferConstructorSpeciesWatchpoints[index], arrayBufferSpeciesWatchpointSet(sharingMode), SpeciesEmpty::No);
+}
+
+void JSGlobalObject::tryInstallTypedArraySpeciesWatchpoint(TypedArrayType type)
+{
+    VM& vm = this->vm();
+    auto* prototype = typedArrayPrototype(type);
+    auto* constructor = typedArrayConstructor(type);
+    auto& watchpointSet = typedArraySpeciesWatchpointSet(type);
+    ASSERT(m_typedArrayConstructorSpeciesWatchpoint);
+    if (constructor->getPrototypeDirect() != m_typedArraySuperConstructor.get(this)) {
+        watchpointSet.invalidate(vm, StringFireDetail("Was not able to set up species watchpoint."));
+        return;
+    }
+    tryInstallSpeciesWatchpoint(prototype, constructor, typedArrayPrototypeConstructorWatchpoint(type), typedArrayConstructorSpeciesWatchpoint(type), watchpointSet, SpeciesEmpty::Yes);
+}
+
+void JSGlobalObject::installTypedArrayConstructorSpeciesWatchpoint(JSTypedArrayViewConstructor* constructor)
+{
+    VM& vm = this->vm();
+    PropertySlot slot(constructor, PropertySlot::InternalMethodType::VMInquiry, &vm);
+    constructor->getOwnPropertySlot(constructor, this, vm.propertyNames->speciesSymbol.impl(), slot);
+    constructor->structure()->startWatchingPropertyForReplacements(vm, slot.cachedOffset());
+    ObjectPropertyCondition speciesCondition = ObjectPropertyCondition::equivalence(vm, nullptr, constructor, vm.propertyNames->speciesSymbol.impl(), speciesGetterSetter());
+    m_typedArrayConstructorSpeciesWatchpoint = makeUnique<ObjectPropertyChangeAdaptiveWatchpoint<InlineWatchpointSet>>(this, speciesCondition, m_typedArrayConstructorSpeciesWatchpointSet);
+    m_typedArrayConstructorSpeciesWatchpoint->install(vm);
 }
 
 void JSGlobalObject::installNumberPrototypeWatchpoint(NumberPrototype* numberPrototype)
