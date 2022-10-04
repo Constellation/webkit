@@ -414,7 +414,6 @@ protected:
     bool m_clearedByGC : 1 { false };
     bool m_clearedByVirtual : 1 { false };
     bool m_allowStubs : 1 { true };
-    bool m_clearedByJettison : 1 { false };
     unsigned m_callType : 4 { None }; // CallType
     unsigned m_useDataIC : 1; // UseDataIC
     unsigned m_type : 1; // Type
