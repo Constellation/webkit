@@ -819,7 +819,7 @@ std::tuple<CompileTimeCallLinkInfo, JITCompiler::LinkableConstant> JITCompiler::
         return std::tuple { callLinkInfo, LinkableConstant(callLinkInfoIndex) };
     }
     auto* callLinkInfo = jitCode()->common.m_callLinkInfos.add(codeOrigin, CallLinkInfo::UseDataIC::No);
-    return std::tuple { callLinkInfo, LinkableConstant() };
+    return std::tuple { callLinkInfo, LinkableConstant::nonCellPointer(*this, callLinkInfo) };
 }
 
 
