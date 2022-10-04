@@ -914,7 +914,7 @@ void SpeculativeJIT::emitCall(Node* node)
 
     CCallHelpers::JumpList slowCases;
     if (isTail) {
-        slowCases = info->emitTailCallFastPath(m_jit, calleePayloadGPR, InvalidGPRReg, scopedLambda<void()>([&]{
+        slowCases = CallLinkInfo::emitTailCallFastPath(m_jit, info, calleePayloadGPR, InvalidGPRReg, scopedLambda<void()>([&]{
             if (node->op() == TailCall) {
                 info->setFrameShuffleData(shuffleData);
                 CallFrameShuffler(m_jit, shuffleData).prepareForTailCall();
@@ -924,7 +924,7 @@ void SpeculativeJIT::emitCall(Node* node)
             }
         }));
     } else
-        slowCases = info->emitFastPath(m_jit, calleePayloadGPR, InvalidGPRReg);
+        slowCases = CallLinkInfo::emitFastPath(m_jit, info, calleePayloadGPR, InvalidGPRReg);
 
     JITCompiler::Jump done = m_jit.jump();
 

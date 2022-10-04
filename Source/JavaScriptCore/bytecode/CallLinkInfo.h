@@ -502,9 +502,6 @@ public:
     void setDirectCallTarget(CodeBlock*, CodeLocationLabel<JSEntryPtrTag>);
     void emitSlowPath(VM&, CCallHelpers&);
 
-    MacroAssembler::JumpList emitFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR) WARN_UNUSED_RETURN;
-    MacroAssembler::JumpList emitTailCallFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
-
     void setFrameShuffleData(const CallFrameShuffleData&);
 
     const CallFrameShuffleData* frameShuffleData()
@@ -515,6 +512,9 @@ public:
     void initializeFromDFGUnlinkedCallLinkInfo(VM& vm, const DFG::UnlinkedCallLinkInfo&);
 
 private:
+    MacroAssembler::JumpList emitFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR) WARN_UNUSED_RETURN;
+    MacroAssembler::JumpList emitTailCallFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
+
     CodeLocationNearCall<JSInternalPtrTag> m_callLocation;
     CodeLocationLabel<JSInternalPtrTag> m_slowPathStart;
     CodeLocationLabel<JSInternalPtrTag> m_fastPathStart;
