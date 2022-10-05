@@ -15181,6 +15181,62 @@ void SpeculativeJIT::compileNewInternalFieldObject(Node* node)
     }
 }
 
+void SpeculativeJIT::compileNewMap(Node* node)
+{
+    GPRTemporary result(this);
+    GPRTemporary allocator(this);
+    GPRTemporary scratch(this);
+
+    GPRReg resultGPR = result.gpr();
+    GPRReg allocatorGPR = allocator.gpr();
+    GPRReg scratchGPR = scratch.gpr();
+
+    MacroAssembler::JumpList slowPath;
+
+    RegisteredStructure structure = node->structure();
+    Allocator allocatorValue = allocatorForConcurrently<JSMap>(vm(), sizeof(JSMap), AllocatorForMode::AllocatorIfExists);
+    if (!allocatorValue)
+        slowPath.append(m_jit.jump());
+    else {
+        auto butterfly = TrustedImmPtr(nullptr);
+        emitAllocateJSObject(resultGPR, JITAllocator::constant(allocatorValue), allocatorGPR, TrustedImmPtr(structure), butterfly, scratchGPR, slowPath);
+        m_jit.emitInitializeInlineStorage(resultGPR, structure->inlineCapacity());
+        m_jit.mutatorFence(vm());
+    }
+
+    addSlowPathGenerator(slowPathCall(slowPath, this, operationNewMap, resultGPR, TrustedImmPtr(&vm()), structure));
+
+    cellResult(resultGPR, node);
+}
+
+void SpeculativeJIT::compileNewSet(Node* node)
+{
+    GPRTemporary result(this);
+    GPRTemporary allocator(this);
+    GPRTemporary scratch(this);
+
+    GPRReg resultGPR = result.gpr();
+    GPRReg allocatorGPR = allocator.gpr();
+    GPRReg scratchGPR = scratch.gpr();
+
+    MacroAssembler::JumpList slowPath;
+
+    RegisteredStructure structure = node->structure();
+    Allocator allocatorValue = allocatorForConcurrently<JSSet>(vm(), sizeof(JSSet), AllocatorForMode::AllocatorIfExists);
+    if (!allocatorValue)
+        slowPath.append(m_jit.jump());
+    else {
+        auto butterfly = TrustedImmPtr(nullptr);
+        emitAllocateJSObject(resultGPR, JITAllocator::constant(allocatorValue), allocatorGPR, TrustedImmPtr(structure), butterfly, scratchGPR, slowPath);
+        m_jit.emitInitializeInlineStorage(resultGPR, structure->inlineCapacity());
+        m_jit.mutatorFence(vm());
+    }
+
+    addSlowPathGenerator(slowPathCall(slowPath, this, operationNewSet, resultGPR, TrustedImmPtr(&vm()), structure));
+
+    cellResult(resultGPR, node);
+}
+
 void SpeculativeJIT::compileToPrimitive(Node* node)
 {
     DFG_ASSERT(m_graph, node, node->child1().useKind() == UntypedUse, node->child1().useKind());

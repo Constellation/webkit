@@ -67,6 +67,7 @@
 #include "JSModuleNamespaceObject.h"
 #include "JSPromiseConstructor.h"
 #include "JSSetIterator.h"
+#include "MapConstructor.h"
 #include "NullSetterFunction.h"
 #include "NumberConstructor.h"
 #include "ObjectConstructor.h"
@@ -76,6 +77,7 @@
 #include "PutByIdFlags.h"
 #include "PutByStatus.h"
 #include "RegExpPrototype.h"
+#include "SetConstructor.h"
 #include "SetPrivateBrandStatus.h"
 #include "StackAlignment.h"
 #include "StringConstructor.h"
@@ -4181,6 +4183,32 @@ bool ByteCodeParser::handleConstantInternalFunction(
         else
             resultNode = addToGraph(CallObjectConstructor, OpInfo(m_graph.freeze(function->globalObject())), OpInfo(prediction), get(virtualRegisterForArgumentIncludingThis(1, registerOffset)));
         set(result, resultNode);
+        return true;
+    }
+
+    if (function->classInfo() == MapConstructor::info() && kind == CodeForConstruct) {
+        if (argumentCountIncludingThis <= 1)
+            return false;
+
+        auto* structure = function->globalObject()->mapStructureConcurrently();
+        if (!structure)
+            return false;
+
+        insertChecks();
+        set(result, addToGraph(NewMap, OpInfo(m_graph.registerStructure(structure))));
+        return true;
+    }
+
+    if (function->classInfo() == SetConstructor::info() && kind == CodeForConstruct) {
+        if (argumentCountIncludingThis <= 1)
+            return false;
+
+        auto* structure = function->globalObject()->setStructureConcurrently();
+        if (!structure)
+            return false;
+
+        insertChecks();
+        set(result, addToGraph(NewSet, OpInfo(m_graph.registerStructure(structure))));
         return true;
     }
 

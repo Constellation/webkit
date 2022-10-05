@@ -376,6 +376,8 @@ private:
             case NewRegexp:
             case NewStringObject:
             case NewSymbol:
+            case NewMap:
+            case NewSet:
             case MaterializeNewObject:
             case MaterializeCreateActivation:
             case MakeRope:

@@ -4255,6 +4255,16 @@ void SpeculativeJIT::compile(Node* node)
         break;
     }
 
+    case NewMap: {
+        compileNewMap(node);
+        break;
+    }
+
+    case NewSet: {
+        compileNewSet(node);
+        break;
+    }
+
     case GetCallee: {
         compileGetCallee(node);
         break;

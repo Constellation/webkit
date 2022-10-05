@@ -1111,6 +1111,16 @@ private:
             break;
         }
 
+        case NewMap: {
+            setPrediction(SpecMapObject);
+            break;
+        }
+
+        case NewSet: {
+            setPrediction(SpecSetObject);
+            break;
+        }
+
         case CreatePromise:
             setPrediction(SpecPromiseObject);
             break;

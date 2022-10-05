@@ -1160,6 +1160,12 @@ private:
         case NewArrayWithSpread:
             compileNewArrayWithSpread();
             break;
+        case NewMap:
+            compileNewMap();
+            break;
+        case NewSet:
+            compileNewSet();
+            break;
         case CreateThis:
             compileCreateThis();
             break;

@@ -3129,6 +3129,8 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     case NewGenerator:
     case NewAsyncGenerator:    
     case NewInternalFieldObject:
+    case NewMap:
+    case NewSet:
     case NewObject:
     case MaterializeNewInternalFieldObject:
         ASSERT(!!node->structure().get());

@@ -1762,6 +1762,8 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
     case NewInternalFieldObject:
     case NewRegexp:
     case NewStringObject:
+    case NewMap:
+    case NewSet:
     case PhantomNewObject:
     case MaterializeNewObject:
     case PhantomNewFunction:

@@ -1559,6 +1559,8 @@ public:
     void compileNewGenerator(Node*);
     void compileNewAsyncGenerator(Node*);
     void compileNewInternalFieldObject(Node*);
+    void compileNewMap(Node*);
+    void compileNewSet(Node*);
     void compileToPrimitive(Node*);
     void compileToPropertyKey(Node*);
     void compileToNumeric(Node*);

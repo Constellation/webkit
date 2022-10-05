@@ -881,6 +881,9 @@ public:
     AsyncGeneratorPrototype* asyncGeneratorPrototype() const { return m_asyncGeneratorPrototype.get(); }
     AsyncGeneratorFunctionPrototype* asyncGeneratorFunctionPrototype() const { return m_asyncGeneratorFunctionPrototype.get(); }
 
+    Structure* mapStructureConcurrently() const { return m_mapStructure.getConcurrently(); }
+    Structure* setStructureConcurrently() const { return m_setStructure.getConcurrently(); }
+
     Structure* debuggerScopeStructure() const { return m_debuggerScopeStructure.get(this); }
     Structure* withScopeStructure() const { return m_withScopeStructure.get(this); }
     Structure* strictEvalActivationStructure() const { return m_strictEvalActivationStructure.get(this); }

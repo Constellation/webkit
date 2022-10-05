@@ -382,6 +382,8 @@ namespace JSC { namespace DFG {
     macro(NewRegexp, NodeResultJS) \
     macro(NewSymbol, NodeResultJS | NodeMustGenerate) \
     macro(NewStringObject, NodeResultJS) \
+    macro(NewSet, NodeResultJS) \
+    macro(NewMap, NodeResultJS) \
     /* Rest Parameter */\
     macro(GetRestLength, NodeResultInt32) \
     macro(CreateRest, NodeResultJS | NodeMustGenerate) \

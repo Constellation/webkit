@@ -60,6 +60,8 @@ bool clobbersExitState(Graph& graph, Node* node)
     case NewInternalFieldObject:
     case NewRegexp:
     case NewStringObject:
+    case NewMap:
+    case NewSet:
     case PhantomNewObject:
     case MaterializeNewObject:
     case PhantomNewFunction:

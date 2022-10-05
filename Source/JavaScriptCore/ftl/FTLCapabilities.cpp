@@ -80,6 +80,8 @@ inline CapabilityLevel canCompile(Node* node)
     case NewArray:
     case NewArrayWithSpread:
     case NewInternalFieldObject:
+    case NewMap:
+    case NewSet:
     case Spread:
     case NewArrayBuffer:
     case NewTypedArray:
