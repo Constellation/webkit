@@ -50,8 +50,9 @@ enum OpcodeID : unsigned;
 
 struct CallFrameShuffleData;
 struct UnlinkedCallLinkInfo;
+struct BaselineUnlinkedCallLinkInfo;
 
-using CompileTimeCallLinkInfo = std::variant<OptimizingCallLinkInfo*, DFG::UnlinkedCallLinkInfo*>;
+using CompileTimeCallLinkInfo = std::variant<OptimizingCallLinkInfo*, BaselineUnlinkedCallLinkInfo*, DFG::UnlinkedCallLinkInfo*>;
 
 class CallLinkInfo : public PackedRawSentinelNode<CallLinkInfo> {
 public:
@@ -184,11 +185,11 @@ public:
 #if ENABLE(JIT)
 protected:
     static MacroAssembler::JumpList emitFastPathImpl(CallLinkInfo*, CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, UseDataIC, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
-public:
     static MacroAssembler::JumpList emitDataICFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR) WARN_UNUSED_RETURN;
-    static MacroAssembler::JumpList emitTailCallDataICFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
     static void emitDataICSlowPath(VM&, CCallHelpers&, GPRReg callLinkInfoGPR);
+    static MacroAssembler::JumpList emitTailCallDataICFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
 
+public:
     static MacroAssembler::JumpList emitFastPath(CCallHelpers&, CompileTimeCallLinkInfo, GPRReg calleeGPR, GPRReg callLinkInfoGPR) WARN_UNUSED_RETURN;
     static MacroAssembler::JumpList emitTailCallFastPath(CCallHelpers&, CompileTimeCallLinkInfo, GPRReg calleeGPR, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
     static void emitSlowPath(VM&, CCallHelpers&, CompileTimeCallLinkInfo, GPRReg callLinkInfoGPR);
@@ -452,10 +453,18 @@ inline CodeOrigin getCallLinkInfoCodeOrigin(CallLinkInfo& callLinkInfo)
 
 struct UnlinkedCallLinkInfo {
     CodeLocationLabel<JSInternalPtrTag> doneLocation;
+
+    void setCodeLocations(CodeLocationLabel<JSInternalPtrTag>, CodeLocationLabel<JSInternalPtrTag> doneLocation)
+    {
+        this->doneLocation = doneLocation;
+    }
 };
 
 struct BaselineUnlinkedCallLinkInfo : public UnlinkedCallLinkInfo {
     BytecodeIndex bytecodeIndex; // Currently, only used by baseline, so this can trivially produce a CodeOrigin.
+
+    void setUpCall(CallLinkInfo::CallType, GPRReg) { }
+    void setFrameShuffleData(const CallFrameShuffleData&) { }
 };
 
 #if ENABLE(JIT)

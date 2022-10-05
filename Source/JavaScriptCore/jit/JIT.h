@@ -290,9 +290,9 @@ namespace JSC {
         , void> compileSetupFrame(const Op&);
 
         template<typename Op>
-        bool compileTailCall(const Op&, unsigned callLinkInfoIndex);
+        bool compileTailCall(const Op&, BaselineUnlinkedCallLinkInfo*, unsigned callLinkInfoIndex);
         template<typename Op>
-        bool compileCallDirectEval(const Op&);
+        void compileCallDirectEval(const Op&);
         void compileCallDirectEvalSlowCase(const JSInstruction*, Vector<SlowCaseEntry>::iterator&);
         template<typename Op>
         void emitPutCallResult(const Op&);

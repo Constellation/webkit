@@ -82,11 +82,6 @@ struct UnlinkedCallLinkInfo : JSC::UnlinkedCallLinkInfo {
         m_frameShuffleData->shrinkToFit();
     }
 
-    void setCodeLocations(CodeLocationLabel<JSInternalPtrTag>, CodeLocationLabel<JSInternalPtrTag> doneLocation)
-    {
-        this->doneLocation = doneLocation;
-    }
-
     CodeOrigin codeOrigin;
     CallLinkInfo::CallType callType { CallLinkInfo::CallType::None };
     GPRReg callLinkInfoGPR { InvalidGPRReg };
