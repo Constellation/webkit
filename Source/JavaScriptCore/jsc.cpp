@@ -3834,7 +3834,7 @@ int runJSC(const CommandLine& options, bool isWorker, const Func& func)
         vm.heap.collectNow(Sync, CollectionScope::Full);
     }
 
-    if (options.m_dumpSamplingProfilerData) {
+    if (true) {
 #if ENABLE(SAMPLING_PROFILER)
         JSLockHolder locker(&vm);
         vm.samplingProfiler()->reportTopFunctions();

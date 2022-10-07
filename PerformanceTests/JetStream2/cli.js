@@ -23,6 +23,7 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+__disableSamplingProfiler();
 const isInBrowser = false;
 console = {
     log: print

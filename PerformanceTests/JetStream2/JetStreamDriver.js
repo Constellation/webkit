@@ -534,7 +534,9 @@ class Benchmark {
                     __benchmark.prepareForNextIteration();
 
                 let start = Date.now();
+                __enableSamplingProfiler();
                 __benchmark.runIteration();
+                __disableSamplingProfiler();
                 let end = Date.now();
 
                 results.push(Math.max(1, end - start));
@@ -940,7 +942,9 @@ class AsyncBenchmark extends DefaultBenchmark {
             let results = [];
             for (let i = 0; i < ${this.iterations}; i++) {
                 let start = Date.now();
+                __enableSamplingProfiler();
                 await __benchmark.runIteration();
+                __disableSamplingProfiler();
                 let end = Date.now();
                 results.push(Math.max(1, end - start));
             }
