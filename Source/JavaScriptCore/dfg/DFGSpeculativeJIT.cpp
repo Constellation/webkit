@@ -1886,80 +1886,23 @@ void SpeculativeJIT::compileStringSlice(Node* node)
     SpeculateInt32Operand start(this, node->child2());
     GPRReg startGPR = start.gpr();
 
-    std::optional<SpeculateInt32Operand> end;
-    std::optional<GPRReg> endGPR;
     if (node->child3()) {
-        end.emplace(this, node->child3());
-        endGPR.emplace(end->gpr());
+        SpeculateInt32Operand end(this, node->child3());
+        GPRReg endGPR = end.gpr();
+
+        flushRegisters();
+        GPRFlushedCallResult result(this);
+        GPRReg resultGPR = result.gpr();
+        callOperation(operationStringSlice, resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(node->origin.semantic)), stringGPR, startGPR, endGPR);
+        cellResult(resultGPR, node);
+        return;
     }
 
-    GPRTemporary temp(this);
-    GPRTemporary temp2(this);
-    GPRTemporary startIndex(this);
-
-    GPRReg tempGPR = temp.gpr();
-    GPRReg temp2GPR = temp2.gpr();
-    GPRReg startIndexGPR = startIndex.gpr();
-
-    m_jit.loadPtr(CCallHelpers::Address(stringGPR, JSString::offsetOfValue()), tempGPR);
-    auto isRope = m_jit.branchIfRopeStringImpl(tempGPR);
-    {
-        m_jit.load32(MacroAssembler::Address(tempGPR, StringImpl::lengthMemoryOffset()), temp2GPR);
-
-        emitPopulateSliceIndex(node->child2(), startGPR, temp2GPR, startIndexGPR);
-
-        if (node->child3())
-            emitPopulateSliceIndex(node->child3(), endGPR.value(), temp2GPR, tempGPR);
-        else
-            m_jit.move(temp2GPR, tempGPR);
-    }
-
-    CCallHelpers::JumpList doneCases;
-    CCallHelpers::JumpList slowCases;
-
-    VM& vm = this->vm();
-    auto nonEmptyCase = m_jit.branch32(MacroAssembler::Below, startIndexGPR, tempGPR);
-    m_jit.loadLinkableConstant(JITCompiler::LinkableConstant(m_jit, jsEmptyString(vm)), tempGPR);
-    doneCases.append(m_jit.jump());
-
-    nonEmptyCase.link(&m_jit);
-    m_jit.sub32(startIndexGPR, tempGPR); // the size of the sliced string.
-    slowCases.append(m_jit.branch32(MacroAssembler::NotEqual, tempGPR, TrustedImm32(1)));
-
-    // Refill StringImpl* here.
-    m_jit.loadPtr(MacroAssembler::Address(stringGPR, JSString::offsetOfValue()), temp2GPR);
-    m_jit.loadPtr(MacroAssembler::Address(temp2GPR, StringImpl::dataOffset()), tempGPR);
-
-    // Load the character into scratchReg
-    m_jit.zeroExtend32ToWord(startIndexGPR, startIndexGPR);
-    auto is16Bit = m_jit.branchTest32(MacroAssembler::Zero, MacroAssembler::Address(temp2GPR, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIs8Bit()));
-
-    m_jit.load8(MacroAssembler::BaseIndex(tempGPR, startIndexGPR, MacroAssembler::TimesOne, 0), tempGPR);
-    auto cont8Bit = m_jit.jump();
-
-    is16Bit.link(&m_jit);
-    m_jit.load16(MacroAssembler::BaseIndex(tempGPR, startIndexGPR, MacroAssembler::TimesTwo, 0), tempGPR);
-
-    auto bigCharacter = m_jit.branch32(MacroAssembler::Above, tempGPR, TrustedImm32(maxSingleCharacterString));
-
-    // 8 bit string values don't need the isASCII check.
-    cont8Bit.link(&m_jit);
-
-    m_jit.lshift32(MacroAssembler::TrustedImm32(sizeof(void*) == 4 ? 2 : 3), tempGPR);
-    m_jit.addPtr(TrustedImmPtr(vm.smallStrings.singleCharacterStrings()), tempGPR);
-    m_jit.loadPtr(CCallHelpers::Address(tempGPR), tempGPR);
-
-    addSlowPathGenerator(slowPathCall(bigCharacter, this, operationSingleCharacterString, tempGPR, TrustedImmPtr(&vm), tempGPR));
-
-    addSlowPathGenerator(slowPathCall(slowCases, this, operationStringSubstr, tempGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(node->origin.semantic)), stringGPR, startIndexGPR, tempGPR));
-
-    if (endGPR)
-        addSlowPathGenerator(slowPathCall(isRope, this, operationStringSlice, tempGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(node->origin.semantic)), stringGPR, startGPR, *endGPR));
-    else
-        addSlowPathGenerator(slowPathCall(isRope, this, operationStringSlice, tempGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(node->origin.semantic)), stringGPR, startGPR, TrustedImm32(std::numeric_limits<int32_t>::max())));
-
-    doneCases.link(&m_jit);
-    cellResult(tempGPR, node);
+    flushRegisters();
+    GPRFlushedCallResult result(this);
+    GPRReg resultGPR = result.gpr();
+    callOperation(operationStringSlice, resultGPR, JITCompiler::LinkableConstant(m_jit, m_graph.globalObjectFor(node->origin.semantic)), stringGPR, startGPR, CCallHelpers::TrustedImm32(std::numeric_limits<int32_t>::max()));
+    cellResult(resultGPR, node);
 }
 
 void SpeculativeJIT::compileStringSubstring(Node* node)
