@@ -104,7 +104,7 @@ static PAS_ALWAYS_INLINE bool pas_try_deallocate_not_small_exclusive_segregated(
         pas_debug_heap_free((void*)begin);
         return true;
     }
-    pas_msl_free_logging(config.kind, (void*)begin);
+    pas_msl_free_logging((void*)begin);
 
     page_base = config.page_header_func(begin);
     if (page_base) {

@@ -107,7 +107,7 @@ bool pas_try_deallocate_slow_no_cache(void* ptr,
         pas_debug_heap_free(ptr);
         return true;
     }
-    pas_msl_free_logging(config_ptr->kind, ptr);
+    pas_msl_free_logging(ptr);
 
     if (verbose)
         pas_log("Deallocating %p normally.\n", ptr);

@@ -173,7 +173,7 @@ pas_try_allocate_common_impl_slow(
         
         pas_scavenger_notify_eligibility_if_needed();
         
-        return pas_msl_malloc_logging(config.kind, size, result);
+        return pas_msl_malloc_logging(size, result);
     }
     
     if (verbose)
@@ -195,7 +195,7 @@ pas_try_allocate_common_impl_slow(
     if (baseline_allocator_result.lock)
         pas_lock_unlock(baseline_allocator_result.lock);
 
-    return pas_msl_malloc_logging(config.kind, size, result);
+    return pas_msl_malloc_logging(size, result);
 }
 
 static PAS_ALWAYS_INLINE pas_allocation_result

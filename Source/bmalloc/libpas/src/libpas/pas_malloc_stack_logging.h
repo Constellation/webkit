@@ -58,10 +58,11 @@ static PAS_ALWAYS_INLINE bool pas_msl_is_enabled(void)
     return false;
 }
 
-static PAS_ALWAYS_INLINE pas_allocation_result pas_msl_malloc_logging(pas_heap_config_kind kind, size_t size, pas_allocation_result result)
+static PAS_ALWAYS_INLINE pas_allocation_result pas_msl_malloc_logging(size_t size, pas_allocation_result result)
 {
-    PAS_UNUSED_PARAM(kind);
 #if PAS_OS(DARWIN)
+    if (result.did_succeed)
+        fprintf(stderr, "MALLOC  %p\n", (void*)result.begin);
     if (PAS_UNLIKELY(malloc_logger && pas_msl_is_enabled())) {
         if (result.did_succeed)
             malloc_logger(pas_stack_logging_type_alloc, (uintptr_t)0, (uintptr_t)size, 0, (uintptr_t)result.begin, 0);
@@ -72,10 +73,12 @@ static PAS_ALWAYS_INLINE pas_allocation_result pas_msl_malloc_logging(pas_heap_c
     return result;
 }
 
-static PAS_ALWAYS_INLINE pas_allocation_result pas_msl_realloc_logging(pas_heap_config_kind kind, void* old_ptr, size_t new_size, pas_allocation_result result)
+static PAS_ALWAYS_INLINE pas_allocation_result pas_msl_realloc_logging(void* old_ptr, size_t new_size, pas_allocation_result result)
 {
-    PAS_UNUSED_PARAM(kind);
 #if PAS_OS(DARWIN)
+    if (result.did_succeed) {
+        // fprintf("REALLOC %p %p\n", (void*)result.begin, old_ptr);
+    }
     if (PAS_UNLIKELY(malloc_logger && pas_msl_is_enabled())) {
         if (result.did_succeed)
             malloc_logger(pas_stack_logging_type_alloc | pas_stack_logging_type_dealloc, (uintptr_t)0, (uintptr_t)old_ptr, (uintptr_t)new_size, (uintptr_t)result.begin, 0);
@@ -87,11 +90,12 @@ static PAS_ALWAYS_INLINE pas_allocation_result pas_msl_realloc_logging(pas_heap_
     return result;
 }
 
-static PAS_ALWAYS_INLINE void pas_msl_free_logging(pas_heap_config_kind kind, void* ptr)
+static PAS_ALWAYS_INLINE void pas_msl_free_logging(void* ptr)
 {
-    PAS_UNUSED_PARAM(kind);
 #if PAS_OS(DARWIN)
-    if (PAS_UNLIKELY(malloc_logger && pas_msl_is_enabled()))
+    if (ptr)
+        fprintf(stderr, "FREE    %p\n", ptr);
+    if (PAS_UNLIKELY(malloc_logger && ptr && pas_msl_is_enabled()))
         malloc_logger(pas_stack_logging_type_dealloc, (uintptr_t)0, (uintptr_t)ptr, 0, 0, 0);
 #else
     PAS_UNUSED_PARAM(ptr);
