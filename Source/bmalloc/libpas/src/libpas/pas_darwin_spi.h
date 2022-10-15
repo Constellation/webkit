@@ -41,7 +41,6 @@ int pthread_self_is_exiting_np(void);
 PAS_END_EXTERN_C;
 #define PAS_HAVE_PTHREAD_PRIVATE 0
 #endif
-#endif
 
 PAS_BEGIN_EXTERN_C;
 
@@ -80,5 +79,7 @@ typedef void(malloc_logger_t)(uint32_t type,
 extern malloc_logger_t* malloc_logger;
 
 PAS_END_EXTERN_C;
+
+#endif /* PAS_OS(DARWIN) */
 
 #endif /* PAS_DARWIN_SPI_H */

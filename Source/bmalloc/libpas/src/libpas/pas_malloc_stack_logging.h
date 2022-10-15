@@ -61,28 +61,41 @@ static PAS_ALWAYS_INLINE bool pas_msl_is_enabled(void)
 static PAS_ALWAYS_INLINE pas_allocation_result pas_msl_malloc_logging(pas_heap_config_kind kind, size_t size, pas_allocation_result result)
 {
     PAS_UNUSED_PARAM(kind);
+#if PAS_OS(DARWIN)
     if (PAS_UNLIKELY(malloc_logger && pas_msl_is_enabled())) {
         if (result.did_succeed)
             malloc_logger(pas_stack_logging_type_alloc, (uintptr_t)0, (uintptr_t)size, 0, (uintptr_t)result.begin, 0);
     }
+#else
+    PAS_UNUSED_PARAM(size);
+#endif
     return result;
 }
 
 static PAS_ALWAYS_INLINE pas_allocation_result pas_msl_realloc_logging(pas_heap_config_kind kind, void* old_ptr, size_t new_size, pas_allocation_result result)
 {
     PAS_UNUSED_PARAM(kind);
+#if PAS_OS(DARWIN)
     if (PAS_UNLIKELY(malloc_logger && pas_msl_is_enabled())) {
         if (result.did_succeed)
             malloc_logger(pas_stack_logging_type_alloc | pas_stack_logging_type_dealloc, (uintptr_t)0, (uintptr_t)old_ptr, (uintptr_t)new_size, (uintptr_t)result.begin, 0);
     }
+#else
+    PAS_UNUSED_PARAM(old_ptr);
+    PAS_UNUSED_PARAM(new_size);
+#endif
     return result;
 }
 
 static PAS_ALWAYS_INLINE void pas_msl_free_logging(pas_heap_config_kind kind, void* ptr)
 {
     PAS_UNUSED_PARAM(kind);
+#if PAS_OS(DARWIN)
     if (PAS_UNLIKELY(malloc_logger && pas_msl_is_enabled()))
         malloc_logger(pas_stack_logging_type_dealloc, (uintptr_t)0, (uintptr_t)ptr, 0, 0, 0);
+#else
+    PAS_UNUSED_PARAM(ptr);
+#endif
 }
 
 PAS_END_EXTERN_C;
