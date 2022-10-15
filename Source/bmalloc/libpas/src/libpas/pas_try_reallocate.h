@@ -352,7 +352,7 @@ pas_try_reallocate(void* old_ptr,
         
         if (result.begin || free_mode == pas_reallocate_free_always) {
             pas_deallocate_known_large(old_ptr, config.config_ptr);
-            pas_msl_free_logging(config.kind, old_ptr); // This will not go to TLC, thus, we need to record deallocation here.
+            pas_msl_free_logging(old_ptr); // This will not go to TLC, thus, we need to record deallocation here.
         }
         
         return result;
