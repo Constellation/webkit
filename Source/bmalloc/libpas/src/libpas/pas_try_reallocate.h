@@ -348,10 +348,12 @@ pas_try_reallocate(void* old_ptr,
             source_heap, heap, old_ptr, old_size, new_size, teleport_rule,
             allocate_callback, allocate_callback_arg);
         
-        if (result.begin || free_mode == pas_reallocate_free_always)
+        if (result.begin || free_mode == pas_reallocate_free_always) {
             pas_deallocate_known_large(old_ptr, config.config_ptr);
+            pas_msl_free_logging(config.kind, old_ptr); // This will not go to TLC, thus, we need to record deallocation here.
+        }
         
-        return pas_msl_realloc_logging(config.kind, old_ptr, new_size, result);
+        return result;
     } }
     
     PAS_ASSERT(!"Should never be reached");

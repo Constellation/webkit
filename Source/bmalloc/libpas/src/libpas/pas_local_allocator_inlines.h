@@ -1833,14 +1833,14 @@ pas_local_allocator_try_allocate(pas_local_allocator* allocator,
             allocator, counts, result_filter);
         if (verbose)
             pas_log("in small segregated slow return - result.begin = %p\n", (void*)result.begin);
-    } else {
-        result = config.specialized_local_allocator_try_allocate_slow(
-            allocator, size, alignment, counts, result_filter);
-        if (verbose)
-            pas_log("in generic return - result.begin = %p\n", (void*)result.begin);
+        return result;
     }
 
-    return pas_msl_malloc_logging(config.kind, size, result);
+    result = config.specialized_local_allocator_try_allocate_slow(
+        allocator, size, alignment, counts, result_filter);
+    if (verbose)
+        pas_log("in generic return - result.begin = %p\n", (void*)result.begin);
+    return result;
 }
 
 PAS_END_EXTERN_C;
