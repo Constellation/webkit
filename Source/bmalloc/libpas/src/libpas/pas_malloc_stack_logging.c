@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Apple Inc. All rights reserved.
+ * Copyright (c) 2022 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -20,7 +20,7 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "pas_config.h"
@@ -28,41 +28,29 @@
 #if LIBPAS_ENABLED
 
 #include "bmalloc_heap_config.h"
-
-#if PAS_ENABLE_BMALLOC
-
-#include "bmalloc_heap_innards.h"
-#include "pas_designated_intrinsic_heap.h"
-#include "pas_heap_config_utils_inlines.h"
+#include "bmalloc_heap_inlines.h"
+#include "pas_darwin_spi.h"
 #include "pas_malloc_stack_logging.h"
-#include "pas_root.h"
+#include <stdlib.h>
 
 PAS_BEGIN_EXTERN_C;
 
-const pas_heap_config bmalloc_heap_config = BMALLOC_HEAP_CONFIG;
-
-PAS_BASIC_HEAP_CONFIG_DEFINITIONS(
-    bmalloc, BMALLOC,
-    .allocate_page_should_zero = false,
-    .intrinsic_view_cache_capacity = pas_heap_runtime_config_aggressive_view_cache_capacity);
-
-void bmalloc_heap_config_activate(void)
+pas_msl_is_enabled_flag pas_msl_is_enabled_flag_value = pas_msl_is_enabled_flag_indeterminate;
+static void compute_msl_status(void)
 {
-#if PAS_OS(DARWIN)
-    static const bool register_with_libmalloc = true;
-#endif
-    
-    pas_designated_intrinsic_heap_initialize(&bmalloc_common_primitive_heap.segregated_heap,
-                                             &bmalloc_heap_config);
+    if (!!getenv("MallocStackLogging"))
+        pas_msl_is_enabled_flag_value = pas_msl_is_enabled_flag_enabled;
+    else
+        pas_msl_is_enabled_flag_value = pas_msl_is_enabled_flag_disabled;
+}
 
-#if PAS_OS(DARWIN)
-    if (register_with_libmalloc && !pas_debug_heap_is_enabled(pas_heap_config_kind_bmalloc))
-        pas_root_ensure_for_libmalloc_enumeration();
-#endif
+bool pas_compute_msl_is_enabled(void)
+{
+    static pthread_once_t key = PTHREAD_ONCE_INIT;
+    pthread_once(&key, compute_msl_status);
+    return pas_msl_is_enabled_flag_value == pas_msl_is_enabled_flag_enabled;
 }
 
 PAS_END_EXTERN_C;
-
-#endif /* PAS_ENABLE_BMALLOC */
 
 #endif /* LIBPAS_ENABLED */

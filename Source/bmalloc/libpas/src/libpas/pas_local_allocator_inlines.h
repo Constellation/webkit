@@ -34,6 +34,7 @@
 #include "pas_debug_heap.h"
 #include "pas_epoch.h"
 #include "pas_full_alloc_bits_inlines.h"
+#include "pas_malloc_stack_logging.h"
 #include "pas_scavenger.h"
 #include "pas_segregated_exclusive_view_inlines.h"
 #include "pas_segregated_size_directory_inlines.h"
@@ -1832,14 +1833,14 @@ pas_local_allocator_try_allocate(pas_local_allocator* allocator,
             allocator, counts, result_filter);
         if (verbose)
             pas_log("in small segregated slow return - result.begin = %p\n", (void*)result.begin);
-        return result;
+    } else {
+        result = config.specialized_local_allocator_try_allocate_slow(
+            allocator, size, alignment, counts, result_filter);
+        if (verbose)
+            pas_log("in generic return - result.begin = %p\n", (void*)result.begin);
     }
 
-    result = config.specialized_local_allocator_try_allocate_slow(
-        allocator, size, alignment, counts, result_filter);
-    if (verbose)
-        pas_log("in generic return - result.begin = %p\n", (void*)result.begin);
-    return result;
+    return pas_msl_malloc_logging(config.kind, size, result);
 }
 
 PAS_END_EXTERN_C;

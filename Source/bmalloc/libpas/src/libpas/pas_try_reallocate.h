@@ -29,6 +29,7 @@
 #include "pas_bitfit_directory.h"
 #include "pas_deallocate.h"
 #include "pas_large_map.h"
+#include "pas_malloc_stack_logging.h"
 #include "pas_reallocate_free_mode.h"
 #include "pas_reallocate_heap_teleport_rule.h"
 #include "pas_try_allocate.h"
@@ -350,7 +351,7 @@ pas_try_reallocate(void* old_ptr,
         if (result.begin || free_mode == pas_reallocate_free_always)
             pas_deallocate_known_large(old_ptr, config.config_ptr);
         
-        return result;
+        return pas_msl_realloc_logging(config.kind, old_ptr, new_size, result);
     } }
     
     PAS_ASSERT(!"Should never be reached");

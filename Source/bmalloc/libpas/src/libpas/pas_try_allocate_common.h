@@ -173,7 +173,7 @@ pas_try_allocate_common_impl_slow(
         
         pas_scavenger_notify_eligibility_if_needed();
         
-        return result;
+        return pas_msl_malloc_logging(config.kind, size, result);
     }
     
     if (verbose)
