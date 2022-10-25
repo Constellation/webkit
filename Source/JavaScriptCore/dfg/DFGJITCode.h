@@ -101,6 +101,19 @@ public:
         CellPointer,
         NonCellPointer,
         GlobalObject,
+
+        // WatchpointSet.
+        HavingABadTimeWatchpointSet,
+        MasqueradesAsUndefinedWatchpointSet,
+        ArrayIteratorProtocolWatchpointSet,
+        NumberToStringWatchpointSet,
+        StructureCacheClearedWatchpointSet,
+        StringSymbolReplaceWatchpointSet,
+        RegExpPrimordialPropertiesWatchpointSet,
+        ArraySpeciesWatchpointSet,
+        ArrayPrototypeIsSaneChainWatchpointSet,
+        StringPrototypeIsSaneChainWatchpointSet,
+        ObjectPrototypeIsSaneChainWatchpointSet,
     };
 
     using Value = CompactPointerTuple<void*, Type>;
