@@ -1287,6 +1287,9 @@ public:
     HashMap<GenericHashKey<int64_t>, double*> m_doubleConstantsMap;
     Bag<double> m_doubleConstants;
 #endif
+
+    Vector<LinkerIR::Value> m_constantPool;
+    HashMap<LinkerIR::Value, LinkerIR::Constant, LinkerIR::ValueHash, LinkerIR::ValueTraits> m_constantPoolMap;
     
     OptimizationFixpointState m_fixpointState;
     StructureRegistrationState m_structureRegistrationState;
