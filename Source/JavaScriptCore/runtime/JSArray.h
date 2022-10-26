@@ -125,27 +125,9 @@ public:
         ShiftCountForSplice
     };
 
-    bool shiftCountForShift(JSGlobalObject* globalObject, unsigned startIndex, unsigned count)
-    {
-        VM& vm = getVM(globalObject);
-        return shiftCountWithArrayStorage(vm, startIndex, count, ensureArrayStorage(vm));
-    }
-    bool shiftCountForSplice(JSGlobalObject* globalObject, unsigned& startIndex, unsigned count)
-    {
-        return shiftCountWithAnyIndexingType(globalObject, startIndex, count);
-    }
-    template<ShiftCountMode shiftCountMode>
     bool shiftCount(JSGlobalObject* globalObject, unsigned& startIndex, unsigned count)
     {
-        switch (shiftCountMode) {
-        case ShiftCountForShift:
-            return shiftCountForShift(globalObject, startIndex, count);
-        case ShiftCountForSplice:
-            return shiftCountForSplice(globalObject, startIndex, count);
-        default:
-            CRASH();
-            return false;
-        }
+        return shiftCountWithAnyIndexingType(globalObject, startIndex, count);
     }
 
     bool unshiftCount(JSGlobalObject* globalObject, unsigned startIndex, unsigned count)

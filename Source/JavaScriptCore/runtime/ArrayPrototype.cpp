@@ -234,7 +234,6 @@ static inline uint64_t argumentClampedIndexFromStartOrEnd(JSGlobalObject* global
 // case of shift this must be removing values, in the case of unshift this
 // must be introducing new values.
 
-template<JSArray::ShiftCountMode shiftCountMode>
 static void shift(JSGlobalObject* globalObject, JSObject* thisObj, uint64_t header, uint64_t currentCount, uint64_t resultCount, uint64_t length)
 {
     VM& vm = globalObject->vm();
@@ -250,7 +249,7 @@ static void shift(JSGlobalObject* globalObject, JSObject* thisObj, uint64_t head
         JSArray* array = asArray(thisObj);
         uint32_t header32 = static_cast<uint32_t>(header);
         ASSERT(header32 == header);
-        if (array->length() == length && array->shiftCount<shiftCountMode>(globalObject, header32, static_cast<uint32_t>(count)))
+        if (array->length() == length && array->shiftCount(globalObject, header32, static_cast<uint32_t>(count)))
             return;
         header = header32;
     }
@@ -1024,7 +1023,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncShift, (JSGlobalObject* globalObject, Cal
 
     JSValue result = thisObj->getIndex(globalObject, 0);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
-    shift<JSArray::ShiftCountForShift>(globalObject, thisObj, 0, 1, 0, length);
+    shift(globalObject, thisObj, 0, 1, 0, length);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     scope.release();
     setLength(globalObject, vm, thisObj, length - 1);
@@ -1186,7 +1185,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncSplice, (JSGlobalObject* globalObject, Ca
     }
 
     if (itemCount < actualDeleteCount) {
-        shift<JSArray::ShiftCountForSplice>(globalObject, thisObj, actualStart, actualDeleteCount, itemCount, length);
+        shift(globalObject, thisObj, actualStart, actualDeleteCount, itemCount, length);
         RETURN_IF_EXCEPTION(scope, encodedJSValue());
     } else if (itemCount > actualDeleteCount) {
         unshift(globalObject, thisObj, actualStart, actualDeleteCount, itemCount, length);
