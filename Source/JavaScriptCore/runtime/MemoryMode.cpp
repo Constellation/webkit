@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2021 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,40 +23,48 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "config.h"
+#include "MemoryMode.h"
 
-#if ENABLE(WEBASSEMBLY)
+#include <wtf/Assertions.h>
+#include <wtf/PrintStream.h>
 
-#include "JSExportMacros.h"
+namespace JSC {
 
-namespace JSC { namespace Wasm {
-
-// FIXME: We should support other modes. see: https://bugs.webkit.org/show_bug.cgi?id=162693
-enum class MemoryMode : uint8_t {
-    BoundsChecking,
+const char* makeString(MemoryMode mode)
+{
+    switch (mode) {
+    case MemoryMode::BoundsChecking: return "BoundsChecking";
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-    Signaling
+    case MemoryMode::Signaling: return "Signaling";
 #endif
-};
+    }
+    RELEASE_ASSERT_NOT_REACHED();
+    return "";
+}
 
-static constexpr size_t NumberOfMemoryModes = 2;
-JS_EXPORT_PRIVATE const char* makeString(MemoryMode);
+const char* makeString(MemorySharingMode sharingMode)
+{
+    switch (sharingMode) {
+    case MemorySharingMode::Default: return "Default";
+    case MemorySharingMode::Shared: return "Shared";
+    }
+    RELEASE_ASSERT_NOT_REACHED();
+    return "";
+}
 
-enum class MemorySharingMode : uint8_t {
-    Default,
-    Shared,
-};
-
-JS_EXPORT_PRIVATE const char* makeString(MemorySharingMode);
-
-} } // namespace JSC::Wasm
+}
 
 namespace WTF {
 
-class PrintStream;
-void printInternal(PrintStream&, JSC::Wasm::MemoryMode);
-void printInternal(PrintStream&, JSC::Wasm::MemorySharingMode);
+void printInternal(PrintStream& out, JSC::MemoryMode mode)
+{
+    out.print(JSC::makeString(mode));
+}
+
+void printInternal(PrintStream& out, JSC::MemorySharingMode mode)
+{
+    out.print(JSC::makeString(mode));
+}
 
 } // namespace WTF
-
-#endif // ENABLE(WEBASSEMBLY)

@@ -2359,7 +2359,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentBroadcast, (JSGlobalObject* globalOb
 
 #if ENABLE(WEBASSEMBLY)
     JSWebAssemblyMemory* memory = jsDynamicCast<JSWebAssemblyMemory*>(callFrame->argument(0));
-    if (memory && memory->memory().sharingMode() == Wasm::MemorySharingMode::Shared) {
+    if (memory && memory->memory().sharingMode() == MemorySharingMode::Shared) {
         Workers::singleton().broadcast(
             [&] (const AbstractLocker& locker, Worker& worker) {
                 Ref<BufferMemoryHandle> handle { memory->memory().handle() };

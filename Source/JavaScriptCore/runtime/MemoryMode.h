@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Apple Inc. All rights reserved.
+ * Copyright (C) 2017-2021 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,52 +23,36 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "WasmMemoryMode.h"
+#pragma once
 
-#if ENABLE(WEBASSEMBLY)
+#include "JSExportMacros.h"
 
-#include <wtf/Assertions.h>
-#include <wtf/PrintStream.h>
+namespace JSC {
 
-namespace JSC { namespace Wasm {
-
-const char* makeString(MemoryMode mode)
-{
-    switch (mode) {
-    case MemoryMode::BoundsChecking: return "BoundsChecking";
+// FIXME: We should support other modes. see: https://bugs.webkit.org/show_bug.cgi?id=162693
+enum class MemoryMode : uint8_t {
+    BoundsChecking,
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-    case MemoryMode::Signaling: return "Signaling";
+    Signaling
 #endif
-    }
-    RELEASE_ASSERT_NOT_REACHED();
-    return "";
-}
+};
 
-const char* makeString(MemorySharingMode sharingMode)
-{
-    switch (sharingMode) {
-    case MemorySharingMode::Default: return "Default";
-    case MemorySharingMode::Shared: return "Shared";
-    }
-    RELEASE_ASSERT_NOT_REACHED();
-    return "";
-}
+static constexpr size_t NumberOfMemoryModes = 2;
+JS_EXPORT_PRIVATE const char* makeString(MemoryMode);
 
-} } // namespace JSC::Wasm
+enum class MemorySharingMode : uint8_t {
+    Default,
+    Shared,
+};
+
+JS_EXPORT_PRIVATE const char* makeString(MemorySharingMode);
+
+} // namespace JSC
 
 namespace WTF {
 
-void printInternal(PrintStream& out, JSC::Wasm::MemoryMode mode)
-{
-    out.print(JSC::Wasm::makeString(mode));
-}
-
-void printInternal(PrintStream& out, JSC::Wasm::MemorySharingMode mode)
-{
-    out.print(JSC::Wasm::makeString(mode));
-}
+class PrintStream;
+void printInternal(PrintStream&, JSC::MemoryMode);
+void printInternal(PrintStream&, JSC::MemorySharingMode);
 
 } // namespace WTF
-
-#endif // ENABLE(WEBASSEMBLY)

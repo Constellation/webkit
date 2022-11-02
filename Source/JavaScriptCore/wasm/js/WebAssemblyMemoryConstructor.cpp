@@ -116,7 +116,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyMemory, (JSGlobalObject* globalOb
 
     // Even though Options::useSharedArrayBuffer() is false, we can create SharedArrayBuffer through wasm shared memory.
     // But we cannot send SharedArrayBuffer to the other workers, so it is not effective.
-    Wasm::MemorySharingMode sharingMode = Wasm::MemorySharingMode::Default;
+    MemorySharingMode sharingMode = MemorySharingMode::Default;
     if (LIKELY(Options::useWasmFaultSignalHandler())) {
         JSValue sharedValue = memoryDescriptor->get(globalObject, Identifier::fromString(vm, "shared"_s));
         RETURN_IF_EXCEPTION(throwScope, encodedJSValue());
@@ -125,7 +125,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyMemory, (JSGlobalObject* globalOb
         if (shared) {
             if (!maximumPageCount)
                 return throwVMTypeError(globalObject, throwScope, "'maximum' page count must be defined if 'shared' is true"_s);
-            sharingMode = Wasm::MemorySharingMode::Shared;
+            sharingMode = MemorySharingMode::Shared;
         }
     }
 

@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "WasmMemoryMode.h"
+#include "MemoryMode.h"
 #include "Options.h"
 #include "PageCount.h"
 
@@ -124,7 +124,7 @@ class BufferMemoryHandle final : public ThreadSafeRefCounted<BufferMemoryHandle>
     WTF_MAKE_FAST_ALLOCATED;
     friend LLIntOffsetsExtractor;
 public:
-    BufferMemoryHandle(void*, size_t size, size_t mappedCapacity, PageCount initial, PageCount maximum, Wasm::MemorySharingMode, Wasm::MemoryMode);
+    BufferMemoryHandle(void*, size_t size, size_t mappedCapacity, PageCount initial, PageCount maximum, MemorySharingMode, MemoryMode);
     JS_EXPORT_PRIVATE ~BufferMemoryHandle();
 
     void* memory() const;
@@ -132,8 +132,8 @@ public:
     size_t mappedCapacity() const { return m_mappedCapacity; }
     PageCount initial() const { return m_initial; }
     PageCount maximum() const { return m_maximum; }
-    Wasm::MemorySharingMode sharingMode() const { return m_sharingMode; }
-    Wasm::MemoryMode mode() const { return m_mode; }
+    MemorySharingMode sharingMode() const { return m_sharingMode; }
+    MemoryMode mode() const { return m_mode; }
     static ptrdiff_t offsetOfSize() { return OBJECT_OFFSETOF(BufferMemoryHandle, m_size); }
     Lock& lock() { return m_lock; }
 
@@ -151,8 +151,8 @@ private:
     using CagedMemory = CagedPtr<Gigacage::Primitive, void, tagCagedPtr>;
 
     Lock m_lock;
-    Wasm::MemorySharingMode m_sharingMode { Wasm::MemorySharingMode::Default };
-    Wasm::MemoryMode m_mode { Wasm::MemoryMode::BoundsChecking };
+    MemorySharingMode m_sharingMode { MemorySharingMode::Default };
+    MemoryMode m_mode { MemoryMode::BoundsChecking };
     CagedMemory m_memory;
     size_t m_size { 0 };
     size_t m_mappedCapacity { 0 };

@@ -418,7 +418,7 @@ void WebAssemblyModuleRecord::initializeImports(JSGlobalObject* globalObject, JS
                     return exception(createJSWebAssemblyLinkError(globalObject, vm, importFailMessage(import, "Memory import", "provided a 'maximum' that is larger than the module's declared 'maximum' import memory size")));
             }
 
-            if ((memory->memory().sharingMode() == Wasm::MemorySharingMode::Shared) != moduleInformation.memory.isShared())
+            if ((memory->memory().sharingMode() == MemorySharingMode::Shared) != moduleInformation.memory.isShared())
                 return exception(createJSWebAssemblyLinkError(globalObject, vm, importFailMessage(import, "Memory import", "provided a 'shared' that is different from the module's declared 'shared' import memory attribute")));
 
             // ii. Append v to memories.

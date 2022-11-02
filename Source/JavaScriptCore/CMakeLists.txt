@@ -1137,6 +1137,7 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     runtime/Lookup.h
     runtime/MatchResult.h
     runtime/MathCommon.h
+    runtime/MemoryMode.h
     runtime/MemoryStatistics.h
     runtime/Microtask.h
     runtime/ModuleProgramExecutable.h
@@ -1270,7 +1271,6 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     wasm/WasmLLIntTierUpCounter.h
     wasm/WasmMemory.h
     wasm/WasmMemoryInformation.h
-    wasm/WasmMemoryMode.h
     wasm/WasmModule.h
     wasm/WasmModuleInformation.h
     wasm/WasmName.h

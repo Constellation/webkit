@@ -28,8 +28,8 @@
 #if ENABLE(WEBASSEMBLY)
 
 #include "BufferMemoryHandle.h"
+#include "MemoryMode.h"
 #include "PageCount.h"
-#include "WasmMemoryMode.h"
 
 #include <wtf/CagedPtr.h>
 #include <wtf/Expected.h>

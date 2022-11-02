@@ -966,6 +966,7 @@ runtime/MapPrototype.cpp
 runtime/MatchResult.cpp
 runtime/MathCommon.cpp
 runtime/MathObject.cpp
+runtime/MemoryMode.cpp
 runtime/MemoryStatistics.cpp
 runtime/ModuleProgramExecutable.cpp
 runtime/NarrowingNumberPredictionFuzzerAgent.cpp
@@ -1127,7 +1128,6 @@ wasm/WasmLLIntTierUpCounter.cpp
 wasm/WasmMachineThreads.cpp
 wasm/WasmMemory.cpp
 wasm/WasmMemoryInformation.cpp
-wasm/WasmMemoryMode.cpp
 wasm/WasmModule.cpp
 wasm/WasmModuleInformation.cpp
 wasm/WasmNameSectionParser.cpp

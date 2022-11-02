@@ -219,7 +219,7 @@ BufferMemoryManager& BufferMemoryManager::singleton()
     return manager.get();
 }
 
-BufferMemoryHandle::BufferMemoryHandle(void* memory, size_t size, size_t mappedCapacity, PageCount initial, PageCount maximum, Wasm::MemorySharingMode sharingMode, Wasm::MemoryMode mode)
+BufferMemoryHandle::BufferMemoryHandle(void* memory, size_t size, size_t mappedCapacity, PageCount initial, PageCount maximum, MemorySharingMode sharingMode, MemoryMode mode)
     : m_sharingMode(sharingMode)
     , m_mode(mode)
     , m_memory(memory, mappedCapacity)
@@ -228,7 +228,7 @@ BufferMemoryHandle::BufferMemoryHandle(void* memory, size_t size, size_t mappedC
     , m_initial(initial)
     , m_maximum(maximum)
 {
-    if (sharingMode == Wasm::MemorySharingMode::Default && mode == Wasm::MemoryMode::BoundsChecking)
+    if (sharingMode == MemorySharingMode::Default && mode == MemoryMode::BoundsChecking)
         ASSERT(mappedCapacity == size);
     else {
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
@@ -244,7 +244,7 @@ BufferMemoryHandle::~BufferMemoryHandle()
         BufferMemoryManager::singleton().freePhysicalBytes(m_size);
         switch (m_mode) {
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-        case Wasm::MemoryMode::Signaling:
+        case MemoryMode::Signaling:
             if (mprotect(memory, BufferMemoryHandle::fastMappedBytes(), PROT_READ | PROT_WRITE)) {
                 dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
                 RELEASE_ASSERT_NOT_REACHED();
@@ -252,12 +252,12 @@ BufferMemoryHandle::~BufferMemoryHandle()
             BufferMemoryManager::singleton().freeFastMemory(memory);
             break;
 #endif
-        case Wasm::MemoryMode::BoundsChecking: {
+        case MemoryMode::BoundsChecking: {
             switch (m_sharingMode) {
-            case Wasm::MemorySharingMode::Default:
+            case MemorySharingMode::Default:
                 Gigacage::freeVirtualPages(Gigacage::Primitive, memory, m_size);
                 break;
-            case Wasm::MemorySharingMode::Shared: {
+            case MemorySharingMode::Shared: {
                 if (mprotect(memory, m_mappedCapacity, PROT_READ | PROT_WRITE)) {
                     dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
                     RELEASE_ASSERT_NOT_REACHED();

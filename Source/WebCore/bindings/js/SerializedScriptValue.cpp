@@ -1470,7 +1470,7 @@ private:
                 return true;
             }
             if (JSWebAssemblyMemory* memory = jsDynamicCast<JSWebAssemblyMemory*>(obj)) {
-                if (!JSC::Options::useSharedArrayBuffer() || memory->memory().sharingMode() != JSC::Wasm::MemorySharingMode::Shared) {
+                if (!JSC::Options::useSharedArrayBuffer() || memory->memory().sharingMode() != JSC::MemorySharingMode::Shared) {
                     code = SerializationReturnCode::DataCloneError;
                     return true;
                 }

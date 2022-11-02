@@ -1671,7 +1671,6 @@
 		AD5C36EA1F75AD6A000BCAAF /* JSToWasm.h in Headers */ = {isa = PBXBuildFile; fileRef = AD8DD6CF1F67089F0004EB52 /* JSToWasm.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		AD5C36EB1F75AD73000BCAAF /* JSWebAssembly.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD09AF31F62482E001313C2 /* JSWebAssembly.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		AD5C36EC1F75AD7C000BCAAF /* WasmToJS.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD09AEE1F5F623F001313C2 /* WasmToJS.h */; settings = {ATTRIBUTES = (Private, ); }; };
-		AD5C36EF1F7A263A000BCAAF /* WasmMemoryMode.h in Headers */ = {isa = PBXBuildFile; fileRef = AD5C36EE1F7A2629000BCAAF /* WasmMemoryMode.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		AD7438C01E0457A400FD0C2A /* WasmTypeDefinition.h in Headers */ = {isa = PBXBuildFile; fileRef = AD7438BF1E04579200FD0C2A /* WasmTypeDefinition.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		AD7B4B2E1FA3E29800C9DF79 /* WasmNameSection.h in Headers */ = {isa = PBXBuildFile; fileRef = AD7B4B2D1FA3E28600C9DF79 /* WasmNameSection.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		AD86A93E1AA4D88D002FE77F /* WeakGCMapInlines.h in Headers */ = {isa = PBXBuildFile; fileRef = AD86A93D1AA4D87C002FE77F /* WeakGCMapInlines.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -1883,6 +1882,7 @@
 		E31C31322511AFD700E7A3A0 /* IntlCache.h in Headers */ = {isa = PBXBuildFile; fileRef = E31C31302511AFD600E7A3A0 /* IntlCache.h */; };
 		E3201C1D1F8E82360076A032 /* JSScriptFetchParameters.h in Headers */ = {isa = PBXBuildFile; fileRef = E38D060B1F8E814100649CF2 /* JSScriptFetchParameters.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E3201C1E1F8E824C0076A032 /* ScriptFetchParameters.h in Headers */ = {isa = PBXBuildFile; fileRef = E38D060C1F8E814100649CF2 /* ScriptFetchParameters.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		E320B66C2912298100E87CDB /* MemoryMode.h in Headers */ = {isa = PBXBuildFile; fileRef = E320B66A2912298000E87CDB /* MemoryMode.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E322E5A31DA64439006E7709 /* DFGSnippetParams.h in Headers */ = {isa = PBXBuildFile; fileRef = E322E5A11DA64435006E7709 /* DFGSnippetParams.h */; };
 		E322E5A71DA644A8006E7709 /* FTLSnippetParams.h in Headers */ = {isa = PBXBuildFile; fileRef = E322E5A51DA644A4006E7709 /* FTLSnippetParams.h */; };
 		E323116924A1DC3500693DA5 /* IntlNumberFormatInlines.h in Headers */ = {isa = PBXBuildFile; fileRef = E323116824A1DC2F00693DA5 /* IntlNumberFormatInlines.h */; };
@@ -5087,8 +5087,6 @@
 		AD5C36DF1F699EB6000BCAAF /* WasmInstance.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WasmInstance.h; sourceTree = "<group>"; };
 		AD5C36E31F69EC8B000BCAAF /* WasmTable.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WasmTable.cpp; sourceTree = "<group>"; };
 		AD5C36E41F69EC8B000BCAAF /* WasmTable.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WasmTable.h; sourceTree = "<group>"; };
-		AD5C36EE1F7A2629000BCAAF /* WasmMemoryMode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WasmMemoryMode.h; sourceTree = "<group>"; };
-		AD5C36F01F7A26BF000BCAAF /* WasmMemoryMode.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WasmMemoryMode.cpp; sourceTree = "<group>"; };
 		AD7438BE1E04579200FD0C2A /* WasmTypeDefinition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WasmTypeDefinition.cpp; sourceTree = "<group>"; };
 		AD7438BF1E04579200FD0C2A /* WasmTypeDefinition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WasmTypeDefinition.h; sourceTree = "<group>"; };
 		AD7B4B2D1FA3E28600C9DF79 /* WasmNameSection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WasmNameSection.h; sourceTree = "<group>"; };
@@ -5344,6 +5342,8 @@
 		E319A3EB28DA84EB00DF18C7 /* IntlDurationFormatPrototype.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IntlDurationFormatPrototype.h; sourceTree = "<group>"; };
 		E31C31302511AFD600E7A3A0 /* IntlCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IntlCache.h; sourceTree = "<group>"; };
 		E31C31312511AFD600E7A3A0 /* IntlCache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IntlCache.cpp; sourceTree = "<group>"; };
+		E320B66A2912298000E87CDB /* MemoryMode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemoryMode.h; sourceTree = "<group>"; };
+		E320B66B2912298000E87CDB /* MemoryMode.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MemoryMode.cpp; sourceTree = "<group>"; };
 		E322E5A01DA64435006E7709 /* DFGSnippetParams.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DFGSnippetParams.cpp; path = dfg/DFGSnippetParams.cpp; sourceTree = "<group>"; };
 		E322E5A11DA64435006E7709 /* DFGSnippetParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DFGSnippetParams.h; path = dfg/DFGSnippetParams.h; sourceTree = "<group>"; };
 		E322E5A41DA644A4006E7709 /* FTLSnippetParams.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FTLSnippetParams.cpp; path = ftl/FTLSnippetParams.cpp; sourceTree = "<group>"; };
@@ -7504,8 +7504,6 @@
 				535557131D9D9EA5006D583B /* WasmMemory.h */,
 				79B759711DFA4C600052174C /* WasmMemoryInformation.cpp */,
 				79B759721DFA4C600052174C /* WasmMemoryInformation.h */,
-				AD5C36F01F7A26BF000BCAAF /* WasmMemoryMode.cpp */,
-				AD5C36EE1F7A2629000BCAAF /* WasmMemoryMode.h */,
 				790081361E95A8EC0052D7CD /* WasmModule.cpp */,
 				790081371E95A8EC0052D7CD /* WasmModule.h */,
 				53E777E11E92E265007CBEC4 /* WasmModuleInformation.cpp */,
@@ -8183,6 +8181,8 @@
 				4340A4831A9051AF00D73CCA /* MathCommon.h */,
 				F692A86A0255597D01FF60F7 /* MathObject.cpp */,
 				F692A86B0255597D01FF60F7 /* MathObject.h */,
+				E320B66B2912298000E87CDB /* MemoryMode.cpp */,
+				E320B66A2912298000E87CDB /* MemoryMode.h */,
 				90213E3B123A40C200D422F3 /* MemoryStatistics.cpp */,
 				90213E3C123A40C200D422F3 /* MemoryStatistics.h */,
 				7C008CE5187631B600955C24 /* Microtask.h */,
@@ -10985,6 +10985,7 @@
 				4340A4851A9051AF00D73CCA /* MathCommon.h in Headers */,
 				BC18C43C0E16F5CD00B34460 /* MathObject.h in Headers */,
 				E328C6C71DA4304500D255FD /* MaxFrameExtentForSlowPathCall.h in Headers */,
+				E320B66C2912298100E87CDB /* MemoryMode.h in Headers */,
 				90213E3E123A40C200D422F3 /* MemoryStatistics.h in Headers */,
 				142F16E021558802003D49C9 /* MetadataTable.h in Headers */,
 				0FB5467B14F5C7E1002C2989 /* MethodOfGettingAValueProfile.h in Headers */,
@@ -11374,7 +11375,6 @@
 				53E9E0AC1EAE83DF00FEE251 /* WasmMachineThreads.h in Headers */,
 				535557141D9D9EA5006D583B /* WasmMemory.h in Headers */,
 				79B759751DFA4C600052174C /* WasmMemoryInformation.h in Headers */,
-				AD5C36EF1F7A263A000BCAAF /* WasmMemoryMode.h in Headers */,
 				790081391E95A8EC0052D7CD /* WasmModule.h in Headers */,
 				53E777E41E92E265007CBEC4 /* WasmModuleInformation.h in Headers */,
 				AD5B416F1EBAFB77008EFA43 /* WasmName.h in Headers */,
