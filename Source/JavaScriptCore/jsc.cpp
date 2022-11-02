@@ -2944,11 +2944,17 @@ JSC_DEFINE_HOST_FUNCTION(functionWebAssemblyMemoryMode, (JSGlobalObject* globalO
     if (!Wasm::isSupported())
         return throwVMTypeError(globalObject, scope, "WebAssemblyMemoryMode should only be called if the useWebAssembly option is set"_s);
 
+    auto createString = [&](MemoryMode mode) {
+        StringPrintStream out;
+        out.print(mode);
+        return out.toString();
+    };
+
     if (JSObject* object = callFrame->argument(0).getObject()) {
         if (auto* memory = jsDynamicCast<JSWebAssemblyMemory*>(object))
-            return JSValue::encode(jsString(vm, makeString(memory->memory().mode())));
+            return JSValue::encode(jsString(vm, createString(memory->memory().mode())));
         if (auto* instance = jsDynamicCast<JSWebAssemblyInstance*>(object))
-            return JSValue::encode(jsString(vm, makeString(instance->memoryMode())));
+            return JSValue::encode(jsString(vm, createString(instance->memoryMode())));
     }
 
     return throwVMTypeError(globalObject, scope, "WebAssemblyMemoryMode expects either a WebAssembly.Memory or WebAssembly.Instance"_s);

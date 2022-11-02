@@ -25,8 +25,6 @@
 
 #pragma once
 
-#include "JSExportMacros.h"
-
 namespace JSC {
 
 // FIXME: We should support other modes. see: https://bugs.webkit.org/show_bug.cgi?id=162693
@@ -49,7 +47,7 @@ enum class MemorySharingMode : uint8_t {
 namespace WTF {
 
 class PrintStream;
-void printInternal(PrintStream&, JSC::MemoryMode);
-void printInternal(PrintStream&, JSC::MemorySharingMode);
+JS_EXPORT_PRIVATE void printInternal(PrintStream&, JSC::MemoryMode);
+JS_EXPORT_PRIVATE void printInternal(PrintStream&, JSC::MemorySharingMode);
 
 } // namespace WTF
