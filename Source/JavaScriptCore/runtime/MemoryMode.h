@@ -37,7 +37,7 @@ enum class MemoryMode : uint8_t {
 #endif
 };
 
-static constexpr size_t NumberOfMemoryModes = 2;
+static constexpr size_t numberOfMemoryModes = 2;
 JS_EXPORT_PRIVATE const char* makeString(MemoryMode);
 
 enum class MemorySharingMode : uint8_t {
