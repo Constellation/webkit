@@ -74,7 +74,7 @@ void ArrayBufferContents::tryAllocate(size_t numElements, unsigned elementByteSi
 
 void ArrayBufferContents::makeShared()
 {
-    m_shared = adoptRef(new SharedArrayBufferContents(data(), sizeInBytes(), m_maxByteLength, WTFMove(m_destructor)));
+    m_shared = SharedArrayBufferContents::create(data(), sizeInBytes(), m_maxByteLength, nullptr, WTFMove(m_destructor));
     m_destructor = nullptr;
 }
 

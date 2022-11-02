@@ -26,6 +26,7 @@
 #pragma once
 
 #include "ArrayBufferSharingMode.h"
+#include "BufferMemoryHandle.h"
 #include "GCIncomingRefCounted.h"
 #include "Watchpoint.h"
 #include "Weak.h"
@@ -59,15 +60,6 @@ using ArrayBufferDestructorFunction = RefPtr<SharedTask<void(void*)>>;
 
 class SharedArrayBufferContents final : public ThreadSafeRefCounted<SharedArrayBufferContents> {
 public:
-    SharedArrayBufferContents(void* data, size_t size, std::optional<size_t> maxByteLength, ArrayBufferDestructorFunction&& destructor)
-        : m_data(data, maxByteLength.value_or(size))
-        , m_destructor(WTFMove(destructor))
-        , m_sizeInBytes(size)
-        , m_maxByteLength(maxByteLength.value_or(size))
-        , m_hasMaxByteLength(!!maxByteLength)
-    {
-    }
-
     ~SharedArrayBufferContents()
     {
         if (m_destructor) {
@@ -75,13 +67,29 @@ public:
             m_destructor->run(m_data.getUnsafe());
         }
     }
+
+    static Ref<SharedArrayBufferContents> create(void* data, size_t size, std::optional<size_t> maxByteLength, RefPtr<BufferMemoryHandle> memoryHandle, ArrayBufferDestructorFunction&& destructor)
+    {
+        return adoptRef(*new SharedArrayBufferContents(data, size, maxByteLength, WTFMove(memoryHandle), WTFMove(destructor)));
+    }
     
     void* data() const { return m_data.getMayBeNull(m_maxByteLength); }
     
 private:
+    SharedArrayBufferContents(void* data, size_t size, std::optional<size_t> maxByteLength, RefPtr<BufferMemoryHandle> memoryHandle, ArrayBufferDestructorFunction&& destructor)
+        : m_data(data, maxByteLength.value_or(size))
+        , m_destructor(WTFMove(destructor))
+        , m_memoryHandle(WTFMove(memoryHandle))
+        , m_sizeInBytes(size)
+        , m_maxByteLength(maxByteLength.value_or(size))
+        , m_hasMaxByteLength(!!maxByteLength)
+    {
+    }
+
     using DataType = CagedPtr<Gigacage::Primitive, void, tagCagedPtr>;
     DataType m_data;
     ArrayBufferDestructorFunction m_destructor;
+    RefPtr<BufferMemoryHandle> m_memoryHandle;
     std::atomic<size_t> m_sizeInBytes;
     size_t m_maxByteLength;
     bool m_hasMaxByteLength : 1 { false };
