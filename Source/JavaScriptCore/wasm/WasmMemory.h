@@ -27,6 +27,7 @@
 
 #if ENABLE(WEBASSEMBLY)
 
+#include "BufferMemoryHandle.h"
 #include "WasmMemoryMode.h"
 #include "WasmPageCount.h"
 

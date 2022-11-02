@@ -28,7 +28,6 @@
 
 #if ENABLE(WEBASSEMBLY)
 
-#include "BufferMemoryHandle.h"
 #include "Options.h"
 #include "WasmFaultSignalHandler.h"
 #include "WasmInstance.h"
