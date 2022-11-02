@@ -34,11 +34,11 @@ namespace WTF {
 void printInternal(PrintStream& out, JSC::MemoryMode mode)
 {
     switch (mode) {
-    case MemoryMode::BoundsChecking:
+    case JSC::MemoryMode::BoundsChecking:
         out.print("BoundsChecking");
         return;
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-    case MemoryMode::Signaling:
+    case JSC::MemoryMode::Signaling:
         out.print("Signaling");
         return;
 #endif
@@ -48,10 +48,10 @@ void printInternal(PrintStream& out, JSC::MemoryMode mode)
 void printInternal(PrintStream& out, JSC::MemorySharingMode mode)
 {
     switch (mode) {
-    case MemorySharingMode::Default:
+    case JSC::MemorySharingMode::Default:
         out.print("Default");
         return;
-    case MemorySharingMode::Shared:;
+    case JSC::MemorySharingMode::Shared:;
         out.print("Shared");
         return;
     }
