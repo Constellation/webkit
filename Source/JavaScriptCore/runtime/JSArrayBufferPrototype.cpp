@@ -37,6 +37,7 @@ static JSC_DECLARE_HOST_FUNCTION(arrayBufferProtoFuncSlice);
 static JSC_DECLARE_HOST_FUNCTION(arrayBufferProtoGetterFuncByteLength);
 static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoFuncSlice);
 static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncByteLength);
+static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncGrowable);
 
 std::optional<JSValue> arrayBufferSpeciesConstructorSlow(JSGlobalObject* globalObject, JSArrayBuffer* thisObject, ArrayBufferSharingMode mode)
 {
@@ -251,6 +252,19 @@ JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncByteLength, (JSGlobalOb
     return arrayBufferByteLength(globalObject, callFrame->thisValue(), ArrayBufferSharingMode::Shared);
 }
 
+// https://tc39.es/proposal-resizablearraybuffer/#sec-get-sharedarraybuffer.prototype.growable
+JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncGrowable, (JSGlobalObject* globalObject, CallFrame* callFrame))
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    auto* thisObject = jsDynamicCast<JSArrayBuffer*>(callFrame->thisValue());
+    if (!thisObject || (ArrayBufferSharingMode::Shared != thisObject->impl()->sharingMode()))
+        return throwVMTypeError(globalObject, scope, makeString("Receiver must be SharedArrayBuffer"_s));
+
+    return JSValue::encode(jsBoolean(!!thisObject->impl()->maxByteLength()));
+}
+
 const ClassInfo JSArrayBufferPrototype::s_info = {
     "ArrayBuffer"_s, &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(JSArrayBufferPrototype)
 };
@@ -271,6 +285,7 @@ void JSArrayBufferPrototype::finishCreation(VM& vm, JSGlobalObject* globalObject
     } else {
         JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION(vm.propertyNames->slice, sharedArrayBufferProtoFuncSlice, static_cast<unsigned>(PropertyAttribute::DontEnum), 2, ImplementationVisibility::Public);
         JSC_NATIVE_GETTER_WITHOUT_TRANSITION(vm.propertyNames->byteLength, sharedArrayBufferProtoGetterFuncByteLength, PropertyAttribute::DontEnum | PropertyAttribute::ReadOnly);
+        JSC_NATIVE_GETTER_WITHOUT_TRANSITION(vm.propertyNames->growable, sharedArrayBufferProtoGetterFuncGrowable, PropertyAttribute::DontEnum | PropertyAttribute::ReadOnly);
     }
 }
 

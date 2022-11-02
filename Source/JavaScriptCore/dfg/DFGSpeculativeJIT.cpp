@@ -3638,7 +3638,7 @@ JITCompiler::Jump SpeculativeJIT::jumpForTypedArrayIsDetachedIfOutOfBounds(Node*
         else {
             outOfBounds.link(&m_jit);
 
-            JITCompiler::Jump notWasteful = m_jit.branch32(
+            JITCompiler::Jump notWasteful = m_jit.branch8(
                 MacroAssembler::NotEqual,
                 MacroAssembler::Address(base, JSArrayBufferView::offsetOfMode()),
                 TrustedImm32(WastefulTypedArray));
@@ -8483,7 +8483,7 @@ void SpeculativeJIT::compileGetTypedArrayByteOffset(Node* node)
 
     GPRReg arrayBufferGPR = dataGPR;
 
-    JITCompiler::Jump emptyByteOffset = m_jit.branch32(
+    JITCompiler::Jump emptyByteOffset = m_jit.branch8(
         MacroAssembler::NotEqual,
         MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfMode()),
         TrustedImm32(WastefulTypedArray));
@@ -11689,7 +11689,7 @@ void SpeculativeJIT::emitNewTypedArrayWithSizeInRegister(Node* node, TypedArrayT
         sizeGPR,
         MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfLength()));
 #endif
-    m_jit.store32(
+    m_jit.store8(
         TrustedImm32(FastTypedArray),
         MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfMode()));
     

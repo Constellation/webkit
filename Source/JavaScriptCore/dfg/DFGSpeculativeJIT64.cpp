@@ -2961,7 +2961,7 @@ void SpeculativeJIT::compileGetTypedArrayByteOffsetAsInt52(Node* node)
 
     GPRReg arrayBufferGPR = dataGPR;
 
-    JITCompiler::Jump emptyByteOffset = m_jit.branch32(
+    JITCompiler::Jump emptyByteOffset = m_jit.branch8(
         MacroAssembler::NotEqual,
         MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfMode()),
         TrustedImm32(WastefulTypedArray));

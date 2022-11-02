@@ -42,11 +42,11 @@ Ref<SharedTask<void(void*)>> ArrayBuffer::primitiveGigacageDestructor()
     return destructor.get().copyRef();
 }
 
-void ArrayBufferContents::tryAllocate(size_t numElements, unsigned elementByteSize, InitializationPolicy policy)
+void ArrayBufferContents::tryAllocate(size_t numElements, unsigned elementByteSize, std::optional<size_t> maxByteLength, InitializationPolicy policy)
 {
     CheckedSize sizeInBytes = numElements;
     sizeInBytes *= elementByteSize;
-    if (sizeInBytes.hasOverflowed() || sizeInBytes.value() > MAX_ARRAY_BUFFER_SIZE) {
+    if (sizeInBytes.hasOverflowed() || sizeInBytes.value() > MAX_ARRAY_BUFFER_SIZE || (maxByteLength && sizeInBytes.value() > maxByteLength.value())) {
         reset();
         return;
     }
@@ -67,19 +67,20 @@ void ArrayBufferContents::tryAllocate(size_t numElements, unsigned elementByteSi
 
     m_sizeInBytes = sizeInBytes.value();
     RELEASE_ASSERT(m_sizeInBytes <= MAX_ARRAY_BUFFER_SIZE);
+    m_maxByteLength = maxByteLength;
     m_destructor = ArrayBuffer::primitiveGigacageDestructor();
 }
 
 void ArrayBufferContents::makeShared()
 {
-    m_shared = adoptRef(new SharedArrayBufferContents(data(), sizeInBytes(), WTFMove(m_destructor)));
+    m_shared = adoptRef(new SharedArrayBufferContents(data(), sizeInBytes(), m_maxByteLength, WTFMove(m_destructor)));
     m_destructor = nullptr;
 }
 
 void ArrayBufferContents::copyTo(ArrayBufferContents& other)
 {
     ASSERT(!other.m_data);
-    other.tryAllocate(m_sizeInBytes, sizeof(char), ArrayBufferContents::DontInitialize);
+    other.tryAllocate(m_sizeInBytes, sizeof(char), std::nullopt, ArrayBufferContents::DontInitialize);
     if (!other.m_data)
         return;
     memcpy(other.data(), data(), m_sizeInBytes);
@@ -95,6 +96,7 @@ void ArrayBufferContents::shareWith(ArrayBufferContents& other)
     other.m_destructor = nullptr;
     other.m_shared = m_shared;
     other.m_sizeInBytes = m_sizeInBytes;
+    other.m_maxByteLength = m_maxByteLength;
     RELEASE_ASSERT(other.m_sizeInBytes <= MAX_ARRAY_BUFFER_SIZE);
 }
 
@@ -149,9 +151,9 @@ Ref<ArrayBuffer> ArrayBuffer::createFromBytes(const void* data, size_t byteLengt
     return create(WTFMove(contents));
 }
 
-RefPtr<ArrayBuffer> ArrayBuffer::tryCreate(size_t numElements, unsigned elementByteSize)
+RefPtr<ArrayBuffer> ArrayBuffer::tryCreate(size_t numElements, unsigned elementByteSize, std::optional<size_t> maxByteLength)
 {
-    return tryCreate(numElements, elementByteSize, ArrayBufferContents::ZeroInitialize);
+    return tryCreate(numElements, elementByteSize, maxByteLength, ArrayBufferContents::ZeroInitialize);
 }
 
 RefPtr<ArrayBuffer> ArrayBuffer::tryCreate(ArrayBuffer& other)
@@ -162,7 +164,7 @@ RefPtr<ArrayBuffer> ArrayBuffer::tryCreate(ArrayBuffer& other)
 RefPtr<ArrayBuffer> ArrayBuffer::tryCreate(const void* source, size_t byteLength)
 {
     ArrayBufferContents contents;
-    contents.tryAllocate(byteLength, 1, ArrayBufferContents::DontInitialize);
+    contents.tryAllocate(byteLength, 1, std::nullopt, ArrayBufferContents::DontInitialize);
     if (!contents.m_data)
         return nullptr;
     return createInternal(WTFMove(contents), source, byteLength);
@@ -196,10 +198,10 @@ Ref<ArrayBuffer> ArrayBuffer::createInternal(ArrayBufferContents&& contents, con
     return buffer;
 }
 
-RefPtr<ArrayBuffer> ArrayBuffer::tryCreate(size_t numElements, unsigned elementByteSize, ArrayBufferContents::InitializationPolicy policy)
+RefPtr<ArrayBuffer> ArrayBuffer::tryCreate(size_t numElements, unsigned elementByteSize, std::optional<size_t> maxByteLength, ArrayBufferContents::InitializationPolicy policy)
 {
     ArrayBufferContents contents;
-    contents.tryAllocate(numElements, elementByteSize, policy);
+    contents.tryAllocate(numElements, elementByteSize, maxByteLength, policy);
     if (!contents.m_data)
         return nullptr;
     return adoptRef(*new ArrayBuffer(WTFMove(contents)));

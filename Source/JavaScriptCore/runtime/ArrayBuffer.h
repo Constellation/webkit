@@ -59,10 +59,11 @@ using ArrayBufferDestructorFunction = RefPtr<SharedTask<void(void*)>>;
 
 class SharedArrayBufferContents final : public ThreadSafeRefCounted<SharedArrayBufferContents> {
 public:
-    SharedArrayBufferContents(void* data, size_t size, ArrayBufferDestructorFunction&& destructor)
+    SharedArrayBufferContents(void* data, size_t size, std::optional<size_t> maxByteLength, ArrayBufferDestructorFunction&& destructor)
         : m_data(data, size)
         , m_destructor(WTFMove(destructor))
         , m_sizeInBytes(size)
+        , m_maxByteLength(maxByteLength)
     {
     }
 
@@ -81,6 +82,7 @@ private:
     DataType m_data;
     ArrayBufferDestructorFunction m_destructor;
     size_t m_sizeInBytes;
+    std::optional<size_t> m_maxByteLength;
 };
 
 class ArrayBufferContents final {
@@ -120,6 +122,7 @@ public:
     void* data() const { return m_data.getMayBeNull(sizeInBytes()); }
     void* dataWithoutPACValidation() const { return m_data.getUnsafe(); }
     size_t sizeInBytes() const { return m_sizeInBytes; }
+    std::optional<size_t> maxByteLength() const { return m_maxByteLength; }
     
     bool isShared() const { return m_shared; }
     
@@ -130,6 +133,7 @@ public:
         swap(m_destructor, other.m_destructor);
         swap(m_shared, other.m_shared);
         swap(m_sizeInBytes, other.m_sizeInBytes);
+        swap(m_maxByteLength, other.m_maxByteLength);
     }
 
 private:
@@ -139,6 +143,7 @@ private:
         m_destructor = nullptr;
         m_shared = nullptr;
         m_sizeInBytes = 0;
+        m_maxByteLength = std::nullopt;
     }
 
     friend class ArrayBuffer;
@@ -148,7 +153,7 @@ private:
         DontInitialize
     };
 
-    void tryAllocate(size_t numElements, unsigned elementByteSize, InitializationPolicy);
+    void tryAllocate(size_t numElements, unsigned elementByteSize, std::optional<size_t> maxByteLength, InitializationPolicy);
     
     void makeShared();
     void copyTo(ArrayBufferContents&);
@@ -159,6 +164,7 @@ private:
     ArrayBufferDestructorFunction m_destructor { nullptr };
     RefPtr<SharedArrayBufferContents> m_shared { nullptr };
     size_t m_sizeInBytes { 0 };
+    std::optional<size_t> m_maxByteLength;
 };
 
 class ArrayBuffer final : public GCIncomingRefCounted<ArrayBuffer> {
@@ -169,7 +175,7 @@ public:
     JS_EXPORT_PRIVATE static Ref<ArrayBuffer> create(ArrayBufferContents&&);
     JS_EXPORT_PRIVATE static Ref<ArrayBuffer> createAdopted(const void* data, size_t byteLength);
     JS_EXPORT_PRIVATE static Ref<ArrayBuffer> createFromBytes(const void* data, size_t byteLength, ArrayBufferDestructorFunction&&);
-    JS_EXPORT_PRIVATE static RefPtr<ArrayBuffer> tryCreate(size_t numElements, unsigned elementByteSize);
+    JS_EXPORT_PRIVATE static RefPtr<ArrayBuffer> tryCreate(size_t numElements, unsigned elementByteSize, std::optional<size_t> maxByteLength = std::nullopt);
     JS_EXPORT_PRIVATE static RefPtr<ArrayBuffer> tryCreate(ArrayBuffer&);
     JS_EXPORT_PRIVATE static RefPtr<ArrayBuffer> tryCreate(const void* source, size_t byteLength);
 
@@ -180,6 +186,7 @@ public:
     inline void* data();
     inline const void* data() const;
     inline size_t byteLength() const;
+    inline std::optional<size_t> maxByteLength() const;
 
     inline void* dataWithoutPACValidation();
     inline const void* dataWithoutPACValidation() const;
@@ -219,7 +226,7 @@ public:
 private:
     static Ref<ArrayBuffer> create(size_t numElements, unsigned elementByteSize, ArrayBufferContents::InitializationPolicy);
     static Ref<ArrayBuffer> createInternal(ArrayBufferContents&&, const void*, size_t);
-    static RefPtr<ArrayBuffer> tryCreate(size_t numElements, unsigned elementByteSize, ArrayBufferContents::InitializationPolicy);
+    static RefPtr<ArrayBuffer> tryCreate(size_t numElements, unsigned elementByteSize, std::optional<size_t> maxByteLength, ArrayBufferContents::InitializationPolicy);
     ArrayBuffer(ArrayBufferContents&&);
     inline size_t clampIndex(double index) const;
     static inline size_t clampValue(double x, size_t left, size_t right);
@@ -261,6 +268,11 @@ const void* ArrayBuffer::dataWithoutPACValidation() const
 size_t ArrayBuffer::byteLength() const
 {
     return m_contents.sizeInBytes();
+}
+
+std::optional<size_t> ArrayBuffer::maxByteLength() const
+{
+    return m_contents.maxByteLength();
 }
 
 bool ArrayBuffer::isShared() const

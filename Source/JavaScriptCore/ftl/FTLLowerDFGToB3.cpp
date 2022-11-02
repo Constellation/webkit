@@ -4997,7 +4997,7 @@ private:
         
         ValueFromBlock nullVectorOut = m_out.anchor(m_out.constIntPtr(0));
 
-        LValue mode = m_out.load32(basePtr, m_heaps.JSArrayBufferView_mode);
+        LValue mode = m_out.load8ZeroExt32(basePtr, m_heaps.JSArrayBufferView_mode);
         m_out.branch(
             m_out.notEqual(mode, m_out.constInt32(WastefulTypedArray)),
             unsure(continuation), unsure(wastefulCase));
@@ -8573,7 +8573,7 @@ IGNORE_CLANG_WARNINGS_END
 #else
         m_out.store32(m_out.castToInt32(size64Bits), fastResultValue, m_heaps.JSArrayBufferView_length);
 #endif
-        m_out.store32(m_out.constInt32(FastTypedArray), fastResultValue, m_heaps.JSArrayBufferView_mode);
+        m_out.store32As8(m_out.constInt32(FastTypedArray), fastResultValue, m_heaps.JSArrayBufferView_mode);
 
         mutatorFence();
         ValueFromBlock fastResult = m_out.anchor(fastResultValue);
@@ -15548,7 +15548,7 @@ IGNORE_CLANG_WARNINGS_END
     LValue isFastTypedArray(LValue object)
     {
         return m_out.equal(
-            m_out.load32(object, m_heaps.JSArrayBufferView_mode),
+            m_out.load8ZeroExt32(object, m_heaps.JSArrayBufferView_mode),
             m_out.constInt32(FastTypedArray));
     }
     
@@ -20646,7 +20646,7 @@ IGNORE_CLANG_WARNINGS_END
         LBasicBlock isWasteful = m_out.newBlock();
         LBasicBlock continuation = m_out.newBlock();
 
-        LValue mode = m_out.load32(base, m_heaps.JSArrayBufferView_mode);
+        LValue mode = m_out.load8ZeroExt32(base, m_heaps.JSArrayBufferView_mode);
         m_out.branch(m_out.equal(mode, m_out.constInt32(WastefulTypedArray)),
             unsure(isWasteful), unsure(continuation));
 
