@@ -136,6 +136,7 @@
     macro(go) \
     macro(granularity) \
     macro(groups) \
+    macro(grow) \
     macro(growable) \
     macro(has) \
     macro(hasIndices) \

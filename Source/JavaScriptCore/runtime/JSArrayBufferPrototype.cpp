@@ -36,6 +36,7 @@ namespace JSC {
 static JSC_DECLARE_HOST_FUNCTION(arrayBufferProtoFuncSlice);
 static JSC_DECLARE_HOST_FUNCTION(arrayBufferProtoGetterFuncByteLength);
 static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoFuncSlice);
+static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoFuncGrow);
 static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncByteLength);
 static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncGrowable);
 static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncMaxByteLength);
@@ -251,6 +252,34 @@ JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoFuncSlice, (JSGlobalObject* globa
     return arrayBufferSlice(globalObject, callFrame->thisValue(), callFrame->argument(0), callFrame->argument(1), ArrayBufferSharingMode::Shared);
 }
 
+JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoFuncGrow, (JSGlobalObject* globalObject, CallFrame* callFrame))
+{
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-sharedarraybuffer.prototype.grow
+
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    JSValue arrayBufferValue = callFrame->thisValue();
+
+    JSArrayBuffer* thisObject = jsDynamicCast<JSArrayBuffer*>(arrayBufferValue);
+    if (!thisObject || (ArrayBufferSharingMode::Shared != thisObject->impl()->sharingMode()))
+        return throwVMTypeError(globalObject, scope, makeString("Receiver must be SharedArrayBuffer"_s));
+
+    if (!thisObject->impl()->maxByteLength())
+        return throwVMTypeError(globalObject, scope, makeString("maxByteLength needs to be configured"_s));
+
+    double newLength = callFrame->argument(0).toIntegerOrInfinity(globalObject);
+    RETURN_IF_EXCEPTION(scope, { });
+
+    if (!std::isfinite(newLength) || newLength < 0)
+        return throwVMRangeError(globalObject, scope, "new length is out of range"_s);
+    size_t newByteLength = static_cast<size_t>(newLength);
+    if (!thisObject->impl()->grow(vm, newByteLength))
+        return throwVMRangeError(globalObject, scope, makeString("grow failed with new byte length "_s, newByteLength));
+
+    return JSValue::encode(jsUndefined());
+}
+
 // http://tc39.github.io/ecmascript_sharedmem/shmem.html#StructuredData.SharedArrayBuffer.prototype.get_byteLength
 JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncByteLength, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
@@ -304,6 +333,7 @@ void JSArrayBufferPrototype::finishCreation(VM& vm, JSGlobalObject* globalObject
         JSC_NATIVE_GETTER_WITHOUT_TRANSITION(vm.propertyNames->byteLength, arrayBufferProtoGetterFuncByteLength, PropertyAttribute::DontEnum | PropertyAttribute::ReadOnly);
     } else {
         JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION(vm.propertyNames->slice, sharedArrayBufferProtoFuncSlice, static_cast<unsigned>(PropertyAttribute::DontEnum), 2, ImplementationVisibility::Public);
+        JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION(vm.propertyNames->grow, sharedArrayBufferProtoFuncGrow, static_cast<unsigned>(PropertyAttribute::DontEnum), 2, ImplementationVisibility::Public);
         JSC_NATIVE_GETTER_WITHOUT_TRANSITION(vm.propertyNames->byteLength, sharedArrayBufferProtoGetterFuncByteLength, PropertyAttribute::DontEnum | PropertyAttribute::ReadOnly);
         JSC_NATIVE_GETTER_WITHOUT_TRANSITION(vm.propertyNames->growable, sharedArrayBufferProtoGetterFuncGrowable, PropertyAttribute::DontEnum | PropertyAttribute::ReadOnly);
         JSC_NATIVE_GETTER_WITHOUT_TRANSITION(vm.propertyNames->maxByteLength, sharedArrayBufferProtoGetterFuncMaxByteLength, PropertyAttribute::DontEnum | PropertyAttribute::ReadOnly);

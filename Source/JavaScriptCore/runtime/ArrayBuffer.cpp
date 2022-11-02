@@ -29,6 +29,7 @@
 #include "JSArrayBufferView.h"
 #include "JSCellInlines.h"
 #include <wtf/Gigacage.h>
+#include <wtf/SafeStrerror.h>
 
 namespace JSC {
 
@@ -335,6 +336,85 @@ void ArrayBuffer::notifyDetaching(VM& vm)
             view->detach();
     }
     m_detachingWatchpointSet.fireAll(vm, "Array buffer was detached");
+}
+
+bool ArrayBuffer::grow(VM& vm, size_t newByteLength)
+{
+    auto shared = m_contents.m_shared;
+    if (shared)
+        return false;
+    return shared->grow(vm, newByteLength);
+}
+
+template<typename Func>
+static bool tryAllocate(VM& vm, const Func& allocate)
+{
+    unsigned numTries = 2;
+    bool done = false;
+    for (unsigned i = 0; i < numTries && !done; ++i) {
+        switch (allocate()) {
+        case BufferMemoryResult::Success:
+            done = true;
+            break;
+        case BufferMemoryResult::SuccessAndNotifyMemoryPressure:
+            vm.heap.collectAsync(CollectionScope::Full);
+            done = true;
+            break;
+        case BufferMemoryResult::SyncTryToReclaimMemory:
+            if (i + 1 == numTries)
+                break;
+            vm.heap.collectSync(CollectionScope::Full);
+            break;
+        }
+    }
+    return done;
+}
+
+bool SharedArrayBufferContents::grow(VM& vm, size_t newByteLength)
+{
+    if (!m_hasMaxByteLength)
+        return false;
+    ASSERT(m_memoryHandle);
+    Locker locker { m_memoryHandle->lock() };
+    size_t sizeInBytes = m_sizeInBytes.load(std::memory_order_seq_cst);
+    if (sizeInBytes > newByteLength || m_maxByteLength < newByteLength)
+        return false;
+    if (sizeInBytes != newByteLength) {
+        auto newPageCount = PageCount::fromBytesWithRoundUp(newByteLength);
+        auto oldPageCount = PageCount::fromBytes(m_memoryHandle->size());
+        if (newPageCount.bytes() > MAX_ARRAY_BUFFER_SIZE)
+            return false;
+        if (newPageCount != oldPageCount) {
+            ASSERT(m_memoryHandle->maximum() >= newPageCount);
+            size_t desiredSize = newPageCount.bytes();
+            RELEASE_ASSERT(desiredSize <= MAX_ARRAY_BUFFER_SIZE);
+            RELEASE_ASSERT(desiredSize > m_memoryHandle->size());
+
+            size_t extraBytes = desiredSize - m_memoryHandle->size();
+            RELEASE_ASSERT(extraBytes);
+            bool allocationSuccess = tryAllocate(vm,
+                [&] () -> BufferMemoryResult::Kind {
+                    return BufferMemoryManager::singleton().tryAllocatePhysicalBytes(extraBytes);
+                });
+            if (!allocationSuccess)
+                return false;
+
+            void* memory = m_memoryHandle->memory();
+            RELEASE_ASSERT(memory);
+
+            // Signaling memory must have been pre-allocated virtually.
+            uint8_t* startAddress = static_cast<uint8_t*>(memory) + m_memoryHandle->size();
+
+            if (mprotect(startAddress, extraBytes, PROT_READ | PROT_WRITE)) {
+                dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
+                RELEASE_ASSERT_NOT_REACHED();
+            }
+
+            m_memoryHandle->growToSize(desiredSize);
+            growToSize(desiredSize);
+        }
+    }
+    return true;
 }
 
 ASCIILiteral errorMesasgeForTransfer(ArrayBuffer* buffer)

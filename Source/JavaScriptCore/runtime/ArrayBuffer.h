@@ -70,6 +70,8 @@ public:
         return m_sizeInBytes.load(order);
     }
 
+    bool grow(VM&, size_t newByteLength);
+
     void growToSize(size_t sizeInBytes, std::memory_order order = std::memory_order_seq_cst)
     {
         m_sizeInBytes.store(sizeInBytes, order);
@@ -84,6 +86,10 @@ private:
         , m_maxByteLength(maxByteLength.value_or(size))
         , m_hasMaxByteLength(!!maxByteLength)
     {
+#if ASSERT_ENABLED
+        if (m_hasMaxByteLength)
+            ASSERT(m_memoryHandle);
+#endif
     }
 
     using DataType = CagedPtr<Gigacage::Primitive, void, tagCagedPtr>;
@@ -260,6 +266,8 @@ public:
     ~ArrayBuffer() { }
 
     JS_EXPORT_PRIVATE static Ref<SharedTask<void(void*)>> primitiveGigacageDestructor();
+
+    bool grow(VM&, size_t newByteLength);
 
 private:
     static Ref<ArrayBuffer> create(size_t numElements, unsigned elementByteSize, ArrayBufferContents::InitializationPolicy);
