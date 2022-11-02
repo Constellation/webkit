@@ -107,6 +107,14 @@ Memory::Memory(Ref<BufferMemoryHandle>&& handle, WTF::Function<void(GrowSuccess,
     dataLogLnIf(verbose, "Memory::Memory allocating ", *this);
 }
 
+Memory::Memory(Ref<BufferMemoryHandle>&& handle, Ref<SharedArrayBufferContents>&& shared, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback)
+    : m_handle(WTFMove(handle))
+    , m_shared(WTFMove(shared))
+    , m_growSuccessCallback(WTFMove(growSuccessCallback))
+{
+    dataLogLnIf(verbose, "Memory::Memory allocating ", *this);
+}
+
 Ref<Memory> Memory::create()
 {
     return adoptRef(*new Memory());
@@ -115,6 +123,11 @@ Ref<Memory> Memory::create()
 Ref<Memory> Memory::create(Ref<BufferMemoryHandle>&& handle, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback)
 {
     return adoptRef(*new Memory(WTFMove(handle), WTFMove(growSuccessCallback)));
+}
+
+Ref<Memory> Memory::create(Ref<BufferMemoryHandle>&& handle, Ref<SharedArrayBufferContents>&& shared, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback)
+{
+    return adoptRef(*new Memory(WTFMove(handle), WTFMove(shared), WTFMove(growSuccessCallback)));
 }
 
 RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, MemorySharingMode sharingMode, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback)
@@ -175,7 +188,7 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
             BufferMemoryManager::singleton().freePhysicalBytes(initialBytes);
             return nullptr;
         }
-        return Memory::create(adoptRef(*new BufferMemoryHandle(slowMemory, initialBytes, initialBytes, initial, maximum, sharingMode, MemoryMode::BoundsChecking)), WTFMove(growSuccessCallback));
+        return Memory::create(adoptRef(*new BufferMemoryHandle(slowMemory, initialBytes, initialBytes, initial, maximum, MemorySharingMode::Default, MemoryMode::BoundsChecking)), WTFMove(growSuccessCallback));
     }
     case MemorySharingMode::Shared: {
         char* slowMemory = nullptr;
@@ -195,7 +208,9 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
             RELEASE_ASSERT_NOT_REACHED();
         }
 
-        return Memory::create(adoptRef(*new BufferMemoryHandle(slowMemory, initialBytes, maximumBytes, initial, maximum, sharingMode, MemoryMode::BoundsChecking)), WTFMove(growSuccessCallback));
+        auto handle = adoptRef(*new BufferMemoryHandle(slowMemory, initialBytes, maximumBytes, initial, maximum, MemorySharingMode::Shared, MemoryMode::BoundsChecking));
+        auto content = SharedArrayBufferContents::create(handle->memory(), handle->size(), maximumBytes, handle.copyRef(), nullptr);
+        return Memory::create(WTFMove(handle), WTFMove(content), WTFMove(growSuccessCallback));
     }
     }
     RELEASE_ASSERT_NOT_REACHED();
