@@ -79,15 +79,8 @@ JSArrayBuffer* JSWebAssemblyMemory::buffer(JSGlobalObject* globalObject)
     auto throwScope = DECLARE_THROW_SCOPE(vm);
 
     auto* wrapper = m_bufferWrapper.get();
-    if (wrapper) {
-        if (m_memory->sharingMode() == MemorySharingMode::Default)
-            return wrapper;
-
-        ASSERT(m_memory->sharingMode() == MemorySharingMode::Shared);
-        // If SharedArrayBuffer's underlying memory is not grown, we continue using cached wrapper.
-        if (wrapper->impl()->byteLength() == memory().size())
-            return wrapper;
-    }
+    if (wrapper)
+        return wrapper;
 
     Ref<BufferMemoryHandle> protectedHandle = m_memory->handle();
     CagedUniquePtr<Gigacage::Primitive, uint8_t> pointerForEmpty;
