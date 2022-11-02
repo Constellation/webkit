@@ -25,8 +25,6 @@
 
 #pragma once
 
-#if ENABLE(WEBASSEMBLY)
-
 #include "WasmMemoryMode.h"
 #include "WasmPageCount.h"
 #include "Options.h"
@@ -76,6 +74,8 @@ class BufferMemoryManager {
     WTF_MAKE_FAST_ALLOCATED;
     WTF_MAKE_NONCOPYABLE(BufferMemoryManager);
 public:
+    friend class LazyNeverDestroyed<BufferMemoryManager>;
+
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
     BufferMemoryResult tryAllocateFastMemory();
     void freeFastMemory(void* basePtr);
@@ -124,16 +124,16 @@ class BufferMemoryHandle final : public ThreadSafeRefCounted<BufferMemoryHandle>
     WTF_MAKE_FAST_ALLOCATED;
     friend LLIntOffsetsExtractor;
 public:
-    BufferMemoryHandle(void*, size_t size, size_t mappedCapacity, PageCount initial, PageCount maximum, MemorySharingMode, MemoryMode);
+    BufferMemoryHandle(void*, size_t size, size_t mappedCapacity, Wasm::PageCount initial, Wasm::PageCount maximum, Wasm::MemorySharingMode, Wasm::MemoryMode);
     JS_EXPORT_PRIVATE ~BufferMemoryHandle();
 
     void* memory() const;
     size_t size() const { return m_size; }
     size_t mappedCapacity() const { return m_mappedCapacity; }
-    PageCount initial() const { return m_initial; }
-    PageCount maximum() const { return m_maximum; }
-    MemorySharingMode sharingMode() const { return m_sharingMode; }
-    MemoryMode mode() const { return m_mode; }
+    Wasm::PageCount initial() const { return m_initial; }
+    Wasm::PageCount maximum() const { return m_maximum; }
+    Wasm::MemorySharingMode sharingMode() const { return m_sharingMode; }
+    Wasm::MemoryMode mode() const { return m_mode; }
     static ptrdiff_t offsetOfSize() { return OBJECT_OFFSETOF(BufferMemoryHandle, m_size); }
     Lock& lock() { return m_lock; }
 
@@ -151,13 +151,13 @@ private:
     using CagedMemory = CagedPtr<Gigacage::Primitive, void, tagCagedPtr>;
 
     Lock m_lock;
-    MemorySharingMode m_sharingMode { MemorySharingMode::Default };
-    MemoryMode m_mode { MemoryMode::BoundsChecking };
+    Wasm::MemorySharingMode m_sharingMode { Wasm::MemorySharingMode::Default };
+    Wasm::MemoryMode m_mode { Wasm::MemoryMode::BoundsChecking };
     CagedMemory m_memory;
     size_t m_size { 0 };
     size_t m_mappedCapacity { 0 };
-    PageCount m_initial;
-    PageCount m_maximum;
+    Wasm::PageCount m_initial;
+    Wasm::PageCount m_maximum;
 };
 
 } // namespace JSC

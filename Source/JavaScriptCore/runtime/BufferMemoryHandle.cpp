@@ -28,7 +28,6 @@
 
 #include "Options.h"
 #include "WasmFaultSignalHandler.h"
-#include "WasmInstance.h"
 #include <wtf/CheckedArithmetic.h>
 #include <wtf/DataLog.h>
 #include <wtf/Gigacage.h>
@@ -48,19 +47,13 @@ namespace JSC {
 // FIXME: Give up some of the cached fast memories if the GC determines it's easy to get them back, and they haven't been used in a while. https://bugs.webkit.org/show_bug.cgi?id=170773
 // FIXME: Limit slow memory size. https://bugs.webkit.org/show_bug.cgi?id=170825
 
-namespace {
-
-constexpr bool verbose = false;
-
-}
-
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-size_t BufferMmeoryHandle::fastMappedRedzoneBytes()
+size_t BufferMemoryHandle::fastMappedRedzoneBytes()
 {
-    return static_cast<size_t>(PageCount::pageSize) * Options::webAssemblyFastMemoryRedzonePages();
+    return static_cast<size_t>(Wasm::PageCount::pageSize) * Options::webAssemblyFastMemoryRedzonePages();
 }
 
-size_t BufferMmeoryHandle::fastMappedBytes()
+size_t BufferMemoryHandle::fastMappedBytes()
 {
     static_assert(sizeof(uint64_t) == sizeof(size_t), "We rely on allowing the maximum size of Memory we map to be 2^32 + redzone which is larger than fits in a 32-bit integer that we'd pass to mprotect if this didn't hold.");
     return (static_cast<size_t>(1) << 32) + fastMappedRedzoneBytes();
@@ -87,7 +80,7 @@ void BufferMemoryResult::dump(PrintStream& out) const
 }
 
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-MemoryResult BufferMemoryManager::tryAllocateFastMemory()
+BufferMemoryResult BufferMemoryManager::tryAllocateFastMemory()
 {
     BufferMemoryResult result = [&] {
         Locker locker { m_lock };
@@ -122,7 +115,7 @@ void BufferMemoryManager::freeFastMemory(void* basePtr)
 }
 #endif
 
-MemoryResult BufferMemoryManager::tryAllocateGrowableBoundsCheckingMemory(size_t mappedCapacity)
+BufferMemoryResult BufferMemoryManager::tryAllocateGrowableBoundsCheckingMemory(size_t mappedCapacity)
 {
     BufferMemoryResult result = [&] {
         Locker locker { m_lock };
@@ -177,7 +170,7 @@ bool BufferMemoryManager::isInGrowableOrFastMemory(void* address)
 
 // FIXME: Ideally, bmalloc would have this kind of mechanism. Then, we would just forward to that
 // mechanism here.
-MemoryResult::Kind BufferMemoryManager::tryAllocatePhysicalBytes(size_t bytes)
+BufferMemoryResult::Kind BufferMemoryManager::tryAllocatePhysicalBytes(size_t bytes)
 {
     BufferMemoryResult::Kind result = [&] {
         Locker locker { m_lock };
@@ -226,7 +219,7 @@ BufferMemoryManager& BufferMemoryManager::singleton()
     return manager.get();
 }
 
-BufferMemoryHandle::BufferMemoryHandle(void* memory, size_t size, size_t mappedCapacity, PageCount initial, PageCount maximum, MemorySharingMode sharingMode, MemoryMode mode)
+BufferMemoryHandle::BufferMemoryHandle(void* memory, size_t size, size_t mappedCapacity, Wasm::PageCount initial, Wasm::PageCount maximum, Wasm::MemorySharingMode sharingMode, Wasm::MemoryMode mode)
     : m_sharingMode(sharingMode)
     , m_mode(mode)
     , m_memory(memory, mappedCapacity)
@@ -235,10 +228,10 @@ BufferMemoryHandle::BufferMemoryHandle(void* memory, size_t size, size_t mappedC
     , m_initial(initial)
     , m_maximum(maximum)
 {
-    if (sharingMode == MemorySharingMode::Default && mode == MemoryMode::BoundsChecking)
+    if (sharingMode == Wasm::MemorySharingMode::Default && mode == Wasm::MemoryMode::BoundsChecking)
         ASSERT(mappedCapacity == size);
     else
-        activateSignalingMemory();
+        Wasm::activateSignalingMemory();
 }
 
 BufferMemoryHandle::~BufferMemoryHandle()
@@ -248,7 +241,7 @@ BufferMemoryHandle::~BufferMemoryHandle()
         BufferMemoryManager::singleton().freePhysicalBytes(m_size);
         switch (m_mode) {
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-        case MemoryMode::Signaling:
+        case Wasm::MemoryMode::Signaling:
             if (mprotect(memory, BufferMemoryHandle::fastMappedBytes(), PROT_READ | PROT_WRITE)) {
                 dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
                 RELEASE_ASSERT_NOT_REACHED();
@@ -256,12 +249,12 @@ BufferMemoryHandle::~BufferMemoryHandle()
             BufferMemoryManager::singleton().freeFastMemory(memory);
             break;
 #endif
-        case MemoryMode::BoundsChecking: {
+        case Wasm::MemoryMode::BoundsChecking: {
             switch (m_sharingMode) {
-            case MemorySharingMode::Default:
+            case Wasm::MemorySharingMode::Default:
                 Gigacage::freeVirtualPages(Gigacage::Primitive, memory, m_size);
                 break;
-            case MemorySharingMode::Shared: {
+            case Wasm::MemorySharingMode::Shared: {
                 if (mprotect(memory, m_mappedCapacity, PROT_READ | PROT_WRITE)) {
                     dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
                     RELEASE_ASSERT_NOT_REACHED();
