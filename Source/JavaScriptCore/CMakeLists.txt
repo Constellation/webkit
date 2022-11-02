@@ -956,6 +956,7 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     runtime/BooleanObject.h
     runtime/BooleanPrototype.h
     runtime/BrandedStructure.h
+    runtime/BufferMemoryHandle.h
     runtime/Butterfly.h
     runtime/ButterflyInlines.h
     runtime/BytecodeCacheError.h
