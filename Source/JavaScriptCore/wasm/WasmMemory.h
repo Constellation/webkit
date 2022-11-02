@@ -88,13 +88,6 @@ public:
     MemorySharingMode sharingMode() const { return m_handle->sharingMode(); }
     MemoryMode mode() const { return m_handle->mode(); }
 
-    enum class GrowFailReason {
-        InvalidDelta,
-        InvalidGrowSize,
-        WouldExceedMaximum,
-        OutOfMemory,
-        GrowSharedUnavailable,
-    };
     Expected<PageCount, GrowFailReason> grow(VM&, PageCount);
     bool fill(uint32_t, uint8_t, uint32_t);
     bool copy(uint32_t, uint32_t, uint32_t);

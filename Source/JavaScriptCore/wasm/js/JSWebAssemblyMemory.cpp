@@ -127,19 +127,19 @@ PageCount JSWebAssemblyMemory::grow(VM& vm, JSGlobalObject* globalObject, uint32
     auto grown = memory().grow(vm, PageCount(delta));
     if (!grown) {
         switch (grown.error()) {
-        case Wasm::Memory::GrowFailReason::InvalidDelta:
+        case GrowFailReason::InvalidDelta:
             throwException(globalObject, throwScope, createRangeError(globalObject, "WebAssembly.Memory.grow expects the delta to be a valid page count"_s));
             break;
-        case Wasm::Memory::GrowFailReason::InvalidGrowSize:
+        case GrowFailReason::InvalidGrowSize:
             throwException(globalObject, throwScope, createRangeError(globalObject, "WebAssembly.Memory.grow expects the grown size to be a valid page count"_s));
             break;
-        case Wasm::Memory::GrowFailReason::WouldExceedMaximum:
+        case GrowFailReason::WouldExceedMaximum:
             throwException(globalObject, throwScope, createRangeError(globalObject, "WebAssembly.Memory.grow would exceed the memory's declared maximum size"_s));
             break;
-        case Wasm::Memory::GrowFailReason::OutOfMemory:
+        case GrowFailReason::OutOfMemory:
             throwException(globalObject, throwScope, createOutOfMemoryError(globalObject));
             break;
-        case Wasm::Memory::GrowFailReason::GrowSharedUnavailable:
+        case GrowFailReason::GrowSharedUnavailable:
             throwException(globalObject, throwScope, createRangeError(globalObject, "WebAssembly.Memory.grow for shared memory is unavailable"_s));
             break;
         }

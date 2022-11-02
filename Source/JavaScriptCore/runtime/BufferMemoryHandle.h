@@ -47,6 +47,14 @@ namespace JSC {
 
 class LLIntOffsetsExtractor;
 
+enum class GrowFailReason : uint8_t {
+    InvalidDelta,
+    InvalidGrowSize,
+    WouldExceedMaximum,
+    OutOfMemory,
+    GrowSharedUnavailable,
+};
+
 struct BufferMemoryResult {
     enum Kind {
         Success,

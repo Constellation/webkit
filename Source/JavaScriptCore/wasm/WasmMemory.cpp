@@ -224,7 +224,7 @@ bool Memory::addressIsInGrowableOrFastMemory(void* address)
     return BufferMemoryManager::singleton().isInGrowableOrFastMemory(address);
 }
 
-Expected<PageCount, Memory::GrowFailReason> Memory::growShared(VM& vm, PageCount delta)
+Expected<PageCount, GrowFailReason> Memory::growShared(VM& vm, PageCount delta)
 {
 #if !ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
     // Shared memory requires signaling memory which is not available on ARMv7 or others
@@ -237,7 +237,7 @@ Expected<PageCount, Memory::GrowFailReason> Memory::growShared(VM& vm, PageCount
 
     PageCount oldPageCount;
     PageCount newPageCount;
-    auto result = ([&]() -> Expected<PageCount, Memory::GrowFailReason> {
+    auto result = ([&]() -> Expected<PageCount, GrowFailReason> {
         Locker locker { m_handle->lock() };
 
         oldPageCount = sizeInPages();
@@ -297,7 +297,7 @@ Expected<PageCount, Memory::GrowFailReason> Memory::growShared(VM& vm, PageCount
     return result;
 }
 
-Expected<PageCount, Memory::GrowFailReason> Memory::grow(VM& vm, PageCount delta)
+Expected<PageCount, GrowFailReason> Memory::grow(VM& vm, PageCount delta)
 {
     if (!delta.isValid())
         return makeUnexpected(GrowFailReason::InvalidDelta);
