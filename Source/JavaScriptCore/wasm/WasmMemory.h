@@ -106,8 +106,9 @@ public:
     JS_EXPORT_PRIVATE ~Memory();
 
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-    static size_t fastMappedRedzoneBytes();
-    static size_t fastMappedBytes(); // Includes redzone.
+    static size_t fastMappedRedzoneBytes() { return BufferMemoryHandle::fastMappedRedzoneBytes(); }
+    static size_t fastMappedBytes() { return BufferMemoryHandle::fastMappedBytes(); } // Includes redzone.
+#else
 #endif
     static bool addressIsInGrowableOrFastMemory(void*);
 
@@ -160,7 +161,6 @@ namespace JSC { namespace Wasm {
 
 class Memory {
 public:
-    static size_t maxFastMemoryCount() { return 0; }
     static bool addressIsInGrowableOrFastMemory(void*) { return false; }
 };
 

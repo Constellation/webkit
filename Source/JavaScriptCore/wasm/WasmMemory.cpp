@@ -28,6 +28,7 @@
 
 #if ENABLE(WEBASSEMBLY)
 
+#include "BufferMemoryHandle.h"
 #include "Options.h"
 #include "WasmFaultSignalHandler.h"
 #include "WasmInstance.h"
@@ -56,214 +57,6 @@ namespace {
 
 constexpr bool verbose = false;
 
-NEVER_INLINE NO_RETURN_DUE_TO_CRASH void webAssemblyCouldntGetFastMemory() { CRASH(); }
-
-struct MemoryResult {
-    enum Kind {
-        Success,
-        SuccessAndNotifyMemoryPressure,
-        SyncTryToReclaimMemory
-    };
-
-    static const char* toString(Kind kind)
-    {
-        switch (kind) {
-        case Success:
-            return "Success";
-        case SuccessAndNotifyMemoryPressure:
-            return "SuccessAndNotifyMemoryPressure";
-        case SyncTryToReclaimMemory:
-            return "SyncTryToReclaimMemory";
-        }
-        RELEASE_ASSERT_NOT_REACHED();
-        return nullptr;
-    }
-    
-    MemoryResult() { }
-    
-    MemoryResult(void* basePtr, Kind kind)
-        : basePtr(basePtr)
-        , kind(kind)
-    {
-    }
-    
-    void dump(PrintStream& out) const
-    {
-        out.print("{basePtr = ", RawPointer(basePtr), ", kind = ", toString(kind), "}");
-    }
-    
-    void* basePtr;
-    Kind kind;
-};
-
-class MemoryManager {
-    WTF_MAKE_FAST_ALLOCATED;
-    WTF_MAKE_NONCOPYABLE(MemoryManager);
-public:
-    MemoryManager() = default;
-
-#if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-    MemoryResult tryAllocateFastMemory()
-    {
-        MemoryResult result = [&] {
-            Locker locker { m_lock };
-            if (m_fastMemories.size() >= m_maxFastMemoryCount)
-                return MemoryResult(nullptr, MemoryResult::SyncTryToReclaimMemory);
-            
-            void* result = Gigacage::tryAllocateZeroedVirtualPages(Gigacage::Primitive, Memory::fastMappedBytes());
-            if (!result)
-                return MemoryResult(nullptr, MemoryResult::SyncTryToReclaimMemory);
-            
-            m_fastMemories.append(result);
-            
-            return MemoryResult(
-                result,
-                m_fastMemories.size() >= m_maxFastMemoryCount / 2 ? MemoryResult::SuccessAndNotifyMemoryPressure : MemoryResult::Success);
-        }();
-        
-        dataLogLnIf(Options::logWebAssemblyMemory(), "Allocated virtual: ", result, "; state: ", *this);
-        
-        return result;
-    }
-
-    void freeFastMemory(void* basePtr)
-    {
-        {
-            Locker locker { m_lock };
-            Gigacage::freeVirtualPages(Gigacage::Primitive, basePtr, Memory::fastMappedBytes());
-            m_fastMemories.removeFirst(basePtr);
-        }
-        
-        dataLogLnIf(Options::logWebAssemblyMemory(), "Freed virtual; state: ", *this);
-    }
-#endif
-
-    MemoryResult tryAllocateGrowableBoundsCheckingMemory(size_t mappedCapacity)
-    {
-        MemoryResult result = [&] {
-            Locker locker { m_lock };
-            void* result = Gigacage::tryAllocateZeroedVirtualPages(Gigacage::Primitive, mappedCapacity);
-            if (!result)
-                return MemoryResult(nullptr, MemoryResult::SyncTryToReclaimMemory);
-
-            m_growableBoundsCheckingMemories.insert(std::make_pair(bitwise_cast<uintptr_t>(result), mappedCapacity));
-
-            return MemoryResult(result, MemoryResult::Success);
-        }();
-
-        dataLogLnIf(Options::logWebAssemblyMemory(), "Allocated virtual: ", result, "; state: ", *this);
-
-        return result;
-    }
-
-    void freeGrowableBoundsCheckingMemory(void* basePtr, size_t mappedCapacity)
-    {
-        {
-            Locker locker { m_lock };
-            Gigacage::freeVirtualPages(Gigacage::Primitive, basePtr, mappedCapacity);
-            m_growableBoundsCheckingMemories.erase(std::make_pair(bitwise_cast<uintptr_t>(basePtr), mappedCapacity));
-        }
-
-        dataLogLnIf(Options::logWebAssemblyMemory(), "Freed virtual; state: ", *this);
-    }
-
-    bool isInGrowableOrFastMemory(void* address)
-    {
-        // NOTE: This can be called from a signal handler, but only after we proved that we're in JIT code or WasmLLInt code.
-        Locker locker { m_lock };
-#if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-        for (void* memory : m_fastMemories) {
-            char* start = static_cast<char*>(memory);
-            if (start <= address && address <= start + Memory::fastMappedBytes())
-                return true;
-        }
-#endif
-        uintptr_t addressValue = bitwise_cast<uintptr_t>(address);
-        auto iterator = std::upper_bound(m_growableBoundsCheckingMemories.begin(), m_growableBoundsCheckingMemories.end(), std::make_pair(addressValue, 0),
-            [](std::pair<uintptr_t, size_t> a, std::pair<uintptr_t, size_t> b) {
-                return (a.first + a.second) < (b.first + b.second);
-            });
-        if (iterator != m_growableBoundsCheckingMemories.end()) {
-            // Since we never have overlapped range in m_growableBoundsCheckingMemories, just checking one lower-bound range is enough.
-            if (iterator->first <= addressValue && addressValue < (iterator->first + iterator->second))
-                return true;
-        }
-        return false;
-    }
-
-    // We allow people to "commit" more wasm memory than there is on the system since most of the time
-    // people don't actually write to most of that memory. There is some chance that this gets us
-    // JetSammed but that's possible anyway.
-    inline size_t memoryLimit() const
-    {
-        if (productOverflows<size_t>(ramSize(),  3))
-            return std::numeric_limits<size_t>::max();
-        return ramSize() * 3;
-    }
-
-    // FIXME: Ideally, bmalloc would have this kind of mechanism. Then, we would just forward to that
-    // mechanism here.
-    MemoryResult::Kind tryAllocatePhysicalBytes(size_t bytes)
-    {
-        MemoryResult::Kind result = [&] {
-            Locker locker { m_lock };
-            if (m_physicalBytes + bytes > memoryLimit())
-                return MemoryResult::SyncTryToReclaimMemory;
-            
-            m_physicalBytes += bytes;
-            
-            if (m_physicalBytes >= memoryLimit() / 2)
-                return MemoryResult::SuccessAndNotifyMemoryPressure;
-            
-            return MemoryResult::Success;
-        }();
-        
-        dataLogLnIf(Options::logWebAssemblyMemory(), "Allocated physical: ", bytes, ", ", MemoryResult::toString(result), "; state: ", *this);
-        
-        return result;
-    }
-    
-    void freePhysicalBytes(size_t bytes)
-    {
-        {
-            Locker locker { m_lock };
-            m_physicalBytes -= bytes;
-        }
-        
-        dataLogLnIf(Options::logWebAssemblyMemory(), "Freed physical: ", bytes, "; state: ", *this);
-    }
-    
-    void dump(PrintStream& out) const
-    {
-#if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-        out.print("fast memories =  ", m_fastMemories.size(), "/", m_maxFastMemoryCount, ", bytes = ", m_physicalBytes, "/", memoryLimit());
-#else
-        out.print("fast memories = N.A., bytes = ", m_physicalBytes, "/", memoryLimit());
-#endif
-    }
-    
-private:
-    Lock m_lock;
-#if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-    unsigned m_maxFastMemoryCount { Options::maxNumWebAssemblyFastMemories() };
-    Vector<void*> m_fastMemories;
-#endif
-    StdSet<std::pair<uintptr_t, size_t>> m_growableBoundsCheckingMemories;
-    size_t m_physicalBytes { 0 };
-};
-
-static MemoryManager& memoryManager()
-{
-    static std::once_flag onceFlag;
-    static MemoryManager* manager;
-    std::call_once(
-        onceFlag,
-        [] {
-            manager = new MemoryManager();
-        });
-    return *manager;
-}
-
 template<typename Func>
 bool tryAllocate(VM& vm, const Func& allocate)
 {
@@ -271,14 +64,14 @@ bool tryAllocate(VM& vm, const Func& allocate)
     bool done = false;
     for (unsigned i = 0; i < numTries && !done; ++i) {
         switch (allocate()) {
-        case MemoryResult::Success:
+        case BufferMemoryResult::Success:
             done = true;
             break;
-        case MemoryResult::SuccessAndNotifyMemoryPressure:
+        case BufferMemoryResult::SuccessAndNotifyMemoryPressure:
             vm.heap.collectAsync(CollectionScope::Full);
             done = true;
             break;
-        case MemoryResult::SyncTryToReclaimMemory:
+        case BufferMemoryResult::SyncTryToReclaimMemory:
             if (i + 1 == numTries)
                 break;
             vm.heap.collectSync(CollectionScope::Full);
@@ -290,64 +83,6 @@ bool tryAllocate(VM& vm, const Func& allocate)
 
 } // anonymous namespace
 
-
-MemoryHandle::MemoryHandle(void* memory, size_t size, size_t mappedCapacity, PageCount initial, PageCount maximum, MemorySharingMode sharingMode, MemoryMode mode)
-    : m_sharingMode(sharingMode)
-    , m_mode(mode)
-    , m_memory(memory, mappedCapacity)
-    , m_size(size)
-    , m_mappedCapacity(mappedCapacity)
-    , m_initial(initial)
-    , m_maximum(maximum)
-{
-    if (sharingMode == MemorySharingMode::Default && mode == MemoryMode::BoundsChecking)
-        ASSERT(mappedCapacity == size);
-    else
-        activateSignalingMemory();
-}
-
-MemoryHandle::~MemoryHandle()
-{
-    if (m_memory) {
-        void* memory = this->memory();
-        memoryManager().freePhysicalBytes(m_size);
-        switch (m_mode) {
-#if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-        case MemoryMode::Signaling:
-            if (mprotect(memory, Memory::fastMappedBytes(), PROT_READ | PROT_WRITE)) {
-                dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
-                RELEASE_ASSERT_NOT_REACHED();
-            }
-            memoryManager().freeFastMemory(memory);
-            break;
-#endif
-        case MemoryMode::BoundsChecking: {
-            switch (m_sharingMode) {
-            case MemorySharingMode::Default:
-                Gigacage::freeVirtualPages(Gigacage::Primitive, memory, m_size);
-                break;
-            case MemorySharingMode::Shared: {
-                if (mprotect(memory, m_mappedCapacity, PROT_READ | PROT_WRITE)) {
-                    dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
-                    RELEASE_ASSERT_NOT_REACHED();
-                }
-                memoryManager().freeGrowableBoundsCheckingMemory(memory, m_mappedCapacity);
-                break;
-            }
-            }
-            break;
-        }
-        }
-    }
-}
-
-// FIXME: ARM64E clang has a bug and inlining this function makes optimizer run forever.
-// For now, putting NEVER_INLINE to suppress inlining of this.
-NEVER_INLINE void* MemoryHandle::memory() const
-{
-    ASSERT(m_memory.getMayBeNull(m_mappedCapacity) == m_memory.getUnsafe());
-    return m_memory.getMayBeNull(m_mappedCapacity);
-}
 
 Memory::Memory()
     : m_handle(adoptRef(*new MemoryHandle(nullptr, 0, 0, PageCount(0), PageCount(0), MemorySharingMode::Default, MemoryMode::BoundsChecking)))
@@ -399,8 +134,8 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
     }
     
     bool done = tryAllocate(vm,
-        [&] () -> MemoryResult::Kind {
-            return memoryManager().tryAllocatePhysicalBytes(initialBytes);
+        [&] () -> BufferMemoryResult::Kind {
+            return BufferMemoryManager::singleton().tryAllocatePhysicalBytes(initialBytes);
         });
     if (!done)
         return nullptr;
@@ -409,20 +144,20 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
     char* fastMemory = nullptr;
     if (Options::useWebAssemblyFastMemory()) {
         tryAllocate(vm,
-            [&] () -> MemoryResult::Kind {
-                auto result = memoryManager().tryAllocateFastMemory();
+            [&] () -> BufferMemoryResult::Kind {
+                auto result = BufferMemoryManager::singleton().tryAllocateFastMemory();
                 fastMemory = bitwise_cast<char*>(result.basePtr);
                 return result.kind;
             });
     }
     
     if (fastMemory) {
-        if (mprotect(fastMemory + initialBytes, Memory::fastMappedBytes() - initialBytes, PROT_NONE)) {
+        if (mprotect(fastMemory + initialBytes, BufferMemoryHandle::fastMappedBytes() - initialBytes, PROT_NONE)) {
             dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
             RELEASE_ASSERT_NOT_REACHED();
         }
 
-        return Memory::create(adoptRef(*new MemoryHandle(fastMemory, initialBytes, Memory::fastMappedBytes(), initial, maximum, sharingMode, MemoryMode::Signaling)), WTFMove(growSuccessCallback));
+        return Memory::create(adoptRef(*new MemoryHandle(fastMemory, initialBytes, BufferMemoryHandle::fastMappedBytes(), initial, maximum, sharingMode, MemoryMode::Signaling)), WTFMove(growSuccessCallback));
     }
 #endif
 
@@ -436,7 +171,7 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
 
         void* slowMemory = Gigacage::tryAllocateZeroedVirtualPages(Gigacage::Primitive, initialBytes);
         if (!slowMemory) {
-            memoryManager().freePhysicalBytes(initialBytes);
+            BufferMemoryManager::singleton().freePhysicalBytes(initialBytes);
             return nullptr;
         }
         return Memory::create(adoptRef(*new MemoryHandle(slowMemory, initialBytes, initialBytes, initial, maximum, sharingMode, MemoryMode::BoundsChecking)), WTFMove(growSuccessCallback));
@@ -444,13 +179,13 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
     case MemorySharingMode::Shared: {
         char* slowMemory = nullptr;
         tryAllocate(vm,
-            [&] () -> MemoryResult::Kind {
-                auto result = memoryManager().tryAllocateGrowableBoundsCheckingMemory(maximumBytes);
+            [&] () -> BufferMemoryResult::Kind {
+                auto result = BufferMemoryManager::singleton().tryAllocateGrowableBoundsCheckingMemory(maximumBytes);
                 slowMemory = bitwise_cast<char*>(result.basePtr);
                 return result.kind;
             });
         if (!slowMemory) {
-            memoryManager().freePhysicalBytes(initialBytes);
+            BufferMemoryManager::singleton().freePhysicalBytes(initialBytes);
             return nullptr;
         }
 
@@ -468,22 +203,9 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
 
 Memory::~Memory() = default;
 
-#if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-size_t Memory::fastMappedRedzoneBytes()
-{
-    return static_cast<size_t>(PageCount::pageSize) * Options::webAssemblyFastMemoryRedzonePages();
-}
-
-size_t Memory::fastMappedBytes()
-{
-    static_assert(sizeof(uint64_t) == sizeof(size_t), "We rely on allowing the maximum size of Memory we map to be 2^32 + redzone which is larger than fits in a 32-bit integer that we'd pass to mprotect if this didn't hold.");
-    return (static_cast<size_t>(1) << 32) + fastMappedRedzoneBytes();
-}
-#endif
-
 bool Memory::addressIsInGrowableOrFastMemory(void* address)
 {
-    return memoryManager().isInGrowableOrFastMemory(address);
+    return BufferMemoryManager::singleton().isInGrowableOrFastMemory(address);
 }
 
 Expected<PageCount, Memory::GrowFailReason> Memory::growShared(VM& vm, PageCount delta)
@@ -526,8 +248,8 @@ Expected<PageCount, Memory::GrowFailReason> Memory::growShared(VM& vm, PageCount
         size_t extraBytes = desiredSize - size();
         RELEASE_ASSERT(extraBytes);
         bool allocationSuccess = tryAllocate(vm,
-            [&] () -> MemoryResult::Kind {
-                return memoryManager().tryAllocatePhysicalBytes(extraBytes);
+            [&] () -> BufferMemoryResult::Kind {
+                return BufferMemoryManager::singleton().tryAllocatePhysicalBytes(extraBytes);
             });
         if (!allocationSuccess)
             return makeUnexpected(GrowFailReason::OutOfMemory);
@@ -598,8 +320,8 @@ Expected<PageCount, Memory::GrowFailReason> Memory::grow(VM& vm, PageCount delta
     switch (mode()) {
     case MemoryMode::BoundsChecking: {
         bool allocationSuccess = tryAllocate(vm,
-            [&] () -> MemoryResult::Kind {
-                return memoryManager().tryAllocatePhysicalBytes(desiredSize);
+            [&] () -> BufferMemoryResult::Kind {
+                return BufferMemoryManager::singleton().tryAllocatePhysicalBytes(desiredSize);
             });
         if (!allocationSuccess)
             return makeUnexpected(GrowFailReason::OutOfMemory);
@@ -622,8 +344,8 @@ Expected<PageCount, Memory::GrowFailReason> Memory::grow(VM& vm, PageCount delta
         size_t extraBytes = desiredSize - size();
         RELEASE_ASSERT(extraBytes);
         bool allocationSuccess = tryAllocate(vm,
-            [&] () -> MemoryResult::Kind {
-                return memoryManager().tryAllocatePhysicalBytes(extraBytes);
+            [&] () -> BufferMemoryResult::Kind {
+                return BufferMemoryManager::singleton().tryAllocatePhysicalBytes(extraBytes);
             });
         if (!allocationSuccess)
             return makeUnexpected(GrowFailReason::OutOfMemory);
