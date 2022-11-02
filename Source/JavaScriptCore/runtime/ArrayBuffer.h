@@ -83,7 +83,7 @@ private:
     DataType m_data;
     ArrayBufferDestructorFunction m_destructor;
     std::atomic<size_t> m_sizeInBytes;
-    size_t m_maxByteLength { 0 };
+    size_t m_maxByteLength;
     bool m_hasMaxByteLength : 1 { false };
 };
 

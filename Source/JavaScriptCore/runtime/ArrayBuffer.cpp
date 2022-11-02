@@ -56,7 +56,7 @@ void ArrayBufferContents::tryAllocate(size_t numElements, unsigned elementByteSi
         allocationSize = 1; // Make sure malloc actually allocates something, but not too much. We use null to mean that the buffer is detached.
 
     void* data = Gigacage::tryMalloc(Gigacage::Primitive, allocationSize);
-    m_data = DataType(data, sizeInBytes.value());
+    m_data = DataType(data, maxByteLength.value_or(sizeInBytes.value()));
     if (!data) {
         reset();
         return;
@@ -67,7 +67,8 @@ void ArrayBufferContents::tryAllocate(size_t numElements, unsigned elementByteSi
 
     m_sizeInBytes = sizeInBytes.value();
     RELEASE_ASSERT(m_sizeInBytes <= MAX_ARRAY_BUFFER_SIZE);
-    m_maxByteLength = maxByteLength;
+    m_maxByteLength = maxByteLength.value_or(m_sizeInBytes);
+    m_hasMaxByteLength = !!maxByteLength;
     m_destructor = ArrayBuffer::primitiveGigacageDestructor();
 }
 
@@ -84,7 +85,7 @@ void ArrayBufferContents::copyTo(ArrayBufferContents& other)
     if (!other.m_data)
         return;
     memcpy(other.data(), data(), m_sizeInBytes);
-    other.m_sizeInBytes = m_sizeInBytes;
+    other.m_sizeInBytes.store(m_sizeInBytes, std::memory_order_seq_cst);
     RELEASE_ASSERT(other.m_sizeInBytes <= MAX_ARRAY_BUFFER_SIZE);
 }
 
@@ -95,7 +96,7 @@ void ArrayBufferContents::shareWith(ArrayBufferContents& other)
     other.m_data = m_data;
     other.m_destructor = nullptr;
     other.m_shared = m_shared;
-    other.m_sizeInBytes = m_sizeInBytes;
+    other.m_sizeInBytes.store(m_sizeInBytes, std::memory_order_seq_cst);
     other.m_maxByteLength = m_maxByteLength;
     RELEASE_ASSERT(other.m_sizeInBytes <= MAX_ARRAY_BUFFER_SIZE);
 }
@@ -147,7 +148,7 @@ Ref<ArrayBuffer> ArrayBuffer::createFromBytes(const void* data, size_t byteLengt
     if (data && !Gigacage::isCaged(Gigacage::Primitive, data))
         Gigacage::disablePrimitiveGigacage();
     
-    ArrayBufferContents contents(const_cast<void*>(data), byteLength, WTFMove(destructor));
+    ArrayBufferContents contents(const_cast<void*>(data), byteLength, std::nullopt, WTFMove(destructor));
     return create(WTFMove(contents));
 }
 
