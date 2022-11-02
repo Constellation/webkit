@@ -54,7 +54,7 @@ class LLIntOffsetsExtractor;
 // Typed array views have different modes depending on how big they are and
 // whether the user has done anything that requires a separate backing
 // buffer or the DOM-specified detaching capabilities.
-enum TypedArrayMode : uint32_t {
+enum TypedArrayMode : uint8_t {
     // Legend:
     // B: JSArrayBufferView::m_butterfly pointer
     // V: JSArrayBufferView::m_vector pointer
