@@ -41,16 +41,6 @@
 
 namespace JSC {
 
-#if USE(LARGE_TYPED_ARRAYS)
-static_assert(sizeof(size_t) == sizeof(uint64_t));
-#define MAX_ARRAY_BUFFER_SIZE (1ull << 32)
-#else
-static_assert(sizeof(size_t) == sizeof(uint32_t));
-// Because we are using a size_t to store the size in bytes of array buffers, we cannot support 4GB on 32-bit platforms.
-// So we are sticking with 2GB. It should in theory be possible to support up to (4GB - 1B) if anyone cares.
-#define MAX_ARRAY_BUFFER_SIZE 0x7fffffffu
-#endif
-
 class VM;
 class ArrayBuffer;
 class ArrayBufferView;

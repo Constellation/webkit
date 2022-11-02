@@ -43,6 +43,7 @@ void printInternal(PrintStream& out, JSC::MemoryMode mode)
         return;
 #endif
     }
+    RELEASE_ASSERT_NOT_REACHED();
 }
 
 void printInternal(PrintStream& out, JSC::MemorySharingMode mode)
@@ -55,6 +56,7 @@ void printInternal(PrintStream& out, JSC::MemorySharingMode mode)
         out.print("Shared");
         return;
     }
+    RELEASE_ASSERT_NOT_REACHED();
 }
 
 } // namespace WTF
