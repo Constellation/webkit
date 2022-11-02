@@ -60,10 +60,11 @@ using ArrayBufferDestructorFunction = RefPtr<SharedTask<void(void*)>>;
 class SharedArrayBufferContents final : public ThreadSafeRefCounted<SharedArrayBufferContents> {
 public:
     SharedArrayBufferContents(void* data, size_t size, std::optional<size_t> maxByteLength, ArrayBufferDestructorFunction&& destructor)
-        : m_data(data, size)
+        : m_data(data, maxByteLength.value_or(size))
         , m_destructor(WTFMove(destructor))
         , m_sizeInBytes(size)
-        , m_maxByteLength(maxByteLength)
+        , m_maxByteLength(maxByteLength.value_or(size))
+        , m_hasMaxByteLength(!!maxByteLength)
     {
     }
 
@@ -75,24 +76,27 @@ public:
         }
     }
     
-    void* data() const { return m_data.getMayBeNull(m_sizeInBytes.load(std::memory_order_relaxed)); }
+    void* data() const { return m_data.getMayBeNull(m_maxByteLength); }
     
 private:
     using DataType = CagedPtr<Gigacage::Primitive, void, tagCagedPtr>;
     DataType m_data;
     ArrayBufferDestructorFunction m_destructor;
     std::atomic<size_t> m_sizeInBytes;
-    std::optional<size_t> m_maxByteLength;
+    size_t m_maxByteLength { 0 };
+    bool m_hasMaxByteLength : 1 { false };
 };
 
 class ArrayBufferContents final {
     WTF_MAKE_NONCOPYABLE(ArrayBufferContents);
 public:
     ArrayBufferContents() = default;
-    ArrayBufferContents(void* data, size_t sizeInBytes, ArrayBufferDestructorFunction&& destructor)
-        : m_data(data, sizeInBytes)
+    ArrayBufferContents(void* data, size_t sizeInBytes, std::optional<size_t> maxByteLength, ArrayBufferDestructorFunction&& destructor)
+        : m_data(data, maxByteLength.value_or(sizeInBytes))
         , m_destructor(WTFMove(destructor))
         , m_sizeInBytes(sizeInBytes)
+        , m_maxByteLength(maxByteLength.value_or(sizeInBytes))
+        , m_hasMaxByteLength(!!maxByteLength)
     {
         RELEASE_ASSERT(m_sizeInBytes <= MAX_ARRAY_BUFFER_SIZE);
     }
@@ -119,10 +123,15 @@ public:
     
     explicit operator bool() { return !!m_data; }
     
-    void* data() const { return m_data.getMayBeNull(sizeInBytes()); }
+    void* data() const { return m_data.getMayBeNull(m_maxByteLength); }
     void* dataWithoutPACValidation() const { return m_data.getUnsafe(); }
     size_t sizeInBytes(std::memory_order order = std::memory_order_relaxed) const { return m_sizeInBytes.load(order); }
-    std::optional<size_t> maxByteLength() const { return m_maxByteLength; }
+    std::optional<size_t> maxByteLength() const
+    {
+        if (m_hasMaxByteLength)
+            return m_maxByteLength;
+        return std::nullopt;
+    }
     
     bool isShared() const { return m_shared; }
     
@@ -136,6 +145,7 @@ public:
         m_sizeInBytes.store(other.m_sizeInBytes.load(std::memory_order_relaxed),std::memory_order_relaxed);
         other.m_sizeInBytes.store(value,std::memory_order_relaxed);
         swap(m_maxByteLength, other.m_maxByteLength);
+        swap(m_hasMaxByteLength, other.m_hasMaxByteLength);
     }
 
 private:
@@ -145,7 +155,8 @@ private:
         m_destructor = nullptr;
         m_shared = nullptr;
         m_sizeInBytes.store(0, std::memory_order_relaxed);
-        m_maxByteLength = std::nullopt;
+        m_maxByteLength = 0;
+        m_hasMaxByteLength = false;
     }
 
     friend class ArrayBuffer;
@@ -166,7 +177,8 @@ private:
     ArrayBufferDestructorFunction m_destructor { nullptr };
     RefPtr<SharedArrayBufferContents> m_shared { nullptr };
     std::atomic<size_t> m_sizeInBytes { 0 };
-    std::optional<size_t> m_maxByteLength;
+    size_t m_maxByteLength { 0 };
+    bool m_hasMaxByteLength { false };
 };
 
 class ArrayBuffer final : public GCIncomingRefCounted<ArrayBuffer> {
