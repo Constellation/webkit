@@ -56,6 +56,8 @@ namespace {
 
 constexpr bool verbose = false;
 
+NEVER_INLINE NO_RETURN_DUE_TO_CRASH void webAssemblyCouldntGetFastMemory() { CRASH(); }
+
 template<typename Func>
 bool tryAllocate(VM& vm, const Func& allocate)
 {
