@@ -435,7 +435,7 @@ void Memory::registerInstance(Instance* instance)
 void Memory::dump(PrintStream& out) const
 {
     auto handle = m_handle.copyRef();
-    out.print("Memory at ", RawPointer(handle->memory()), ", size ", handle->size(), "B capacity ", handle->mappedCapacity(), "B, initial ", handle->initial(), " maximum ", handle->maximum(), " mode ", makeString(handle->mode()), " sharingMode ", makeString(handle->sharingMode()));
+    out.print("Memory at ", RawPointer(handle->memory()), ", size ", handle->size(), "B capacity ", handle->mappedCapacity(), "B, initial ", handle->initial(), " maximum ", handle->maximum(), " mode ", handle->mode(), " sharingMode ", handle->sharingMode());
 }
 
 } // namespace JSC
