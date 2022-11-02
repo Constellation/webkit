@@ -152,6 +152,14 @@ Ref<ArrayBuffer> ArrayBuffer::createFromBytes(const void* data, size_t byteLengt
     return create(WTFMove(contents));
 }
 
+Ref<ArrayBuffer> ArrayBuffer::createSharedFromMemoryHandle(Ref<BufferMemoryHandle>&& memoryHandle)
+{
+    void* memory = memoryHandle->memory();
+    size_t sizeInBytes = memoryHandle->size();
+    ArrayBufferContents contents(memory, sizeInBytes, std::nullopt, WTFMove(memoryHandle));
+    return create(WTFMove(contents));
+}
+
 RefPtr<ArrayBuffer> ArrayBuffer::tryCreate(size_t numElements, unsigned elementByteSize, std::optional<size_t> maxByteLength)
 {
     return tryCreate(numElements, elementByteSize, maxByteLength, ArrayBufferContents::ZeroInitialize);

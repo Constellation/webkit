@@ -104,17 +104,24 @@ JSArrayBuffer* JSWebAssemblyMemory::buffer(JSGlobalObject* globalObject)
         }
         memory = pointerForEmpty.get(allocationSize);
     }
+
     ASSERT(memory);
-    auto destructor = createSharedTask<void(void*)>([protectedHandle = WTFMove(protectedHandle), pointerForEmpty = WTFMove(pointerForEmpty)] (void*) { });
-    m_buffer = ArrayBuffer::createFromBytes(memory, size, WTFMove(destructor));
-    m_buffer->makeWasmMemory();
-    if (m_memory->sharingMode() == MemorySharingMode::Shared)
-        m_buffer->makeShared();
+    if (m_memory->sharingMode() == MemorySharingMode::Shared) {
+        m_buffer = ArrayBuffer::createSharedFromMemoryHandle(WTFMove(protectedHandle));
+        m_buffer->makeWasmMemory();
+    } else {
+        ASSERT(m_memory->sharingMode() == MemorySharingMode::Default);
+        auto destructor = createSharedTask<void(void*)>([protectedHandle = WTFMove(protectedHandle), pointerForEmpty = WTFMove(pointerForEmpty)] (void*) { });
+        m_buffer = ArrayBuffer::createFromBytes(memory, size, WTFMove(destructor));
+        m_buffer->makeWasmMemory();
+    }
+
     auto* arrayBuffer = JSArrayBuffer::create(vm, globalObject->arrayBufferStructure(m_buffer->sharingMode()), m_buffer.get());
     if (m_memory->sharingMode() == MemorySharingMode::Shared) {
         objectConstructorFreeze(globalObject, arrayBuffer);
         RETURN_IF_EXCEPTION(throwScope, { });
     }
+
     m_bufferWrapper.set(vm, this, arrayBuffer);
     RELEASE_ASSERT(m_bufferWrapper);
     return m_bufferWrapper.get();
