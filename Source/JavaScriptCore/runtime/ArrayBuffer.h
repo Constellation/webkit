@@ -75,13 +75,13 @@ public:
         }
     }
     
-    void* data() const { return m_data.getMayBeNull(m_sizeInBytes); }
+    void* data() const { return m_data.getMayBeNull(m_sizeInBytes.load(std::memory_order_relaxed)); }
     
 private:
     using DataType = CagedPtr<Gigacage::Primitive, void, tagCagedPtr>;
     DataType m_data;
     ArrayBufferDestructorFunction m_destructor;
-    size_t m_sizeInBytes;
+    std::atomic<size_t> m_sizeInBytes;
     std::optional<size_t> m_maxByteLength;
 };
 
@@ -121,7 +121,7 @@ public:
     
     void* data() const { return m_data.getMayBeNull(sizeInBytes()); }
     void* dataWithoutPACValidation() const { return m_data.getUnsafe(); }
-    size_t sizeInBytes() const { return m_sizeInBytes; }
+    size_t sizeInBytes(std::memory_order order = std::memory_order_relaxed) const { return m_sizeInBytes.load(order); }
     std::optional<size_t> maxByteLength() const { return m_maxByteLength; }
     
     bool isShared() const { return m_shared; }
@@ -132,7 +132,9 @@ public:
         swap(m_data, other.m_data);
         swap(m_destructor, other.m_destructor);
         swap(m_shared, other.m_shared);
-        swap(m_sizeInBytes, other.m_sizeInBytes);
+        size_t value = m_sizeInBytes.load(std::memory_order_relaxed);
+        m_sizeInBytes.store(other.m_sizeInBytes.load(std::memory_order_relaxed),std::memory_order_relaxed);
+        other.m_sizeInBytes.store(value,std::memory_order_relaxed);
         swap(m_maxByteLength, other.m_maxByteLength);
     }
 
@@ -142,7 +144,7 @@ private:
         m_data = nullptr;
         m_destructor = nullptr;
         m_shared = nullptr;
-        m_sizeInBytes = 0;
+        m_sizeInBytes.store(0, std::memory_order_relaxed);
         m_maxByteLength = std::nullopt;
     }
 
@@ -163,7 +165,7 @@ private:
     DataType m_data { nullptr };
     ArrayBufferDestructorFunction m_destructor { nullptr };
     RefPtr<SharedArrayBufferContents> m_shared { nullptr };
-    size_t m_sizeInBytes { 0 };
+    std::atomic<size_t> m_sizeInBytes { 0 };
     std::optional<size_t> m_maxByteLength;
 };
 
@@ -185,7 +187,7 @@ public:
 
     inline void* data();
     inline const void* data() const;
-    inline size_t byteLength() const;
+    inline size_t byteLength(std::memory_order = std::memory_order_relaxed) const;
     inline std::optional<size_t> maxByteLength() const;
 
     inline void* dataWithoutPACValidation();
@@ -265,9 +267,9 @@ const void* ArrayBuffer::dataWithoutPACValidation() const
     return m_contents.dataWithoutPACValidation();
 }
 
-size_t ArrayBuffer::byteLength() const
+size_t ArrayBuffer::byteLength(std::memory_order order) const
 {
-    return m_contents.sizeInBytes();
+    return m_contents.sizeInBytes(order);
 }
 
 std::optional<size_t> ArrayBuffer::maxByteLength() const

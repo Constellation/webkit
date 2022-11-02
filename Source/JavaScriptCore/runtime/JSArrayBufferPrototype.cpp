@@ -38,6 +38,7 @@ static JSC_DECLARE_HOST_FUNCTION(arrayBufferProtoGetterFuncByteLength);
 static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoFuncSlice);
 static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncByteLength);
 static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncGrowable);
+static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncMaxByteLength);
 
 std::optional<JSValue> arrayBufferSpeciesConstructorSlow(JSGlobalObject* globalObject, JSArrayBuffer* thisObject, ArrayBufferSharingMode mode)
 {
@@ -158,7 +159,11 @@ static EncodedJSValue arrayBufferSlice(JSGlobalObject* globalObject, JSValue arr
         return throwVMTypeError(globalObject, scope, "Receiver is detached"_s);
 
     // 5. Let len be O.[[ArrayBufferByteLength]].
-    unsigned byteLength = thisObject->impl()->byteLength();
+    unsigned byteLength = 0;
+    if (mode == ArrayBufferSharingMode::Default)
+        byteLength = thisObject->impl()->byteLength(std::memory_order_relaxed);
+    else
+        byteLength = thisObject->impl()->byteLength(std::memory_order_seq_cst);
     unsigned firstIndex = 0;
     double relativeStart = startValue.toIntegerOrInfinity(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -265,6 +270,21 @@ JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncGrowable, (JSGlobalObje
     return JSValue::encode(jsBoolean(!!thisObject->impl()->maxByteLength()));
 }
 
+// https://tc39.es/proposal-resizablearraybuffer/#sec-get-sharedarraybuffer.prototype.maxbytelength
+JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncMaxByteLength, (JSGlobalObject* globalObject, CallFrame* callFrame))
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    auto* thisObject = jsDynamicCast<JSArrayBuffer*>(callFrame->thisValue());
+    if (!thisObject || (ArrayBufferSharingMode::Shared != thisObject->impl()->sharingMode()))
+        return throwVMTypeError(globalObject, scope, makeString("Receiver must be SharedArrayBuffer"_s));
+
+    if (auto value = thisObject->impl()->maxByteLength())
+        return JSValue::encode(jsNumber(value.value()));
+    return JSValue::encode(jsNumber(thisObject->impl()->byteLength()));
+}
+
 const ClassInfo JSArrayBufferPrototype::s_info = {
     "ArrayBuffer"_s, &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(JSArrayBufferPrototype)
 };
@@ -286,6 +306,7 @@ void JSArrayBufferPrototype::finishCreation(VM& vm, JSGlobalObject* globalObject
         JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION(vm.propertyNames->slice, sharedArrayBufferProtoFuncSlice, static_cast<unsigned>(PropertyAttribute::DontEnum), 2, ImplementationVisibility::Public);
         JSC_NATIVE_GETTER_WITHOUT_TRANSITION(vm.propertyNames->byteLength, sharedArrayBufferProtoGetterFuncByteLength, PropertyAttribute::DontEnum | PropertyAttribute::ReadOnly);
         JSC_NATIVE_GETTER_WITHOUT_TRANSITION(vm.propertyNames->growable, sharedArrayBufferProtoGetterFuncGrowable, PropertyAttribute::DontEnum | PropertyAttribute::ReadOnly);
+        JSC_NATIVE_GETTER_WITHOUT_TRANSITION(vm.propertyNames->maxByteLength, sharedArrayBufferProtoGetterFuncMaxByteLength, PropertyAttribute::DontEnum | PropertyAttribute::ReadOnly);
     }
 }
 
