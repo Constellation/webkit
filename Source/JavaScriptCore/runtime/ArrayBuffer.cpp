@@ -85,7 +85,7 @@ void ArrayBufferContents::copyTo(ArrayBufferContents& other)
     if (!other.m_data)
         return;
     memcpy(other.data(), data(), m_sizeInBytes);
-    other.m_sizeInBytes.store(m_sizeInBytes, std::memory_order_seq_cst);
+    other.m_sizeInBytes = m_sizeInBytes;
     RELEASE_ASSERT(other.m_sizeInBytes <= MAX_ARRAY_BUFFER_SIZE);
 }
 
@@ -96,7 +96,7 @@ void ArrayBufferContents::shareWith(ArrayBufferContents& other)
     other.m_data = m_data;
     other.m_destructor = nullptr;
     other.m_shared = m_shared;
-    other.m_sizeInBytes.store(m_sizeInBytes, std::memory_order_seq_cst);
+    other.m_sizeInBytes = m_sizeInBytes;
     other.m_maxByteLength = m_maxByteLength;
     RELEASE_ASSERT(other.m_sizeInBytes <= MAX_ARRAY_BUFFER_SIZE);
 }

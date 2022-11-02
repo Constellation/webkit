@@ -128,7 +128,11 @@ public:
     JS_EXPORT_PRIVATE ~BufferMemoryHandle();
 
     void* memory() const;
-    size_t size() const { return m_size; }
+    size_t size(std::memory_order order = std::memory_order_relaxed) const
+    {
+        return m_size.load(order);
+    }
+
     size_t mappedCapacity() const { return m_mappedCapacity; }
     PageCount initial() const { return m_initial; }
     PageCount maximum() const { return m_maximum; }
@@ -137,9 +141,9 @@ public:
     static ptrdiff_t offsetOfSize() { return OBJECT_OFFSETOF(BufferMemoryHandle, m_size); }
     Lock& lock() { return m_lock; }
 
-    void growToSize(size_t size)
+    void growToSize(size_t size, std::memory_order order = std::memory_order_seq_cst)
     {
-        m_size = size;
+        m_size.store(size, order);
     }
 
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
@@ -154,7 +158,7 @@ private:
     MemorySharingMode m_sharingMode { MemorySharingMode::Default };
     MemoryMode m_mode { MemoryMode::BoundsChecking };
     CagedMemory m_memory;
-    size_t m_size { 0 };
+    std::atomic<size_t> m_size { 0 };
     size_t m_mappedCapacity { 0 };
     PageCount m_initial;
     PageCount m_maximum;

@@ -64,6 +64,13 @@ public:
     }
     
     void* data() const { return m_data.getMayBeNull(m_maxByteLength); }
+
+    size_t sizeInBytes(std::memory_order order) const
+    {
+        if (m_memoryHandle)
+            return m_memoryHandle->size(order);
+        return m_sizeInBytes;
+    }
     
 private:
     SharedArrayBufferContents(void* data, size_t size, std::optional<size_t> maxByteLength, RefPtr<BufferMemoryHandle> memoryHandle, ArrayBufferDestructorFunction&& destructor)
@@ -80,7 +87,7 @@ private:
     DataType m_data;
     ArrayBufferDestructorFunction m_destructor;
     RefPtr<BufferMemoryHandle> m_memoryHandle;
-    std::atomic<size_t> m_sizeInBytes;
+    size_t m_sizeInBytes;
     size_t m_maxByteLength;
     bool m_hasMaxByteLength : 1 { false };
 };
@@ -133,7 +140,14 @@ public:
     
     void* data() const { return m_data.getMayBeNull(m_maxByteLength); }
     void* dataWithoutPACValidation() const { return m_data.getUnsafe(); }
-    size_t sizeInBytes(std::memory_order order = std::memory_order_relaxed) const { return m_sizeInBytes.load(order); }
+    size_t sizeInBytes(std::memory_order order = std::memory_order_relaxed) const
+    {
+        if (m_hasMaxByteLength) {
+            if (m_shared)
+                return m_shared->sizeInBytes(order);
+        }
+        return m_sizeInBytes;
+    }
     std::optional<size_t> maxByteLength() const
     {
         if (m_hasMaxByteLength)
@@ -149,9 +163,7 @@ public:
         swap(m_data, other.m_data);
         swap(m_destructor, other.m_destructor);
         swap(m_shared, other.m_shared);
-        size_t value = m_sizeInBytes.load(std::memory_order_relaxed);
-        m_sizeInBytes.store(other.m_sizeInBytes.load(std::memory_order_relaxed),std::memory_order_relaxed);
-        other.m_sizeInBytes.store(value,std::memory_order_relaxed);
+        swap(m_sizeInBytes, other.m_sizeInBytes);
         swap(m_maxByteLength, other.m_maxByteLength);
         swap(m_hasMaxByteLength, other.m_hasMaxByteLength);
     }
@@ -162,7 +174,7 @@ private:
         m_data = nullptr;
         m_destructor = nullptr;
         m_shared = nullptr;
-        m_sizeInBytes.store(0, std::memory_order_relaxed);
+        m_sizeInBytes = 0;
         m_maxByteLength = 0;
         m_hasMaxByteLength = false;
     }
@@ -184,7 +196,7 @@ private:
     DataType m_data { nullptr };
     ArrayBufferDestructorFunction m_destructor { nullptr };
     RefPtr<SharedArrayBufferContents> m_shared { nullptr };
-    std::atomic<size_t> m_sizeInBytes { 0 };
+    size_t m_sizeInBytes { 0 };
     size_t m_maxByteLength { 0 };
     bool m_hasMaxByteLength { false };
 };
