@@ -235,11 +235,12 @@ Expected<PageCount, GrowFailReason> Memory::growShared(VM& vm, PageCount delta)
     return makeUnexpected(GrowFailReason::GrowSharedUnavailable);
 #endif
 
+    ASSERT(m_shared);
     PageCount oldPageCount;
     PageCount newPageCount;
-    auto result = ([&]() -> Expected<PageCount, GrowFailReason> {
-        Locker locker { m_handle->lock() };
-
+    Expected<void, GrowFailReason> result;
+    {
+        Locker locker { m_shared->memoryHandle()->lock() };
         oldPageCount = sizeInPages();
         newPageCount = oldPageCount + delta;
         if (!newPageCount || !newPageCount.isValid())
@@ -259,42 +260,18 @@ Expected<PageCount, GrowFailReason> Memory::growShared(VM& vm, PageCount delta)
         size_t desiredSize = newPageCount.bytes();
         RELEASE_ASSERT(desiredSize <= MAX_ARRAY_BUFFER_SIZE);
         RELEASE_ASSERT(desiredSize > size());
-
-        // If the memory is MemorySharingMode::Shared, we already allocated enough virtual address space even if the memory is bound-checking mode. We perform mprotect to extend.
-        size_t extraBytes = desiredSize - size();
-        RELEASE_ASSERT(extraBytes);
-        bool allocationSuccess = tryAllocate(vm,
-            [&] () -> BufferMemoryResult::Kind {
-                return BufferMemoryManager::singleton().tryAllocatePhysicalBytes(extraBytes);
-            });
-        if (!allocationSuccess)
-            return makeUnexpected(GrowFailReason::OutOfMemory);
-
-        void* memory = this->memory();
-        RELEASE_ASSERT(memory);
-
-        // Signaling memory must have been pre-allocated virtually.
-        uint8_t* startAddress = static_cast<uint8_t*>(memory) + size();
-
-        dataLogLnIf(verbose, "Marking WebAssembly memory's ", RawPointer(memory), " as read+write in range [", RawPointer(startAddress), ", ", RawPointer(startAddress + extraBytes), ")");
-        if (mprotect(startAddress, extraBytes, PROT_READ | PROT_WRITE)) {
-            dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
-            RELEASE_ASSERT_NOT_REACHED();
-        }
-
-        m_handle->growToSize(desiredSize);
-        m_shared->growToSize(desiredSize);
-        return oldPageCount;
-    }());
-    if (result) {
-        m_growSuccessCallback(GrowSuccessTag, oldPageCount, newPageCount);
-        // Update cache for instance
-        for (auto& instance : m_instances) {
-            if (instance.get() != nullptr)
-                instance.get()->updateCachedMemory();
-        }
+        result = m_shared->grow(locker, vm, desiredSize);
     }
-    return result;
+    if (!result)
+        return makeUnexpected(result.error());
+
+    m_growSuccessCallback(GrowSuccessTag, oldPageCount, newPageCount);
+    // Update cache for instance
+    for (auto& instance : m_instances) {
+        if (instance.get() != nullptr)
+            instance.get()->updateCachedMemory();
+    }
+    return oldPageCount;
 }
 
 Expected<PageCount, GrowFailReason> Memory::grow(VM& vm, PageCount delta)

@@ -32,6 +32,9 @@
 #include <wtf/SafeStrerror.h>
 
 namespace JSC {
+namespace ArrayBufferInternal {
+static constexpr bool verbose = false;
+}
 
 Ref<SharedTask<void(void*)>> ArrayBuffer::primitiveGigacageDestructor()
 {
@@ -338,11 +341,11 @@ void ArrayBuffer::notifyDetaching(VM& vm)
     m_detachingWatchpointSet.fireAll(vm, "Array buffer was detached");
 }
 
-bool ArrayBuffer::grow(VM& vm, size_t newByteLength)
+Expected<void, GrowFailReason> ArrayBuffer::grow(VM& vm, size_t newByteLength)
 {
     auto shared = m_contents.m_shared;
-    if (shared)
-        return false;
+    if (!shared)
+        return makeUnexpected(GrowFailReason::GrowSharedUnavailable);
     return shared->grow(vm, newByteLength);
 }
 
@@ -370,20 +373,24 @@ static bool tryAllocate(VM& vm, const Func& allocate)
     return done;
 }
 
-bool SharedArrayBufferContents::grow(VM& vm, size_t newByteLength)
+Expected<void, GrowFailReason> SharedArrayBufferContents::grow(VM& vm, size_t newByteLength)
 {
     if (!m_hasMaxByteLength)
-        return false;
+        return makeUnexpected(GrowFailReason::GrowSharedUnavailable);
     ASSERT(m_memoryHandle);
-    Locker locker { m_memoryHandle->lock() };
+    return grow(Locker { m_memoryHandle->lock() }, vm, newByteLength);
+}
+
+Expected<void, GrowFailReason> SharedArrayBufferContents::grow(const AbstractLocker&, VM& vm, size_t newByteLength)
+{
     size_t sizeInBytes = m_sizeInBytes.load(std::memory_order_seq_cst);
     if (sizeInBytes > newByteLength || m_maxByteLength < newByteLength)
-        return false;
+        return makeUnexpected(GrowFailReason::InvalidGrowSize);
     if (sizeInBytes != newByteLength) {
         auto newPageCount = PageCount::fromBytesWithRoundUp(newByteLength);
         auto oldPageCount = PageCount::fromBytes(m_memoryHandle->size());
         if (newPageCount.bytes() > MAX_ARRAY_BUFFER_SIZE)
-            return false;
+            return makeUnexpected(GrowFailReason::WouldExceedMaximum);
         if (newPageCount != oldPageCount) {
             ASSERT(m_memoryHandle->maximum() >= newPageCount);
             size_t desiredSize = newPageCount.bytes();
@@ -397,7 +404,7 @@ bool SharedArrayBufferContents::grow(VM& vm, size_t newByteLength)
                     return BufferMemoryManager::singleton().tryAllocatePhysicalBytes(extraBytes);
                 });
             if (!allocationSuccess)
-                return false;
+                return makeUnexpected(GrowFailReason::OutOfMemory);
 
             void* memory = m_memoryHandle->memory();
             RELEASE_ASSERT(memory);
@@ -405,6 +412,7 @@ bool SharedArrayBufferContents::grow(VM& vm, size_t newByteLength)
             // Signaling memory must have been pre-allocated virtually.
             uint8_t* startAddress = static_cast<uint8_t*>(memory) + m_memoryHandle->size();
 
+            dataLogLnIf(ArrayBufferInternal::verbose, "Marking memory's ", RawPointer(memory), " as read+write in range [", RawPointer(startAddress), ", ", RawPointer(startAddress + extraBytes), ")");
             if (mprotect(startAddress, extraBytes, PROT_READ | PROT_WRITE)) {
                 dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
                 RELEASE_ASSERT_NOT_REACHED();
@@ -414,7 +422,7 @@ bool SharedArrayBufferContents::grow(VM& vm, size_t newByteLength)
             growToSize(desiredSize);
         }
     }
-    return true;
+    return { };
 }
 
 ASCIILiteral errorMesasgeForTransfer(ArrayBuffer* buffer)

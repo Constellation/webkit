@@ -70,12 +70,15 @@ public:
         return m_sizeInBytes.load(order);
     }
 
-    bool grow(VM&, size_t newByteLength);
+    Expected<void, GrowFailReason> grow(VM&, size_t newByteLength);
+    Expected<void, GrowFailReason> grow(const AbstractLocker&, VM&, size_t newByteLength);
 
     void growToSize(size_t sizeInBytes, std::memory_order order = std::memory_order_seq_cst)
     {
         m_sizeInBytes.store(sizeInBytes, order);
     }
+
+    BufferMemoryHandle* memoryHandle() const { return m_memoryHandle.get(); }
     
 private:
     SharedArrayBufferContents(void* data, size_t size, std::optional<size_t> maxByteLength, RefPtr<BufferMemoryHandle> memoryHandle, ArrayBufferDestructorFunction&& destructor)
@@ -267,7 +270,7 @@ public:
 
     JS_EXPORT_PRIVATE static Ref<SharedTask<void(void*)>> primitiveGigacageDestructor();
 
-    bool grow(VM&, size_t newByteLength);
+    Expected<void, GrowFailReason> grow(VM&, size_t newByteLength);
 
 private:
     static Ref<ArrayBuffer> create(size_t numElements, unsigned elementByteSize, ArrayBufferContents::InitializationPolicy);
