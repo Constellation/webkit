@@ -29,42 +29,32 @@
 #include <wtf/Assertions.h>
 #include <wtf/PrintStream.h>
 
-namespace JSC {
-
-const char* makeString(MemoryMode mode)
-{
-    switch (mode) {
-    case MemoryMode::BoundsChecking: return "BoundsChecking";
-#if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-    case MemoryMode::Signaling: return "Signaling";
-#endif
-    }
-    RELEASE_ASSERT_NOT_REACHED();
-    return "";
-}
-
-const char* makeString(MemorySharingMode sharingMode)
-{
-    switch (sharingMode) {
-    case MemorySharingMode::Default: return "Default";
-    case MemorySharingMode::Shared: return "Shared";
-    }
-    RELEASE_ASSERT_NOT_REACHED();
-    return "";
-}
-
-}
-
 namespace WTF {
 
 void printInternal(PrintStream& out, JSC::MemoryMode mode)
 {
-    out.print(JSC::makeString(mode));
+    switch (mode) {
+    case MemoryMode::BoundsChecking:
+        out.print("BoundsChecking");
+        return;
+#if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
+    case MemoryMode::Signaling:
+        out.print("Signaling");
+        return;
+#endif
+    }
 }
 
 void printInternal(PrintStream& out, JSC::MemorySharingMode mode)
 {
-    out.print(JSC::makeString(mode));
+    switch (mode) {
+    case MemorySharingMode::Default:
+        out.print("Default");
+        return;
+    case MemorySharingMode::Shared:;
+        out.print("Shared");
+        return;
+    }
 }
 
 } // namespace WTF
