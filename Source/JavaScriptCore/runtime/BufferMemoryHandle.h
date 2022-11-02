@@ -26,8 +26,8 @@
 #pragma once
 
 #include "WasmMemoryMode.h"
-#include "WasmPageCount.h"
 #include "Options.h"
+#include "PageCount.h"
 
 #include <wtf/CagedPtr.h>
 #include <wtf/Expected.h>
@@ -124,14 +124,14 @@ class BufferMemoryHandle final : public ThreadSafeRefCounted<BufferMemoryHandle>
     WTF_MAKE_FAST_ALLOCATED;
     friend LLIntOffsetsExtractor;
 public:
-    BufferMemoryHandle(void*, size_t size, size_t mappedCapacity, Wasm::PageCount initial, Wasm::PageCount maximum, Wasm::MemorySharingMode, Wasm::MemoryMode);
+    BufferMemoryHandle(void*, size_t size, size_t mappedCapacity, PageCount initial, PageCount maximum, Wasm::MemorySharingMode, Wasm::MemoryMode);
     JS_EXPORT_PRIVATE ~BufferMemoryHandle();
 
     void* memory() const;
     size_t size() const { return m_size; }
     size_t mappedCapacity() const { return m_mappedCapacity; }
-    Wasm::PageCount initial() const { return m_initial; }
-    Wasm::PageCount maximum() const { return m_maximum; }
+    PageCount initial() const { return m_initial; }
+    PageCount maximum() const { return m_maximum; }
     Wasm::MemorySharingMode sharingMode() const { return m_sharingMode; }
     Wasm::MemoryMode mode() const { return m_mode; }
     static ptrdiff_t offsetOfSize() { return OBJECT_OFFSETOF(BufferMemoryHandle, m_size); }
@@ -156,8 +156,8 @@ private:
     CagedMemory m_memory;
     size_t m_size { 0 };
     size_t m_mappedCapacity { 0 };
-    Wasm::PageCount m_initial;
-    Wasm::PageCount m_maximum;
+    PageCount m_initial;
+    PageCount m_maximum;
 };
 
 } // namespace JSC

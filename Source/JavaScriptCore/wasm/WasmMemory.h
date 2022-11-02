@@ -28,8 +28,8 @@
 #if ENABLE(WEBASSEMBLY)
 
 #include "BufferMemoryHandle.h"
+#include "PageCount.h"
 #include "WasmMemoryMode.h"
-#include "WasmPageCount.h"
 
 #include <wtf/CagedPtr.h>
 #include <wtf/Expected.h>
@@ -51,42 +51,6 @@ namespace Wasm {
 
 class Instance;
 
-class MemoryHandle final : public ThreadSafeRefCounted<MemoryHandle> {
-    WTF_MAKE_NONCOPYABLE(MemoryHandle);
-    WTF_MAKE_FAST_ALLOCATED;
-    friend LLIntOffsetsExtractor;
-public:
-    MemoryHandle(void*, size_t size, size_t mappedCapacity, PageCount initial, PageCount maximum, MemorySharingMode, MemoryMode);
-    JS_EXPORT_PRIVATE ~MemoryHandle();
-
-    void* memory() const;
-    size_t size() const { return m_size; }
-    size_t mappedCapacity() const { return m_mappedCapacity; }
-    PageCount initial() const { return m_initial; }
-    PageCount maximum() const { return m_maximum; }
-    MemorySharingMode sharingMode() const { return m_sharingMode; }
-    MemoryMode mode() const { return m_mode; }
-    static ptrdiff_t offsetOfSize() { return OBJECT_OFFSETOF(MemoryHandle, m_size); }
-    Lock& lock() { return m_lock; }
-
-    void growToSize(size_t size)
-    {
-        m_size = size;
-    }
-
-private:
-    using CagedMemory = CagedPtr<Gigacage::Primitive, void, tagCagedPtr>;
-
-    Lock m_lock;
-    MemorySharingMode m_sharingMode { MemorySharingMode::Default };
-    MemoryMode m_mode { MemoryMode::BoundsChecking };
-    CagedMemory m_memory;
-    size_t m_size { 0 };
-    size_t m_mappedCapacity { 0 };
-    PageCount m_initial;
-    PageCount m_maximum;
-};
-
 class Memory final : public RefCounted<Memory> {
     WTF_MAKE_NONCOPYABLE(Memory);
     WTF_MAKE_FAST_ALLOCATED;
@@ -101,7 +65,7 @@ public:
     enum GrowSuccess { GrowSuccessTag };
 
     static Ref<Memory> create();
-    JS_EXPORT_PRIVATE static Ref<Memory> create(Ref<MemoryHandle>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
+    JS_EXPORT_PRIVATE static Ref<Memory> create(Ref<BufferMemoryHandle>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
     static RefPtr<Memory> tryCreate(VM&, PageCount initial, PageCount maximum, MemorySharingMode, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
 
     JS_EXPORT_PRIVATE ~Memory();
@@ -119,7 +83,7 @@ public:
     size_t mappedCapacity() const { return m_handle->mappedCapacity(); }
     PageCount initial() const { return m_handle->initial(); }
     PageCount maximum() const { return m_handle->maximum(); }
-    MemoryHandle& handle() { return m_handle.get(); }
+    BufferMemoryHandle& handle() { return m_handle.get(); }
 
     MemorySharingMode sharingMode() const { return m_handle->sharingMode(); }
     MemoryMode mode() const { return m_handle->mode(); }
@@ -144,12 +108,12 @@ public:
 
 private:
     Memory();
-    Memory(Ref<MemoryHandle>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
+    Memory(Ref<BufferMemoryHandle>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
     Memory(PageCount initial, PageCount maximum, MemorySharingMode, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
 
     Expected<PageCount, GrowFailReason> growShared(VM&, PageCount);
 
-    Ref<MemoryHandle> m_handle;
+    Ref<BufferMemoryHandle> m_handle;
     WTF::Function<void(GrowSuccess, PageCount, PageCount)> m_growSuccessCallback;
     Vector<WeakPtr<Instance>> m_instances;
 };

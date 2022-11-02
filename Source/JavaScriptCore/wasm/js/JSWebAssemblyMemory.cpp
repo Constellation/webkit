@@ -89,7 +89,7 @@ JSArrayBuffer* JSWebAssemblyMemory::buffer(JSGlobalObject* globalObject)
             return wrapper;
     }
 
-    Ref<Wasm::MemoryHandle> protectedHandle = m_memory->handle();
+    Ref<BufferMemoryHandle> protectedHandle = m_memory->handle();
     CagedUniquePtr<Gigacage::Primitive, uint8_t> pointerForEmpty;
 
     void* memory = m_memory->memory();
@@ -120,11 +120,11 @@ JSArrayBuffer* JSWebAssemblyMemory::buffer(JSGlobalObject* globalObject)
     return m_bufferWrapper.get();
 }
 
-Wasm::PageCount JSWebAssemblyMemory::grow(VM& vm, JSGlobalObject* globalObject, uint32_t delta)
+PageCount JSWebAssemblyMemory::grow(VM& vm, JSGlobalObject* globalObject, uint32_t delta)
 {
     auto throwScope = DECLARE_THROW_SCOPE(vm);
 
-    auto grown = memory().grow(vm, Wasm::PageCount(delta));
+    auto grown = memory().grow(vm, PageCount(delta));
     if (!grown) {
         switch (grown.error()) {
         case Wasm::Memory::GrowFailReason::InvalidDelta:
@@ -143,7 +143,7 @@ Wasm::PageCount JSWebAssemblyMemory::grow(VM& vm, JSGlobalObject* globalObject, 
             throwException(globalObject, throwScope, createRangeError(globalObject, "WebAssembly.Memory.grow for shared memory is unavailable"_s));
             break;
         }
-        return Wasm::PageCount();
+        return PageCount();
     }
 
     return grown.value();
@@ -153,8 +153,8 @@ JSObject* JSWebAssemblyMemory::type(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
 
-    Wasm::PageCount minimum = m_memory->initial();
-    Wasm::PageCount maximum = m_memory->maximum();
+    PageCount minimum = m_memory->initial();
+    PageCount maximum = m_memory->maximum();
 
     JSObject* result;
     if (maximum.isValid()) {
@@ -170,7 +170,7 @@ JSObject* JSWebAssemblyMemory::type(JSGlobalObject* globalObject)
 }
 
 
-void JSWebAssemblyMemory::growSuccessCallback(VM& vm, Wasm::PageCount oldPageCount, Wasm::PageCount newPageCount)
+void JSWebAssemblyMemory::growSuccessCallback(VM& vm, PageCount oldPageCount, PageCount newPageCount)
 {
     // We need to clear out the old array buffer because it might now be pointing to stale memory.
     if (m_buffer) {

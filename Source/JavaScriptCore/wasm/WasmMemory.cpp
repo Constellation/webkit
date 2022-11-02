@@ -86,12 +86,12 @@ bool tryAllocate(VM& vm, const Func& allocate)
 
 
 Memory::Memory()
-    : m_handle(adoptRef(*new MemoryHandle(nullptr, 0, 0, PageCount(0), PageCount(0), MemorySharingMode::Default, MemoryMode::BoundsChecking)))
+    : m_handle(adoptRef(*new BufferMemoryHandle(nullptr, 0, 0, PageCount(0), PageCount(0), MemorySharingMode::Default, MemoryMode::BoundsChecking)))
 {
 }
 
 Memory::Memory(PageCount initial, PageCount maximum, MemorySharingMode sharingMode, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback)
-    : m_handle(adoptRef(*new MemoryHandle(nullptr, 0, 0, initial, maximum, sharingMode, MemoryMode::BoundsChecking)))
+    : m_handle(adoptRef(*new BufferMemoryHandle(nullptr, 0, 0, initial, maximum, sharingMode, MemoryMode::BoundsChecking)))
     , m_growSuccessCallback(WTFMove(growSuccessCallback))
 {
     ASSERT(!initial.bytes());
@@ -100,7 +100,7 @@ Memory::Memory(PageCount initial, PageCount maximum, MemorySharingMode sharingMo
     ASSERT(!memory());
 }
 
-Memory::Memory(Ref<MemoryHandle>&& handle, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback)
+Memory::Memory(Ref<BufferMemoryHandle>&& handle, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback)
     : m_handle(WTFMove(handle))
     , m_growSuccessCallback(WTFMove(growSuccessCallback))
 {
@@ -112,7 +112,7 @@ Ref<Memory> Memory::create()
     return adoptRef(*new Memory());
 }
 
-Ref<Memory> Memory::create(Ref<MemoryHandle>&& handle, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback)
+Ref<Memory> Memory::create(Ref<BufferMemoryHandle>&& handle, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback)
 {
     return adoptRef(*new Memory(WTFMove(handle), WTFMove(growSuccessCallback)));
 }
@@ -158,7 +158,7 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
             RELEASE_ASSERT_NOT_REACHED();
         }
 
-        return Memory::create(adoptRef(*new MemoryHandle(fastMemory, initialBytes, BufferMemoryHandle::fastMappedBytes(), initial, maximum, sharingMode, MemoryMode::Signaling)), WTFMove(growSuccessCallback));
+        return Memory::create(adoptRef(*new BufferMemoryHandle(fastMemory, initialBytes, BufferMemoryHandle::fastMappedBytes(), initial, maximum, sharingMode, MemoryMode::Signaling)), WTFMove(growSuccessCallback));
     }
 #endif
 
@@ -175,7 +175,7 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
             BufferMemoryManager::singleton().freePhysicalBytes(initialBytes);
             return nullptr;
         }
-        return Memory::create(adoptRef(*new MemoryHandle(slowMemory, initialBytes, initialBytes, initial, maximum, sharingMode, MemoryMode::BoundsChecking)), WTFMove(growSuccessCallback));
+        return Memory::create(adoptRef(*new BufferMemoryHandle(slowMemory, initialBytes, initialBytes, initial, maximum, sharingMode, MemoryMode::BoundsChecking)), WTFMove(growSuccessCallback));
     }
     case MemorySharingMode::Shared: {
         char* slowMemory = nullptr;
@@ -195,7 +195,7 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
             RELEASE_ASSERT_NOT_REACHED();
         }
 
-        return Memory::create(adoptRef(*new MemoryHandle(slowMemory, initialBytes, maximumBytes, initial, maximum, sharingMode, MemoryMode::BoundsChecking)), WTFMove(growSuccessCallback));
+        return Memory::create(adoptRef(*new BufferMemoryHandle(slowMemory, initialBytes, maximumBytes, initial, maximum, sharingMode, MemoryMode::BoundsChecking)), WTFMove(growSuccessCallback));
     }
     }
     RELEASE_ASSERT_NOT_REACHED();
@@ -220,8 +220,8 @@ Expected<PageCount, Memory::GrowFailReason> Memory::growShared(VM& vm, PageCount
     return makeUnexpected(GrowFailReason::GrowSharedUnavailable);
 #endif
 
-    Wasm::PageCount oldPageCount;
-    Wasm::PageCount newPageCount;
+    PageCount oldPageCount;
+    PageCount newPageCount;
     auto result = ([&]() -> Expected<PageCount, Memory::GrowFailReason> {
         Locker locker { m_handle->lock() };
 
@@ -289,8 +289,8 @@ Expected<PageCount, Memory::GrowFailReason> Memory::grow(VM& vm, PageCount delta
     if (sharingMode() == MemorySharingMode::Shared)
         return growShared(vm, delta);
 
-    const Wasm::PageCount oldPageCount = sizeInPages();
-    const Wasm::PageCount newPageCount = oldPageCount + delta;
+    const PageCount oldPageCount = sizeInPages();
+    const PageCount newPageCount = oldPageCount + delta;
     if (!newPageCount || !newPageCount.isValid())
         return makeUnexpected(GrowFailReason::InvalidGrowSize);
     if (newPageCount.bytes() > MAX_ARRAY_BUFFER_SIZE)
@@ -334,7 +334,7 @@ Expected<PageCount, Memory::GrowFailReason> Memory::grow(VM& vm, PageCount delta
             return makeUnexpected(GrowFailReason::OutOfMemory);
 
         memcpy(newMemory, memory(), size());
-        auto newHandle = adoptRef(*new MemoryHandle(newMemory, desiredSize, desiredSize, initial(), maximum(), sharingMode(), MemoryMode::BoundsChecking));
+        auto newHandle = adoptRef(*new BufferMemoryHandle(newMemory, desiredSize, desiredSize, initial(), maximum(), sharingMode(), MemoryMode::BoundsChecking));
         m_handle = WTFMove(newHandle);
 
         ASSERT(memory() == newMemory);

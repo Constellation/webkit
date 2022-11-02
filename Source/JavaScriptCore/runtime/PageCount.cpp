@@ -24,14 +24,12 @@
  */
 
 #include "config.h"
-#include "WasmPageCount.h"
-
-#if ENABLE(WEBASSEMBLY)
+#include "PageCount.h"
 
 #include <wtf/PrintStream.h>
 #include <wtf/text/WTFString.h>
 
-namespace JSC { namespace Wasm {
+namespace JSC {
 
 void PageCount::dump(PrintStream& out) const
 {
@@ -39,7 +37,3 @@ void PageCount::dump(PrintStream& out) const
 }
 
 } // namespace JSC
-
-} // namespace Wasm
-
-#endif // ENABLE(WEBASSEMBLY)

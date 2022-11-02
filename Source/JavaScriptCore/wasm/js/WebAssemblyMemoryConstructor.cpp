@@ -33,9 +33,9 @@
 #include "JSObjectInlines.h"
 #include "JSWebAssemblyHelpers.h"
 #include "JSWebAssemblyMemory.h"
+#include "PageCount.h"
 #include "StructureInlines.h"
 #include "WasmMemory.h"
-#include "WasmPageCount.h"
 #include "WebAssemblyMemoryPrototype.h"
 
 #include "WebAssemblyMemoryConstructor.lut.h"
@@ -69,7 +69,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyMemory, (JSGlobalObject* globalOb
         memoryDescriptor = jsCast<JSObject*>(argument);
     }
 
-    Wasm::PageCount initialPageCount;
+    PageCount initialPageCount;
     {
         Identifier initial = Identifier::fromString(vm, "initial"_s);
         JSValue initSizeValue = memoryDescriptor->get(globalObject, initial);
@@ -86,14 +86,14 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyMemory, (JSGlobalObject* globalOb
 
         uint32_t size = toNonWrappingUint32(globalObject, minSizeValue);
         RETURN_IF_EXCEPTION(throwScope, encodedJSValue());
-        if (!Wasm::PageCount::isValid(size))
+        if (!PageCount::isValid(size))
             return JSValue::encode(throwException(globalObject, throwScope, createRangeError(globalObject, "WebAssembly.Memory 'initial' page count is too large"_s)));
-        if (Wasm::PageCount(size).bytes() > MAX_ARRAY_BUFFER_SIZE)
+        if (PageCount(size).bytes() > MAX_ARRAY_BUFFER_SIZE)
             return JSValue::encode(throwException(globalObject, throwScope, createOutOfMemoryError(globalObject)));
-        initialPageCount = Wasm::PageCount(size);
+        initialPageCount = PageCount(size);
     }
 
-    Wasm::PageCount maximumPageCount;
+    PageCount maximumPageCount;
     {
         // In WebIDL, "present" means that [[Get]] result is undefined, not [[HasProperty]] result.
         // https://webidl.spec.whatwg.org/#idl-dictionaries
@@ -103,9 +103,9 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyMemory, (JSGlobalObject* globalOb
         if (!maxSizeValue.isUndefined()) {
             uint32_t size = toNonWrappingUint32(globalObject, maxSizeValue);
             RETURN_IF_EXCEPTION(throwScope, encodedJSValue());
-            if (!Wasm::PageCount::isValid(size))
+            if (!PageCount::isValid(size))
                 return JSValue::encode(throwException(globalObject, throwScope, createRangeError(globalObject, "WebAssembly.Memory 'maximum' page count is too large"_s)));
-            maximumPageCount = Wasm::PageCount(size);
+            maximumPageCount = PageCount(size);
 
             if (initialPageCount > maximumPageCount) {
                 return JSValue::encode(throwException(globalObject, throwScope,
@@ -133,7 +133,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyMemory, (JSGlobalObject* globalOb
     RETURN_IF_EXCEPTION(throwScope, encodedJSValue());
 
     RefPtr<Wasm::Memory> memory = Wasm::Memory::tryCreate(vm, initialPageCount, maximumPageCount, sharingMode,
-        [&vm, jsMemory] (Wasm::Memory::GrowSuccess, Wasm::PageCount oldPageCount, Wasm::PageCount newPageCount) { jsMemory->growSuccessCallback(vm, oldPageCount, newPageCount); });
+        [&vm, jsMemory] (Wasm::Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { jsMemory->growSuccessCallback(vm, oldPageCount, newPageCount); });
     if (!memory)
         return JSValue::encode(throwException(globalObject, throwScope, createOutOfMemoryError(globalObject)));
 

@@ -25,8 +25,6 @@
 
 #pragma once
 
-#if ENABLE(WEBASSEMBLY)
-
 #include "ArrayBuffer.h"
 
 #include <limits.h>
@@ -35,7 +33,7 @@ namespace WTF {
 class PrintStream;
 }
 
-namespace JSC { namespace Wasm {
+namespace JSC {
 
 class PageCount {
 
@@ -108,6 +106,4 @@ private:
     uint32_t m_pageCount;
 };
 
-} } // namespace JSC::Wasm
-
-#endif // ENABLE(WEBASSEMBLY)
+} // namespace JSC

@@ -1153,6 +1153,7 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     runtime/Operations.h
     runtime/Options.h
     runtime/OptionsList.h
+    runtime/PageCount.h
     runtime/ParseInt.h
     runtime/PrivateFieldPutKind.h
     runtime/PrivateName.h
@@ -1275,7 +1276,6 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     wasm/WasmName.h
     wasm/WasmNameSection.h
     wasm/WasmOSREntryData.h
-    wasm/WasmPageCount.h
     wasm/WasmSIMDOpcodes.h
     wasm/WasmSections.h
     wasm/WasmTypeDefinition.h

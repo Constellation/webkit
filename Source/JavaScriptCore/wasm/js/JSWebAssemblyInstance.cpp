@@ -214,7 +214,7 @@ JSWebAssemblyInstance* JSWebAssemblyInstance::tryCreate(VM& vm, JSGlobalObject* 
         RETURN_IF_EXCEPTION(throwScope, nullptr);
 
         RefPtr<Wasm::Memory> memory = Wasm::Memory::tryCreate(vm, moduleInformation.memory.initial(), moduleInformation.memory.maximum(), moduleInformation.memory.isShared() ? Wasm::MemorySharingMode::Shared: Wasm::MemorySharingMode::Default,
-            [&vm, jsMemory](Wasm::Memory::GrowSuccess, Wasm::PageCount oldPageCount, Wasm::PageCount newPageCount) { jsMemory->growSuccessCallback(vm, oldPageCount, newPageCount); }
+            [&vm, jsMemory](Wasm::Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { jsMemory->growSuccessCallback(vm, oldPageCount, newPageCount); }
         );
         if (!memory)
             return exception(createOutOfMemoryError(globalObject));

@@ -983,6 +983,7 @@ runtime/ObjectInitializationScope.cpp
 runtime/ObjectPrototype.cpp
 runtime/Operations.cpp
 runtime/Options.cpp
+runtime/PageCount.cpp
 runtime/PredictionFileCreatingFuzzerAgent.cpp
 runtime/PrivateFieldPutKind.cpp
 runtime/ProgramExecutable.cpp
@@ -1134,7 +1135,6 @@ wasm/WasmOMGPlan.cpp
 wasm/WasmOSREntryPlan.cpp
 wasm/WasmOpcodeOrigin.cpp
 wasm/WasmOperations.cpp
-wasm/WasmPageCount.cpp
 wasm/WasmPlan.cpp
 wasm/WasmSectionParser.cpp
 wasm/WasmTypeDefinition.cpp

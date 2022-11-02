@@ -50,7 +50,7 @@ namespace JSC {
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
 size_t BufferMemoryHandle::fastMappedRedzoneBytes()
 {
-    return static_cast<size_t>(Wasm::PageCount::pageSize) * Options::webAssemblyFastMemoryRedzonePages();
+    return static_cast<size_t>(PageCount::pageSize) * Options::webAssemblyFastMemoryRedzonePages();
 }
 
 size_t BufferMemoryHandle::fastMappedBytes()
@@ -219,7 +219,7 @@ BufferMemoryManager& BufferMemoryManager::singleton()
     return manager.get();
 }
 
-BufferMemoryHandle::BufferMemoryHandle(void* memory, size_t size, size_t mappedCapacity, Wasm::PageCount initial, Wasm::PageCount maximum, Wasm::MemorySharingMode sharingMode, Wasm::MemoryMode mode)
+BufferMemoryHandle::BufferMemoryHandle(void* memory, size_t size, size_t mappedCapacity, PageCount initial, PageCount maximum, Wasm::MemorySharingMode sharingMode, Wasm::MemoryMode mode)
     : m_sharingMode(sharingMode)
     , m_mode(mode)
     , m_memory(memory, mappedCapacity)
@@ -230,8 +230,11 @@ BufferMemoryHandle::BufferMemoryHandle(void* memory, size_t size, size_t mappedC
 {
     if (sharingMode == Wasm::MemorySharingMode::Default && mode == Wasm::MemoryMode::BoundsChecking)
         ASSERT(mappedCapacity == size);
-    else
+    else {
+#if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
         Wasm::activateSignalingMemory();
+#endif
+    }
 }
 
 BufferMemoryHandle::~BufferMemoryHandle()

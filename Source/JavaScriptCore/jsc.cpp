@@ -214,7 +214,7 @@ static void checkException(GlobalObject*, bool isLastFile, bool hasException, JS
 class Message : public ThreadSafeRefCounted<Message> {
 public:
 #if ENABLE(WEBASSEMBLY)
-    using Content = std::variant<ArrayBufferContents, Ref<Wasm::MemoryHandle>>;
+    using Content = std::variant<ArrayBufferContents, Ref<BufferMemoryHandle>>;
 #else
     using Content = std::variant<ArrayBufferContents>;
 #endif
@@ -2290,11 +2290,11 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentReceiveBroadcast, (JSGlobalObject* g
             return JSArrayBuffer::create(vm, globalObject->arrayBufferStructure(sharingMode), WTFMove(nativeBuffer));
         }
 #if ENABLE(WEBASSEMBLY)
-        if (std::holds_alternative<Ref<Wasm::MemoryHandle>>(content)) {
+        if (std::holds_alternative<Ref<BufferMemoryHandle>>(content)) {
             JSWebAssemblyMemory* jsMemory = JSC::JSWebAssemblyMemory::tryCreate(globalObject, vm, globalObject->webAssemblyMemoryStructure());
             scope.releaseAssertNoException();
-            Ref<Wasm::Memory> memory = Wasm::Memory::create(std::get<Ref<Wasm::MemoryHandle>>(WTFMove(content)),
-                [&vm, jsMemory] (Wasm::Memory::GrowSuccess, Wasm::PageCount oldPageCount, Wasm::PageCount newPageCount) { jsMemory->growSuccessCallback(vm, oldPageCount, newPageCount); });
+            Ref<Wasm::Memory> memory = Wasm::Memory::create(std::get<Ref<BufferMemoryHandle>>(WTFMove(content)),
+                [&vm, jsMemory] (Wasm::Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { jsMemory->growSuccessCallback(vm, oldPageCount, newPageCount); });
             jsMemory->adopt(WTFMove(memory));
             return jsMemory;
         }
@@ -2362,7 +2362,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentBroadcast, (JSGlobalObject* globalOb
     if (memory && memory->memory().sharingMode() == Wasm::MemorySharingMode::Shared) {
         Workers::singleton().broadcast(
             [&] (const AbstractLocker& locker, Worker& worker) {
-                Ref<Wasm::MemoryHandle> handle { memory->memory().handle() };
+                Ref<BufferMemoryHandle> handle { memory->memory().handle() };
                 RefPtr<Message> message = adoptRef(new Message(WTFMove(handle), index));
                 worker.enqueue(locker, message);
             });

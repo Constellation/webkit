@@ -70,7 +70,7 @@ enum class SerializationForStorage : bool { No, Yes };
 using ArrayBufferContentsArray = Vector<JSC::ArrayBufferContents>;
 #if ENABLE(WEBASSEMBLY)
 using WasmModuleArray = Vector<RefPtr<JSC::Wasm::Module>>;
-using WasmMemoryHandleArray = Vector<RefPtr<JSC::Wasm::MemoryHandle>>;
+using WasmMemoryHandleArray = Vector<RefPtr<JSC::BufferMemoryHandle>>;
 #endif
 
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(SerializedScriptValue);

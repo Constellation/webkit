@@ -3883,7 +3883,7 @@ private:
                 fail();
                 return JSValue();
             }
-            RefPtr<Wasm::MemoryHandle> handle = m_wasmMemoryHandles->at(index);
+            RefPtr<BufferMemoryHandle> handle = m_wasmMemoryHandles->at(index);
             if (!handle) {
                 fail();
                 return JSValue();
@@ -3896,7 +3896,7 @@ private:
             // not throw.
             scope.releaseAssertNoException();
             Ref<Wasm::Memory> memory = Wasm::Memory::create(handle.releaseNonNull(),
-                [&vm, result] (Wasm::Memory::GrowSuccess, Wasm::PageCount oldPageCount, Wasm::PageCount newPageCount) { result->growSuccessCallback(vm, oldPageCount, newPageCount); });
+                [&vm, result] (Wasm::Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { result->growSuccessCallback(vm, oldPageCount, newPageCount); });
             result->adopt(WTFMove(memory));
             m_gcBuffer.appendWithCrashOnOverflow(result);
             return result;
