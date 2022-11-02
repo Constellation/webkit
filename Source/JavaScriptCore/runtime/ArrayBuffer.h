@@ -67,9 +67,12 @@ public:
 
     size_t sizeInBytes(std::memory_order order) const
     {
-        if (m_memoryHandle)
-            return m_memoryHandle->size(order);
-        return m_sizeInBytes;
+        return m_sizeInBytes.load(order);
+    }
+
+    void growToSize(size_t sizeInBytes, std::memory_order order = std::memory_order_seq_cst)
+    {
+        m_sizeInBytes.store(sizeInBytes, order);
     }
     
 private:
@@ -87,7 +90,7 @@ private:
     DataType m_data;
     ArrayBufferDestructorFunction m_destructor;
     RefPtr<BufferMemoryHandle> m_memoryHandle;
-    size_t m_sizeInBytes;
+    std::atomic<size_t> m_sizeInBytes { 0 };
     size_t m_maxByteLength;
     bool m_hasMaxByteLength : 1 { false };
 };

@@ -283,6 +283,7 @@ Expected<PageCount, Memory::GrowFailReason> Memory::growShared(VM& vm, PageCount
         }
 
         m_handle->growToSize(desiredSize);
+        m_shared->growToSize(desiredSize);
         return oldPageCount;
     }());
     if (result) {
@@ -304,6 +305,7 @@ Expected<PageCount, Memory::GrowFailReason> Memory::grow(VM& vm, PageCount delta
     if (sharingMode() == MemorySharingMode::Shared)
         return growShared(vm, delta);
 
+    ASSERT(!m_shared);
     const PageCount oldPageCount = sizeInPages();
     const PageCount newPageCount = oldPageCount + delta;
     if (!newPageCount || !newPageCount.isValid())
