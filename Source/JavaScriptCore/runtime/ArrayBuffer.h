@@ -70,6 +70,13 @@ public:
         return m_sizeInBytes.load(order);
     }
 
+    std::optional<size_t> maxByteLength() const
+    {
+        if (m_hasMaxByteLength)
+            return m_maxByteLength;
+        return std::nullopt;
+    }
+
     Expected<void, GrowFailReason> grow(VM&, size_t newByteLength);
     Expected<void, GrowFailReason> grow(const AbstractLocker&, VM&, size_t newByteLength);
 

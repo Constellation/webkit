@@ -160,7 +160,7 @@ Ref<ArrayBuffer> ArrayBuffer::createShared(Ref<SharedArrayBufferContents>&& shar
 {
     void* memory = shared->data();
     size_t sizeInBytes = shared->sizeInBytes(std::memory_order_seq_cst);
-    ArrayBufferContents contents(memory, sizeInBytes, std::nullopt, WTFMove(shared));
+    ArrayBufferContents contents(memory, sizeInBytes, shared->maxByteLength(), WTFMove(shared));
     return create(WTFMove(contents));
 }
 
