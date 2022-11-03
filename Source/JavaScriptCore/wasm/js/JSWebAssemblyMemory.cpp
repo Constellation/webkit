@@ -102,7 +102,7 @@ JSArrayBuffer* JSWebAssemblyMemory::buffer(JSGlobalObject* globalObject)
     ASSERT(memory);
     if (m_memory->sharingMode() == MemorySharingMode::Shared) {
         ASSERT(shared);
-        m_buffer = ArrayBuffer::createSharedFromMemoryHandle(shared.releaseNonNull());
+        m_buffer = ArrayBuffer::createShared(shared.releaseNonNull());
         m_buffer->makeWasmMemory();
     } else {
         ASSERT(m_memory->sharingMode() == MemorySharingMode::Default);
