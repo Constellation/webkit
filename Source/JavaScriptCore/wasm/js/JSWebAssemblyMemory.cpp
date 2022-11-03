@@ -83,6 +83,7 @@ JSArrayBuffer* JSWebAssemblyMemory::buffer(JSGlobalObject* globalObject)
         return wrapper;
 
     Ref<BufferMemoryHandle> protectedHandle = m_memory->handle();
+    RefPtr<SharedArrayBufferContents> shared = m_memory->shared();
     CagedUniquePtr<Gigacage::Primitive, uint8_t> pointerForEmpty;
 
     void* memory = m_memory->memory();
@@ -100,7 +101,8 @@ JSArrayBuffer* JSWebAssemblyMemory::buffer(JSGlobalObject* globalObject)
 
     ASSERT(memory);
     if (m_memory->sharingMode() == MemorySharingMode::Shared) {
-        m_buffer = ArrayBuffer::createSharedFromMemoryHandle(WTFMove(protectedHandle));
+        ASSERT(shared);
+        m_buffer = ArrayBuffer::createSharedFromMemoryHandle(WTFMove(protectedHandle), shared.releaseNonNull());
         m_buffer->makeWasmMemory();
     } else {
         ASSERT(m_memory->sharingMode() == MemorySharingMode::Default);

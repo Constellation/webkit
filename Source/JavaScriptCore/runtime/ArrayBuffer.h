@@ -118,9 +118,9 @@ public:
         RELEASE_ASSERT(m_sizeInBytes <= MAX_ARRAY_BUFFER_SIZE);
     }
 
-    ArrayBufferContents(void* data, size_t sizeInBytes, std::optional<size_t> maxByteLength, Ref<BufferMemoryHandle>&& handle)
+    ArrayBufferContents(void* data, size_t sizeInBytes, std::optional<size_t> maxByteLength, Ref<BufferMemoryHandle>&& handle, Ref<SharedArrayBufferContents>&& shared)
         : m_data(data, maxByteLength.value_or(sizeInBytes))
-        , m_shared(SharedArrayBufferContents::create(data, sizeInBytes, maxByteLength, WTFMove(handle), nullptr))
+        , m_shared(WTFMove(shared))
         , m_sizeInBytes(sizeInBytes)
         , m_maxByteLength(maxByteLength.value_or(sizeInBytes))
         , m_hasMaxByteLength(!!maxByteLength)
@@ -221,10 +221,11 @@ public:
     JS_EXPORT_PRIVATE static Ref<ArrayBuffer> create(ArrayBufferContents&&);
     JS_EXPORT_PRIVATE static Ref<ArrayBuffer> createAdopted(const void* data, size_t byteLength);
     JS_EXPORT_PRIVATE static Ref<ArrayBuffer> createFromBytes(const void* data, size_t byteLength, ArrayBufferDestructorFunction&&);
-    JS_EXPORT_PRIVATE static Ref<ArrayBuffer> createSharedFromMemoryHandle(Ref<BufferMemoryHandle>&&);
+    JS_EXPORT_PRIVATE static Ref<ArrayBuffer> createSharedFromMemoryHandle(Ref<BufferMemoryHandle>&&, Ref<SharedArrayBufferContents>&&);
     JS_EXPORT_PRIVATE static RefPtr<ArrayBuffer> tryCreate(size_t numElements, unsigned elementByteSize, std::optional<size_t> maxByteLength = std::nullopt);
     JS_EXPORT_PRIVATE static RefPtr<ArrayBuffer> tryCreate(ArrayBuffer&);
     JS_EXPORT_PRIVATE static RefPtr<ArrayBuffer> tryCreate(const void* source, size_t byteLength);
+    JS_EXPORT_PRIVATE static RefPtr<ArrayBuffer> tryCreateShared(VM&, size_t numElements, unsigned elementByteSize, size_t maxByteLength);
 
     // Only for use by Uint8ClampedArray::tryCreateUninitialized and FragmentedSharedBuffer::tryCreateArrayBuffer.
     JS_EXPORT_PRIVATE static Ref<ArrayBuffer> createUninitialized(size_t numElements, unsigned elementByteSize);

@@ -156,11 +156,11 @@ Ref<ArrayBuffer> ArrayBuffer::createFromBytes(const void* data, size_t byteLengt
     return create(WTFMove(contents));
 }
 
-Ref<ArrayBuffer> ArrayBuffer::createSharedFromMemoryHandle(Ref<BufferMemoryHandle>&& memoryHandle)
+Ref<ArrayBuffer> ArrayBuffer::createSharedFromMemoryHandle(Ref<BufferMemoryHandle>&& memoryHandle, Ref<SharedArrayBufferContents>&& shared)
 {
     void* memory = memoryHandle->memory();
     size_t sizeInBytes = memoryHandle->size();
-    ArrayBufferContents contents(memory, sizeInBytes, std::nullopt, WTFMove(memoryHandle));
+    ArrayBufferContents contents(memory, sizeInBytes, std::nullopt, WTFMove(memoryHandle), WTFMove(shared));
     return create(WTFMove(contents));
 }
 
@@ -371,6 +371,47 @@ static bool tryAllocate(VM& vm, const Func& allocate)
         }
     }
     return done;
+}
+
+RefPtr<ArrayBuffer> ArrayBuffer::tryCreateShared(VM& vm, size_t numElements, unsigned elementByteSize, size_t maxByteLength)
+{
+    CheckedSize sizeInBytes = numElements;
+    sizeInBytes *= elementByteSize;
+    if (sizeInBytes.hasOverflowed() || sizeInBytes.value() > MAX_ARRAY_BUFFER_SIZE || (sizeInBytes.value() > maxByteLength))
+        return nullptr;
+
+    size_t initialBytes = roundUpToMultipleOf<PageCount::pageSize>(sizeInBytes.value());
+    if (!initialBytes)
+        initialBytes = PageCount::pageSize; // Make sure malloc actually allocates something, but not too much. We use null to mean that the buffer is detached.
+    size_t maximumBytes = roundUpToMultipleOf<PageCount::pageSize>(maxByteLength);
+
+    bool done = tryAllocate(vm,
+        [&] () -> BufferMemoryResult::Kind {
+            return BufferMemoryManager::singleton().tryAllocatePhysicalBytes(initialBytes);
+        });
+    if (!done)
+        return nullptr;
+
+    char* slowMemory = nullptr;
+    tryAllocate(vm,
+        [&] () -> BufferMemoryResult::Kind {
+            auto result = BufferMemoryManager::singleton().tryAllocateGrowableBoundsCheckingMemory(maximumBytes);
+            slowMemory = bitwise_cast<char*>(result.basePtr);
+            return result.kind;
+        });
+    if (!slowMemory) {
+        BufferMemoryManager::singleton().freePhysicalBytes(initialBytes);
+        return nullptr;
+    }
+
+    if (mprotect(slowMemory + initialBytes, maximumBytes - initialBytes, PROT_NONE)) {
+        dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
+        RELEASE_ASSERT_NOT_REACHED();
+    }
+
+    auto handle = adoptRef(*new BufferMemoryHandle(slowMemory, initialBytes, maximumBytes, PageCount::fromBytes(initialBytes), PageCount::fromBytes(maximumBytes), MemorySharingMode::Shared, MemoryMode::BoundsChecking));
+    auto content = SharedArrayBufferContents::create(handle->memory(), sizeInBytes.value(), maxByteLength, handle.copyRef(), nullptr);
+    return createSharedFromMemoryHandle(WTFMove(handle), WTFMove(content));
 }
 
 Expected<void, GrowFailReason> SharedArrayBufferContents::grow(VM& vm, size_t newByteLength)
