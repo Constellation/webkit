@@ -383,45 +383,50 @@ Expected<void, GrowFailReason> SharedArrayBufferContents::grow(VM& vm, size_t ne
 
 Expected<void, GrowFailReason> SharedArrayBufferContents::grow(const AbstractLocker&, VM& vm, size_t newByteLength)
 {
+    // Keep in mind that newByteLength may not be page-size-aligned.
     size_t sizeInBytes = m_sizeInBytes.load(std::memory_order_seq_cst);
     if (sizeInBytes > newByteLength || m_maxByteLength < newByteLength)
         return makeUnexpected(GrowFailReason::InvalidGrowSize);
-    if (sizeInBytes != newByteLength) {
-        auto newPageCount = PageCount::fromBytesWithRoundUp(newByteLength);
-        auto oldPageCount = PageCount::fromBytes(m_memoryHandle->size());
-        if (newPageCount.bytes() > MAX_ARRAY_BUFFER_SIZE)
-            return makeUnexpected(GrowFailReason::WouldExceedMaximum);
-        if (newPageCount != oldPageCount) {
-            ASSERT(m_memoryHandle->maximum() >= newPageCount);
-            size_t desiredSize = newPageCount.bytes();
-            RELEASE_ASSERT(desiredSize <= MAX_ARRAY_BUFFER_SIZE);
-            RELEASE_ASSERT(desiredSize > m_memoryHandle->size());
 
-            size_t extraBytes = desiredSize - m_memoryHandle->size();
-            RELEASE_ASSERT(extraBytes);
-            bool allocationSuccess = tryAllocate(vm,
-                [&] () -> BufferMemoryResult::Kind {
-                    return BufferMemoryManager::singleton().tryAllocatePhysicalBytes(extraBytes);
-                });
-            if (!allocationSuccess)
-                return makeUnexpected(GrowFailReason::OutOfMemory);
+    if (sizeInBytes == newByteLength)
+        return { };
 
-            void* memory = m_memoryHandle->memory();
-            RELEASE_ASSERT(memory);
+    auto newPageCount = PageCount::fromBytesWithRoundUp(newByteLength);
+    auto oldPageCount = PageCount::fromBytes(m_memoryHandle->size()); // MemoryHandle's size is always page-size aligned.
+    if (newPageCount.bytes() > MAX_ARRAY_BUFFER_SIZE)
+        return makeUnexpected(GrowFailReason::WouldExceedMaximum);
 
-            // Signaling memory must have been pre-allocated virtually.
-            uint8_t* startAddress = static_cast<uint8_t*>(memory) + m_memoryHandle->size();
+    if (newPageCount != oldPageCount) {
+        ASSERT(m_memoryHandle->maximum() >= newPageCount);
+        size_t desiredSize = newPageCount.bytes();
+        RELEASE_ASSERT(desiredSize <= MAX_ARRAY_BUFFER_SIZE);
+        RELEASE_ASSERT(desiredSize > m_memoryHandle->size());
 
-            dataLogLnIf(ArrayBufferInternal::verbose, "Marking memory's ", RawPointer(memory), " as read+write in range [", RawPointer(startAddress), ", ", RawPointer(startAddress + extraBytes), ")");
-            if (mprotect(startAddress, extraBytes, PROT_READ | PROT_WRITE)) {
-                dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
-                RELEASE_ASSERT_NOT_REACHED();
-            }
+        size_t extraBytes = desiredSize - m_memoryHandle->size();
+        RELEASE_ASSERT(extraBytes);
+        bool allocationSuccess = tryAllocate(vm,
+            [&] () -> BufferMemoryResult::Kind {
+                return BufferMemoryManager::singleton().tryAllocatePhysicalBytes(extraBytes);
+            });
+        if (!allocationSuccess)
+            return makeUnexpected(GrowFailReason::OutOfMemory);
 
-            m_memoryHandle->growToSize(desiredSize);
-            growToSize(desiredSize);
+        void* memory = m_memoryHandle->memory();
+        RELEASE_ASSERT(memory);
+
+        // Signaling memory must have been pre-allocated virtually.
+        uint8_t* startAddress = static_cast<uint8_t*>(memory) + m_memoryHandle->size();
+
+        dataLogLnIf(ArrayBufferInternal::verbose, "Marking memory's ", RawPointer(memory), " as read+write in range [", RawPointer(startAddress), ", ", RawPointer(startAddress + extraBytes), ")");
+        if (mprotect(startAddress, extraBytes, PROT_READ | PROT_WRITE)) {
+            dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
+            RELEASE_ASSERT_NOT_REACHED();
         }
+
+        m_memoryHandle->growToSize(desiredSize);
     }
+
+    growToSize(newByteLength);
     return { };
 }
 
