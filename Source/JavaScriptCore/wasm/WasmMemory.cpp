@@ -171,7 +171,14 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
             RELEASE_ASSERT_NOT_REACHED();
         }
 
-        return Memory::create(adoptRef(*new BufferMemoryHandle(fastMemory, initialBytes, BufferMemoryHandle::fastMappedBytes(), initial, maximum, sharingMode, MemoryMode::Signaling)), WTFMove(growSuccessCallback));
+        switch (sharingMode) {
+        case MemorySharingMode::Default: {
+            return Memory::create(adoptRef(*new BufferMemoryHandle(fastMemory, initialBytes, BufferMemoryHandle::fastMappedBytes(), initial, maximum, MemorySharingMode::Default, MemoryMode::Signaling)), WTFMove(growSuccessCallback));
+        }
+
+        case MemorySharingMode::Shared: {
+        }
+        }
     }
 #endif
 
@@ -181,7 +188,7 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
     switch (sharingMode) {
     case MemorySharingMode::Default: {
         if (!initialBytes)
-            return adoptRef(new Memory(initial, maximum, sharingMode, WTFMove(growSuccessCallback)));
+            return adoptRef(new Memory(initial, maximum, MemorySharingMode::Default, WTFMove(growSuccessCallback)));
 
         void* slowMemory = Gigacage::tryAllocateZeroedVirtualPages(Gigacage::Primitive, initialBytes);
         if (!slowMemory) {
@@ -235,12 +242,15 @@ Expected<PageCount, GrowFailReason> Memory::growShared(VM& vm, PageCount delta)
     return makeUnexpected(GrowFailReason::GrowSharedUnavailable);
 #endif
 
-    ASSERT(m_shared);
     PageCount oldPageCount;
     PageCount newPageCount;
     Expected<void, GrowFailReason> result;
     {
-        Locker locker { m_shared->memoryHandle()->lock() };
+        std::optional<Locker<Lock>> locker;
+        // m_shared may not be exist, if this is zero byte memory with zero byte maximum size.
+        if (m_shared)
+            locker.emplace(m_shared->memoryHandle()->lock());
+
         oldPageCount = sizeInPages();
         newPageCount = oldPageCount + delta;
         if (!newPageCount || !newPageCount.isValid())
@@ -258,9 +268,10 @@ Expected<PageCount, GrowFailReason> Memory::growShared(VM& vm, PageCount delta)
             return makeUnexpected(GrowFailReason::WouldExceedMaximum);
 
         size_t desiredSize = newPageCount.bytes();
+        RELEASE_ASSERT(m_shared);
         RELEASE_ASSERT(desiredSize <= MAX_ARRAY_BUFFER_SIZE);
         RELEASE_ASSERT(desiredSize > size());
-        result = m_shared->grow(locker, vm, desiredSize);
+        result = m_shared->grow(locker.value(), vm, desiredSize);
     }
     if (!result)
         return makeUnexpected(result.error());
