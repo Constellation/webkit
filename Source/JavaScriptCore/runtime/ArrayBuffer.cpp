@@ -384,6 +384,8 @@ RefPtr<ArrayBuffer> ArrayBuffer::tryCreateShared(VM& vm, size_t numElements, uns
     if (!initialBytes)
         initialBytes = PageCount::pageSize; // Make sure malloc actually allocates something, but not too much. We use null to mean that the buffer is detached.
     size_t maximumBytes = roundUpToMultipleOf<PageCount::pageSize>(maxByteLength);
+    if (!maximumBytes)
+        maximumBytes = PageCount::pageSize; // Make sure malloc actually allocates something, but not too much. We use null to mean that the buffer is detached.
 
     bool done = tryAllocate(vm,
         [&] () -> BufferMemoryResult::Kind {
