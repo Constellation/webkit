@@ -175,10 +175,14 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
         case MemorySharingMode::Default: {
             return Memory::create(adoptRef(*new BufferMemoryHandle(fastMemory, initialBytes, BufferMemoryHandle::fastMappedBytes(), initial, maximum, MemorySharingMode::Default, MemoryMode::Signaling)), WTFMove(growSuccessCallback));
         }
-
         case MemorySharingMode::Shared: {
+            auto handle = adoptRef(*new BufferMemoryHandle(fastMemory, initialBytes, BufferMemoryHandle::fastMappedBytes(), initial, maximum, MemorySharingMode::Shared, MemoryMode::Signaling));
+            auto content = SharedArrayBufferContents::create(handle->memory(), handle->size(), maximumBytes, handle.copyRef(), nullptr);
+            return Memory::create(WTFMove(handle), WTFMove(content), WTFMove(growSuccessCallback));
         }
         }
+        RELEASE_ASSERT_NOT_REACHED();
+        return nullptr;
     }
 #endif
 
