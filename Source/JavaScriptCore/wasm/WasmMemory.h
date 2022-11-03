@@ -66,6 +66,7 @@ public:
 
     static Ref<Memory> create();
     JS_EXPORT_PRIVATE static Ref<Memory> create(Ref<BufferMemoryHandle>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
+    JS_EXPORT_PRIVATE static Ref<Memory> create(Ref<BufferMemoryHandle>&&, Ref<SharedArrayBufferContents>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
     static RefPtr<Memory> tryCreate(VM&, PageCount initial, PageCount maximum, MemorySharingMode, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
 
     JS_EXPORT_PRIVATE ~Memory();
@@ -98,13 +99,13 @@ public:
 
     static ptrdiff_t offsetOfHandle() { return OBJECT_OFFSETOF(Memory, m_handle); }
 
+    SharedArrayBufferContents* shared() const { return m_shared.get(); }
+
 private:
     Memory();
     Memory(Ref<BufferMemoryHandle>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
     Memory(Ref<BufferMemoryHandle>&&, Ref<SharedArrayBufferContents>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
     Memory(PageCount initial, PageCount maximum, MemorySharingMode, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
-
-    JS_EXPORT_PRIVATE static Ref<Memory> create(Ref<BufferMemoryHandle>&&, Ref<SharedArrayBufferContents>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
 
     Expected<PageCount, GrowFailReason> growShared(VM&, PageCount);
 

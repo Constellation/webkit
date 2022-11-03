@@ -1479,7 +1479,7 @@ private:
                     return true;
                 }
                 uint32_t index = m_wasmMemoryHandles.size();
-                m_wasmMemoryHandles.append(&memory->memory().handle());
+                m_wasmMemoryHandles.append(memory->memory().shared());
                 write(WasmMemoryTag);
                 write(index);
                 return true;
@@ -3883,7 +3883,12 @@ private:
                 fail();
                 return JSValue();
             }
-            RefPtr<BufferMemoryHandle> handle = m_wasmMemoryHandles->at(index);
+            RefPtr<SharedArrayBufferContents> contents = m_wasmMemoryHandles->at(index);
+            if (!content) {
+                fail();
+                return JSValue();
+            }
+            RefPtr<BufferMemoryHandle> handle = contents->memoryHandle();
             if (!handle) {
                 fail();
                 return JSValue();
@@ -3895,7 +3900,7 @@ private:
             // module to not have been a valid module. Therefore, createStub should
             // not throw.
             scope.releaseAssertNoException();
-            Ref<Wasm::Memory> memory = Wasm::Memory::create(handle.releaseNonNull(),
+            Ref<Wasm::Memory> memory = Wasm::Memory::create(handle.releaseNonNull(), content.releaseNonNull(),
                 [&vm, result] (Wasm::Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { result->growSuccessCallback(vm, oldPageCount, newPageCount); });
             result->adopt(WTFMove(memory));
             m_gcBuffer.appendWithCrashOnOverflow(result);
