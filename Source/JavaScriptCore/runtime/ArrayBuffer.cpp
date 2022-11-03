@@ -156,11 +156,11 @@ Ref<ArrayBuffer> ArrayBuffer::createFromBytes(const void* data, size_t byteLengt
     return create(WTFMove(contents));
 }
 
-Ref<ArrayBuffer> ArrayBuffer::createSharedFromMemoryHandle(Ref<BufferMemoryHandle>&& memoryHandle, Ref<SharedArrayBufferContents>&& shared)
+Ref<ArrayBuffer> ArrayBuffer::createShared(Ref<SharedArrayBufferContents>&& shared)
 {
-    void* memory = memoryHandle->memory();
-    size_t sizeInBytes = memoryHandle->size();
-    ArrayBufferContents contents(memory, sizeInBytes, std::nullopt, WTFMove(memoryHandle), WTFMove(shared));
+    void* memory = shared->data();
+    size_t sizeInBytes = shared->sizeInBytes(std::memory_order_seq_cst);
+    ArrayBufferContents contents(memory, sizeInBytes, std::nullopt, WTFMove(shared));
     return create(WTFMove(contents));
 }
 
@@ -410,8 +410,8 @@ RefPtr<ArrayBuffer> ArrayBuffer::tryCreateShared(VM& vm, size_t numElements, uns
     }
 
     auto handle = adoptRef(*new BufferMemoryHandle(slowMemory, initialBytes, maximumBytes, PageCount::fromBytes(initialBytes), PageCount::fromBytes(maximumBytes), MemorySharingMode::Shared, MemoryMode::BoundsChecking));
-    auto content = SharedArrayBufferContents::create(handle->memory(), sizeInBytes.value(), maxByteLength, handle.copyRef(), nullptr);
-    return createSharedFromMemoryHandle(WTFMove(handle), WTFMove(content));
+    auto content = SharedArrayBufferContents::create(handle->memory(), sizeInBytes.value(), maxByteLength, WTFMove(handle), nullptr);
+    return createShared(WTFMove(content));
 }
 
 Expected<void, GrowFailReason> SharedArrayBufferContents::grow(VM& vm, size_t newByteLength)
