@@ -251,7 +251,7 @@ Expected<PageCount, GrowFailReason> Memory::growShared(VM& vm, PageCount delta)
         if (m_shared)
             locker.emplace(m_shared->memoryHandle()->lock());
 
-        oldPageCount = sizeInPages();
+        oldPageCount = PageCount::fromBytesWithRoundUp(size());
         newPageCount = oldPageCount + delta;
         if (!newPageCount || !newPageCount.isValid())
             return makeUnexpected(GrowFailReason::InvalidGrowSize);
@@ -294,7 +294,7 @@ Expected<PageCount, GrowFailReason> Memory::grow(VM& vm, PageCount delta)
         return growShared(vm, delta);
 
     ASSERT(!m_shared);
-    const PageCount oldPageCount = sizeInPages();
+    const PageCount oldPageCount = PageCount::fromBytesWithRoundUp(size());
     const PageCount newPageCount = oldPageCount + delta;
     if (!newPageCount || !newPageCount.isValid())
         return makeUnexpected(GrowFailReason::InvalidGrowSize);

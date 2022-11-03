@@ -79,7 +79,6 @@ public:
 
     void* memory() const { return m_handle->memory(); }
     size_t size() const { return m_handle->size(); }
-    PageCount sizeInPages() const { return PageCount::fromBytesWithRoundUp(size()); }
     size_t mappedCapacity() const { return m_handle->mappedCapacity(); }
     PageCount initial() const { return m_handle->initial(); }
     PageCount maximum() const { return m_handle->maximum(); }
