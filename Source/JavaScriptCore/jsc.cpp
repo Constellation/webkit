@@ -2293,7 +2293,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentReceiveBroadcast, (JSGlobalObject* g
         if (std::holds_alternative<Ref<SharedArrayBufferContents>>(content)) {
             JSWebAssemblyMemory* jsMemory = JSC::JSWebAssemblyMemory::tryCreate(globalObject, vm, globalObject->webAssemblyMemoryStructure());
             scope.releaseAssertNoException();
-            Ref<Wasm::Memory> memory = Wasm::Memory::create(std::get<Ref<SharedArryaBufferContents>>(WTFMove(content)),
+            Ref<Wasm::Memory> memory = Wasm::Memory::create(std::get<Ref<SharedArrayBufferContents>>(WTFMove(content)),
                 [&vm, jsMemory] (Wasm::Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { jsMemory->growSuccessCallback(vm, oldPageCount, newPageCount); });
             jsMemory->adopt(WTFMove(memory));
             return jsMemory;

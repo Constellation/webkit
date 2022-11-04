@@ -82,12 +82,14 @@ JSArrayBuffer* JSWebAssemblyMemory::buffer(JSGlobalObject* globalObject)
     if (wrapper)
         return wrapper;
 
-    RefPtr<SharedArrayBufferContents> shared = m_memory->shared();
 
     if (m_memory->sharingMode() == MemorySharingMode::Shared) {
-        ASSERT(shared);
-        m_buffer = ArrayBuffer::createShared(shared.releaseNonNull());
-        m_buffer->makeWasmMemory();
+        if (RefPtr<SharedArrayBufferContents> shared = m_memory->shared()) {
+            m_buffer = ArrayBuffer::createShared(shared.releaseNonNull());
+            m_buffer->makeWasmMemory();
+        } else {
+            // FIXME: If size and max size are 0, shared becomes nullptr.
+        }
     } else {
         Ref<BufferMemoryHandle> protectedHandle = m_memory->handle();
         void* memory = m_memory->memory();
