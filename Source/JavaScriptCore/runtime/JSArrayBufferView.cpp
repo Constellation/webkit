@@ -326,7 +326,7 @@ RefPtr<ArrayBufferView> JSArrayBufferView::possiblySharedImpl()
     }
 }
 
-static bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
+bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
 {
     // https://tc39.es/proposal-resizablearraybuffer/#sec-isintegerindexedobjectoutofbounds
 
@@ -347,7 +347,7 @@ static bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, Ide
     return byteOffsetStart > bufferByteLength || byteOffsetEnd > bufferByteLength;
 }
 
-static std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
+std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
 {
     // https://tc39.es/proposal-resizablearraybuffer/#sec-integerindexedobjectlength
 
@@ -368,7 +368,7 @@ static std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typed
     return (bufferByteLength - byteOffset) / elementSize;
 }
 
-static size_t integerIndexedObjectByteLength(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
+size_t integerIndexedObjectByteLength(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
 {
     std::optional<size_t> length = integerIndexedObjectLength(typedArray, getter);
     if (!length || length.value() == 0)
