@@ -13,6 +13,7 @@ flags:
   ShadowRealm: useShadowRealm
   import-assertions: useImportAssertion
   json-modules: useImportAssertion
+  resizable-arraybuffer: useResizableArrayBuffer
 skip:
   features:
     - Atomics.waitAsync
