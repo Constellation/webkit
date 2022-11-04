@@ -82,29 +82,28 @@ JSArrayBuffer* JSWebAssemblyMemory::buffer(JSGlobalObject* globalObject)
     if (wrapper)
         return wrapper;
 
-    Ref<BufferMemoryHandle> protectedHandle = m_memory->handle();
     RefPtr<SharedArrayBufferContents> shared = m_memory->shared();
-    CagedUniquePtr<Gigacage::Primitive, uint8_t> pointerForEmpty;
 
-    void* memory = m_memory->memory();
-    size_t size = m_memory->size();
-    if (!memory) {
-        ASSERT(!size);
-        constexpr unsigned allocationSize = 1;
-        pointerForEmpty = CagedUniquePtr<Gigacage::Primitive, uint8_t>::tryCreate(allocationSize);
-        if (!pointerForEmpty) {
-            throwOutOfMemoryError(globalObject, throwScope);
-            return nullptr;
-        }
-        memory = pointerForEmpty.get(allocationSize);
-    }
-
-    ASSERT(memory);
     if (m_memory->sharingMode() == MemorySharingMode::Shared) {
         ASSERT(shared);
         m_buffer = ArrayBuffer::createShared(shared.releaseNonNull());
         m_buffer->makeWasmMemory();
     } else {
+        Ref<BufferMemoryHandle> protectedHandle = m_memory->handle();
+        void* memory = m_memory->memory();
+        size_t size = m_memory->size();
+        CagedUniquePtr<Gigacage::Primitive, uint8_t> pointerForEmpty;
+        if (!memory) {
+            ASSERT(!size);
+            constexpr unsigned allocationSize = 1;
+            pointerForEmpty = CagedUniquePtr<Gigacage::Primitive, uint8_t>::tryCreate(allocationSize);
+            if (!pointerForEmpty) {
+                throwOutOfMemoryError(globalObject, throwScope);
+                return nullptr;
+            }
+            memory = pointerForEmpty.get(allocationSize);
+        }
+        ASSERT(memory);
         ASSERT(m_memory->sharingMode() == MemorySharingMode::Default);
         auto destructor = createSharedTask<void(void*)>([protectedHandle = WTFMove(protectedHandle), pointerForEmpty = WTFMove(pointerForEmpty)] (void*) { });
         m_buffer = ArrayBuffer::createFromBytes(memory, size, WTFMove(destructor));
