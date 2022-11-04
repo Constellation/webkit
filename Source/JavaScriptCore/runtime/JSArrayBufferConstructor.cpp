@@ -81,7 +81,7 @@ EncodedJSValue JSGenericArrayBufferConstructor<sharingMode>::constructImpl(JSGlo
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, arrayBufferStructureWithSharingMode<sharingMode>, newTarget, callFrame->jsCallee());
     RETURN_IF_EXCEPTION(scope, { });
 
-    size_t length;
+    size_t length = 0;
     std::optional<size_t> maxByteLength;
     if (callFrame->argumentCount()) {
         length = callFrame->uncheckedArgument(0).toTypedArrayIndex(globalObject, "length"_s);
@@ -100,22 +100,22 @@ EncodedJSValue JSGenericArrayBufferConstructor<sharingMode>::constructImpl(JSGlo
                 }
             }
         }
-    } else {
-        // Although the documentation doesn't say so, it is in fact correct to say
-        // "new ArrayBuffer()". The result is the same as allocating an array buffer
-        // with a zero length.
-        length = 0;
     }
 
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-allocatesharedarraybuffer
     RefPtr<ArrayBuffer> buffer;
-    if (maxByteLength) {
-        if (maxByteLength.value() < length)
-            return throwVMRangeError(globalObject, scope, "ArrayBuffer length exceeds maxByteLength option"_s);
-        ASSERT(sharingMode == ArrayBufferSharingMode::Shared);
-        buffer = ArrayBuffer::tryCreateShared(vm, length, 1, maxByteLength.value());
-        if (!buffer)
-            return JSValue::encode(throwOutOfMemoryError(globalObject, scope));
-    } else {
+    if constexpr (sharingMode == ArrayBufferSharingMode::Shared) {
+        if (maxByteLength) {
+            if (maxByteLength.value() < length)
+                return throwVMRangeError(globalObject, scope, "ArrayBuffer length exceeds maxByteLength option"_s);
+            ASSERT(sharingMode == ArrayBufferSharingMode::Shared);
+            buffer = ArrayBuffer::tryCreateShared(vm, length, 1, maxByteLength.value());
+            if (!buffer)
+                return JSValue::encode(throwOutOfMemoryError(globalObject, scope));
+        }
+    }
+
+    if (!buffer) {
         buffer = ArrayBuffer::tryCreate(length, 1, maxByteLength);
         if (!buffer)
             return JSValue::encode(throwOutOfMemoryError(globalObject, scope));
