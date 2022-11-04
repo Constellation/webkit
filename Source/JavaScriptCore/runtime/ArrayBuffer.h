@@ -159,7 +159,7 @@ public:
     
     void* data() const { return m_data.getMayBeNull(m_maxByteLength); }
     void* dataWithoutPACValidation() const { return m_data.getUnsafe(); }
-    size_t sizeInBytes(std::memory_order order = std::memory_order_relaxed) const
+    size_t sizeInBytes(std::memory_order order = std::memory_order_seq_cst) const
     {
         if (m_hasMaxByteLength) {
             if (m_shared)

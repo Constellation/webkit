@@ -136,8 +136,10 @@ public:
     JS_EXPORT_PRIVATE ~BufferMemoryHandle();
 
     void* memory() const;
-    size_t size(std::memory_order order = std::memory_order_relaxed) const
+    size_t size(std::memory_order order = std::memory_order_seq_cst) const
     {
+        if (m_sharingMode == MemorySharingMode::Default)
+            order = std::memory_order_relaxed;
         return m_size.load(order);
     }
 
