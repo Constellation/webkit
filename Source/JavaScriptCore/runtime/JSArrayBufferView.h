@@ -238,7 +238,7 @@ protected:
 class IdempotentArrayBufferByteLengthGetter;
 
 JSArrayBufferView* validateTypedArray(JSGlobalObject*, JSValue);
-bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView*, IdempotentArrayBufferByteLengthGetter&)
+bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView*, IdempotentArrayBufferByteLengthGetter&);
 std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView*, IdempotentArrayBufferByteLengthGetter&);
 size_t integerIndexedObjectByteLength(JSArrayBufferView*, IdempotentArrayBufferByteLengthGetter&);
 
