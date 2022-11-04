@@ -214,7 +214,7 @@ static void checkException(GlobalObject*, bool isLastFile, bool hasException, JS
 class Message : public ThreadSafeRefCounted<Message> {
 public:
 #if ENABLE(WEBASSEMBLY)
-    using Content = std::variant<ArrayBufferContents, Ref<SharedArrayBufferContents>>;
+    using Content = std::variant<ArrayBufferContents, RefPtr<SharedArrayBufferContents>>;
 #else
     using Content = std::variant<ArrayBufferContents>;
 #endif
@@ -2290,12 +2290,16 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentReceiveBroadcast, (JSGlobalObject* g
             return JSArrayBuffer::create(vm, globalObject->arrayBufferStructure(sharingMode), WTFMove(nativeBuffer));
         }
 #if ENABLE(WEBASSEMBLY)
-        if (std::holds_alternative<Ref<SharedArrayBufferContents>>(content)) {
+        if (std::holds_alternative<RefPtr<SharedArrayBufferContents>>(content)) {
             JSWebAssemblyMemory* jsMemory = JSC::JSWebAssemblyMemory::tryCreate(globalObject, vm, globalObject->webAssemblyMemoryStructure());
             scope.releaseAssertNoException();
-            Ref<Wasm::Memory> memory = Wasm::Memory::create(std::get<Ref<SharedArrayBufferContents>>(WTFMove(content)),
-                [&vm, jsMemory] (Wasm::Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { jsMemory->growSuccessCallback(vm, oldPageCount, newPageCount); });
-            jsMemory->adopt(WTFMove(memory));
+            auto handler = [&vm, jsMemory](Wasm::Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { jsMemory->growSuccessCallback(vm, oldPageCount, newPageCount); };
+            RefPtr<Wasm::Memory> memory;
+            if (auto shared = std::get<RefPtr<SharedArrayBufferContents>>(WTFMove(content)))
+                memory = Wasm::Memory::create(shared.releaseNonNull(), WTFMove(handler));
+            else
+                memory = Wasm::Memory::createZeroSized(MemorySharingMode::Shared, WTFMove(handler));
+            jsMemory->adopt(memory.releaseNonNull());
             return jsMemory;
         }
 #endif
@@ -2362,7 +2366,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentBroadcast, (JSGlobalObject* globalOb
     if (memory && memory->memory().sharingMode() == MemorySharingMode::Shared) {
         Workers::singleton().broadcast(
             [&] (const AbstractLocker& locker, Worker& worker) {
-                Ref<SharedArrayBufferContents> contents { *memory->memory().shared() };
+                RefPtr<SharedArrayBufferContents> contents { memory->memory().shared() };
                 RefPtr<Message> message = adoptRef(new Message(WTFMove(contents), index));
                 worker.enqueue(locker, message);
             });

@@ -132,6 +132,11 @@ Ref<Memory> Memory::create(Ref<SharedArrayBufferContents>&& shared, WTF::Functio
     return adoptRef(*new Memory(handle.releaseNonNull(), WTFMove(shared), WTFMove(growSuccessCallback)));
 }
 
+Ref<Memory> Memory::createZeroSized(MemorySharingMode sharingMode, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback)
+{
+    return adoptRef(*new Memory(PageCount(0), PageCount(0), sharingMode, WTFMove(growSuccessCallback)));
+}
+
 RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, MemorySharingMode sharingMode, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback)
 {
     ASSERT(initial);
@@ -146,7 +151,7 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
     if (maximum && !maximumBytes) {
         // User specified a zero maximum, initial size must also be zero.
         RELEASE_ASSERT(!initialBytes);
-        return adoptRef(new Memory(initial, maximum, sharingMode, WTFMove(growSuccessCallback)));
+        return createZeroSized(sharingMode, WTFMove(growSuccessCallback));
     }
     
     bool done = tryAllocate(vm,

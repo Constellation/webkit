@@ -3883,15 +3883,7 @@ private:
                 fail();
                 return JSValue();
             }
-            RefPtr<SharedArrayBufferContents> contents = m_wasmMemoryHandles->at(index);
-            if (!content) {
-                fail();
-                return JSValue();
-            }
-            if (!contents->memoryHandle()) {
-                fail();
-                return JSValue();
-            }
+
             auto& vm = m_lexicalGlobalObject->vm();
             auto scope = DECLARE_THROW_SCOPE(vm);
             JSWebAssemblyMemory* result = JSC::JSWebAssemblyMemory::tryCreate(m_lexicalGlobalObject, vm, m_globalObject->webAssemblyMemoryStructure());
@@ -3899,9 +3891,21 @@ private:
             // module to not have been a valid module. Therefore, createStub should
             // not throw.
             scope.releaseAssertNoException();
-            Ref<Wasm::Memory> memory = Wasm::Memory::create(content.releaseNonNull(),
-                [&vm, result] (Wasm::Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { result->growSuccessCallback(vm, oldPageCount, newPageCount); });
-            result->adopt(WTFMove(memory));
+
+            RefPtr<Wasm::Memory> memory;
+            auto handler = [&vm, result] (Wasm::Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { result->growSuccessCallback(vm, oldPageCount, newPageCount); };
+            if (RefPtr<SharedArrayBufferContents> contents = m_wasmMemoryHandles->at(index)) {
+                if (!contents->memoryHandle()) {
+                    fail();
+                    return JSValue();
+                }
+                memory = Wasm::Memory::create(content.releaseNonNull(), WTFMove(handler));
+            } else {
+                // zero size & max-size.
+                memory = Wasm::Memory::createZeroSized(JSC::MemorySharingMode::Shared, WTFMove(handler));
+            }
+
+            result->adopt(memory.releaseNonNull());
             m_gcBuffer.appendWithCrashOnOverflow(result);
             return result;
         }
