@@ -341,7 +341,7 @@ static bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, Ide
     if (!buffer)
         return true;
 
-    size_t buferByteLength = getter(*buffer);
+    size_t bufferByteLength = getter(*buffer);
     size_t byteOffsetStart = typedArray->byteOffset();
     size_t byteOffsetEnd = bufferByteLength;
     return byteOffsetStart > bufferByteLength || byteOffsetEnd > bufferByteLength;
@@ -362,7 +362,7 @@ static std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typed
     if (!buffer)
         return std::nullopt;
 
-    size_t buferByteLength = getter(*buffer);
+    size_t bufferByteLength = getter(*buffer);
     size_t byteOffset = typedArray->byteOffset();
     size_t elementSize = JSC::elementSize(typedArray->type());
     return (bufferByteLength - byteOffset) / elementSize;
