@@ -406,7 +406,9 @@ RefPtr<ArrayBuffer> ArrayBuffer::tryCreateShared(VM& vm, size_t numElements, uns
         return nullptr;
     }
 
-    if (mprotect(slowMemory + initialBytes, maximumBytes - initialBytes, PROT_NONE)) {
+    constexpr bool readable = false;
+    constexpr bool writable = false;
+    if (!OSAllocator::protect(slowMemory + initialBytes, maximumBytes - initialBytes, readable, writable)) {
         dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
         RELEASE_ASSERT_NOT_REACHED();
     }
@@ -461,7 +463,9 @@ Expected<void, GrowFailReason> SharedArrayBufferContents::grow(const AbstractLoc
         uint8_t* startAddress = static_cast<uint8_t*>(memory) + m_memoryHandle->size();
 
         dataLogLnIf(ArrayBufferInternal::verbose, "Marking memory's ", RawPointer(memory), " as read+write in range [", RawPointer(startAddress), ", ", RawPointer(startAddress + extraBytes), ")");
-        if (mprotect(startAddress, extraBytes, PROT_READ | PROT_WRITE)) {
+        constexpr bool readable = true;
+        constexpr bool writable = true;
+        if (!OSAllocator::protect(startAddress, extraBytes, readable, writable)) {
             dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
             RELEASE_ASSERT_NOT_REACHED();
         }

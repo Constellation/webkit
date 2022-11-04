@@ -244,13 +244,16 @@ BufferMemoryHandle::~BufferMemoryHandle()
         BufferMemoryManager::singleton().freePhysicalBytes(m_size);
         switch (m_mode) {
 #if ENABLE(WEBASSEMBLY_SIGNALING_MEMORY)
-        case MemoryMode::Signaling:
-            if (mprotect(memory, BufferMemoryHandle::fastMappedBytes(), PROT_READ | PROT_WRITE)) {
+        case MemoryMode::Signaling: {
+            constexpr bool readable = true;
+            constexpr bool writable = true;
+            if (!OSAllocator::protect(memory, BufferMemoryHandle::fastMappedBytes(), readable, writable)) {
                 dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
                 RELEASE_ASSERT_NOT_REACHED();
             }
             BufferMemoryManager::singleton().freeFastMemory(memory);
             break;
+        }
 #endif
         case MemoryMode::BoundsChecking: {
             switch (m_sharingMode) {
@@ -258,7 +261,9 @@ BufferMemoryHandle::~BufferMemoryHandle()
                 Gigacage::freeVirtualPages(Gigacage::Primitive, memory, m_size);
                 break;
             case MemorySharingMode::Shared: {
-                if (mprotect(memory, m_mappedCapacity, PROT_READ | PROT_WRITE)) {
+                constexpr bool readable = true;
+                constexpr bool writable = true;
+                if (!OSAllocator::protect(memory, m_mappedCapacity, readable, writable)) {
                     dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
                     RELEASE_ASSERT_NOT_REACHED();
                 }

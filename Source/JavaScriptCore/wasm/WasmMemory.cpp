@@ -173,7 +173,9 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
     }
     
     if (fastMemory) {
-        if (mprotect(fastMemory + initialBytes, BufferMemoryHandle::fastMappedBytes() - initialBytes, PROT_NONE)) {
+        constexpr bool readable = false;
+        constexpr bool writable = false;
+        if (!OSAllocator::protect(fastMemory + initialBytes, BufferMemoryHandle::fastMappedBytes() - initialBytes, readable, writable)) {
             dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
             RELEASE_ASSERT_NOT_REACHED();
         }
@@ -223,7 +225,9 @@ RefPtr<Memory> Memory::tryCreate(VM& vm, PageCount initial, PageCount maximum, M
             return nullptr;
         }
 
-        if (mprotect(slowMemory + initialBytes, maximumBytes - initialBytes, PROT_NONE)) {
+        constexpr bool readable = false;
+        constexpr bool writable = false;
+        if (!OSAllocator::protect(slowMemory + initialBytes, maximumBytes - initialBytes, readable, writable)) {
             dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
             RELEASE_ASSERT_NOT_REACHED();
         }
@@ -378,7 +382,9 @@ Expected<PageCount, GrowFailReason> Memory::grow(VM& vm, PageCount delta)
         uint8_t* startAddress = static_cast<uint8_t*>(memory) + size();
         
         dataLogLnIf(verbose, "Marking WebAssembly memory's ", RawPointer(memory), " as read+write in range [", RawPointer(startAddress), ", ", RawPointer(startAddress + extraBytes), ")");
-        if (mprotect(startAddress, extraBytes, PROT_READ | PROT_WRITE)) {
+        constexpr bool readable = true;
+        constexpr bool writable = true;
+        if (!OSAllocator::protect(startAddress, extraBytes, readable, writable)) {
             dataLog("mprotect failed: ", safeStrerror(errno).data(), "\n");
             RELEASE_ASSERT_NOT_REACHED();
         }
