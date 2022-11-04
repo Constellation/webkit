@@ -370,6 +370,29 @@ bool ArrayBuffer::isWasmMemory()
 
 JS_EXPORT_PRIVATE ASCIILiteral errorMesasgeForTransfer(ArrayBuffer*);
 
+// https://tc39.es/proposal-resizablearraybuffer/#sec-makeidempotentarraybufferbytelengthgetter
+class IdempotentArrayBufferByteLengthGetter {
+    WTF_MAKE_FAST_ALLOCATED;
+public:
+    IdempotentArrayBufferByteLengthGetter(std::memory_order order)
+        : m_order(order)
+    {
+    }
+
+    size_t operator()(ArrayBuffer& buffer)
+    {
+        if (m_byteLength)
+            return m_byteLength.value();
+        size_t result = buffer.byteLength(m_order);
+        m_byteLength = result;
+        return result;
+    }
+
+private:
+    std::memory_order m_order;
+    std::optional<size_t> m_byteLength;
+};
+
 } // namespace JSC
 
 using JSC::ArrayBuffer;

@@ -326,6 +326,60 @@ RefPtr<ArrayBufferView> JSArrayBufferView::possiblySharedImpl()
     }
 }
 
+static bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
+{
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-isintegerindexedobjectoutofbounds
+
+    if (typedArray->isDetached())
+        return true;
+
+    if (!isResizable(typedArray->mode()))
+        return false;
+
+    ASSERT(typedArray->mode() == ResizableWastefulTypedArray);
+    RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
+    if (!buffer)
+        return true;
+
+    size_t buferByteLength = getter(*buffer);
+    size_t byteOffsetStart = typedArray->byteOffset();
+    size_t byteOffsetEnd = bufferByteLength;
+    return byteOffsetStart > bufferByteLength || byteOffsetEnd > bufferByteLength;
+}
+
+static std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
+{
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-integerindexedobjectlength
+
+    if (isIntegerIndexedObjectOutOfBounds(typedArray, getter))
+        return std::nullopt;
+
+    if (!isResizable(typedArray->mode()))
+        return typedArray->length();
+
+    ASSERT(typedArray->mode() == ResizableWastefulTypedArray);
+    RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
+    if (!buffer)
+        return std::nullopt;
+
+    size_t buferByteLength = getter(*buffer);
+    size_t byteOffset = typedArray->byteOffset();
+    size_t elementSize = JSC::elementSize(typedArray->type());
+    return (bufferByteLength - byteOffset) / elementSize;
+}
+
+static size_t integerIndexedObjectByteLength(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
+{
+    std::optional<size_t> length = integerIndexedObjectLength(typedArray, getter);
+    if (!length || length.value() == 0)
+        return 0;
+
+    if (!isResizable(typedArray->mode()))
+        return typedArray->byteLength();
+
+    return length.value() * JSC::elementSize(typedArray->type());
+}
+
 JSArrayBufferView* validateTypedArray(JSGlobalObject* globalObject, JSValue typedArrayValue)
 {
     VM& vm = globalObject->vm();
