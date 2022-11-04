@@ -175,6 +175,7 @@ public:
     }
     
     bool isShared() const { return m_shared; }
+    bool isResizable() const { return !!m_maxByteLength; }
     
     void swap(ArrayBufferContents& other)
     {

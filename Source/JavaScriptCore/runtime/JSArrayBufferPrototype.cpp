@@ -296,7 +296,7 @@ JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncGrowable, (JSGlobalObje
     if (!thisObject || (ArrayBufferSharingMode::Shared != thisObject->impl()->sharingMode()))
         return throwVMTypeError(globalObject, scope, makeString("Receiver must be SharedArrayBuffer"_s));
 
-    return JSValue::encode(jsBoolean(!!thisObject->impl()->maxByteLength()));
+    return JSValue::encode(jsBoolean(thisObject->impl()->isResizable()));
 }
 
 // https://tc39.es/proposal-resizablearraybuffer/#sec-get-sharedarraybuffer.prototype.maxbytelength
@@ -309,9 +309,11 @@ JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncMaxByteLength, (JSGloba
     if (!thisObject || (ArrayBufferSharingMode::Shared != thisObject->impl()->sharingMode()))
         return throwVMTypeError(globalObject, scope, makeString("Receiver must be SharedArrayBuffer"_s));
 
-    if (auto value = thisObject->impl()->maxByteLength())
+    if (auto value = thisObject->impl()->maxByteLength()) {
+        ASSERT(thisObject->impl()->isResizable());
         return JSValue::encode(jsNumber(value.value()));
-    return JSValue::encode(jsNumber(thisObject->impl()->byteLength()));
+    }
+    return JSValue::encode(jsNumber(thisObject->impl()->byteLength(std::memory_order_relaxed)));
 }
 
 const ClassInfo JSArrayBufferPrototype::s_info = {
