@@ -72,23 +72,25 @@ enum TypedArrayMode : uint8_t {
     // finalizer to delete V.
     OversizeTypedArray,
 
+    // A data view. B is unused, V points to a vector allocated using who-
+    // knows-what, and M = DataViewMode. The view does not own the vector.
+    // There is an extra field (in JSDataView) that points to the
+    // ArrayBuffer.
+    DataViewMode,
+    ResizableDataViewMode, // Everything is the same to the corresponding mode except they are resizable.
+
     // A typed array that was used in some crazy way. B's IndexingHeader
     // is hijacked to contain a reference to the native array buffer. The
     // native typed array view points back to the JS view. V points to a
     // vector allocated using who-knows-what, and M = WastefulTypedArray.
     // The view does not own the vector.
     WastefulTypedArray,
-
-    // A data view. B is unused, V points to a vector allocated using who-
-    // knows-what, and M = DataViewMode. The view does not own the vector.
-    // There is an extra field (in JSDataView) that points to the
-    // ArrayBuffer.
-    DataViewMode
+    ResizableWastefulTypedArray, // Everything is the same to the corresponding mode except they are resizable.
 };
 
 inline bool hasArrayBuffer(TypedArrayMode mode)
 {
-    return mode >= WastefulTypedArray;
+    return mode >= DataViewMode;
 }
 
 // When WebCore uses a JSArrayBufferView, it expects to be able to get the native

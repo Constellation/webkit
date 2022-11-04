@@ -145,9 +145,11 @@ void JSArrayBufferView::finishCreation(VM& vm)
         vm.heap.addFinalizer(this, finalize);
         return;
     case WastefulTypedArray:
+    case ResizableWastefulTypedArray:
         vm.heap.addReference(this, butterfly()->indexingHeader()->arrayBuffer());
         return;
     case DataViewMode:
+    case ResizableDataViewMode:
         ASSERT(!butterfly());
         vm.heap.addReference(this, jsCast<JSDataView*>(this)->possiblySharedBuffer());
         return;
@@ -294,7 +296,7 @@ ArrayBuffer* JSArrayBufferView::slowDownAndWasteMemory()
         butterfly()->indexingHeader()->setArrayBuffer(buffer.get());
         m_vector.setWithoutBarrier(buffer->data(), m_length);
         WTF::storeStoreFence();
-        m_mode = WastefulTypedArray;
+        m_mode = WastefulTypedArray; // There is no possibility that FastTypedArray or OversizeTypedArray becomes ResizableWastefulTypedArray since resizable one starts with ResizableWastefulTypedArray.
     }
     heap->addReference(this, buffer.get());
 
@@ -392,8 +394,14 @@ void printInternal(PrintStream& out, TypedArrayMode mode)
     case WastefulTypedArray:
         out.print("WastefulTypedArray");
         return;
+    case ResizableWastefulTypedArray:
+        out.print("ResizableWastefulTypedArray");
+        return;
     case DataViewMode:
         out.print("DataViewMode");
+        return;
+    case ResizableDataViewMode:
+        out.print("ResizableDataViewMode");
         return;
     }
     RELEASE_ASSERT_NOT_REACHED();

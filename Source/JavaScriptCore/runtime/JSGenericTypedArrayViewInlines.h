@@ -570,9 +570,11 @@ void JSGenericTypedArrayView<Adaptor>::visitChildrenImpl(JSCell* cell, Visitor& 
     }
         
     case WastefulTypedArray:
+    case ResizableWastefulTypedArray:
         break;
         
     case DataViewMode:
+    case ResizableDataViewMode:
         RELEASE_ASSERT_NOT_REACHED();
         break;
     }
