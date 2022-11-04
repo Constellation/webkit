@@ -507,7 +507,7 @@ bool JSGenericTypedArrayView<Adaptor>::deletePropertyByIndex(
 {
     // Integer-indexed elements can't be deleted, so we must return false when the index is valid.
     JSGenericTypedArrayView* thisObject = jsCast<JSGenericTypedArrayView*>(cell);
-    return thisObject->isDetached() || propertyName >= thisObject->m_length;
+    return thisObject->isDetached() || !thisObject->inBounds(propertyName);
 }
 
 template<typename Adaptor>
