@@ -3641,7 +3641,7 @@ JITCompiler::Jump SpeculativeJIT::jumpForTypedArrayIsDetachedIfOutOfBounds(Node*
             outOfBounds.link(&m_jit);
 
             JITCompiler::Jump notWasteful = m_jit.branch8(
-                MacroAssembler::BelowThan,
+                MacroAssembler::Below,
                 MacroAssembler::Address(base, JSArrayBufferView::offsetOfMode()),
                 TrustedImm32(WastefulTypedArray));
             // FIXME: We should record ResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
@@ -8489,7 +8489,7 @@ void SpeculativeJIT::compileGetTypedArrayByteOffset(Node* node)
     GPRReg arrayBufferGPR = dataGPR;
 
     JITCompiler::Jump emptyByteOffset = m_jit.branch8(
-        MacroAssembler::BelowThan,
+        MacroAssembler::Below,
         MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfMode()),
         TrustedImm32(WastefulTypedArray));
     // FIXME: We should record ResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
