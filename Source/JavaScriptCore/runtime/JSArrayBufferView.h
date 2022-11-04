@@ -195,6 +195,7 @@ public:
     bool isDetached() { return hasArrayBuffer() && !hasVector(); }
     void detach();
 
+    // FIXME: It should be caged with maxByteLength.
     bool hasVector() const { return !!m_vector; }
     void* vector() const { return m_vector.getMayBeNull(length()); }
     void* vectorWithoutPACValidation() const { return m_vector.getUnsafe(); }
