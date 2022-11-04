@@ -8526,8 +8526,9 @@ IGNORE_CLANG_WARNINGS_END
         // We assume through the rest of the fast path that the size is a 32-bit number.
         static_assert(isInBounds<int32_t>(JSArrayBufferView::fastSizeLimit));
 
-        LValue byteSize =
+        LValue byteSizeWithoutAdjustment =
             m_out.shl(size64Bits, m_out.constInt32(logElementSize(typedArrayType)));
+        LValue byteSize = byteSizeWithoutAdjustment;
         if (elementSize(typedArrayType) < 8) {
             byteSize = m_out.bitAnd(
                 m_out.add(byteSize, m_out.constIntPtr(7)),
@@ -8548,7 +8549,7 @@ IGNORE_CLANG_WARNINGS_END
         {
             PatchpointValue* authenticate = m_out.patchpoint(pointerType());
             authenticate->appendSomeRegister(storage);
-            authenticate->append(size64Bits, B3::ValueRep(B3::ValueRep::SomeLateRegister));
+            authenticate->append(byteSizeWithoutAdjustment, B3::ValueRep(B3::ValueRep::SomeLateRegister));
             authenticate->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
                 jit.move(params[1].gpr(), params[0].gpr());
                 jit.tagArrayPtr(params[2].gpr(), params[0].gpr());
@@ -8578,8 +8579,10 @@ IGNORE_CLANG_WARNINGS_END
         m_out.storePtr(storage, fastResultValue, m_heaps.JSArrayBufferView_vector);
 #if USE(LARGE_TYPED_ARRAYS)
         m_out.store64(size64Bits, fastResultValue, m_heaps.JSArrayBufferView_length);
+        m_out.store64(byteSizeWithoutAdjustment, fastResultValue, m_heaps.JSArrayBufferView_maxByteLength);
 #else
         m_out.store32(m_out.castToInt32(size64Bits), fastResultValue, m_heaps.JSArrayBufferView_length);
+        m_out.store32(m_out.castToInt32(byteSizeWithoutAdjustment), fastResultValue, m_heaps.JSArrayBufferView_maxByteLength);
 #endif
         m_out.store32As8(m_out.constInt32(FastTypedArray), fastResultValue, m_heaps.JSArrayBufferView_mode);
 
@@ -17867,9 +17870,9 @@ IGNORE_CLANG_WARNINGS_END
 #if CPU(ARM64E)
             if (kind == Gigacage::Primitive) {
 #if USE(LARGE_TYPED_ARRAYS)
-                LValue size = m_out.load64(base, m_heaps.JSArrayBufferView_length);
+                LValue size = m_out.load64(base, m_heaps.JSArrayBufferView_maxByteLength);
 #else
-                LValue size = m_out.load32(base, m_heaps.JSArrayBufferView_length);
+                LValue size = m_out.load32(base, m_heaps.JSArrayBufferView_maxByteLength);
 #endif
                 return untagArrayPtr(taggedPtr, size);
             }
