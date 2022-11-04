@@ -175,7 +175,7 @@ public:
     }
     
     bool isShared() const { return m_shared; }
-    bool isResizable() const { return !!m_maxByteLength; }
+    bool isResizable() const { return m_hasMaxByteLength; }
     
     void swap(ArrayBufferContents& other)
     {
@@ -251,6 +251,7 @@ public:
     void setSharingMode(ArrayBufferSharingMode);
     inline bool isShared() const;
     inline ArrayBufferSharingMode sharingMode() const { return isShared() ? ArrayBufferSharingMode::Shared : ArrayBufferSharingMode::Default; }
+    inline bool isResizable() const { return m_contents.isResizable(); }
 
     inline size_t gcSizeEstimateInBytes() const;
 

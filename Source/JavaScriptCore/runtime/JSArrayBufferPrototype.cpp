@@ -160,11 +160,13 @@ static EncodedJSValue arrayBufferSlice(JSGlobalObject* globalObject, JSValue arr
         return throwVMTypeError(globalObject, scope, "Receiver is detached"_s);
 
     // 5. Let len be O.[[ArrayBufferByteLength]].
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-sharedarraybuffer.prototype.slice
     unsigned byteLength = 0;
     if (mode == ArrayBufferSharingMode::Default)
-        byteLength = thisObject->impl()->byteLength(std::memory_order_relaxed);
+        byteLength = thisObject->impl()->byteLength();
     else
         byteLength = thisObject->impl()->byteLength(std::memory_order_seq_cst);
+
     unsigned firstIndex = 0;
     double relativeStart = startValue.toIntegerOrInfinity(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -265,8 +267,8 @@ JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoFuncGrow, (JSGlobalObject* global
     if (!thisObject || (ArrayBufferSharingMode::Shared != thisObject->impl()->sharingMode()))
         return throwVMTypeError(globalObject, scope, makeString("Receiver must be SharedArrayBuffer"_s));
 
-    if (!thisObject->impl()->maxByteLength())
-        return throwVMTypeError(globalObject, scope, makeString("maxByteLength needs to be configured"_s));
+    if (!thisObject->impl()->isResizable())
+        return throwVMTypeError(globalObject, scope, makeString("SharedArrayBuffer is not growable"_s));
 
     double newLength = callFrame->argument(0).toIntegerOrInfinity(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
