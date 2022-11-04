@@ -4999,7 +4999,7 @@ private:
 
         LValue mode = m_out.load8ZeroExt32(basePtr, m_heaps.JSArrayBufferView_mode);
         m_out.branch(
-            m_out.notEqual(mode, m_out.constInt32(WastefulTypedArray)),
+            m_out.below(mode, m_out.constInt32(WastefulTypedArray)),
             unsure(continuation), unsure(wastefulCase));
 
         LBasicBlock lastNext = m_out.appendTo(wastefulCase, notNull);
@@ -20647,7 +20647,7 @@ IGNORE_CLANG_WARNINGS_END
         LBasicBlock continuation = m_out.newBlock();
 
         LValue mode = m_out.load8ZeroExt32(base, m_heaps.JSArrayBufferView_mode);
-        m_out.branch(m_out.equal(mode, m_out.constInt32(WastefulTypedArray)),
+        m_out.branch(m_out.below(mode, m_out.constInt32(WastefulTypedArray)),
             unsure(isWasteful), unsure(continuation));
 
         LBasicBlock lastNext = m_out.appendTo(isWasteful, continuation);
