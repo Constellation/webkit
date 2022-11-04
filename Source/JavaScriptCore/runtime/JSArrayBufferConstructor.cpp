@@ -88,13 +88,15 @@ EncodedJSValue JSGenericArrayBufferConstructor<sharingMode>::constructImpl(JSGlo
         RETURN_IF_EXCEPTION(scope, { });
 
         if constexpr (sharingMode == ArrayBufferSharingMode::Shared) {
-            JSValue options = callFrame->argument(1);
-            if (options.isObject()) {
-                JSValue maxByteLengthValue = asObject(options)->get(globalObject, vm.propertyNames->maxByteLength);
-                RETURN_IF_EXCEPTION(scope, { });
-                if (!maxByteLengthValue.isUndefined()) {
-                    maxByteLength = maxByteLengthValue.toTypedArrayIndex(globalObject, "maxByteLength"_s);
+            if (Options::useResizableArrayBuffer()) {
+                JSValue options = callFrame->argument(1);
+                if (options.isObject()) {
+                    JSValue maxByteLengthValue = asObject(options)->get(globalObject, vm.propertyNames->maxByteLength);
                     RETURN_IF_EXCEPTION(scope, { });
+                    if (!maxByteLengthValue.isUndefined()) {
+                        maxByteLength = maxByteLengthValue.toTypedArrayIndex(globalObject, "maxByteLength"_s);
+                        RETURN_IF_EXCEPTION(scope, { });
+                    }
                 }
             }
         }
