@@ -66,7 +66,7 @@ public:
 
     static Ref<Memory> create();
     JS_EXPORT_PRIVATE static Ref<Memory> create(Ref<BufferMemoryHandle>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
-    JS_EXPORT_PRIVATE static Ref<Memory> create(Ref<BufferMemoryHandle>&&, Ref<SharedArrayBufferContents>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
+    JS_EXPORT_PRIVATE static Ref<Memory> create(Ref<SharedArrayBufferContents>&&, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
     static RefPtr<Memory> tryCreate(VM&, PageCount initial, PageCount maximum, MemorySharingMode, WTF::Function<void(GrowSuccess, PageCount, PageCount)>&& growSuccessCallback);
 
     JS_EXPORT_PRIVATE ~Memory();

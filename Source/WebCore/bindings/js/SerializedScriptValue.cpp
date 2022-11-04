@@ -3888,8 +3888,7 @@ private:
                 fail();
                 return JSValue();
             }
-            RefPtr<BufferMemoryHandle> handle = contents->memoryHandle();
-            if (!handle) {
+            if (!contents->memoryHandle()) {
                 fail();
                 return JSValue();
             }
@@ -3900,7 +3899,7 @@ private:
             // module to not have been a valid module. Therefore, createStub should
             // not throw.
             scope.releaseAssertNoException();
-            Ref<Wasm::Memory> memory = Wasm::Memory::create(handle.releaseNonNull(), content.releaseNonNull(),
+            Ref<Wasm::Memory> memory = Wasm::Memory::create(content.releaseNonNull(),
                 [&vm, result] (Wasm::Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { result->growSuccessCallback(vm, oldPageCount, newPageCount); });
             result->adopt(WTFMove(memory));
             m_gcBuffer.appendWithCrashOnOverflow(result);
