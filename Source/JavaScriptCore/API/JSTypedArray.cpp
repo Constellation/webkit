@@ -118,8 +118,6 @@ static JSObject* createTypedArray(JSGlobalObject* globalObject, JSTypedArrayType
     bool isGrowableShared = buffer->isGrowableShared();
     switch (type) {
 #define JSC_TYPED_ARRAY_FACTORY(type) case kJSTypedArrayType##type##Array: { \
-        if (isGrowableShared) \
-            return JSInt8Array::createGrowableShared(globalObject, globalObject->typedArrayStructure(TypeInt8, isGrowableShared), WTFMove(buffer), offset, length); \
         return JSInt8Array::create(globalObject, globalObject->typedArrayStructure(TypeInt8, isGrowableShared), WTFMove(buffer), offset, length.value()); \
     }
     FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(JSC_TYPED_ARRAY_FACTORY)

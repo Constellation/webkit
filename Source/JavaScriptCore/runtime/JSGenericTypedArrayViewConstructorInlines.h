@@ -140,15 +140,15 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
             }
         }
 
+        Structure* structure = nullptr;
         if (buffer->isResizableOrGrowableShared()) {
-            Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, growableSharedTypedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
+            structure = JSC_GET_DERIVED_STRUCTURE(vm, growableSharedTypedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
             RETURN_IF_EXCEPTION(scope, { });
-            RELEASE_AND_RETURN(scope, ViewClass::createGrowableShared(globalObject, structure, WTFMove(buffer), offset, length));
+        } else {
+            structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
+            RETURN_IF_EXCEPTION(scope, { });
         }
-
-        Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
-        RETURN_IF_EXCEPTION(scope, { });
-        RELEASE_AND_RETURN(scope, ViewClass::create(globalObject, structure, WTFMove(buffer), offset, length.value()));
+        RELEASE_AND_RETURN(scope, ViewClass::create(globalObject, structure, WTFMove(buffer), offset, length));
     }
     ASSERT(!offset && !lengthOpt);
     

@@ -41,36 +41,6 @@ JSDataView::JSDataView(VM& vm, ConstructionContext& context, ArrayBuffer* buffer
 
 JSDataView* JSDataView::create(
     JSGlobalObject* globalObject, Structure* structure, RefPtr<ArrayBuffer>&& buffer,
-    size_t byteOffset, size_t byteLength)
-{
-    VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
-
-    ASSERT(buffer);
-    if (buffer->isDetached()) {
-        throwTypeError(globalObject, scope, "Buffer is already detached"_s);
-        return nullptr;
-    }
-    if (!ArrayBufferView::verifySubRangeLength(*buffer, byteOffset, byteLength, sizeof(uint8_t))) {
-        throwRangeError(globalObject, scope, "Length out of range of buffer"_s);
-        return nullptr;
-    }
-    if (!ArrayBufferView::verifyByteOffsetAlignment(byteOffset, sizeof(uint8_t))) {
-        throwRangeError(globalObject, scope, "Byte offset is not aligned"_s);
-        return nullptr;
-    }
-
-    ConstructionContext context(
-        structure, buffer.copyRef(), byteOffset, byteLength, ConstructionContext::DataView);
-    ASSERT(context);
-    JSDataView* result =
-        new (NotNull, allocateCell<JSDataView>(vm)) JSDataView(vm, context, buffer.get());
-    result->finishCreation(vm);
-    return result;
-}
-
-JSDataView* JSDataView::createGrowableShared(
-    JSGlobalObject* globalObject, Structure* structure, RefPtr<ArrayBuffer>&& buffer,
     size_t byteOffset, std::optional<size_t> byteLength)
 {
     VM& vm = globalObject->vm();
@@ -81,6 +51,7 @@ JSDataView* JSDataView::createGrowableShared(
         throwTypeError(globalObject, scope, "Buffer is already detached"_s);
         return nullptr;
     }
+
     if (byteLength) {
         if (!ArrayBufferView::verifySubRangeLength(*buffer, byteOffset, byteLength.value(), sizeof(uint8_t))) {
             throwRangeError(globalObject, scope, "Length out of range of buffer"_s);

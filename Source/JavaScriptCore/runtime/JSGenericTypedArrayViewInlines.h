@@ -99,31 +99,7 @@ JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::createUninit
 template<typename Adaptor>
 JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(
     JSGlobalObject* globalObject, Structure* structure, RefPtr<ArrayBuffer>&& buffer,
-    size_t byteOffset, size_t length)
-{
-    VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
-    size_t elementSize = sizeof(typename Adaptor::Type);
-    ASSERT(buffer);
-    if (!ArrayBufferView::verifySubRangeLength(*buffer, byteOffset, length, elementSize)) {
-        throwException(globalObject, scope, createRangeError(globalObject, "Length out of range of buffer"_s));
-        return nullptr;
-    }
-    if (!ArrayBufferView::verifyByteOffsetAlignment(byteOffset, elementSize)) {
-        throwException(globalObject, scope, createRangeError(globalObject, "Byte offset is not aligned"_s));
-        return nullptr;
-    }
-    ConstructionContext context(vm, structure, WTFMove(buffer), byteOffset, length);
-    ASSERT(context);
-    JSGenericTypedArrayView* result =
-        new (NotNull, allocateCell<JSGenericTypedArrayView>(vm))
-        JSGenericTypedArrayView(vm, context);
-    result->finishCreation(vm);
-    return result;
-}
-
-template<typename Adaptor>
-JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::createGrowableShared(JSGlobalObject* globalObject, Structure* structure, RefPtr<ArrayBuffer>&& buffer, size_t byteOffset, std::optional<size_t> length)
+    size_t byteOffset, std::optional<size_t> length)
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
@@ -139,10 +115,11 @@ JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::createGrowab
             return nullptr;
         }
     }
-
     ConstructionContext context(vm, structure, WTFMove(buffer), byteOffset, length);
     ASSERT(context);
-    JSGenericTypedArrayView* result = new (NotNull, allocateCell<JSGenericTypedArrayView>(vm)) JSGenericTypedArrayView(vm, context);
+    JSGenericTypedArrayView* result =
+        new (NotNull, allocateCell<JSGenericTypedArrayView>(vm))
+        JSGenericTypedArrayView(vm, context);
     result->finishCreation(vm);
     return result;
 }
