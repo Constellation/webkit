@@ -77,28 +77,35 @@ enum TypedArrayMode : uint8_t {
     // knows-what, and M = DataViewMode. The view does not own the vector.
     // There is an extra field (in JSDataView) that points to the
     // ArrayBuffer.
-    DataViewMode = 0b0100'0000,
-    ResizableDataViewMode = 0b0100'0001, // Everything is the same to the corresponding mode except they are resizable.
-    ResizableAutoLengthDataViewMode = 0b0100'0011, // Ditto.
+    DataViewMode = 0b0100'1000,
+    ResizableDataViewMode = 0b0100'1001, // Everything is the same to the corresponding mode except they are resizable.
+    ResizableAutoLengthDataViewMode = 0b0100'1011,
+    GrowableSharedDataViewMode = 0b0100'1101,
+    GrowableSharedAutoLengthDataViewMode = 0b0100'1111,
 
     // A typed array that was used in some crazy way. B's IndexingHeader
     // is hijacked to contain a reference to the native array buffer. The
     // native typed array view points back to the JS view. V points to a
     // vector allocated using who-knows-what, and M = WastefulTypedArray.
     // The view does not own the vector.
-    WastefulTypedArray = 0b1001'0000,
-    ResizableWastefulTypedArray = 0b1001'0001, // Everything is the same to the corresponding mode except they are resizable.
-    ResizableAutoLengthWastefulTypedArray = 0b1001'0011, // Ditto.
+    WastefulTypedArray = 0b1001'1000,
+    ResizableWastefulTypedArray = 0b1001'1001, // Everything is the same to the corresponding mode except they are resizable.
+    ResizableAutoLengthWastefulTypedArray = 0b1001'1011,
+    GrowableSharedWastefulTypedArray = 0b1001'1101,
+    GrowableSharedAutoLengthWastefulTypedArray = 0b1001'1111,
 };
 
-constexpr uint8_t isResizableMode  = 0b0000'0001;
-constexpr uint8_t isAutoLengthMode = 0b0000'0010;
-constexpr uint8_t isTypedArrayMode = 0b0001'0000;
-constexpr uint8_t isDataViewMode   = 0b0100'0000;
+constexpr uint8_t isResizableMode          = 0b0000'0001;
+constexpr uint8_t isAutoLengthMode         = 0b0000'0010;
+constexpr uint8_t isGrowableSharedMode     = 0b0000'0100;
+constexpr uint8_t isHavingArrayBufferMode  = 0b0000'1000;
+constexpr uint8_t isTypedArrayMode         = 0b0001'0000;
+constexpr uint8_t isDataViewMode           = 0b0100'0000;
+constexpr uint8_t isWastefulTypedArrayMode = 0b1000'0000;
 
 inline bool hasArrayBuffer(TypedArrayMode mode)
 {
-    return mode >= DataViewMode;
+    return static_cast<uint8_t>(mode) & isHavingArrayBufferMode;
 }
 
 inline bool isResizable(TypedArrayMode mode)
@@ -106,9 +113,19 @@ inline bool isResizable(TypedArrayMode mode)
     return static_cast<uint8_t>(mode) & isResizableMode;
 }
 
+inline bool isGrowableShared(TypedArrayMode mode)
+{
+    return static_cast<uint8_t>(mode) & isGrowableSharedMode;
+}
+
 inline bool isAutoLength(TypedArrayMode mode)
 {
     return static_cast<uint8_t>(mode) & isAutoLengthMode;
+}
+
+inline bool isWastefulTypedArray(TypedArrayMode mode)
+{
+    return static_cast<uint8_t>(mode) & isWastefulTypedArrayMode;
 }
 
 template<typename Getter> std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView*, Getter&);
@@ -220,6 +237,7 @@ public:
     JS_EXPORT_PRIVATE RefPtr<ArrayBufferView> possiblySharedImpl();
     bool isDetached() { return hasArrayBuffer() && !hasVector(); }
     bool isResizable() const { return JSC::isResizable(m_mode); }
+    bool isGrowableShared() const { return JSC::isGrowableShared(m_mode); };
     bool isAutoLength() const { return JSC::isAutoLength(m_mode); }
     void detach();
 

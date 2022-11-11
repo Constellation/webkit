@@ -37,10 +37,14 @@ inline bool JSArrayBufferView::isShared()
     case WastefulTypedArray:
     case ResizableWastefulTypedArray:
     case ResizableAutoLengthWastefulTypedArray:
+    case GrowableSharedWastefulTypedArray:
+    case GrowableSharedAutoLengthWastefulTypedArray:
         return existingBufferInButterfly()->isShared();
     case DataViewMode:
     case ResizableDataViewMode:
     case ResizableAutoLengthDataViewMode:
+    case GrowableSharedDataViewMode:
+    case GrowableSharedAutoLengthDataViewMode:
         return jsCast<JSDataView*>(this)->possiblySharedBuffer()->isShared();
     default:
         return false;
@@ -57,10 +61,14 @@ inline ArrayBuffer* JSArrayBufferView::possiblySharedBufferImpl()
     case WastefulTypedArray:
     case ResizableWastefulTypedArray:
     case ResizableAutoLengthWastefulTypedArray:
+    case GrowableSharedWastefulTypedArray:
+    case GrowableSharedAutoLengthWastefulTypedArray:
         return existingBufferInButterfly();
     case DataViewMode:
     case ResizableDataViewMode:
     case ResizableAutoLengthDataViewMode:
+    case GrowableSharedDataViewMode:
+    case GrowableSharedAutoLengthDataViewMode:
         return jsCast<JSDataView*>(this)->possiblySharedBuffer();
     case FastTypedArray:
     case OversizeTypedArray:
@@ -77,7 +85,7 @@ inline ArrayBuffer* JSArrayBufferView::possiblySharedBuffer()
 
 inline ArrayBuffer* JSArrayBufferView::existingBufferInButterfly()
 {
-    ASSERT(m_mode == WastefulTypedArray || m_mode == ResizableWastefulTypedArray || m_mode == ResizableAutoLengthWastefulTypedArray);
+    ASSERT(isWastefulTypedArray(m_mode));
     return butterfly()->indexingHeader()->arrayBuffer();
 }
 
@@ -183,7 +191,7 @@ bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, Getter& ge
     if (LIKELY(!typedArray->isResizable()))
         return false;
 
-    ASSERT(typedArray->mode() == ResizableWastefulTypedArray || typedArray->mode() == ResizableAutoLengthWastefulTypedArray);
+    ASSERT(isWastefulTypedArray(typedArray->mode()) && isResizable(typedArray->mode()));
     RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
     if (!buffer)
         return true;
@@ -211,7 +219,7 @@ std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, 
     if (LIKELY(!typedArray->isAutoLength()))
         return typedArray->lengthUnsafe();
 
-    ASSERT(typedArray->mode() == ResizableWastefulTypedArray || typedArray->mode() == ResizableAutoLengthWastefulTypedArray);
+    ASSERT(isWastefulTypedArray(typedArray->mode()) && isResizable(typedArray->mode()));
     RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
     if (!buffer)
         return std::nullopt;

@@ -118,10 +118,10 @@ void IntrinsicGetterAccessCase::emitIntrinsicGetter(AccessGenerationState& state
     case TypedArrayByteOffsetIntrinsic: {
         GPRReg scratchGPR = state.scratchGPR;
 
-        CCallHelpers::Jump emptyByteOffset = jit.branch8(
-            MacroAssembler::Below,
+        CCallHelpers::Jump emptyByteOffset = jit.branchTest8(
+            MacroAssembler::Zero,
             MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfMode()),
-            TrustedImm32(WastefulTypedArray));
+            TrustedImm32(isWastefulTypedArrayMode));
 
         jit.loadPtr(MacroAssembler::Address(baseGPR, JSObject::butterflyOffset()), scratchGPR);
         jit.loadPtr(MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfVector()), valueGPR);

@@ -147,11 +147,15 @@ void JSArrayBufferView::finishCreation(VM& vm)
     case WastefulTypedArray:
     case ResizableWastefulTypedArray:
     case ResizableAutoLengthWastefulTypedArray:
+    case GrowableSharedWastefulTypedArray:
+    case GrowableSharedAutoLengthWastefulTypedArray:
         vm.heap.addReference(this, butterfly()->indexingHeader()->arrayBuffer());
         return;
     case DataViewMode:
     case ResizableDataViewMode:
     case ResizableAutoLengthDataViewMode:
+    case GrowableSharedDataViewMode:
+    case GrowableSharedAutoLengthDataViewMode:
         ASSERT(!butterfly());
         vm.heap.addReference(this, jsCast<JSDataView*>(this)->possiblySharedBuffer());
         return;
@@ -190,7 +194,7 @@ void JSArrayBufferView::finalize(JSCell* cell)
     // This JSArrayBufferView could be an OversizeTypedArray that was converted
     // to a WastefulTypedArray via slowDownAndWasteMemory(). Hence, it is possible
     // to get to this finalizer and found the mode to be WastefulTypedArray.
-    ASSERT(thisObject->m_mode == OversizeTypedArray || thisObject->m_mode == WastefulTypedArray);
+    ASSERT(thisObject->m_mode == OversizeTypedArray || hasArrayBuffer(thisObject->m_mode));
     if (thisObject->m_mode == OversizeTypedArray)
         Gigacage::free(Gigacage::Primitive, thisObject->vector());
 }
@@ -380,6 +384,12 @@ void printInternal(PrintStream& out, TypedArrayMode mode)
     case ResizableAutoLengthWastefulTypedArray:
         out.print("ResizableAutoLengthWastefulTypedArray");
         return;
+    case GrowableSharedWastefulTypedArray:
+        out.print("GrowableSharedWastefulTypedArray");
+        return;
+    case GrowableSharedAutoLengthWastefulTypedArray:
+        out.print("GrowableSharedAutoLengthWastefulTypedArray");
+        return;
     case DataViewMode:
         out.print("DataViewMode");
         return;
@@ -388,6 +398,12 @@ void printInternal(PrintStream& out, TypedArrayMode mode)
         return;
     case ResizableAutoLengthDataViewMode:
         out.print("ResizableAutoLengthDataViewMode");
+        return;
+    case GrowableSharedDataViewMode:
+        out.print("GrowableSharedDataViewMode");
+        return;
+    case GrowableSharedAutoLengthDataViewMode:
+        out.print("GrowableSharedAutoLengthDataViewMode");
         return;
     }
     RELEASE_ASSERT_NOT_REACHED();
