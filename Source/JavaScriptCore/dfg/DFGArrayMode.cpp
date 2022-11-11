@@ -890,6 +890,10 @@ bool ArrayMode::permitsBoundsCheckLowering() const
 void ArrayMode::dump(PrintStream& out) const
 {
     out.print(type(), "+", arrayClass(), "+", speculation(), "+", conversion(), "+", action());
+    if (mayBeLargeTypedArray())
+        out.print("+LargeTypedArray");
+    if (mayBeResizableTypedArray())
+        out.print("+ResizableTypedArray");
 }
 
 } } // namespace JSC::DFG
