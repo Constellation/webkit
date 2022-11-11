@@ -213,7 +213,7 @@ JSObjectRef JSObjectMakeTypedArrayWithArrayBuffer(JSContextRef ctx, JSTypedArray
 
     std::optional<size_t> length;
     if (!buffer->isResizable())
-        length = buffer->byteLength() / elementByteSize
+        length = buffer->byteLength() / elementByteSize;
     JSObject* result = createTypedArray(globalObject, arrayType, WTFMove(buffer), 0, length);
     if (handleExceptionIfNeeded(scope, ctx, exception) == ExceptionStatus::DidThrow)
         return nullptr;
