@@ -3042,11 +3042,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         }
         case UntypedUse: {
             clobberWorld();
-            auto* globalObject = m_graph.globalObjectFor(node->origin.semantic);
-            RegisteredStructureSet set;
-            set.add(m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(node->typedArrayType(), true)));
-            set.add(m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(node->typedArrayType(), false)));
-            setForNode(node, set);
+            setTypeForNode(node, speculationFromTypedArrayType(node->typedArrayType()));
             break;
         }
         default:
