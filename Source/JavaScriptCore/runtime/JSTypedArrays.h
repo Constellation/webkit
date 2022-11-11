@@ -53,7 +53,7 @@ using JSResizableOrGrowableSharedFloat64Array = JSGenericResizableOrGrowableShar
 using JSResizableOrGrowableSharedBigInt64Array = JSGenericResizableOrGrowableSharedTypedArrayView<BigInt64Adaptor>;
 using JSResizableOrGrowableSharedBigUint64Array = JSGenericResizableOrGrowableSharedTypedArrayView<BigUint64Adaptor>;
 
-inline bool isGrowableSharedTypedArray(const ClassInfo* classInfo)
+inline bool isResizableOrGrowableSharedTypedArray(const ClassInfo* classInfo)
 {
 #define JSC_TYPED_ARRAY_CHECK(type) do { \
     if (classInfo == JSResizableOrGrowableShared ## type ## Array::info()) \

@@ -146,7 +146,7 @@ void ArrayProfile::computeUpdatedPrediction(const ConcurrentJSLocker&, CodeBlock
         m_arrayProfileFlags.add(ArrayProfileFlag::UsesNonOriginalArrayStructures);
 
     if (isTypedArrayType(lastSeenStructure->typeInfo().type())) {
-        if (isGrowableSharedTypedArray(lastSeenStructure->classInfoForCells()))
+        if (isResizableOrGrowableSharedTypedArray(lastSeenStructure->classInfoForCells()))
             m_arrayProfileFlags.add(ArrayProfileFlag::MayBeResizableOrGrowableSharedTypedArray);
     }
 }
