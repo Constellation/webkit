@@ -40,6 +40,8 @@ const ClassInfo JSArrayBufferView::s_info = {
     "ArrayBufferView"_s, &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(JSArrayBufferView)
 };
 
+const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage { "Underlying ArrayBuffer has been detached from the view or out-of-bounds"_s };
+
 JSArrayBufferView::ConstructionContext::ConstructionContext(Structure* structure, size_t length, void* vector)
     : m_structure(structure)
     , m_vector(vector, (Checked<size_t>(length) * JSC::elementSize(structure->typeInfo().type())).value())
@@ -144,10 +146,12 @@ void JSArrayBufferView::finishCreation(VM& vm)
         return;
     case WastefulTypedArray:
     case ResizableWastefulTypedArray:
+    case ResizableAutoLengthWastefulTypedArray:
         vm.heap.addReference(this, butterfly()->indexingHeader()->arrayBuffer());
         return;
     case DataViewMode:
     case ResizableDataViewMode:
+    case ResizableAutoLengthDataViewMode:
         ASSERT(!butterfly());
         vm.heap.addReference(this, jsCast<JSDataView*>(this)->possiblySharedBuffer());
         return;
@@ -230,7 +234,7 @@ size_t JSArrayBufferView::byteLength() const
     return result.value();
 #else
     // https://tc39.es/proposal-resizablearraybuffer/#sec-get-%typedarray%.prototype.bytelength
-    if (LIKELY(!isResizable(m_mode)))
+    if (LIKELY(!isResizable()))
         return length() * elementSize(type());
     IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
     return integerIndexedObjectByteLength(const_cast<JSArrayBufferView*>(this), getter);
@@ -326,31 +330,6 @@ RefPtr<ArrayBufferView> JSArrayBufferView::possiblySharedImpl()
     }
 }
 
-JSArrayBufferView* validateTypedArray(JSGlobalObject* globalObject, JSValue typedArrayValue)
-{
-    VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
-
-    if (!typedArrayValue.isCell()) {
-        throwTypeError(globalObject, scope, "Argument needs to be a typed array."_s);
-        return nullptr;
-    }
-
-    JSCell* typedArrayCell = typedArrayValue.asCell();
-    if (!isTypedView(typedArrayCell->type())) {
-        throwTypeError(globalObject, scope, "Argument needs to be a typed array."_s);
-        return nullptr;
-    }
-
-    JSArrayBufferView* typedArray = jsCast<JSArrayBufferView*>(typedArrayCell);
-    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
-    if (isIntegerIndexedObjectOutOfBounds(typedArray, getter)) {
-        throwTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
-        return nullptr;
-    }
-    return typedArray;
-}
-
 bool JSArrayBufferView::isIteratorProtocolFastAndNonObservable()
 {
     // Excluding DataView.
@@ -398,11 +377,17 @@ void printInternal(PrintStream& out, TypedArrayMode mode)
     case ResizableWastefulTypedArray:
         out.print("ResizableWastefulTypedArray");
         return;
+    case ResizableAutoLengthWastefulTypedArray:
+        out.print("ResizableAutoLengthWastefulTypedArray");
+        return;
     case DataViewMode:
         out.print("DataViewMode");
         return;
     case ResizableDataViewMode:
         out.print("ResizableDataViewMode");
+        return;
+    case ResizableAutoLengthDataViewMode:
+        out.print("ResizableAutoLengthDataViewMode");
         return;
     }
     RELEASE_ASSERT_NOT_REACHED();

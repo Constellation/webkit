@@ -36,9 +36,11 @@ inline bool JSArrayBufferView::isShared()
     switch (m_mode) {
     case WastefulTypedArray:
     case ResizableWastefulTypedArray:
+    case ResizableAutoLengthWastefulTypedArray:
         return existingBufferInButterfly()->isShared();
     case DataViewMode:
     case ResizableDataViewMode:
+    case ResizableAutoLengthDataViewMode:
         return jsCast<JSDataView*>(this)->possiblySharedBuffer()->isShared();
     default:
         return false;
@@ -54,9 +56,11 @@ inline ArrayBuffer* JSArrayBufferView::possiblySharedBufferImpl()
     switch (m_mode) {
     case WastefulTypedArray:
     case ResizableWastefulTypedArray:
+    case ResizableAutoLengthWastefulTypedArray:
         return existingBufferInButterfly();
     case DataViewMode:
     case ResizableDataViewMode:
+    case ResizableAutoLengthDataViewMode:
         return jsCast<JSDataView*>(this)->possiblySharedBuffer();
     case FastTypedArray:
     case OversizeTypedArray:
@@ -73,7 +77,7 @@ inline ArrayBuffer* JSArrayBufferView::possiblySharedBuffer()
 
 inline ArrayBuffer* JSArrayBufferView::existingBufferInButterfly()
 {
-    ASSERT(m_mode == WastefulTypedArray || m_mode == ResizableWastefulTypedArray);
+    ASSERT(m_mode == WastefulTypedArray || m_mode == ResizableWastefulTypedArray || m_mode == ResizableAutoLengthWastefulTypedArray);
     return butterfly()->indexingHeader()->arrayBuffer();
 }
 
@@ -90,7 +94,7 @@ inline ResultType JSArrayBufferView::byteOffsetImpl()
     if (!hasArrayBuffer())
         return 0;
 
-    if (UNLIKELY(isResizable(m_mode))) {
+    if (UNLIKELY(isResizable())) {
         if constexpr (requester == ConcurrentThread)
             return std::nullopt;
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
@@ -161,10 +165,10 @@ bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, Getter& ge
     if (UNLIKELY(typedArray->isDetached()))
         return true;
 
-    if (LIKELY(!isResizable(typedArray->mode())))
+    if (LIKELY(!typedArray->isResizable()))
         return false;
 
-    ASSERT(typedArray->mode() == ResizableWastefulTypedArray);
+    ASSERT(typedArray->mode() == ResizableWastefulTypedArray || typedArray->mode() == ResizableAutoLengthWastefulTypedArray);
     RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
     if (!buffer)
         return true;
@@ -183,10 +187,10 @@ std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, 
     if (UNLIKELY(isIntegerIndexedObjectOutOfBounds(typedArray, getter)))
         return std::nullopt;
 
-    if (LIKELY(!isResizable(typedArray->mode())))
+    if (LIKELY(!typedArray->isResizable()))
         return typedArray->length();
 
-    ASSERT(typedArray->mode() == ResizableWastefulTypedArray);
+    ASSERT(typedArray->mode() == ResizableWastefulTypedArray || typedArray->mode() == ResizableAutoLengthWastefulTypedArray);
     RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
     if (!buffer)
         return std::nullopt;
@@ -204,10 +208,42 @@ size_t integerIndexedObjectByteLength(JSArrayBufferView* typedArray, Getter& get
     if (!length || !length.value())
         return 0;
 
-    if (LIKELY(!isResizable(typedArray->mode())))
+    if (LIKELY(!typedArray->isResizable()))
         return typedArray->byteLength();
 
     return length.value() * JSC::elementSize(typedArray->type());
+}
+
+inline JSArrayBufferView* validateTypedArray(JSGlobalObject* globalObject, JSArrayBufferView* typedArray)
+{
+    VM& vm = getVM(globalObject);
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+    if (UNLIKELY(isIntegerIndexedObjectOutOfBounds(typedArray, getter))) {
+        throwTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+        return nullptr;
+    }
+    return typedArray;
+}
+
+inline JSArrayBufferView* validateTypedArray(JSGlobalObject* globalObject, JSValue typedArrayValue)
+{
+    VM& vm = getVM(globalObject);
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    if (!typedArrayValue.isCell()) {
+        throwTypeError(globalObject, scope, "Argument needs to be a typed array."_s);
+        return nullptr;
+    }
+
+    JSCell* typedArrayCell = typedArrayValue.asCell();
+    if (!isTypedView(typedArrayCell->type())) {
+        throwTypeError(globalObject, scope, "Argument needs to be a typed array."_s);
+        return nullptr;
+    }
+
+    RELEASE_AND_RETURN(scope, validateTypedArray(globalObject, jsCast<JSArrayBufferView*>(typedArrayCell)));
 }
 
 } // namespace JSC

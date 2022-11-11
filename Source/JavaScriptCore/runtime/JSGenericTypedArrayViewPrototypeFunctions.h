@@ -237,8 +237,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncCopyWithin(VM& vm, JS
 
     // 22.2.3.5
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     size_t length = thisObject->length();
     size_t to = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(0), length);
@@ -255,11 +255,23 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncCopyWithin(VM& vm, JS
     ASSERT(from <= length);
     size_t count = std::min(length - std::max(to, from), final - from);
 
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    if (count > 0) {
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        auto updatedLength = integerIndexedObjectLength(thisObject, getter);
+        if (UNLIKELY(!updatedLength))
+            return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
-    typename ViewClass::ElementType* array = thisObject->typedVector();
-    memmove(array + to, array + from, count * thisObject->elementSize);
+        // ResizableArrayBuffer can shrink the length. Thus, we need to check again to see whether we can copy things.
+        // https://tc39.es/proposal-resizablearraybuffer/#sec-%typedarray%.prototype.copywithin
+        if (updatedLength.value() != length) {
+            length = updatedLength.value();
+            if (std::max(to, from) + count > length)
+                count = length - std::max(to, from);
+        }
+
+        typename ViewClass::ElementType* array = thisObject->typedVector();
+        memmove(array + to, array + from, count * thisObject->elementSize);
+    }
 
     return JSValue::encode(callFrame->thisValue());
 }
@@ -326,8 +338,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncIncludes(VM& vm, JSGl
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     size_t length = thisObject->length();
 
@@ -371,8 +383,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncIndexOf(VM& vm, JSGlo
 
     // 22.2.3.13
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     size_t length = thisObject->length();
 
@@ -405,8 +417,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncJoin(VM& vm, JSGlobal
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     size_t length = thisObject->length();
     auto joinWithSeparator = [&] (StringView separator) -> EncodedJSValue {
@@ -453,8 +465,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFill(VM& vm, JSGlobal
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     size_t length = thisObject->length();
     typename ViewClass::ElementType nativeValue = ViewClass::toAdaptorNativeFromValue(globalObject, callFrame->argument(0));
@@ -468,8 +480,14 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFill(VM& vm, JSGlobal
     RETURN_IF_EXCEPTION(scope, { });
     ASSERT(end <= length);
 
-    if (UNLIKELY(thisObject->isDetached()))
+    // ResizableArrayBuffer can shrink the length. Thus, we need to check again to see whether we can copy things.
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-%typedarray%.prototype.fill
+    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+    auto updatedLength = integerIndexedObjectLength(thisObject, getter);
+    if (UNLIKELY(!updatedLength))
         return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+
+    end = std::min(end, updatedLength.value());
 
     if (!(start < end))
         return JSValue::encode(thisObject);
@@ -509,8 +527,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncLastIndexOf(VM& vm, J
 
     // 22.2.3.16
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     size_t length = thisObject->length();
 
@@ -599,8 +617,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncReverse(VM& vm, JSGlo
 
     // 22.2.3.21
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     typename ViewClass::ElementType* array = thisObject->typedVector();
     std::reverse(array, array + thisObject->length());
@@ -616,8 +634,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncToReversed(VM& vm, JS
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     size_t length = thisObject->length();
 
@@ -641,8 +659,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncClone(VM& vm, JSGlo
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     size_t length = thisObject->length();
     bool isResizable = false;
@@ -663,8 +681,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncSort(VM& vm, JSGlob
 
     // 22.2.3.25
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->argument(0));
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     thisObject->sort();
 
@@ -745,8 +763,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGloba
     // 22.2.3.26
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     size_t thisLength = thisObject->length();
 
@@ -767,6 +785,11 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGloba
     JSArrayBufferView* result = speciesConstruct(globalObject, thisObject, [&]() {
         bool isResizable = false;
         Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isResizable);
+        // If the source TypedArray is resizable, length can be changed.
+        // In that case, it is possible that we will have some holes which is not initialized to the zero values.
+        // We use initialized TypedArray if source TypedArray is resizable.
+        if (UNLIKELY(thisObject->isResizable()))
+            return ViewClass::create(globalObject, structure, length);
         return ViewClass::createUninitialized(globalObject, structure, length);
     }, [&](MarkedArgumentBuffer& args) {
         args.append(jsNumber(length));
@@ -784,12 +807,24 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGloba
     if (!length)
         return JSValue::encode(result);
 
-    if (UNLIKELY(thisObject->isDetached()))
+    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+    auto updatedLength = integerIndexedObjectLength(thisObject, getter);
+    if (UNLIKELY(!updatedLength))
         return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+
+    end = std::min(updatedLength.value(), end);
+    // Clamp end to begin, again.
+    end = std::max(begin, end);
+    ASSERT(end >= begin);
+    length = end - begin;
 
     // The species constructor may return an array with any arbitrary length.
     if (result->length() < length)
         return throwVMTypeError(globalObject, scope, "TypedArray.prototype.slice constructed typed array of insufficient length"_s);
+
+    // If length is zero, begin and end can point at random places (because of resize). We should avoid calling `set`, and return early here.
+    if (!length)
+        return JSValue::encode(result);
 
     switch (result->type()) {
     case Int8ArrayType:
@@ -848,33 +883,23 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSubarray(VM& vm, JSGl
 
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    JSValue start = callFrame->argument(0);
-    if (UNLIKELY(!start.isInt32())) {
-        start = jsNumber(start.toIntegerOrInfinity(globalObject));
-        RETURN_IF_EXCEPTION(scope, { });
-    }
-
-    JSValue finish = callFrame->argument(1);
-    if (!finish.isUndefined()) {
-        if (UNLIKELY(!finish.isInt32())) {
-            finish = jsNumber(finish.toIntegerOrInfinity(globalObject));
-            RETURN_IF_EXCEPTION(scope, { });
-        }
-    }
-
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
+    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+    auto length = integerIndexedObjectLength(thisObject, getter);
+    if (UNLIKELY(!length))
         return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+
     // Get the length here; later assert that the length didn't change.
-    size_t thisLength = thisObject->length();
+    size_t thisLength = length.value();
 
     ASSERT(start.isNumber());
     ASSERT(finish.isUndefined() || finish.isNumber());
-    size_t begin = argumentClampedIndexFromStartOrEnd(globalObject, start, thisLength);
+    size_t begin = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(0), thisLength);
     RETURN_IF_EXCEPTION(scope, { });
-    size_t end = argumentClampedIndexFromStartOrEnd(globalObject, finish, thisLength, thisLength);
+    size_t end = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(1), thisLength, thisLength);
     RETURN_IF_EXCEPTION(scope, { });
 
+    // FIXME: We need to update and throw here.
     if (UNLIKELY(thisObject->isDetached()))
         return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
@@ -883,13 +908,14 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSubarray(VM& vm, JSGl
 
     ASSERT(end >= begin);
     size_t offset = begin;
-    size_t length = end - begin;
+    size_t count = end - begin;
 
     RefPtr<ArrayBuffer> arrayBuffer = thisObject->possiblySharedBuffer();
     if (UNLIKELY(!arrayBuffer)) {
         throwOutOfMemoryError(globalObject, scope);
         return { };
     }
+    // FIXME: This is very wrong.
     RELEASE_ASSERT(thisLength == thisObject->length());
 
     size_t newByteOffset = thisObject->byteOffset() + offset * ViewClass::elementSize;
@@ -900,11 +926,11 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSubarray(VM& vm, JSGl
         return ViewClass::create(
             globalObject, structure, WTFMove(arrayBuffer),
             thisObject->byteOffset() + offset * ViewClass::elementSize,
-            length);
+            count);
     }, [&](MarkedArgumentBuffer& args) {
         args.append(vm.m_typedArrayController->toJS(globalObject, thisObject->globalObject(), arrayBuffer.get()));
         args.append(jsNumber(newByteOffset));
-        args.append(jsNumber(length));
+        args.append(jsNumber(count));
         ASSERT(!args.hasOverflowed());
     }));
 }
@@ -940,8 +966,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncWith(VM& vm, JSGlobal
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    validateTypedArray(globalObject, thisObject);
+    RETURN_IF_EXCEPTION(scope, { });
 
     // Get the length here; later assert that the length didn't change.
     size_t thisLength = thisObject->length();

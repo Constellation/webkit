@@ -5005,7 +5005,7 @@ private:
         LBasicBlock lastNext = m_out.appendTo(wastefulCase, notNull);
 
         // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
-        speculate(UnexpectedResizableArrayBufferView, jsValueValue(basePtr), m_node, m_out.equal(mode, m_out.constInt32(ResizableWastefulTypedArray)));
+        speculate(UnexpectedResizableArrayBufferView, jsValueValue(basePtr), m_node, m_out.bitAnd(mode, m_out.constInt32(isResizableMode)));
         LValue vector = m_out.loadPtr(basePtr, m_heaps.JSArrayBufferView_vector);
         m_out.branch(m_out.equal(vector, m_out.constIntPtr(JSArrayBufferView::nullVectorPtr())),
             unsure(continuation), unsure(notNull));
@@ -5237,7 +5237,7 @@ IGNORE_CLANG_WARNINGS_END
             if (m_node->arrayMode().isSomeTypedArrayView()) {
                 LValue base = lowCell(m_node->child1());
                 // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
-                speculate(UnexpectedResizableArrayBufferView, jsValueValue(base), m_node, m_out.equal(m_out.load8ZeroExt32(base, m_heaps.JSArrayBufferView_mode), m_out.constInt32(ResizableWastefulTypedArray)));
+                speculate(UnexpectedResizableArrayBufferView, jsValueValue(base), m_node, m_out.bitAnd(m_out.load8ZeroExt32(base, m_heaps.JSArrayBufferView_mode), m_out.constInt32(isResizableMode)));
 #if USE(LARGE_TYPED_ARRAYS)
                 LValue length = m_out.load64NonNegative(base, m_heaps.JSArrayBufferView_length);
                 speculate(Overflow, noValue(), nullptr, m_out.above(length, m_out.constInt64(std::numeric_limits<int32_t>::max())));
@@ -5262,7 +5262,7 @@ IGNORE_CLANG_WARNINGS_BEGIN("missing-noreturn")
         RELEASE_ASSERT(sizeof(size_t) == sizeof(uint64_t));
         LValue base = lowCell(m_node->child1());
         // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
-        speculate(UnexpectedResizableArrayBufferView, jsValueValue(base), m_node, m_out.equal(m_out.load8ZeroExt32(base, m_heaps.JSArrayBufferView_mode), m_out.constInt32(ResizableWastefulTypedArray)));
+        speculate(UnexpectedResizableArrayBufferView, jsValueValue(base), m_node, m_out.bitAnd(m_out.load8ZeroExt32(base, m_heaps.JSArrayBufferView_mode), m_out.constInt32(isResizableMode)));
         setStrictInt52(m_out.load64NonNegative(base, m_heaps.JSArrayBufferView_length));
     }
 IGNORE_CLANG_WARNINGS_END
@@ -16196,7 +16196,7 @@ IGNORE_CLANG_WARNINGS_END
             isLittleEndian = lowBoolean(m_node->child3());
 
         // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
-        speculate(UnexpectedResizableArrayBufferView, jsValueValue(dataView), m_node, m_out.equal(m_out.load8ZeroExt32(dataView, m_heaps.JSArrayBufferView_mode), m_out.constInt32(ResizableDataViewMode)));
+        speculate(UnexpectedResizableArrayBufferView, jsValueValue(dataView), m_node, m_out.bitAnd(m_out.load8ZeroExt32(dataView, m_heaps.JSArrayBufferView_mode), m_out.constInt32(isResizableMode)));
 
         DataViewData data = m_node->dataViewData();
 
@@ -16348,7 +16348,7 @@ IGNORE_CLANG_WARNINGS_END
             isLittleEndian = lowBoolean(m_graph.varArgChild(m_node, 3));
 
         // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
-        speculate(UnexpectedResizableArrayBufferView, jsValueValue(dataView), m_node, m_out.equal(m_out.load8ZeroExt32(dataView, m_heaps.JSArrayBufferView_mode), m_out.constInt32(ResizableDataViewMode)));
+        speculate(UnexpectedResizableArrayBufferView, jsValueValue(dataView), m_node, m_out.bitAnd(m_out.load8ZeroExt32(dataView, m_heaps.JSArrayBufferView_mode), m_out.constInt32(isResizableMode)));
 
         DataViewData data = m_node->dataViewData();
 
@@ -20672,7 +20672,7 @@ IGNORE_CLANG_WARNINGS_END
 
         LBasicBlock lastNext = m_out.appendTo(isWasteful, continuation);
         // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
-        speculate(UnexpectedResizableArrayBufferView, jsValueValue(base), nullptr, m_out.equal(mode, m_out.constInt32(ResizableWastefulTypedArray)));
+        speculate(UnexpectedResizableArrayBufferView, jsValueValue(base), nullptr, m_out.bitAnd(mode, m_out.constInt32(isResizableMode)));
         LValue vector = m_out.loadPtr(base, m_heaps.JSArrayBufferView_vector);
         // FIXME: We could probably make this a mask.
         // https://bugs.webkit.org/show_bug.cgi?id=197701

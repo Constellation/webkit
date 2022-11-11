@@ -565,10 +565,12 @@ void JSGenericTypedArrayView<Adaptor>::visitChildrenImpl(JSCell* cell, Visitor& 
         
     case WastefulTypedArray:
     case ResizableWastefulTypedArray:
+    case ResizableAutoLengthWastefulTypedArray:
         break;
         
     case DataViewMode:
     case ResizableDataViewMode:
+    case ResizableAutoLengthDataViewMode:
         RELEASE_ASSERT_NOT_REACHED();
         break;
     }

@@ -103,8 +103,6 @@ enum class CopyType {
     Unobservable,
 };
 
-extern const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage;
-
 template<typename PassedAdaptor>
 class JSGenericTypedArrayView : public JSArrayBufferView {
 public:
@@ -127,7 +125,7 @@ public:
     size_t byteLength() const
     {
         // https://tc39.es/proposal-resizablearraybuffer/#sec-get-%typedarray%.prototype.bytelength
-        if (LIKELY(!isResizable(m_mode)))
+        if (LIKELY(!isResizable()))
             return m_length * sizeof(typename Adaptor::Type);
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
         return integerIndexedObjectByteLength(const_cast<JSGenericTypedArrayView*>(this), getter);

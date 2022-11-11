@@ -64,30 +64,37 @@ enum TypedArrayMode : uint8_t {
     // Small and fast typed array. B is unused, V points to a vector
     // allocated in the primitive Gigacage, and M = FastTypedArray. V's
     // liveness is determined entirely by the view's liveness.
-    FastTypedArray,
+    FastTypedArray = 0b0001'0000,
 
     // A large typed array that still attempts not to waste too much
     // memory. B is unused, V points to a vector allocated using
     // Gigacage::tryMalloc(), and M = OversizeTypedArray. V's liveness is
     // determined entirely by the view's liveness, and the view will add a
     // finalizer to delete V.
-    OversizeTypedArray,
+    OversizeTypedArray = 0b0011'0000,
 
     // A data view. B is unused, V points to a vector allocated using who-
     // knows-what, and M = DataViewMode. The view does not own the vector.
     // There is an extra field (in JSDataView) that points to the
     // ArrayBuffer.
-    DataViewMode,
-    ResizableDataViewMode, // Everything is the same to the corresponding mode except they are resizable.
+    DataViewMode = 0b0100'0000,
+    ResizableDataViewMode = 0b0100'0001, // Everything is the same to the corresponding mode except they are resizable.
+    ResizableAutoLengthDataViewMode = 0b0100'0011, // Ditto.
 
     // A typed array that was used in some crazy way. B's IndexingHeader
     // is hijacked to contain a reference to the native array buffer. The
     // native typed array view points back to the JS view. V points to a
     // vector allocated using who-knows-what, and M = WastefulTypedArray.
     // The view does not own the vector.
-    WastefulTypedArray,
-    ResizableWastefulTypedArray, // Everything is the same to the corresponding mode except they are resizable.
+    WastefulTypedArray = 0b1001'0000,
+    ResizableWastefulTypedArray = 0b1001'0001, // Everything is the same to the corresponding mode except they are resizable.
+    ResizableAutoLengthWastefulTypedArray = 0b1001'0011, // Ditto.
 };
+
+constexpr uint8_t isResizableMode  = 0b0000'0001;
+constexpr uint8_t isAutoLengthMode = 0b0000'0010;
+constexpr uint8_t isTypedArrayMode = 0b0001'0000;
+constexpr uint8_t isDataViewMode   = 0b0100'0000;
 
 inline bool hasArrayBuffer(TypedArrayMode mode)
 {
@@ -96,11 +103,18 @@ inline bool hasArrayBuffer(TypedArrayMode mode)
 
 inline bool isResizable(TypedArrayMode mode)
 {
-    return mode == ResizableDataViewMode || mode == ResizableWastefulTypedArray;
+    return static_cast<uint8_t>(mode) & isResizableMode;
+}
+
+inline bool isAutoLength(TypedArrayMode mode)
+{
+    return static_cast<uint8_t>(mode) & isAutoLengthMode;
 }
 
 template<typename Getter> std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView*, Getter&);
 template<typename Getter> bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView*, Getter&);
+
+extern const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage;
 
 // When WebCore uses a JSArrayBufferView, it expects to be able to get the native
 // ArrayBuffer and little else. This requires slowing down and wasting memory,
@@ -170,7 +184,7 @@ protected:
         size_t length() const { return m_length; }
         std::optional<size_t> maxByteLength() const
         {
-            if (isResizable(m_mode))
+            if (JSC::isResizable(m_mode))
                 return m_maxByteLength;
             return std::nullopt;
         }
@@ -205,6 +219,8 @@ public:
     RefPtr<ArrayBufferView> unsharedImpl();
     JS_EXPORT_PRIVATE RefPtr<ArrayBufferView> possiblySharedImpl();
     bool isDetached() { return hasArrayBuffer() && !hasVector(); }
+    bool isResizable() const { return JSC::isResizable(m_mode); }
+    bool isAutolength() const { return JSC::isAutoLength(m_mode); }
     void detach();
 
     bool hasVector() const { return !!m_vector; }
@@ -216,7 +232,7 @@ public:
 
     size_t length() const
     {
-        if (LIKELY(!isResizable(m_mode)))
+        if (LIKELY(!isResizable()))
             return m_length;
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
         if (auto length = integerIndexedObjectLength(const_cast<JSArrayBufferView*>(this), getter))
@@ -226,7 +242,7 @@ public:
 
     std::optional<size_t> maxByteLength() const
     {
-        if (isResizable(m_mode))
+        if (isResizable())
             return m_maxByteLength;
         return std::nullopt;
     }
