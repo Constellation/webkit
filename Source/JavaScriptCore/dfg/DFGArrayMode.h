@@ -128,7 +128,7 @@ public:
         u.asBytes.conversion = Array::AsIs;
         u.asBytes.action = Array::Write;
         u.asBytes.mayBeLargeTypedArray = false;
-        u.asBytes.mayBeResiazbleTypedArray = false;
+        u.asBytes.mayBeResizableTypedArray = false;
     }
     
     explicit ArrayMode(Array::Type type, Array::Action action)
@@ -139,7 +139,7 @@ public:
         u.asBytes.conversion = Array::AsIs;
         u.asBytes.action = action;
         u.asBytes.mayBeLargeTypedArray = false;
-        u.asBytes.mayBeResiazbleTypedArray = false;
+        u.asBytes.mayBeResizableTypedArray = false;
     }
     
     ArrayMode(Array::Type type, Array::Class arrayClass, Array::Action action)
@@ -150,10 +150,10 @@ public:
         u.asBytes.conversion = Array::AsIs;
         u.asBytes.action = action;
         u.asBytes.mayBeLargeTypedArray = false;
-        u.asBytes.mayBeResiazbleTypedArray = false;
+        u.asBytes.mayBeResizableTypedArray = false;
     }
     
-    ArrayMode(Array::Type type, Array::Class arrayClass, Array::Speculation speculation, Array::Conversion conversion, Array::Action action, bool mayBeLargeTypedArray = false, bool mayBeResiazbleTypedArray = false)
+    ArrayMode(Array::Type type, Array::Class arrayClass, Array::Speculation speculation, Array::Conversion conversion, Array::Action action, bool mayBeLargeTypedArray = false, bool mayBeResizableTypedArray = false)
     {
         u.asBytes.type = type;
         u.asBytes.arrayClass = arrayClass;
@@ -161,7 +161,7 @@ public:
         u.asBytes.conversion = conversion;
         u.asBytes.action = action;
         u.asBytes.mayBeLargeTypedArray = mayBeLargeTypedArray;
-        u.asBytes.mayBeResiazbleTypedArray = mayBeResiazbleTypedArray;
+        u.asBytes.mayBeResizableTypedArray = mayBeResizableTypedArray;
     }
     
     ArrayMode(Array::Type type, Array::Class arrayClass, Array::Conversion conversion, Array::Action action)
@@ -172,7 +172,7 @@ public:
         u.asBytes.conversion = conversion;
         u.asBytes.action = action;
         u.asBytes.mayBeLargeTypedArray = false;
-        u.asBytes.mayBeResiazbleTypedArray = false;
+        u.asBytes.mayBeResizableTypedArray = false;
     }
     
     Array::Type type() const { return static_cast<Array::Type>(u.asBytes.type); }
@@ -181,7 +181,7 @@ public:
     Array::Conversion conversion() const { return static_cast<Array::Conversion>(u.asBytes.conversion); }
     Array::Action action() const { return static_cast<Array::Action>(u.asBytes.action); }
     bool mayBeLargeTypedArray() const { return u.asBytes.mayBeLargeTypedArray; }
-    bool mayBeResiazbleTypedArray() const { return u.asBytes.mayBeResiazbleTypedArray; }
+    bool mayBeResizableTypedArray() const { return u.asBytes.mayBeResizableTypedArray; }
     
     unsigned asWord() const { return u.asWord; }
     
@@ -194,22 +194,22 @@ public:
 
     ArrayMode withType(Array::Type type) const
     {
-        return ArrayMode(type, arrayClass(), speculation(), conversion(), action(), mayBeLargeTypedArray(), mayBeResiazbleTypedArray());
+        return ArrayMode(type, arrayClass(), speculation(), conversion(), action(), mayBeLargeTypedArray(), mayBeResizableTypedArray());
     }
 
     ArrayMode withSpeculation(Array::Speculation speculation) const
     {
-        return ArrayMode(type(), arrayClass(), speculation, conversion(), action(), mayBeLargeTypedArray(), mayBeResiazbleTypedArray());
+        return ArrayMode(type(), arrayClass(), speculation, conversion(), action(), mayBeLargeTypedArray(), mayBeResizableTypedArray());
     }
 
     ArrayMode withConversion(Array::Conversion conversion) const
     {
-        return ArrayMode(type(), arrayClass(), speculation(), conversion, action(), mayBeLargeTypedArray(), mayBeResiazbleTypedArray());
+        return ArrayMode(type(), arrayClass(), speculation(), conversion, action(), mayBeLargeTypedArray(), mayBeResizableTypedArray());
     }
 
     ArrayMode withTypeAndConversion(Array::Type type, Array::Conversion conversion) const
     {
-        return ArrayMode(type, arrayClass(), speculation(), conversion, action(), mayBeLargeTypedArray(), mayBeResiazbleTypedArray());
+        return ArrayMode(type, arrayClass(), speculation(), conversion, action(), mayBeLargeTypedArray(), mayBeResizableTypedArray());
     }
 
     ArrayMode withArrayClassAndSpeculation(Array::Class arrayClass, Array::Speculation speculation, bool mayBeLargeTypedArray, bool mayBeResizableTypedArray) const
@@ -544,7 +544,7 @@ public:
             && speculation() == other.speculation()
             && conversion() == other.conversion()
             && mayBeLargeTypedArray() == other.mayBeLargeTypedArray()
-            && mayBeResiazbleTypedArray() == other.mayBeResiazbleTypedArray();
+            && mayBeResizableTypedArray() == other.mayBeResizableTypedArray();
     }
     
     bool operator!=(const ArrayMode& other) const
@@ -599,7 +599,7 @@ private:
             uint8_t conversion : 4;
             uint8_t action : 1;
             uint8_t mayBeLargeTypedArray : 1;
-            uint8_t mayBeResiazbleTypedArray : 1;
+            uint8_t mayBeResizableTypedArray : 1;
         } asBytes;
         unsigned asWord;
     } u;

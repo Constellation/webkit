@@ -128,17 +128,6 @@ void ArrayProfile::computeUpdatedPrediction(const ConcurrentJSLocker& locker, Co
     computeUpdatedPrediction(locker, codeBlock, lastSeenStructureID.decode());
 }
 
-static inline bool isResizableTypedArray(const ClassInfo* classInfo)
-{
-#define JSC_TYPED_ARRAY_CHECK(type) do { \
-    if (classInfo == JSResizable ## type ## Array::info()) \
-        return true; \
-    } while (0);
-    FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(JSC_TYPED_ARRAY_CHECK)
-#undef JSC_TYPED_ARRAY_CHECK
-    return false;
-}
-
 void ArrayProfile::computeUpdatedPrediction(const ConcurrentJSLocker&, CodeBlock* codeBlock, Structure* lastSeenStructure)
 {
     m_observedArrayModes |= arrayModesFromStructure(lastSeenStructure);

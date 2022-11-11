@@ -53,6 +53,17 @@ using JSResizableFloat64Array = JSGenericResizableTypedArrayView<Float64Adaptor>
 using JSResizableBigInt64Array = JSGenericResizableTypedArrayView<BigInt64Adaptor>;
 using JSResizableBigUint64Array = JSGenericResizableTypedArrayView<BigUint64Adaptor>;
 
+inline bool isResizableTypedArray(const ClassInfo* classInfo)
+{
+#define JSC_TYPED_ARRAY_CHECK(type) do { \
+    if (classInfo == JSResizable ## type ## Array::info()) \
+        return true; \
+    } while (0);
+    FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(JSC_TYPED_ARRAY_CHECK)
+#undef JSC_TYPED_ARRAY_CHECK
+    return false;
+}
+
 JS_EXPORT_PRIVATE JSUint8Array* createUint8TypedArray(JSGlobalObject*, Structure*, RefPtr<ArrayBuffer>&&, unsigned byteOffset, unsigned length);
 
 } // namespace JSC
