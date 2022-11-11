@@ -445,6 +445,11 @@ public:
     {
         return Base::resizableInfo();
     }
+
+    static Structure* createStructure(VM& vm, JSGlobalObject* globalObject, JSValue prototype)
+    {
+        return Structure::create(vm, globalObject, prototype, TypeInfo(typeForTypedArrayType(Base::Adaptor::typeValue), StructureFlags), info(), NonArray);
+    }
 };
 
 template<typename Adaptor>

@@ -220,7 +220,7 @@ public:
     JS_EXPORT_PRIVATE RefPtr<ArrayBufferView> possiblySharedImpl();
     bool isDetached() { return hasArrayBuffer() && !hasVector(); }
     bool isResizable() const { return JSC::isResizable(m_mode); }
-    bool isAutolength() const { return JSC::isAutoLength(m_mode); }
+    bool isAutoLength() const { return JSC::isAutoLength(m_mode); }
     void detach();
 
     bool hasVector() const { return !!m_vector; }
@@ -228,17 +228,20 @@ public:
     void* vectorWithoutPACValidation() const { return m_vector.getUnsafe(); }
     
     inline size_t byteOffset();
+    inline size_t byteOffsetUnsafe();
     inline std::optional<size_t> byteOffsetConcurrently();
 
     size_t length() const
     {
         if (LIKELY(!isResizable()))
-            return m_length;
+            return lengthUnsafe();
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
         if (auto length = integerIndexedObjectLength(const_cast<JSArrayBufferView*>(this), getter))
             return length.value();
         return 0;
     }
+
+    size_t lengthUnsafe() const { return m_length; }
 
     std::optional<size_t> maxByteLength() const
     {
@@ -247,6 +250,7 @@ public:
         return std::nullopt;
     }
     JS_EXPORT_PRIVATE size_t byteLength() const;
+    inline size_t byteLengthUnsafe() const { return lengthUnsafe() * elementSize(type()); }
 
     DECLARE_EXPORT_INFO;
     
@@ -263,6 +267,7 @@ public:
 private:
     enum Requester { Mutator, ConcurrentThread };
     template<Requester, typename ResultType> ResultType byteOffsetImpl();
+    template<Requester, typename ResultType> ResultType byteOffsetUnsafeImpl();
     template<Requester> ArrayBuffer* possiblySharedBufferImpl();
 
     JS_EXPORT_PRIVATE ArrayBuffer* slowDownAndWasteMemory();

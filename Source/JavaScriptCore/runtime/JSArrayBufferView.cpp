@@ -235,7 +235,7 @@ size_t JSArrayBufferView::byteLength() const
 #else
     // https://tc39.es/proposal-resizablearraybuffer/#sec-get-%typedarray%.prototype.bytelength
     if (LIKELY(!isResizable()))
-        return length() * elementSize(type());
+        return byteLengthUnsafe();
     IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
     return integerIndexedObjectByteLength(const_cast<JSArrayBufferView*>(this), getter);
 

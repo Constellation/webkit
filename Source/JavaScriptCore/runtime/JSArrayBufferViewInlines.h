@@ -88,19 +88,12 @@ inline RefPtr<ArrayBufferView> JSArrayBufferView::unsharedImpl()
     return result;
 }
 
+
 template<JSArrayBufferView::Requester requester, typename ResultType>
-inline ResultType JSArrayBufferView::byteOffsetImpl()
+inline ResultType JSArrayBufferView::byteOffsetUnsafeImpl()
 {
     if (!hasArrayBuffer())
         return 0;
-
-    if (UNLIKELY(isResizable())) {
-        if constexpr (requester == ConcurrentThread)
-            return std::nullopt;
-        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
-        if (UNLIKELY(isIntegerIndexedObjectOutOfBounds(this, getter)))
-            return 0;
-    }
 
     if constexpr (requester == ConcurrentThread)
         WTF::loadLoadFence();
@@ -131,9 +124,31 @@ inline ResultType JSArrayBufferView::byteOffsetImpl()
     return result;
 }
 
+template<JSArrayBufferView::Requester requester, typename ResultType>
+inline ResultType JSArrayBufferView::byteOffsetImpl()
+{
+    if (!hasArrayBuffer())
+        return 0;
+
+    if (UNLIKELY(isResizable())) {
+        if constexpr (requester == ConcurrentThread)
+            return std::nullopt;
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        if (UNLIKELY(isIntegerIndexedObjectOutOfBounds(this, getter)))
+            return 0;
+    }
+
+    return byteOffsetUnsafeImpl<requester, ResultType>();
+}
+
 inline size_t JSArrayBufferView::byteOffset()
 {
     return byteOffsetImpl<Mutator, size_t>();
+}
+
+inline size_t JSArrayBufferView::byteOffsetUnsafe()
+{
+    return byteOffsetUnsafeImpl<Mutator, size_t>();
 }
 
 inline std::optional<size_t> JSArrayBufferView::byteOffsetConcurrently()
@@ -174,8 +189,14 @@ bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, Getter& ge
         return true;
 
     size_t bufferByteLength = getter(*buffer);
-    size_t byteOffsetStart = typedArray->byteOffset();
-    size_t byteOffsetEnd = bufferByteLength;
+    size_t byteOffsetStart = typedArray->byteOffsetUnsafe();
+    size_t byteOffsetEnd = 0;
+    if (typedArray->isAutoLength())
+        byteOffsetEnd = bufferByteLength;
+    else {
+        size_t elementSize = JSC::elementSize(typedArray->type());
+        byteOffsetEnd = byteOffsetStart + typedArray->lengthUnsafe() * elementSize;
+    }
     return byteOffsetStart > bufferByteLength || byteOffsetEnd > bufferByteLength;
 }
 
@@ -187,8 +208,8 @@ std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, 
     if (UNLIKELY(isIntegerIndexedObjectOutOfBounds(typedArray, getter)))
         return std::nullopt;
 
-    if (LIKELY(!typedArray->isResizable()))
-        return typedArray->length();
+    if (LIKELY(!typedArray->isAutoLength()))
+        return typedArray->lengthUnsafe();
 
     ASSERT(typedArray->mode() == ResizableWastefulTypedArray || typedArray->mode() == ResizableAutoLengthWastefulTypedArray);
     RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
@@ -196,7 +217,7 @@ std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, 
         return std::nullopt;
 
     size_t bufferByteLength = getter(*buffer);
-    size_t byteOffset = typedArray->byteOffset();
+    size_t byteOffset = typedArray->byteOffsetUnsafe();
     size_t elementSize = JSC::elementSize(typedArray->type());
     return (bufferByteLength - byteOffset) / elementSize;
 }
@@ -208,8 +229,8 @@ size_t integerIndexedObjectByteLength(JSArrayBufferView* typedArray, Getter& get
     if (!length || !length.value())
         return 0;
 
-    if (LIKELY(!typedArray->isResizable()))
-        return typedArray->byteLength();
+    if (LIKELY(!typedArray->isAutoLength()))
+        return typedArray->byteLengthUnsafe();
 
     return length.value() * JSC::elementSize(typedArray->type());
 }

@@ -121,9 +121,9 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
             return nullptr;
         }
 
-        size_t length = 0;
+        std::optional<size_t> length;
         if (lengthOpt)
-            length = lengthOpt.value();
+            length = lengthOpt;
         else {
             size_t byteLength = buffer->byteLength();
             if (buffer->isResizable()) {
@@ -143,12 +143,13 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
         if (buffer->isResizable()) {
             Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, resizableTypedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
             RETURN_IF_EXCEPTION(scope, { });
+            dataLogLn(JSValue(structure));
             RELEASE_AND_RETURN(scope, ViewClass::createResizable(globalObject, structure, WTFMove(buffer), offset, length));
         }
 
         Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
         RETURN_IF_EXCEPTION(scope, { });
-        RELEASE_AND_RETURN(scope, ViewClass::create(globalObject, structure, WTFMove(buffer), offset, length));
+        RELEASE_AND_RETURN(scope, ViewClass::create(globalObject, structure, WTFMove(buffer), offset, length.value()));
     }
     ASSERT(!offset && !lengthOpt);
     
