@@ -99,11 +99,11 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(VM& vm, Structure* s
     m_mode = OversizeTypedArray;
 }
 
-JSArrayBufferView::ConstructionContext::ConstructionContext(VM& vm, Structure* structure, RefPtr<ArrayBuffer>&& arrayBuffer, size_t byteOffset, size_t length)
+JSArrayBufferView::ConstructionContext::ConstructionContext(VM& vm, Structure* structure, RefPtr<ArrayBuffer>&& arrayBuffer, size_t byteOffset, std::optional<size_t> length)
     : m_structure(structure)
-    , m_length(length)
-    , m_maxByteLength((Checked<size_t>(length) * JSC::elementSize(structure->typeInfo().type())).value())
-    , m_mode(WastefulTypedArray)
+    , m_length(length.value_or(0))
+    , m_maxByteLength(!length ? arrayBuffer->maxByteLength().value() - byteOffset : (Checked<size_t>(length.value()) * JSC::elementSize(structure->typeInfo().type())).value())
+    , m_mode(!arrayBuffer->isResizable() ? WastefulTypedArray : length ? ResizableWastefulTypedArray : ResizableAutoLengthWastefulTypedArray)
 {
     ASSERT(arrayBuffer->data() == removeArrayPtrTag(arrayBuffer->data()));
     m_vector = VectorType(static_cast<uint8_t*>(arrayBuffer->data()) + byteOffset, m_maxByteLength);
@@ -112,11 +112,11 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(VM& vm, Structure* s
     m_butterfly = Butterfly::create(vm, nullptr, 0, 0, true, indexingHeader, 0);
 }
 
-JSArrayBufferView::ConstructionContext::ConstructionContext(Structure* structure, RefPtr<ArrayBuffer>&& arrayBuffer, size_t byteOffset, size_t length, DataViewTag)
+JSArrayBufferView::ConstructionContext::ConstructionContext(Structure* structure, RefPtr<ArrayBuffer>&& arrayBuffer, size_t byteOffset, std::optional<size_t> length, DataViewTag)
     : m_structure(structure)
-    , m_length(length)
-    , m_maxByteLength(length)
-    , m_mode(DataViewMode)
+    , m_length(length.value_or(0))
+    , m_maxByteLength(!length ? arrayBuffer->maxByteLength().value() - byteOffset : length.value())
+    , m_mode(!arrayBuffer->isResizable() ? DataViewMode : length ? ResizableDataViewMode : ResizableAutoLengthDataViewMode)
     , m_butterfly(nullptr)
 {
     ASSERT(arrayBuffer->data() == removeArrayPtrTag(arrayBuffer->data()));

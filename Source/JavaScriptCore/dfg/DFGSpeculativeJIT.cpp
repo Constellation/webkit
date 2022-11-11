@@ -14816,11 +14816,7 @@ void SpeculativeJIT::compileNewTypedArray(Node* node)
         GPRFlushedCallResult result(this);
         GPRReg resultGPR = result.gpr();
 
-        JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
-        bool isResizable = false;
-        callOperation(
-            operationNewTypedArrayWithOneArgumentForType(node->typedArrayType()),
-            resultGPR, JITCompiler::LinkableConstant::globalObject(m_jit, node), m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(node->typedArrayType(), isResizable)), argumentRegs);
+        callOperation(operationNewTypedArrayWithOneArgumentForType(node->typedArrayType()), resultGPR, JITCompiler::LinkableConstant::globalObject(m_jit, node), argumentRegs);
         m_jit.exceptionCheck();
 
         cellResult(resultGPR, node);

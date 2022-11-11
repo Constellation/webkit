@@ -3035,17 +3035,24 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     case NewTypedArray: {
         switch (node->child1().useKind()) {
         case Int32Use:
-        case Int52RepUse:
+        case Int52RepUse: {
+            bool isResiazble = false;
+            setForNode(node, m_graph.globalObjectFor(node->origin.semantic)->typedArrayStructureConcurrently(node->typedArrayType(), isResiazble));
             break;
-        case UntypedUse:
+        }
+        case UntypedUse: {
             clobberWorld();
+            auto* globalObject = m_graph.globalObjectFor(node->origin.semantic);
+            RegisteredStructureSet set;
+            set.add(m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(node->typedArrayType(), true)));
+            set.add(m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(node->typedArrayType(), false)));
+            setForNode(node, set);
             break;
+        }
         default:
             RELEASE_ASSERT_NOT_REACHED();
             break;
         }
-        bool isResiazble = false;
-        setForNode(node, m_graph.globalObjectFor(node->origin.semantic)->typedArrayStructureConcurrently(node->typedArrayType(), isResiazble));
         break;
     }
 

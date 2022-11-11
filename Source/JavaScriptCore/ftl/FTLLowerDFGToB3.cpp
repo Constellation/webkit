@@ -8497,12 +8497,7 @@ IGNORE_CLANG_WARNINGS_END
 
         case UntypedUse: {
             LValue argument = lowJSValue(m_node->child1());
-
-            bool isResizable = false;
-            LValue result = vmCall(
-                pointerType(), operationNewTypedArrayWithOneArgumentForType(typedArrayType),
-                weakPointer(globalObject), weakPointer(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizable)), argument);
-
+            LValue result = vmCall(pointerType(), operationNewTypedArrayWithOneArgumentForType(typedArrayType), weakPointer(globalObject), argument);
             setJSValue(result);
             return;
         }

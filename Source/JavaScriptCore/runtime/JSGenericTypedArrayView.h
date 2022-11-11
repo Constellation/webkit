@@ -119,6 +119,7 @@ public:
     static JSGenericTypedArrayView* createWithFastVector(JSGlobalObject*, Structure*, size_t length, void* vector);
     static JSGenericTypedArrayView* createUninitialized(JSGlobalObject*, Structure*, size_t length);
     static JSGenericTypedArrayView* create(JSGlobalObject*, Structure*, RefPtr<ArrayBuffer>&&, size_t byteOffset, size_t length);
+    static JSGenericTypedArrayView* createResizable(JSGlobalObject*, Structure*, RefPtr<ArrayBuffer>&&, size_t byteOffset, std::optional<size_t> length);
     static JSGenericTypedArrayView* create(VM&, Structure*, RefPtr<typename Adaptor::ViewType>&& impl);
     static JSGenericTypedArrayView* create(Structure*, JSGlobalObject*, RefPtr<typename Adaptor::ViewType>&& impl);
     

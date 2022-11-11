@@ -106,13 +106,14 @@ inline JSObject* constructGenericTypedArrayViewFromIterator(JSGlobalObject* glob
 }
 
 template<typename ViewClass>
-inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* globalObject, Structure* structure, EncodedJSValue firstArgument, size_t offset, std::optional<size_t> lengthOpt)
+inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* globalObject, JSObject* newTarget, JSObject* callee, EncodedJSValue firstArgument, size_t offset, std::optional<size_t> lengthOpt)
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     JSValue firstValue = JSValue::decode(firstArgument);
 
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-initializetypedarrayfromarraybuffer
     if (JSArrayBuffer* jsBuffer = jsDynamicCast<JSArrayBuffer*>(firstValue)) {
         RefPtr<ArrayBuffer> buffer = jsBuffer->impl();
         if (buffer->isDetached()) {
@@ -124,13 +125,29 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
         if (lengthOpt)
             length = lengthOpt.value();
         else {
-            if (UNLIKELY((buffer->byteLength() - offset) % ViewClass::elementSize)) {
-                throwRangeError(globalObject, scope, "ArrayBuffer length minus the byteOffset is not a multiple of the element size"_s);
-                return nullptr;
+            size_t byteLength = buffer->byteLength();
+            if (buffer->isResizable()) {
+                if (UNLIKELY(offset > byteLength)) {
+                    throwRangeError(globalObject, scope, "byteOffset exceeds source ArrayBuffer byteLength"_s);
+                    return nullptr;
+                }
+            } else {
+                if (UNLIKELY((byteLength - offset) % ViewClass::elementSize)) {
+                    throwRangeError(globalObject, scope, "ArrayBuffer length minus the byteOffset is not a multiple of the element size"_s);
+                    return nullptr;
+                }
+                length = (byteLength - offset) / ViewClass::elementSize;
             }
-            length = (buffer->byteLength() - offset) / ViewClass::elementSize;
         }
 
+        if (buffer->isResizable()) {
+            Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, resizableTypedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
+            RETURN_IF_EXCEPTION(scope, { });
+            RELEASE_AND_RETURN(scope, ViewClass::createResizable(globalObject, structure, WTFMove(buffer), offset, length));
+        }
+
+        Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
+        RETURN_IF_EXCEPTION(scope, { });
         RELEASE_AND_RETURN(scope, ViewClass::create(globalObject, structure, WTFMove(buffer), offset, length));
     }
     ASSERT(!offset && !lengthOpt);
@@ -147,6 +164,7 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
     if (JSObject* object = jsDynamicCast<JSObject*>(firstValue)) {
         size_t length;
 
+        // https://tc39.es/proposal-resizablearraybuffer/#sec-initializetypedarrayfromtypedarray
         if (isTypedView(object->type())) {
             auto* view = jsCast<JSArrayBufferView*>(object);
 
@@ -183,6 +201,8 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
                     || lengthSlot.isAccessor() || lengthSlot.isCustom() || lengthSlot.isTaintedByOpaqueObject()
                     || hasAnyArrayStorage(object->indexingType()))) {
 
+                    Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
+                    RETURN_IF_EXCEPTION(scope, nullptr);
                     RELEASE_AND_RETURN(scope, constructGenericTypedArrayViewFromIterator<ViewClass>(globalObject, structure, object, iteratorFunc));
             }
 
@@ -196,6 +216,8 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
             }
         }
 
+        Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
+        RETURN_IF_EXCEPTION(scope, nullptr);
         ViewClass* result = ViewClass::createUninitialized(globalObject, structure, length);
         EXCEPTION_ASSERT(!!scope.exception() == !result);
         if (UNLIKELY(!result))
@@ -210,6 +232,9 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
 
     size_t length = firstValue.toTypedArrayIndex(globalObject, "length"_s);
     RETURN_IF_EXCEPTION(scope, nullptr);
+
+    Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
+    RETURN_IF_EXCEPTION(scope, nullptr);
     RELEASE_AND_RETURN(scope, ViewClass::create(globalObject, structure, length));
 }
 
@@ -220,10 +245,6 @@ ALWAYS_INLINE EncodedJSValue constructGenericTypedArrayViewImpl(JSGlobalObject* 
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
-    Structure* structure = nullptr;
-    // FIXME: This should be changed.
-    JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callFrame->jsCallee());
-    RETURN_IF_EXCEPTION(scope, { });
 
     size_t argCount = callFrame->argumentCount();
 
@@ -231,6 +252,8 @@ ALWAYS_INLINE EncodedJSValue constructGenericTypedArrayViewImpl(JSGlobalObject* 
         if (ViewClass::TypedArrayStorageType == TypeDataView)
             return throwVMTypeError(globalObject, scope, "DataView constructor requires at least one argument."_s);
 
+        Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callFrame->jsCallee());
+        RETURN_IF_EXCEPTION(scope, { });
         RELEASE_AND_RETURN(scope, JSValue::encode(ViewClass::create(globalObject, structure, 0)));
     }
 
@@ -251,7 +274,7 @@ ALWAYS_INLINE EncodedJSValue constructGenericTypedArrayViewImpl(JSGlobalObject* 
         }
     }
 
-    RELEASE_AND_RETURN(scope, JSValue::encode(constructGenericTypedArrayViewWithArguments<ViewClass>(globalObject, structure, JSValue::encode(firstValue), offset, length)));
+    RELEASE_AND_RETURN(scope, JSValue::encode(constructGenericTypedArrayViewWithArguments<ViewClass>(globalObject, newTarget, callFrame->jsCallee(), JSValue::JSValue::encode(firstValue), offset, length)));
 }
 
 template<typename ViewClass>

@@ -170,12 +170,12 @@ protected:
         
         JS_EXPORT_PRIVATE ConstructionContext(
             VM&, Structure*, RefPtr<ArrayBuffer>&&,
-            size_t byteOffset, size_t length);
+            size_t byteOffset, std::optional<size_t> length);
         
         enum DataViewTag { DataView };
         ConstructionContext(
             Structure*, RefPtr<ArrayBuffer>&&,
-            size_t byteOffset, size_t length, DataViewTag);
+            size_t byteOffset, std::optional<size_t> length, DataViewTag);
         
         bool operator!() const { return !m_structure; }
         

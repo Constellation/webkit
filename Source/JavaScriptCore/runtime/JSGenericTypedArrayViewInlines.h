@@ -123,9 +123,34 @@ JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(
 }
 
 template<typename Adaptor>
-JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(
-    VM& vm, Structure* structure, RefPtr<typename Adaptor::ViewType>&& impl)
+JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::createResizable(JSGlobalObject* globalObject, Structure* structure, RefPtr<ArrayBuffer>&& buffer, size_t byteOffset, std::optional<size_t> length)
 {
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+    size_t elementSize = sizeof(typename Adaptor::Type);
+    ASSERT(buffer);
+    if (length) {
+        if (!ArrayBufferView::verifySubRangeLength(*buffer, byteOffset, length.value(), elementSize)) {
+            throwException(globalObject, scope, createRangeError(globalObject, "Length out of range of buffer"_s));
+            return nullptr;
+        }
+        if (!ArrayBufferView::verifyByteOffsetAlignment(byteOffset, elementSize)) {
+            throwException(globalObject, scope, createRangeError(globalObject, "Byte offset is not aligned"_s));
+            return nullptr;
+        }
+    }
+
+    ConstructionContext context(vm, structure, WTFMove(buffer), byteOffset, length);
+    ASSERT(context);
+    JSGenericTypedArrayView* result = new (NotNull, allocateCell<JSGenericTypedArrayView>(vm)) JSGenericTypedArrayView(vm, context);
+    result->finishCreation(vm);
+    return result;
+}
+
+template<typename Adaptor>
+JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(VM& vm, Structure* structure, RefPtr<typename Adaptor::ViewType>&& impl)
+{
+    // FIXME: This can be resizable.
     ConstructionContext context(vm, structure, impl->possiblySharedBuffer(), impl->byteOffset(), impl->length());
     ASSERT(context);
     JSGenericTypedArrayView* result =
@@ -136,9 +161,7 @@ JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(
 }
 
 template<typename Adaptor>
-JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(
-    Structure* structure, JSGlobalObject* globalObject,
-    RefPtr<typename Adaptor::ViewType>&& impl)
+JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(Structure* structure, JSGlobalObject* globalObject, RefPtr<typename Adaptor::ViewType>&& impl)
 {
     return create(globalObject->vm(), structure, WTFMove(impl));
 }

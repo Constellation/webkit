@@ -788,6 +788,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGloba
         // If the source TypedArray is resizable, length can be changed.
         // In that case, it is possible that we will have some holes which is not initialized to the zero values.
         // We use initialized TypedArray if source TypedArray is resizable.
+        // Note that regardless of the source TypedArray's resizability, resulted TypedArray should be unresizable.
         if (UNLIKELY(thisObject->isResizable()))
             return ViewClass::create(globalObject, structure, length);
         return ViewClass::createUninitialized(globalObject, structure, length);
