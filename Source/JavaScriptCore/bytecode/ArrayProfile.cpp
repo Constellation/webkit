@@ -147,7 +147,7 @@ void ArrayProfile::computeUpdatedPrediction(const ConcurrentJSLocker&, CodeBlock
 
     if (isTypedArrayType(lastSeenStructure->typeInfo().type())) {
         if (isGrowableSharedTypedArray(lastSeenStructure->classInfoForCells()))
-            m_arrayProfileFlags.add(ArrayProfileFlag::MayBeResizableTypedArray);
+            m_arrayProfileFlags.add(ArrayProfileFlag::MayBeGrowableSharedTypedArray);
     }
 }
 
@@ -189,7 +189,7 @@ CString ArrayProfile::briefDescriptionWithoutUpdating(const ConcurrentJSLocker&)
         out.print(comma, "Intercept");
     if (!m_arrayProfileFlags.contains(ArrayProfileFlag::UsesNonOriginalArrayStructures))
         out.print(comma, "Original");
-    if (!m_arrayProfileFlags.contains(ArrayProfileFlag::MayBeResizableTypedArray))
+    if (!m_arrayProfileFlags.contains(ArrayProfileFlag::MayBeGrowableSharedTypedArray))
         out.print(comma, "Resizable");
 
     return out.toCString();

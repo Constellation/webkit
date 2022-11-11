@@ -201,7 +201,7 @@ enum class ArrayProfileFlag : uint32_t {
     MayBeLargeTypedArray = 1 << 2,
     MayInterceptIndexedAccesses = 1 << 3,
     UsesNonOriginalArrayStructures = 1 << 4,
-    MayBeResizableTypedArray = 1 << 5,
+    MayBeGrowableSharedTypedArray = 1 << 5,
     DidPerformFirstRunPruning = 1 << 6,
 };
 
@@ -240,7 +240,7 @@ public:
     
     bool usesOriginalArrayStructures(const ConcurrentJSLocker&) const { return !m_arrayProfileFlags.contains(ArrayProfileFlag::UsesNonOriginalArrayStructures); }
 
-    bool mayBeResizableTypedArray(const ConcurrentJSLocker&) const { return !m_arrayProfileFlags.contains(ArrayProfileFlag::MayBeResizableTypedArray); }
+    bool mayBeGrowableSharedTypedArray(const ConcurrentJSLocker&) const { return !m_arrayProfileFlags.contains(ArrayProfileFlag::MayBeGrowableSharedTypedArray); }
 
     CString briefDescription(const ConcurrentJSLocker&, CodeBlock*);
     CString briefDescriptionWithoutUpdating(const ConcurrentJSLocker&);

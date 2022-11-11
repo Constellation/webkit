@@ -3830,19 +3830,19 @@ bool ByteCodeParser::handleIntrinsicGetter(Operand result, SpeculatedType predic
 
         TypedArrayType type = typedArrayType((*variant.structureSet().begin())->typeInfo().type());
         Array::Type arrayType = toArrayType(type);
-        bool mayBeResizableTypedArray = m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, UnexpectedResizableArrayBufferView);
+        bool mayBeGrowableSharedTypedArray = m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, UnexpectedResizableArrayBufferView);
         size_t logSize = logElementSize(type);
 
         variant.structureSet().forEach([&] (Structure* structure) {
             TypedArrayType curType = typedArrayType(structure->typeInfo().type());
             ASSERT(logSize == logElementSize(curType));
             arrayType = refineTypedArrayType(arrayType, curType);
-            mayBeResizableTypedArray |= isGrowableSharedTypedArray(structure->classInfoForCells());
+            mayBeGrowableSharedTypedArray |= isGrowableSharedTypedArray(structure->classInfoForCells());
             ASSERT(arrayType != Array::Generic);
         });
 
         NodeType op = mayBeLargeTypedArray ? GetTypedArrayLengthAsInt52 : GetArrayLength;
-        Node* lengthNode = addToGraph(op, OpInfo(ArrayMode(arrayType, Array::NonArray, Array::InBounds, Array::AsIs, Array::Read, mayBeLargeTypedArray, mayBeResizableTypedArray).asWord()), thisNode);
+        Node* lengthNode = addToGraph(op, OpInfo(ArrayMode(arrayType, Array::NonArray, Array::InBounds, Array::AsIs, Array::Read, mayBeLargeTypedArray, mayBeGrowableSharedTypedArray).asWord()), thisNode);
         // Our ArrayMode shouldn't cause us to exit here so we should be ok to exit without effects.
         m_exitOK = true;
         addToGraph(ExitOK);
@@ -3869,17 +3869,17 @@ bool ByteCodeParser::handleIntrinsicGetter(Operand result, SpeculatedType predic
 
         TypedArrayType type = typedArrayType((*variant.structureSet().begin())->typeInfo().type());
         Array::Type arrayType = toArrayType(type);
-        bool mayBeResizableTypedArray = m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, UnexpectedResizableArrayBufferView);
+        bool mayBeGrowableSharedTypedArray = m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, UnexpectedResizableArrayBufferView);
 
         variant.structureSet().forEach([&] (Structure* structure) {
             TypedArrayType curType = typedArrayType(structure->typeInfo().type());
             arrayType = refineTypedArrayType(arrayType, curType);
-            mayBeResizableTypedArray |= isGrowableSharedTypedArray(structure->classInfoForCells());
+            mayBeGrowableSharedTypedArray |= isGrowableSharedTypedArray(structure->classInfoForCells());
             ASSERT(arrayType != Array::Generic);
         });
 
         NodeType op = mayBeLargeTypedArray ? GetTypedArrayLengthAsInt52 : GetArrayLength;
-        set(result, addToGraph(op, OpInfo(ArrayMode(arrayType, Array::NonArray, Array::InBounds, Array::AsIs, Array::Read, mayBeLargeTypedArray, mayBeResizableTypedArray).asWord()), thisNode));
+        set(result, addToGraph(op, OpInfo(ArrayMode(arrayType, Array::NonArray, Array::InBounds, Array::AsIs, Array::Read, mayBeLargeTypedArray, mayBeGrowableSharedTypedArray).asWord()), thisNode));
 
         return true;
     }
@@ -3894,17 +3894,17 @@ bool ByteCodeParser::handleIntrinsicGetter(Operand result, SpeculatedType predic
 
         TypedArrayType type = typedArrayType((*variant.structureSet().begin())->typeInfo().type());
         Array::Type arrayType = toArrayType(type);
-        bool mayBeResizableTypedArray = m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, UnexpectedResizableArrayBufferView);
+        bool mayBeGrowableSharedTypedArray = m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, UnexpectedResizableArrayBufferView);
 
         variant.structureSet().forEach([&] (Structure* structure) {
             TypedArrayType curType = typedArrayType(structure->typeInfo().type());
             arrayType = refineTypedArrayType(arrayType, curType);
-            mayBeResizableTypedArray |= isGrowableSharedTypedArray(structure->classInfoForCells());
+            mayBeGrowableSharedTypedArray |= isGrowableSharedTypedArray(structure->classInfoForCells());
             ASSERT(arrayType != Array::Generic);
         });
 
         NodeType op = mayBeLargeTypedArray ? GetTypedArrayByteOffsetAsInt52 : GetTypedArrayByteOffset;
-        set(result, addToGraph(op, OpInfo(ArrayMode(arrayType, Array::NonArray, Array::InBounds, Array::AsIs, Array::Read, mayBeLargeTypedArray, mayBeResizableTypedArray).asWord()), thisNode));
+        set(result, addToGraph(op, OpInfo(ArrayMode(arrayType, Array::NonArray, Array::InBounds, Array::AsIs, Array::Read, mayBeLargeTypedArray, mayBeGrowableSharedTypedArray).asWord()), thisNode));
 
         return true;
     }
