@@ -91,6 +91,7 @@ public:
     JS_EXPORT_PRIVATE void setDetachable(bool);
     bool isDetachable() const { return m_isDetachable; }
     bool isResizableOrGrowableShared() const { return m_isResizableOrGrowableShared; }
+    bool isGrowableShared() const { return m_isGrowableShared; }
 
     inline ~ArrayBufferView();
 
@@ -155,6 +156,7 @@ protected:
     TypedArrayType m_type { TypedArrayType::NotTypedArray };
     bool m_isDetachable { true };
     bool m_isResizableOrGrowableShared { false };
+    bool m_isGrowableShared { false };
     size_t m_byteOffset;
     size_t m_byteLength;
     size_t m_maxByteLength;

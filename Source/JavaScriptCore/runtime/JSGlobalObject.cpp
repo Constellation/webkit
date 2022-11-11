@@ -926,7 +926,7 @@ void JSGlobalObject::init(VM& vm)
             init.setStructure(JS ## type ## Array::createStructure(init.vm, init.global, init.prototype)); \
             init.setConstructor(JS ## type ## ArrayConstructor::create(init.vm, init.global, JS ## type ## ArrayConstructor::createStructure(init.vm, init.global, init.global->m_typedArraySuperConstructor.get(init.global)), init.prototype, #type "Array"_s)); \
         }); \
-    m_resizableTypedArray ## type ## Structure.initLater( \
+    m_growableSharedTypedArray ## type ## Structure.initLater( \
         [] (const Initializer<Structure>& init) { \
             init.set(JSGrowableShared ## type ## Array::createStructure(init.vm, init.owner, init.owner->typedArrayPrototype(Type##type))); \
         }); \
@@ -2524,7 +2524,7 @@ void JSGlobalObject::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 
     for (unsigned i = NumberOfTypedArrayTypes; i--;) {
         thisObject->lazyTypedArrayStructure(indexToTypedArrayType(i)).visit(visitor);
-        thisObject->lazyResizableTypedArrayStructure(indexToTypedArrayType(i)).visit(visitor);
+        thisObject->lazyGrowableSharedTypedArrayStructure(indexToTypedArrayType(i)).visit(visitor);
     }
     
     visitor.append(thisObject->m_speciesGetterSetter);

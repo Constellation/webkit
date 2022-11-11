@@ -69,7 +69,7 @@ JSDataView* JSDataView::create(
     return result;
 }
 
-JSDataView* JSDataView::createResizable(
+JSDataView* JSDataView::createGrowableShared(
     JSGlobalObject* globalObject, Structure* structure, RefPtr<ArrayBuffer>&& buffer,
     size_t byteOffset, std::optional<size_t> byteLength)
 {

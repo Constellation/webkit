@@ -115,12 +115,12 @@ static JSObject* createTypedArray(JSGlobalObject* globalObject, JSTypedArrayType
         throwOutOfMemoryError(globalObject, scope);
         return nullptr;
     }
-    bool isResizableOrGrowableShared = buffer->isResizableOrGrowableShared();
+    bool isGrowableShared = buffer->isGrowableShared();
     switch (type) {
 #define JSC_TYPED_ARRAY_FACTORY(type) case kJSTypedArrayType##type##Array: { \
-        if (isResizableOrGrowableShared) \
-            return JSInt8Array::createResizable(globalObject, globalObject->typedArrayStructure(TypeInt8, isResizableOrGrowableShared), WTFMove(buffer), offset, length); \
-        return JSInt8Array::create(globalObject, globalObject->typedArrayStructure(TypeInt8, isResizableOrGrowableShared), WTFMove(buffer), offset, length.value()); \
+        if (isGrowableShared) \
+            return JSInt8Array::createGrowableShared(globalObject, globalObject->typedArrayStructure(TypeInt8, isGrowableShared), WTFMove(buffer), offset, length); \
+        return JSInt8Array::create(globalObject, globalObject->typedArrayStructure(TypeInt8, isGrowableShared), WTFMove(buffer), offset, length.value()); \
     }
     FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(JSC_TYPED_ARRAY_FACTORY)
 #undef JSC_TYPED_ARRAY_CHECK
