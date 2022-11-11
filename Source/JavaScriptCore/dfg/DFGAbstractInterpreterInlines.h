@@ -3989,7 +3989,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         
     case GetTypedArrayByteOffset: {
         JSArrayBufferView* view = m_graph.tryGetFoldableView(forNode(node->child1()).m_value);
-        if (view) {
+        if (view && !view->isResizable()) {
             std::optional<size_t> byteOffset = view->byteOffsetConcurrently();
             if (byteOffset && isInBounds<int32_t>(byteOffset)) {
                 if (node->arrayMode().mayBeResizableTypedArray())
@@ -4006,7 +4006,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
 
     case GetTypedArrayByteOffsetAsInt52: {
         JSArrayBufferView* view = m_graph.tryGetFoldableView(forNode(node->child1()).m_value);
-        if (view) {
+        if (view && !view->isResizable()) {
             std::optional<size_t> byteOffset = view->byteOffsetConcurrently();
             if (byteOffset) {
                 if (node->arrayMode().mayBeResizableTypedArray())

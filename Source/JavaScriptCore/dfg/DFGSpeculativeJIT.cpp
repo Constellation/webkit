@@ -3592,7 +3592,7 @@ JITCompiler::Jump SpeculativeJIT::jumpForTypedArrayOutOfBounds(Node* node, GPRRe
         return JITCompiler::Jump();
     JSArrayBufferView* view = m_graph.tryGetFoldableView(
         m_state.forNode(m_graph.child(node, 0)).m_value, node->arrayMode());
-    if (view) {
+    if (view && !view->isResizable()) {
         size_t length = view->length();
         Node* indexNode = m_graph.child(node, 1).node();
         if (indexNode->isAnyIntConstant() && static_cast<uint64_t>(indexNode->asAnyInt()) < length)
