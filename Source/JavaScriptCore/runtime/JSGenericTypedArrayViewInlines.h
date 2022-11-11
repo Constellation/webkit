@@ -587,15 +587,15 @@ void JSGenericTypedArrayView<Adaptor>::visitChildrenImpl(JSCell* cell, Visitor& 
     }
         
     case WastefulTypedArray:
-    case ResizableWastefulTypedArray:
-    case ResizableAutoLengthWastefulTypedArray:
+    case ResizableNonSharedWastefulTypedArray:
+    case ResizableNonSharedAutoLengthWastefulTypedArray:
     case GrowableSharedWastefulTypedArray:
     case GrowableSharedAutoLengthWastefulTypedArray:
         break;
         
     case DataViewMode:
-    case ResizableDataViewMode:
-    case ResizableAutoLengthDataViewMode:
+    case ResizableNonSharedDataViewMode:
+    case ResizableNonSharedAutoLengthDataViewMode:
     case GrowableSharedDataViewMode:
     case GrowableSharedAutoLengthDataViewMode:
         RELEASE_ASSERT_NOT_REACHED();

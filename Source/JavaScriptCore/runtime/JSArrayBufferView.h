@@ -78,10 +78,10 @@ enum TypedArrayMode : uint8_t {
     // There is an extra field (in JSDataView) that points to the
     // ArrayBuffer.
     DataViewMode = 0b0100'1000,
-    ResizableDataViewMode = 0b0100'1001, // Everything is the same to the corresponding mode except they are resizable.
-    ResizableAutoLengthDataViewMode = 0b0100'1011,
-    GrowableSharedDataViewMode = 0b0100'1101,
-    GrowableSharedAutoLengthDataViewMode = 0b0100'1111,
+    ResizableNonSharedDataViewMode = 0b0100'1001, // Everything is the same to the corresponding mode except they are resizable.
+    ResizableNonSharedAutoLengthDataViewMode = 0b0100'1011,
+    GrowableSharedDataViewMode = 0b0100'1100,
+    GrowableSharedAutoLengthDataViewMode = 0b0100'1110,
 
     // A typed array that was used in some crazy way. B's IndexingHeader
     // is hijacked to contain a reference to the native array buffer. The
@@ -89,13 +89,13 @@ enum TypedArrayMode : uint8_t {
     // vector allocated using who-knows-what, and M = WastefulTypedArray.
     // The view does not own the vector.
     WastefulTypedArray = 0b1001'1000,
-    ResizableWastefulTypedArray = 0b1001'1001, // Everything is the same to the corresponding mode except they are resizable.
-    ResizableAutoLengthWastefulTypedArray = 0b1001'1011,
-    GrowableSharedWastefulTypedArray = 0b1001'1101,
-    GrowableSharedAutoLengthWastefulTypedArray = 0b1001'1111,
+    ResizableNonSharedWastefulTypedArray = 0b1001'1001, // Everything is the same to the corresponding mode except they are resizable.
+    ResizableNonSharedAutoLengthWastefulTypedArray = 0b1001'1011,
+    GrowableSharedWastefulTypedArray = 0b1001'1100,
+    GrowableSharedAutoLengthWastefulTypedArray = 0b1001'1110,
 };
 
-constexpr uint8_t isResizableMode           = 0b0000'0001;
+constexpr uint8_t isResizableNonSharedMode  = 0b0000'0001;
 constexpr uint8_t isAutoLengthMode          = 0b0000'0010;
 constexpr uint8_t isGrowableSharedMode      = 0b0000'0100;
 constexpr uint8_t isHavingArrayBufferMode   = 0b0000'1000;
@@ -103,7 +103,7 @@ constexpr uint8_t isTypedArrayMode          = 0b0001'0000;
 constexpr uint8_t isDataViewMode            = 0b0100'0000;
 constexpr uint8_t isWastefulTypedArrayMode  = 0b1000'0000;
 
-constexpr uint8_t isResizableOrGrowableSharedMode = isResizableMode | isGrowableSharedMode;
+constexpr uint8_t isResizableOrGrowableSharedMode = isResizableNonSharedMode | isGrowableSharedMode;
 
 inline bool hasArrayBuffer(TypedArrayMode mode)
 {

@@ -103,7 +103,7 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(VM& vm, Structure* s
     : m_structure(structure)
     , m_length(length.value_or(0))
     , m_maxByteLength(!length ? arrayBuffer->maxByteLength().value() - byteOffset : (Checked<size_t>(length.value()) * JSC::elementSize(structure->typeInfo().type())).value())
-    , m_mode(!arrayBuffer->isResizableOrGrowableShared() ? WastefulTypedArray : length ? ResizableWastefulTypedArray : ResizableAutoLengthWastefulTypedArray)
+    , m_mode(!arrayBuffer->isResizableOrGrowableShared() ? WastefulTypedArray : length ? ResizableNonSharedWastefulTypedArray : ResizableNonSharedAutoLengthWastefulTypedArray)
 {
     ASSERT(arrayBuffer->data() == removeArrayPtrTag(arrayBuffer->data()));
     m_vector = VectorType(static_cast<uint8_t*>(arrayBuffer->data()) + byteOffset, m_maxByteLength);
@@ -116,7 +116,7 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(Structure* structure
     : m_structure(structure)
     , m_length(length.value_or(0))
     , m_maxByteLength(!length ? arrayBuffer->maxByteLength().value() - byteOffset : length.value())
-    , m_mode(!arrayBuffer->isResizableOrGrowableShared() ? DataViewMode : length ? ResizableDataViewMode : ResizableAutoLengthDataViewMode)
+    , m_mode(!arrayBuffer->isResizableOrGrowableShared() ? DataViewMode : length ? ResizableNonSharedDataViewMode : ResizableNonSharedAutoLengthDataViewMode)
     , m_butterfly(nullptr)
 {
     ASSERT(arrayBuffer->data() == removeArrayPtrTag(arrayBuffer->data()));
@@ -145,15 +145,15 @@ void JSArrayBufferView::finishCreation(VM& vm)
         vm.heap.addFinalizer(this, finalize);
         return;
     case WastefulTypedArray:
-    case ResizableWastefulTypedArray:
-    case ResizableAutoLengthWastefulTypedArray:
+    case ResizableNonSharedWastefulTypedArray:
+    case ResizableNonSharedAutoLengthWastefulTypedArray:
     case GrowableSharedWastefulTypedArray:
     case GrowableSharedAutoLengthWastefulTypedArray:
         vm.heap.addReference(this, butterfly()->indexingHeader()->arrayBuffer());
         return;
     case DataViewMode:
-    case ResizableDataViewMode:
-    case ResizableAutoLengthDataViewMode:
+    case ResizableNonSharedDataViewMode:
+    case ResizableNonSharedAutoLengthDataViewMode:
     case GrowableSharedDataViewMode:
     case GrowableSharedAutoLengthDataViewMode:
         ASSERT(!butterfly());
@@ -304,7 +304,7 @@ ArrayBuffer* JSArrayBufferView::slowDownAndWasteMemory()
         butterfly()->indexingHeader()->setArrayBuffer(buffer.get());
         m_vector.setWithoutBarrier(buffer->data(), m_maxByteLength);
         WTF::storeStoreFence();
-        m_mode = WastefulTypedArray; // There is no possibility that FastTypedArray or OversizeTypedArray becomes ResizableWastefulTypedArray since resizable one starts with ResizableWastefulTypedArray.
+        m_mode = WastefulTypedArray; // There is no possibility that FastTypedArray or OversizeTypedArray becomes ResizableNonSharedWastefulTypedArray since resizable one starts with ResizableNonSharedWastefulTypedArray.
     }
     heap->addReference(this, buffer.get());
 
@@ -378,11 +378,11 @@ void printInternal(PrintStream& out, TypedArrayMode mode)
     case WastefulTypedArray:
         out.print("WastefulTypedArray");
         return;
-    case ResizableWastefulTypedArray:
-        out.print("ResizableWastefulTypedArray");
+    case ResizableNonSharedWastefulTypedArray:
+        out.print("ResizableNonSharedWastefulTypedArray");
         return;
-    case ResizableAutoLengthWastefulTypedArray:
-        out.print("ResizableAutoLengthWastefulTypedArray");
+    case ResizableNonSharedAutoLengthWastefulTypedArray:
+        out.print("ResizableNonSharedAutoLengthWastefulTypedArray");
         return;
     case GrowableSharedWastefulTypedArray:
         out.print("GrowableSharedWastefulTypedArray");
@@ -393,11 +393,11 @@ void printInternal(PrintStream& out, TypedArrayMode mode)
     case DataViewMode:
         out.print("DataViewMode");
         return;
-    case ResizableDataViewMode:
-        out.print("ResizableDataViewMode");
+    case ResizableNonSharedDataViewMode:
+        out.print("ResizableNonSharedDataViewMode");
         return;
-    case ResizableAutoLengthDataViewMode:
-        out.print("ResizableAutoLengthDataViewMode");
+    case ResizableNonSharedAutoLengthDataViewMode:
+        out.print("ResizableNonSharedAutoLengthDataViewMode");
         return;
     case GrowableSharedDataViewMode:
         out.print("GrowableSharedDataViewMode");

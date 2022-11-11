@@ -35,14 +35,14 @@ inline bool JSArrayBufferView::isShared()
 {
     switch (m_mode) {
     case WastefulTypedArray:
-    case ResizableWastefulTypedArray:
-    case ResizableAutoLengthWastefulTypedArray:
+    case ResizableNonSharedWastefulTypedArray:
+    case ResizableNonSharedAutoLengthWastefulTypedArray:
     case GrowableSharedWastefulTypedArray:
     case GrowableSharedAutoLengthWastefulTypedArray:
         return existingBufferInButterfly()->isShared();
     case DataViewMode:
-    case ResizableDataViewMode:
-    case ResizableAutoLengthDataViewMode:
+    case ResizableNonSharedDataViewMode:
+    case ResizableNonSharedAutoLengthDataViewMode:
     case GrowableSharedDataViewMode:
     case GrowableSharedAutoLengthDataViewMode:
         return jsCast<JSDataView*>(this)->possiblySharedBuffer()->isShared();
@@ -59,14 +59,14 @@ inline ArrayBuffer* JSArrayBufferView::possiblySharedBufferImpl()
 
     switch (m_mode) {
     case WastefulTypedArray:
-    case ResizableWastefulTypedArray:
-    case ResizableAutoLengthWastefulTypedArray:
+    case ResizableNonSharedWastefulTypedArray:
+    case ResizableNonSharedAutoLengthWastefulTypedArray:
     case GrowableSharedWastefulTypedArray:
     case GrowableSharedAutoLengthWastefulTypedArray:
         return existingBufferInButterfly();
     case DataViewMode:
-    case ResizableDataViewMode:
-    case ResizableAutoLengthDataViewMode:
+    case ResizableNonSharedDataViewMode:
+    case ResizableNonSharedAutoLengthDataViewMode:
     case GrowableSharedDataViewMode:
     case GrowableSharedAutoLengthDataViewMode:
         return jsCast<JSDataView*>(this)->possiblySharedBuffer();
