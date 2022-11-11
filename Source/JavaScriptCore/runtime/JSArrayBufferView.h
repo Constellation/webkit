@@ -31,6 +31,7 @@
 
 namespace JSC {
 
+class JSArrayBufferView;
 class LLIntOffsetsExtractor;
 
 // This class serves two purposes:
@@ -97,6 +98,9 @@ inline bool isResizable(TypedArrayMode mode)
 {
     return mode == ResizableDataViewMode || mode == ResizableWastefulTypedArray;
 }
+
+template<typename Getter> std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView*, Getter&);
+template<typename Getter> bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView*, Getter&);
 
 // When WebCore uses a JSArrayBufferView, it expects to be able to get the native
 // ArrayBuffer and little else. This requires slowing down and wasting memory,
@@ -210,7 +214,16 @@ public:
     inline size_t byteOffset();
     inline std::optional<size_t> byteOffsetConcurrently();
 
-    size_t length() const { return m_length; }
+    size_t length() const
+    {
+        if (LIKELY(!isResizable(m_mode)))
+            return m_length;
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        if (auto length = integerIndexedObjectLength(const_cast<JSArrayBufferView*>(this), getter))
+            return length.value();
+        return 0;
+    }
+
     std::optional<size_t> maxByteLength() const
     {
         if (isResizable(m_mode))
@@ -250,12 +263,7 @@ protected:
     TypedArrayMode m_mode;
 };
 
-class IdempotentArrayBufferByteLengthGetter;
-
 JSArrayBufferView* validateTypedArray(JSGlobalObject*, JSValue);
-bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView*, IdempotentArrayBufferByteLengthGetter&);
-std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView*, IdempotentArrayBufferByteLengthGetter&);
-size_t integerIndexedObjectByteLength(JSArrayBufferView*, IdempotentArrayBufferByteLengthGetter&);
 
 } // namespace JSC
 

@@ -223,13 +223,18 @@ void JSArrayBufferView::detach()
 
 size_t JSArrayBufferView::byteLength() const
 {
+    // The absence of overflow is already checked in the constructor, so I only add the extra sanity check when asserts are enabled.
 #if ASSERT_ENABLED
     Checked<size_t> result = length();
     result *= elementSize(type());
     return result.value();
 #else
-    // The absence of overflow is already checked in the constructor, so I only add the extra sanity check when asserts are enabled.
-    return length() * elementSize(type());
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-get-%typedarray%.prototype.bytelength
+    if (LIKELY(!isResizable(m_mode)))
+        return length() * elementSize(type());
+    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+    return integerIndexedObjectByteLength(const_cast<JSArrayBufferView*>(this), getter);
+
 #endif
 }
 
@@ -321,60 +326,6 @@ RefPtr<ArrayBufferView> JSArrayBufferView::possiblySharedImpl()
     }
 }
 
-bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
-{
-    // https://tc39.es/proposal-resizablearraybuffer/#sec-isintegerindexedobjectoutofbounds
-
-    if (typedArray->isDetached())
-        return true;
-
-    if (!isResizable(typedArray->mode()))
-        return false;
-
-    ASSERT(typedArray->mode() == ResizableWastefulTypedArray);
-    RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
-    if (!buffer)
-        return true;
-
-    size_t bufferByteLength = getter(*buffer);
-    size_t byteOffsetStart = typedArray->byteOffset();
-    size_t byteOffsetEnd = bufferByteLength;
-    return byteOffsetStart > bufferByteLength || byteOffsetEnd > bufferByteLength;
-}
-
-std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
-{
-    // https://tc39.es/proposal-resizablearraybuffer/#sec-integerindexedobjectlength
-
-    if (isIntegerIndexedObjectOutOfBounds(typedArray, getter))
-        return std::nullopt;
-
-    if (!isResizable(typedArray->mode()))
-        return typedArray->length();
-
-    ASSERT(typedArray->mode() == ResizableWastefulTypedArray);
-    RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
-    if (!buffer)
-        return std::nullopt;
-
-    size_t bufferByteLength = getter(*buffer);
-    size_t byteOffset = typedArray->byteOffset();
-    size_t elementSize = JSC::elementSize(typedArray->type());
-    return (bufferByteLength - byteOffset) / elementSize;
-}
-
-size_t integerIndexedObjectByteLength(JSArrayBufferView* typedArray, IdempotentArrayBufferByteLengthGetter& getter)
-{
-    std::optional<size_t> length = integerIndexedObjectLength(typedArray, getter);
-    if (!length || !length.value())
-        return 0;
-
-    if (!isResizable(typedArray->mode()))
-        return typedArray->byteLength();
-
-    return length.value() * JSC::elementSize(typedArray->type());
-}
-
 JSArrayBufferView* validateTypedArray(JSGlobalObject* globalObject, JSValue typedArrayValue)
 {
     VM& vm = globalObject->vm();
@@ -392,7 +343,8 @@ JSArrayBufferView* validateTypedArray(JSGlobalObject* globalObject, JSValue type
     }
 
     JSArrayBufferView* typedArray = jsCast<JSArrayBufferView*>(typedArrayCell);
-    if (typedArray->isDetached()) {
+    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+    if (isIntegerIndexedObjectOutOfBounds(typedArray, getter)) {
         throwTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
         return nullptr;
     }

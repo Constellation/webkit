@@ -124,7 +124,15 @@ public:
     static JSGenericTypedArrayView* create(VM&, Structure*, RefPtr<typename Adaptor::ViewType>&& impl);
     static JSGenericTypedArrayView* create(Structure*, JSGlobalObject*, RefPtr<typename Adaptor::ViewType>&& impl);
     
-    size_t byteLength() const { return m_length * sizeof(typename Adaptor::Type); }
+    size_t byteLength() const
+    {
+        // https://tc39.es/proposal-resizablearraybuffer/#sec-get-%typedarray%.prototype.bytelength
+        if (LIKELY(!isResizable(m_mode)))
+            return m_length * sizeof(typename Adaptor::Type);
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        return integerIndexedObjectByteLength(const_cast<JSGenericTypedArrayView*>(this), getter);
+    }
+
     size_t byteSize() const { return sizeOf(m_length, sizeof(typename Adaptor::Type)); }
     
     const typename Adaptor::Type* typedVector() const

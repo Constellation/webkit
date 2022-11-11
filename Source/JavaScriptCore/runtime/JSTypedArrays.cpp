@@ -33,7 +33,7 @@
 
 namespace JSC {
 
-const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage { "Underlying ArrayBuffer has been detached from the view"_s };
+const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage { "Underlying ArrayBuffer has been detached from the view or out-of-bounds"_s };
 
 #define MAKE_CONSTRUCTORS(Class) \
     JSC_DEFINE_HOST_FUNCTION(call##Class, (JSGlobalObject* globalObject, CallFrame* callFrame)) { \

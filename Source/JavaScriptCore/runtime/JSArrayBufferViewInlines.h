@@ -90,7 +90,15 @@ inline ResultType JSArrayBufferView::byteOffsetImpl()
     if (!hasArrayBuffer())
         return 0;
 
-    if (requester == ConcurrentThread)
+    if (UNLIKELY(isResizable(m_mode))) {
+        if constexpr (requester == ConcurrentThread)
+            return std::nullopt;
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        if (UNLIKELY(isIntegerIndexedObjectOutOfBounds(this, getter)))
+            return 0;
+    }
+
+    if constexpr (requester == ConcurrentThread)
         WTF::loadLoadFence();
 
     ArrayBuffer* buffer = possiblySharedBufferImpl<requester>();
@@ -145,5 +153,61 @@ inline RefPtr<ArrayBufferView> JSArrayBufferView::toWrappedAllowShared(VM&, JSVa
     return nullptr;
 }
 
+template<typename Getter>
+bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, Getter& getter)
+{
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-isintegerindexedobjectoutofbounds
+
+    if (UNLIKELY(typedArray->isDetached()))
+        return true;
+
+    if (LIKELY(!isResizable(typedArray->mode())))
+        return false;
+
+    ASSERT(typedArray->mode() == ResizableWastefulTypedArray);
+    RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
+    if (!buffer)
+        return true;
+
+    size_t bufferByteLength = getter(*buffer);
+    size_t byteOffsetStart = typedArray->byteOffset();
+    size_t byteOffsetEnd = bufferByteLength;
+    return byteOffsetStart > bufferByteLength || byteOffsetEnd > bufferByteLength;
+}
+
+template<typename Getter>
+std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, Getter& getter)
+{
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-integerindexedobjectlength
+
+    if (UNLIKELY(isIntegerIndexedObjectOutOfBounds(typedArray, getter)))
+        return std::nullopt;
+
+    if (LIKELY(!isResizable(typedArray->mode())))
+        return typedArray->length();
+
+    ASSERT(typedArray->mode() == ResizableWastefulTypedArray);
+    RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
+    if (!buffer)
+        return std::nullopt;
+
+    size_t bufferByteLength = getter(*buffer);
+    size_t byteOffset = typedArray->byteOffset();
+    size_t elementSize = JSC::elementSize(typedArray->type());
+    return (bufferByteLength - byteOffset) / elementSize;
+}
+
+template<typename Getter>
+size_t integerIndexedObjectByteLength(JSArrayBufferView* typedArray, Getter& getter)
+{
+    std::optional<size_t> length = integerIndexedObjectLength(typedArray, getter);
+    if (!length || !length.value())
+        return 0;
+
+    if (LIKELY(!isResizable(typedArray->mode())))
+        return typedArray->byteLength();
+
+    return length.value() * JSC::elementSize(typedArray->type());
+}
 
 } // namespace JSC
