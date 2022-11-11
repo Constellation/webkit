@@ -928,7 +928,7 @@ void JSGlobalObject::init(VM& vm)
         }); \
     m_resizableTypedArray ## type ## Structure.initLater( \
         [] (const Initializer<Structure>& init) { \
-            init.set(JSResizable ## type ## Array::createStructure(init.vm, init.owner, init.owner->typedArrayPrototype(Type##type))); \
+            init.set(JSGrowableShared ## type ## Array::createStructure(init.vm, init.owner, init.owner->typedArrayPrototype(Type##type))); \
         }); \
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::type##Array)].initLater([](const Initializer<JSCell>& init) { \
             init.set(jsCast<JSGlobalObject*>(init.owner)->typedArrayConstructor(TypedArrayType::Type##type)); \

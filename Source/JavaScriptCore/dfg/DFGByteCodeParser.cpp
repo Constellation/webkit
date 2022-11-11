@@ -3837,7 +3837,7 @@ bool ByteCodeParser::handleIntrinsicGetter(Operand result, SpeculatedType predic
             TypedArrayType curType = typedArrayType(structure->typeInfo().type());
             ASSERT(logSize == logElementSize(curType));
             arrayType = refineTypedArrayType(arrayType, curType);
-            mayBeResizableTypedArray |= isResizableOrGrowableSharedTypedArray(structure->classInfoForCells());
+            mayBeResizableTypedArray |= isGrowableSharedTypedArray(structure->classInfoForCells());
             ASSERT(arrayType != Array::Generic);
         });
 
@@ -3874,7 +3874,7 @@ bool ByteCodeParser::handleIntrinsicGetter(Operand result, SpeculatedType predic
         variant.structureSet().forEach([&] (Structure* structure) {
             TypedArrayType curType = typedArrayType(structure->typeInfo().type());
             arrayType = refineTypedArrayType(arrayType, curType);
-            mayBeResizableTypedArray |= isResizableOrGrowableSharedTypedArray(structure->classInfoForCells());
+            mayBeResizableTypedArray |= isGrowableSharedTypedArray(structure->classInfoForCells());
             ASSERT(arrayType != Array::Generic);
         });
 
@@ -3899,7 +3899,7 @@ bool ByteCodeParser::handleIntrinsicGetter(Operand result, SpeculatedType predic
         variant.structureSet().forEach([&] (Structure* structure) {
             TypedArrayType curType = typedArrayType(structure->typeInfo().type());
             arrayType = refineTypedArrayType(arrayType, curType);
-            mayBeResizableTypedArray |= isResizableOrGrowableSharedTypedArray(structure->classInfoForCells());
+            mayBeResizableTypedArray |= isGrowableSharedTypedArray(structure->classInfoForCells());
             ASSERT(arrayType != Array::Generic);
         });
 

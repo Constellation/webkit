@@ -41,22 +41,22 @@ using JSFloat32Array = JSGenericTypedArrayView<Float32Adaptor>;
 using JSFloat64Array = JSGenericTypedArrayView<Float64Adaptor>;
 using JSBigInt64Array = JSGenericTypedArrayView<BigInt64Adaptor>;
 using JSBigUint64Array = JSGenericTypedArrayView<BigUint64Adaptor>;
-using JSResizableInt8Array = JSGenericResizableTypedArrayView<Int8Adaptor>;
-using JSResizableInt16Array = JSGenericResizableTypedArrayView<Int16Adaptor>;
-using JSResizableInt32Array = JSGenericResizableTypedArrayView<Int32Adaptor>;
-using JSResizableUint8Array = JSGenericResizableTypedArrayView<Uint8Adaptor>;
-using JSResizableUint8ClampedArray = JSGenericResizableTypedArrayView<Uint8ClampedAdaptor>;
-using JSResizableUint16Array = JSGenericResizableTypedArrayView<Uint16Adaptor>;
-using JSResizableUint32Array = JSGenericResizableTypedArrayView<Uint32Adaptor>;
-using JSResizableFloat32Array = JSGenericResizableTypedArrayView<Float32Adaptor>;
-using JSResizableFloat64Array = JSGenericResizableTypedArrayView<Float64Adaptor>;
-using JSResizableBigInt64Array = JSGenericResizableTypedArrayView<BigInt64Adaptor>;
-using JSResizableBigUint64Array = JSGenericResizableTypedArrayView<BigUint64Adaptor>;
+using JSGrowableSharedInt8Array = JSGenericGrowableSharedTypedArrayView<Int8Adaptor>;
+using JSGrowableSharedInt16Array = JSGenericGrowableSharedTypedArrayView<Int16Adaptor>;
+using JSGrowableSharedInt32Array = JSGenericGrowableSharedTypedArrayView<Int32Adaptor>;
+using JSGrowableSharedUint8Array = JSGenericGrowableSharedTypedArrayView<Uint8Adaptor>;
+using JSGrowableSharedUint8ClampedArray = JSGenericGrowableSharedTypedArrayView<Uint8ClampedAdaptor>;
+using JSGrowableSharedUint16Array = JSGenericGrowableSharedTypedArrayView<Uint16Adaptor>;
+using JSGrowableSharedUint32Array = JSGenericGrowableSharedTypedArrayView<Uint32Adaptor>;
+using JSGrowableSharedFloat32Array = JSGenericGrowableSharedTypedArrayView<Float32Adaptor>;
+using JSGrowableSharedFloat64Array = JSGenericGrowableSharedTypedArrayView<Float64Adaptor>;
+using JSGrowableSharedBigInt64Array = JSGenericGrowableSharedTypedArrayView<BigInt64Adaptor>;
+using JSGrowableSharedBigUint64Array = JSGenericGrowableSharedTypedArrayView<BigUint64Adaptor>;
 
-inline bool isResizableOrGrowableSharedTypedArray(const ClassInfo* classInfo)
+inline bool isGrowableSharedTypedArray(const ClassInfo* classInfo)
 {
 #define JSC_TYPED_ARRAY_CHECK(type) do { \
-    if (classInfo == JSResizable ## type ## Array::info()) \
+    if (classInfo == JSGrowableShared ## type ## Array::info()) \
         return true; \
     } while (0);
     FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(JSC_TYPED_ARRAY_CHECK)
