@@ -95,13 +95,15 @@ enum TypedArrayMode : uint8_t {
     GrowableSharedAutoLengthWastefulTypedArray = 0b1001'1111,
 };
 
-constexpr uint8_t isResizableMode          = 0b0000'0001;
-constexpr uint8_t isAutoLengthMode         = 0b0000'0010;
-constexpr uint8_t isGrowableSharedMode     = 0b0000'0100;
-constexpr uint8_t isHavingArrayBufferMode  = 0b0000'1000;
-constexpr uint8_t isTypedArrayMode         = 0b0001'0000;
-constexpr uint8_t isDataViewMode           = 0b0100'0000;
-constexpr uint8_t isWastefulTypedArrayMode = 0b1000'0000;
+constexpr uint8_t isResizableMode           = 0b0000'0001;
+constexpr uint8_t isAutoLengthMode          = 0b0000'0010;
+constexpr uint8_t isGrowableSharedMode      = 0b0000'0100;
+constexpr uint8_t isHavingArrayBufferMode   = 0b0000'1000;
+constexpr uint8_t isTypedArrayMode          = 0b0001'0000;
+constexpr uint8_t isDataViewMode            = 0b0100'0000;
+constexpr uint8_t isWastefulTypedArrayMode  = 0b1000'0000;
+
+constexpr uint8_t isResizableOrGrowableSharedMode = isResizableMode | isGrowableSharedMode;
 
 inline bool hasArrayBuffer(TypedArrayMode mode)
 {
