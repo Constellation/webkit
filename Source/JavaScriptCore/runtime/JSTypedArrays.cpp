@@ -52,7 +52,7 @@ namespace JSC {
         #type "Array"_s, &JSResizableOrGrowableShared##type##Array::Base::s_info, nullptr, nullptr, \
         CREATE_METHOD_TABLE(JSResizableOrGrowableShared##type##Array) \
     }; \
-    const ClassInfo* getResizable##type##ArrayClassInfo() { return &JSResizableOrGrowableShared##type##Array::s_info; } \
+    const ClassInfo* getResizableOrGrowableShared##type##ArrayClassInfo() { return &JSResizableOrGrowableShared##type##Array::s_info; } \
     MAKE_CONSTRUCTORS(type##Array)
 
 MAKE_S_INFO(Int8);
