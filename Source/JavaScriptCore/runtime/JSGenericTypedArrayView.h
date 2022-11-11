@@ -32,29 +32,11 @@
 
 namespace JSC {
 
-JS_EXPORT_PRIVATE const ClassInfo* getInt8ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getInt16ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getInt32ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getUint8ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getUint8ClampedArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getUint16ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getUint32ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getFloat32ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getFloat64ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getBigInt64ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getBigUint64ArrayClassInfo();
-
-JS_EXPORT_PRIVATE const ClassInfo* getResizableInt8ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getResizableInt16ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getResizableInt32ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getResizableUint8ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getResizableUint8ClampedArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getResizableUint16ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getResizableUint32ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getResizableFloat32ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getResizableFloat64ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getResizableBigInt64ArrayClassInfo();
-JS_EXPORT_PRIVATE const ClassInfo* getResizableBigUint64ArrayClassInfo();
+#define JSC_DECLARE_CLASS_INFO_FUNCTION(type) \
+    JS_EXPORT_PRIVATE const ClassInfo* get##type##ArrayClassInfo(); \
+    JS_EXPORT_PRIVATE const ClassInfo* getResizableOrGrowableShared##type##ArrayClassInfo();
+    FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(JSC_DECLARE_CLASS_INFO_FUNCTION)
+#undef JSC_DECLARE_CLASS_INFO_FUNCTION
 
 // A typed array view is our representation of a typed array object as seen
 // from JavaScript. For example:
@@ -253,59 +235,10 @@ public:
     static const ClassInfo* info()
     {
         switch (Adaptor::typeValue) {
-        case TypeInt8:
-            return getInt8ArrayClassInfo();
-        case TypeInt16:
-            return getInt16ArrayClassInfo();
-        case TypeInt32:
-            return getInt32ArrayClassInfo();
-        case TypeUint8:
-            return getUint8ArrayClassInfo();
-        case TypeUint8Clamped:
-            return getUint8ClampedArrayClassInfo();
-        case TypeUint16:
-            return getUint16ArrayClassInfo();
-        case TypeUint32:
-            return getUint32ArrayClassInfo();
-        case TypeFloat32:
-            return getFloat32ArrayClassInfo();
-        case TypeFloat64:
-            return getFloat64ArrayClassInfo();
-        case TypeBigInt64:
-            return getBigInt64ArrayClassInfo();
-        case TypeBigUint64:
-            return getBigUint64ArrayClassInfo();
-        default:
-            RELEASE_ASSERT_NOT_REACHED();
-            return nullptr;
-        }
-    }
-
-    static const ClassInfo* resizableInfo()
-    {
-        switch (Adaptor::typeValue) {
-        case TypeInt8:
-            return getResizableInt8ArrayClassInfo();
-        case TypeInt16:
-            return getResizableInt16ArrayClassInfo();
-        case TypeInt32:
-            return getResizableInt32ArrayClassInfo();
-        case TypeUint8:
-            return getResizableUint8ArrayClassInfo();
-        case TypeUint8Clamped:
-            return getResizableUint8ClampedArrayClassInfo();
-        case TypeUint16:
-            return getResizableUint16ArrayClassInfo();
-        case TypeUint32:
-            return getResizableUint32ArrayClassInfo();
-        case TypeFloat32:
-            return getResizableFloat32ArrayClassInfo();
-        case TypeFloat64:
-            return getResizableFloat64ArrayClassInfo();
-        case TypeBigInt64:
-            return getResizableBigInt64ArrayClassInfo();
-        case TypeBigUint64:
-            return getResizableBigUint64ArrayClassInfo();
+#define JSC_GET_CLASS_INFO(type) \
+        case Type##type: return get##type##ArrayClassInfo();
+        FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(JSC_GET_CLASS_INFO)
+#undef JSC_GET_CLASS_INFO
         default:
             RELEASE_ASSERT_NOT_REACHED();
             return nullptr;
@@ -442,7 +375,15 @@ public:
 
     static const ClassInfo* info()
     {
-        return Base::resizableInfo();
+        switch (Base::Adaptor::typeValue) {
+#define JSC_GET_CLASS_INFO(type) \
+        case Type##type: return getResizableOrGrowableShared##type##ArrayClassInfo();
+        FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(JSC_GET_CLASS_INFO)
+#undef JSC_GET_CLASS_INFO
+        default:
+            RELEASE_ASSERT_NOT_REACHED();
+            return nullptr;
+        }
     }
 
     static Structure* createStructure(VM& vm, JSGlobalObject* globalObject, JSValue prototype)
