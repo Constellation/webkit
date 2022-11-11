@@ -11591,7 +11591,8 @@ void SpeculativeJIT::compileNewTypedArrayWithSize(Node* node)
 {
     JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
     auto typedArrayType = node->typedArrayType();
-    RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType));
+    bool isResizable = false;
+    RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizable));
     RELEASE_ASSERT(structure.get());
 
 #if USE(LARGE_TYPED_ARRAYS)
@@ -14816,9 +14817,10 @@ void SpeculativeJIT::compileNewTypedArray(Node* node)
         GPRReg resultGPR = result.gpr();
 
         JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
+        bool isResizable = false;
         callOperation(
             operationNewTypedArrayWithOneArgumentForType(node->typedArrayType()),
-            resultGPR, JITCompiler::LinkableConstant::globalObject(m_jit, node), m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(node->typedArrayType())), argumentRegs);
+            resultGPR, JITCompiler::LinkableConstant::globalObject(m_jit, node), m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(node->typedArrayType(), isResizable)), argumentRegs);
         m_jit.exceptionCheck();
 
         cellResult(resultGPR, node);

@@ -8476,7 +8476,8 @@ IGNORE_CLANG_WARNINGS_END
         
         switch (m_node->child1().useKind()) {
         case Int32Use: {
-            RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType));
+            bool isResizable = false;
+            RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizable));
 
             LValue size = m_out.signExt32To64(lowInt32(m_node->child1()));
 
@@ -8485,7 +8486,8 @@ IGNORE_CLANG_WARNINGS_END
         }
 
         case Int52RepUse: {
-            RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType));
+            bool isResizable = false;
+            RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizable));
 
             LValue size = lowStrictInt52(m_node->child1());
 
@@ -8496,9 +8498,10 @@ IGNORE_CLANG_WARNINGS_END
         case UntypedUse: {
             LValue argument = lowJSValue(m_node->child1());
 
+            bool isResizable = false;
             LValue result = vmCall(
                 pointerType(), operationNewTypedArrayWithOneArgumentForType(typedArrayType),
-                weakPointer(globalObject), weakPointer(globalObject->typedArrayStructureConcurrently(typedArrayType)), argument);
+                weakPointer(globalObject), weakPointer(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizable)), argument);
 
             setJSValue(result);
             return;

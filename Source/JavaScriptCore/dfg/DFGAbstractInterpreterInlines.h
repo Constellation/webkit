@@ -3032,7 +3032,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         setTypeForNode(node, SpecArray);
         break;
         
-    case NewTypedArray:
+    case NewTypedArray: {
         switch (node->child1().useKind()) {
         case Int32Use:
         case Int52RepUse:
@@ -3044,11 +3044,11 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
             RELEASE_ASSERT_NOT_REACHED();
             break;
         }
-        setForNode(node, 
-            m_graph.globalObjectFor(node->origin.semantic)->typedArrayStructureConcurrently(
-                node->typedArrayType()));
+        bool isResiazble = false;
+        setForNode(node, m_graph.globalObjectFor(node->origin.semantic)->typedArrayStructureConcurrently(node->typedArrayType(), isResiazble));
         break;
-        
+    }
+
     case NewRegexp:
         setForNode(node, m_graph.globalObjectFor(node->origin.semantic)->regExpStructure());
         break;

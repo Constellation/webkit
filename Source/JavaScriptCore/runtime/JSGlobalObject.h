@@ -504,7 +504,9 @@ public:
     LazyProperty<JSGlobalObject, JSTypedArrayViewPrototype> m_typedArrayProto;
     LazyProperty<JSGlobalObject, JSTypedArrayViewConstructor> m_typedArraySuperConstructor;
     
-#define DECLARE_TYPED_ARRAY_TYPE_STRUCTURE(name) LazyClassStructure m_typedArray ## name;
+#define DECLARE_TYPED_ARRAY_TYPE_STRUCTURE(name) \
+    LazyClassStructure m_typedArray ## name; \
+    LazyProperty<JSGlobalObject, Structure> m_resizableTypedArray ## name ## Structure;
     FOR_EACH_TYPED_ARRAY_TYPE(DECLARE_TYPED_ARRAY_TYPE_STRUCTURE)
 #undef DECLARE_TYPED_ARRAY_TYPE_STRUCTURE
 
@@ -1168,23 +1170,45 @@ public:
     {
         return const_cast<const LazyClassStructure&>(const_cast<JSGlobalObject*>(this)->lazyTypedArrayStructure(type));
     }
-    
-    Structure* typedArrayStructure(TypedArrayType type) const
+    LazyProperty<JSGlobalObject, Structure>& lazyResizableTypedArrayStructure(TypedArrayType type)
     {
+        switch (type) {
+        case NotTypedArray:
+            RELEASE_ASSERT_NOT_REACHED();
+            return m_resizableTypedArrayInt8Structure;
+#define TYPED_ARRAY_TYPE_CASE(name) case Type ## name: return m_resizableTypedArray ## name ## Structure;
+            FOR_EACH_TYPED_ARRAY_TYPE(TYPED_ARRAY_TYPE_CASE)
+#undef TYPED_ARRAY_TYPE_CASE
+        }
+        RELEASE_ASSERT_NOT_REACHED();
+        return m_resizableTypedArrayInt8Structure;
+    }
+    const LazyProperty<JSGlobalObject, Structure>& lazyResizableTypedArrayStructure(TypedArrayType type) const
+    {
+        return const_cast<const LazyProperty<JSGlobalObject, Structure>&>(const_cast<JSGlobalObject*>(this)->lazyResizableTypedArrayStructure(type));
+    }
+
+    Structure* typedArrayStructure(TypedArrayType type, bool isResizable) const
+    {
+        if (isResizable)
+            return lazyResizableTypedArrayStructure(type).get(this);
         return lazyTypedArrayStructure(type).get(this);
     }
-    Structure* typedArrayStructureConcurrently(TypedArrayType type) const
+    Structure* typedArrayStructureConcurrently(TypedArrayType type, bool isResizable) const
     {
+        if (isResizable)
+            return lazyResizableTypedArrayStructure(type).getConcurrently();
         return lazyTypedArrayStructure(type).getConcurrently();
     }
-    bool isOriginalTypedArrayStructure(Structure* structure)
+    bool isOriginalTypedArrayStructure(Structure* structure, bool isResizable)
     {
         TypedArrayType type = typedArrayType(structure->typeInfo().type());
         if (type == NotTypedArray)
             return false;
-        return typedArrayStructureConcurrently(type) == structure;
+        return typedArrayStructureConcurrently(type, isResizable) == structure;
     }
-    template<TypedArrayType type> Structure* typedArrayStructureWithTypedArrayType() const { return typedArrayStructure(type); }
+    template<TypedArrayType type> Structure* typedArrayStructureWithTypedArrayType() const { return typedArrayStructure(type, /* isResizable */ false); }
+    template<TypedArrayType type> Structure* resizableTypedArrayStructureWithTypedArrayType() const { return typedArrayStructure(type, /* isResizable */ true); }
 
     JSObject* typedArrayConstructor(TypedArrayType type) const
     {

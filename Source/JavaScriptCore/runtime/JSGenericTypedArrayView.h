@@ -44,6 +44,18 @@ JS_EXPORT_PRIVATE const ClassInfo* getFloat64ArrayClassInfo();
 JS_EXPORT_PRIVATE const ClassInfo* getBigInt64ArrayClassInfo();
 JS_EXPORT_PRIVATE const ClassInfo* getBigUint64ArrayClassInfo();
 
+JS_EXPORT_PRIVATE const ClassInfo* getResizableInt8ArrayClassInfo();
+JS_EXPORT_PRIVATE const ClassInfo* getResizableInt16ArrayClassInfo();
+JS_EXPORT_PRIVATE const ClassInfo* getResizableInt32ArrayClassInfo();
+JS_EXPORT_PRIVATE const ClassInfo* getResizableUint8ArrayClassInfo();
+JS_EXPORT_PRIVATE const ClassInfo* getResizableUint8ClampedArrayClassInfo();
+JS_EXPORT_PRIVATE const ClassInfo* getResizableUint16ArrayClassInfo();
+JS_EXPORT_PRIVATE const ClassInfo* getResizableUint32ArrayClassInfo();
+JS_EXPORT_PRIVATE const ClassInfo* getResizableFloat32ArrayClassInfo();
+JS_EXPORT_PRIVATE const ClassInfo* getResizableFloat64ArrayClassInfo();
+JS_EXPORT_PRIVATE const ClassInfo* getResizableBigInt64ArrayClassInfo();
+JS_EXPORT_PRIVATE const ClassInfo* getResizableBigUint64ArrayClassInfo();
+
 // A typed array view is our representation of a typed array object as seen
 // from JavaScript. For example:
 //
@@ -94,7 +106,7 @@ enum class CopyType {
 extern const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage;
 
 template<typename PassedAdaptor>
-class JSGenericTypedArrayView final : public JSArrayBufferView {
+class JSGenericTypedArrayView : public JSArrayBufferView {
 public:
     using Base = JSArrayBufferView;
     using Adaptor = PassedAdaptor;
@@ -263,6 +275,37 @@ public:
         }
     }
 
+    static const ClassInfo* resizableInfo()
+    {
+        switch (Adaptor::typeValue) {
+        case TypeInt8:
+            return getResizableInt8ArrayClassInfo();
+        case TypeInt16:
+            return getResizableInt16ArrayClassInfo();
+        case TypeInt32:
+            return getResizableInt32ArrayClassInfo();
+        case TypeUint8:
+            return getResizableUint8ArrayClassInfo();
+        case TypeUint8Clamped:
+            return getResizableUint8ClampedArrayClassInfo();
+        case TypeUint16:
+            return getResizableUint16ArrayClassInfo();
+        case TypeUint32:
+            return getResizableUint32ArrayClassInfo();
+        case TypeFloat32:
+            return getResizableFloat32ArrayClassInfo();
+        case TypeFloat64:
+            return getResizableFloat64ArrayClassInfo();
+        case TypeBigInt64:
+            return getResizableBigInt64ArrayClassInfo();
+        case TypeBigUint64:
+            return getResizableBigUint64ArrayClassInfo();
+        default:
+            RELEASE_ASSERT_NOT_REACHED();
+            return nullptr;
+        }
+    }
+
     template<typename CellType, SubspaceAccess mode>
     static GCClient::IsoSubspace* subspaceFor(VM& vm)
     {
@@ -304,7 +347,7 @@ public:
     // [AllowShared] annotation allows accepting TypedArray originated from SharedArrayBuffer.
     static RefPtr<typename Adaptor::ViewType> toWrappedAllowShared(VM&, JSValue);
     
-private:
+protected:
     friend struct TypedArrayClassInfos;
 
     JSGenericTypedArrayView(VM&, ConstructionContext&);
@@ -380,9 +423,21 @@ private:
                 return a < b;
             return a > b;
         });
-
     }
+};
 
+template<typename PassedAdaptor>
+class JSGenericResizableTypedArrayView final : public JSGenericTypedArrayView<PassedAdaptor> {
+public:
+    using Base = JSGenericTypedArrayView<PassedAdaptor>;
+    using Base::StructureFlags;
+
+    static const ClassInfo s_info; // This is never accessed directly, since that would break linkage on some compilers.
+
+    static const ClassInfo* info()
+    {
+        return Base::resizableInfo();
+    }
 };
 
 template<typename Adaptor>

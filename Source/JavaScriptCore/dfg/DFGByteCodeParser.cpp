@@ -4075,7 +4075,8 @@ bool ByteCodeParser::handleTypedArrayConstructor(
     if (argumentCountIncludingThis != 2)
         return false;
     
-    if (!function->globalObject()->typedArrayStructureConcurrently(type))
+    bool isResizable = false;
+    if (!function->globalObject()->typedArrayStructureConcurrently(type, isResizable))
         return false;
 
     insertChecks();

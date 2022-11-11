@@ -41,6 +41,17 @@ using JSFloat32Array = JSGenericTypedArrayView<Float32Adaptor>;
 using JSFloat64Array = JSGenericTypedArrayView<Float64Adaptor>;
 using JSBigInt64Array = JSGenericTypedArrayView<BigInt64Adaptor>;
 using JSBigUint64Array = JSGenericTypedArrayView<BigUint64Adaptor>;
+using JSResizableInt8Array = JSGenericResizableTypedArrayView<Int8Adaptor>;
+using JSResizableInt16Array = JSGenericResizableTypedArrayView<Int16Adaptor>;
+using JSResizableInt32Array = JSGenericResizableTypedArrayView<Int32Adaptor>;
+using JSResizableUint8Array = JSGenericResizableTypedArrayView<Uint8Adaptor>;
+using JSResizableUint8ClampedArray = JSGenericResizableTypedArrayView<Uint8ClampedAdaptor>;
+using JSResizableUint16Array = JSGenericResizableTypedArrayView<Uint16Adaptor>;
+using JSResizableUint32Array = JSGenericResizableTypedArrayView<Uint32Adaptor>;
+using JSResizableFloat32Array = JSGenericResizableTypedArrayView<Float32Adaptor>;
+using JSResizableFloat64Array = JSGenericResizableTypedArrayView<Float64Adaptor>;
+using JSResizableBigInt64Array = JSGenericResizableTypedArrayView<BigInt64Adaptor>;
+using JSResizableBigUint64Array = JSGenericResizableTypedArrayView<BigUint64Adaptor>;
 
 JS_EXPORT_PRIVATE JSUint8Array* createUint8TypedArray(JSGlobalObject*, Structure*, RefPtr<ArrayBuffer>&&, unsigned byteOffset, unsigned length);
 

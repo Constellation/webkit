@@ -525,8 +525,7 @@ SpeculatedType speculationFromClassInfoInheritance(const ClassInfo* classInfo)
         return SpecPromiseObject;
     
 #define JSC_TYPED_ARRAY_CHECK(type) do { \
-        static_assert(std::is_final<JS ## type ## Array>::value); \
-        if (classInfo == JS ## type ## Array::info()) \
+        if (classInfo->isSubClassOf(JS ## type ## Array::info())) \
             return Spec ## type ## Array; \
     } while (0);
     FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(JSC_TYPED_ARRAY_CHECK)

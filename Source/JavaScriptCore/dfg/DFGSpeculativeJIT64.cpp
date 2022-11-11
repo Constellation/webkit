@@ -2927,7 +2927,8 @@ void SpeculativeJIT::compileNewTypedArrayWithInt52Size(Node* node)
 {
     JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
     auto typedArrayType = node->typedArrayType();
-    RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType));
+    bool isResizable = false;
+    RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizable));
     RELEASE_ASSERT(structure.get());
 
     SpeculateStrictInt52Operand size(this, node->child1());

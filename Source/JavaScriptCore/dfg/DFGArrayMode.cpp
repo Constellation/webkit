@@ -414,8 +414,9 @@ Structure* ArrayMode::originalArrayStructure(Graph& graph, const CodeOrigin& cod
         TypedArrayType type = typedArrayType();
         if (type == NotTypedArray)
             return nullptr;
-        
-        return globalObject->typedArrayStructureConcurrently(type);
+
+        bool isResizable = false;
+        return globalObject->typedArrayStructureConcurrently(type, isResizable);
     }
         
     default:

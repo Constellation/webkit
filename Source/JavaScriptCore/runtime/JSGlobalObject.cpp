@@ -2518,8 +2518,10 @@ void JSGlobalObject::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 #undef VISIT_SIMPLE_TYPE
 #undef VISIT_LAZY_TYPE
 
-    for (unsigned i = NumberOfTypedArrayTypes; i--;)
+    for (unsigned i = NumberOfTypedArrayTypes; i--;) {
         thisObject->lazyTypedArrayStructure(indexToTypedArrayType(i)).visit(visitor);
+        thisObject->lazyResizableTypedArrayStructure(indexToTypedArrayType(i)).visit(visitor);
+    }
     
     visitor.append(thisObject->m_speciesGetterSetter);
     thisObject->m_typedArrayProto.visit(visitor);

@@ -28,6 +28,7 @@
 
 #include "CodeBlock.h"
 #include "JSCellInlines.h"
+#include "JSTypedArrays.h"
 #include <wtf/CommaPrinter.h>
 #include <wtf/StringPrintStream.h>
 
@@ -127,6 +128,17 @@ void ArrayProfile::computeUpdatedPrediction(const ConcurrentJSLocker& locker, Co
     computeUpdatedPrediction(locker, codeBlock, lastSeenStructureID.decode());
 }
 
+static inline bool isResizableTypedArray(const ClassInfo* classInfo)
+{
+#define JSC_TYPED_ARRAY_CHECK(type) do { \
+    if (classInfo == JSResizable ## type ## Array::info()) \
+        return true; \
+    } while (0);
+    FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(JSC_TYPED_ARRAY_CHECK)
+#undef JSC_TYPED_ARRAY_CHECK
+    return false;
+}
+
 void ArrayProfile::computeUpdatedPrediction(const ConcurrentJSLocker&, CodeBlock* codeBlock, Structure* lastSeenStructure)
 {
     m_observedArrayModes |= arrayModesFromStructure(lastSeenStructure);
@@ -140,8 +152,14 @@ void ArrayProfile::computeUpdatedPrediction(const ConcurrentJSLocker&, CodeBlock
         m_arrayProfileFlags.add(ArrayProfileFlag::MayInterceptIndexedAccesses);
 
     JSGlobalObject* globalObject = codeBlock->globalObject();
-    if (!globalObject->isOriginalArrayStructure(lastSeenStructure) && !globalObject->isOriginalTypedArrayStructure(lastSeenStructure))
+    bool isResizable = false;
+    if (!globalObject->isOriginalArrayStructure(lastSeenStructure) && !globalObject->isOriginalTypedArrayStructure(lastSeenStructure, isResizable))
         m_arrayProfileFlags.add(ArrayProfileFlag::UsesNonOriginalArrayStructures);
+
+    if (isTypedArrayType(lastSeenStructure->typeInfo().type())) {
+        if (isResizableTypedArray(lastSeenStructure->classInfoForCells()))
+            m_arrayProfileFlags.add(ArrayProfileFlag::MayBeResizableTypedArray);
+    }
 }
 
 void ArrayProfile::observeIndexedRead(JSCell* cell, unsigned index)
@@ -182,6 +200,8 @@ CString ArrayProfile::briefDescriptionWithoutUpdating(const ConcurrentJSLocker&)
         out.print(comma, "Intercept");
     if (!m_arrayProfileFlags.contains(ArrayProfileFlag::UsesNonOriginalArrayStructures))
         out.print(comma, "Original");
+    if (!m_arrayProfileFlags.contains(ArrayProfileFlag::MayBeResizableTypedArray))
+        out.print(comma, "Resizable");
 
     return out.toCString();
 }

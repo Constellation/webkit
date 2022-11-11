@@ -221,10 +221,6 @@ void JSArrayBufferView::detach()
     m_vector.clear();
 }
 
-#define FACTORY(type) static_assert(std::is_final<JS ## type ## Array>::value);
-FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(FACTORY)
-#undef FACTORY
-
 size_t JSArrayBufferView::byteLength() const
 {
 #if ASSERT_ENABLED
@@ -417,7 +413,7 @@ bool JSArrayBufferView::isIteratorProtocolFastAndNonObservable()
     VM& vm = globalObject->vm();
     Structure* structure = this->structure();
     // This is the fast case. Many TypedArrays will be an original typed array structure.
-    if (globalObject->isOriginalTypedArrayStructure(structure))
+    if (globalObject->isOriginalTypedArrayStructure(structure, true) || globalObject->isOriginalTypedArrayStructure(structure, false))
         return true;
 
     if (getPrototypeDirect() != globalObject->typedArrayPrototype(typedArrayType))

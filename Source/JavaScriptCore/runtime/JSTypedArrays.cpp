@@ -50,6 +50,11 @@ const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage { "Underlying Arr
         CREATE_METHOD_TABLE(JS##type##Array) \
     }; \
     const ClassInfo* get##type##ArrayClassInfo() { return &JS##type##Array::s_info; } \
+    template<> const ClassInfo JSResizable##type##Array::s_info = { \
+        #type "Array"_s, &JSResizable##type##Array::Base::s_info, nullptr, nullptr, \
+        CREATE_METHOD_TABLE(JSResizable##type##Array) \
+    }; \
+    const ClassInfo* getResizable##type##ArrayClassInfo() { return &JSResizable##type##Array::s_info; } \
     MAKE_CONSTRUCTORS(type##Array)
 
 MAKE_S_INFO(Int8);

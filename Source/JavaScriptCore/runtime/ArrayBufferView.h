@@ -73,7 +73,7 @@ public:
     {
         if (isDetached())
             return nullptr;
-        return m_baseAddress.getMayBeNull(byteLength());
+        return m_baseAddress.getMayBeNull(maxByteLength());
     }
 
     void* data() const { return baseAddress(); }
@@ -86,9 +86,11 @@ public:
     }
 
     size_t byteLength() const { return m_byteLength; }
+    size_t maxByteLength() const { return m_maxByteLength; }
 
     JS_EXPORT_PRIVATE void setDetachable(bool);
     bool isDetachable() const { return m_isDetachable; }
+    bool isResizable() const { return m_isResizable; }
 
     inline ~ArrayBufferView();
 
@@ -151,13 +153,11 @@ protected:
     }
 
     TypedArrayType m_type { TypedArrayType::NotTypedArray };
-#if USE(LARGE_TYPED_ARRAYS)
-    uint64_t m_byteOffset : 63;
-#else
-    uint32_t m_byteOffset : 31;
-#endif
-    bool m_isDetachable : 1 { true };
-    UCPURegister m_byteLength;
+    bool m_isDetachable { true };
+    bool m_isResizable { false };
+    size_t m_byteOffset;
+    size_t m_byteLength;
+    size_t m_maxByteLength;
 
     using BaseAddress = CagedPtr<Gigacage::Primitive, void, tagCagedPtr>;
     // This is the address of the ArrayBuffer's storage, plus the byte offset.

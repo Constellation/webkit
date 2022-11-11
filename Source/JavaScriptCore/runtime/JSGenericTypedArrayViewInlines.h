@@ -372,10 +372,8 @@ bool JSGenericTypedArrayView<Adaptor>::getOwnPropertySlot(
 {
     JSGenericTypedArrayView* thisObject = jsCast<JSGenericTypedArrayView*>(object);
 
-    if (std::optional<uint32_t> index = parseIndex(propertyName)) {
-        static_assert(std::is_final_v<JSGenericTypedArrayView<Adaptor>>, "getOwnPropertySlotByIndex must not be overridden");
+    if (std::optional<uint32_t> index = parseIndex(propertyName))
         return getOwnPropertySlotByIndex(thisObject, globalObject, index.value(), slot);
-    }
 
     if (isCanonicalNumericIndexString(propertyName.uid()))
         return false;
@@ -390,10 +388,8 @@ bool JSGenericTypedArrayView<Adaptor>::put(
 {
     JSGenericTypedArrayView* thisObject = jsCast<JSGenericTypedArrayView*>(cell);
 
-    if (std::optional<uint32_t> index = parseIndex(propertyName)) {
-        static_assert(std::is_final_v<JSGenericTypedArrayView<Adaptor>>, "putByIndex must not be overridden");
+    if (std::optional<uint32_t> index = parseIndex(propertyName))
         return putByIndex(thisObject, globalObject, index.value(), value, slot.isStrictMode());
-    }
 
     if (isCanonicalNumericIndexString(propertyName.uid())) {
         // Cases like '-0', '1.1', etc. are still obliged to give the RHS a chance to throw.
@@ -457,10 +453,8 @@ bool JSGenericTypedArrayView<Adaptor>::deleteProperty(
 {
     JSGenericTypedArrayView* thisObject = jsCast<JSGenericTypedArrayView*>(cell);
 
-    if (std::optional<uint32_t> index = parseIndex(propertyName)) {
-        static_assert(std::is_final_v<JSGenericTypedArrayView<Adaptor>>, "deletePropertyByIndex must not be overridden");
+    if (std::optional<uint32_t> index = parseIndex(propertyName))
         return deletePropertyByIndex(thisObject, globalObject, index.value());
-    }
 
     if (isCanonicalNumericIndexString(propertyName.uid()))
         return true;
