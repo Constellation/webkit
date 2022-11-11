@@ -103,9 +103,24 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(VM& vm, Structure* s
     : m_structure(structure)
     , m_length(length.value_or(0))
     , m_maxByteLength(!length ? arrayBuffer->maxByteLength().value() - byteOffset : (Checked<size_t>(length.value()) * JSC::elementSize(structure->typeInfo().type())).value())
-    , m_mode(!arrayBuffer->isResizableOrGrowableShared() ? WastefulTypedArray : length ? ResizableNonSharedWastefulTypedArray : ResizableNonSharedAutoLengthWastefulTypedArray)
+    , m_mode(WastefulTypedArray)
 {
     ASSERT(arrayBuffer->data() == removeArrayPtrTag(arrayBuffer->data()));
+    if (!arrayBuffer->isResizableOrGrowableShared())
+        m_mode = WastefulTypedArray;
+    else {
+        if (arrayBuffer->isGrowableShared()) {
+            if (length)
+                m_mode = GrowableSharedWastefulTypedArray;
+            else
+                m_mode = GrowableSharedAutoLengthWastefulTypedArray;
+        } else {
+            if (length)
+                m_mode = ResizableNonSharedWastefulTypedArray;
+            else
+                m_mode = ResizableNonSharedAutoLengthWastefulTypedArray;
+        }
+    }
     m_vector = VectorType(static_cast<uint8_t*>(arrayBuffer->data()) + byteOffset, m_maxByteLength);
     IndexingHeader indexingHeader;
     indexingHeader.setArrayBuffer(arrayBuffer.get());
@@ -116,9 +131,24 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(Structure* structure
     : m_structure(structure)
     , m_length(length.value_or(0))
     , m_maxByteLength(!length ? arrayBuffer->maxByteLength().value() - byteOffset : length.value())
-    , m_mode(!arrayBuffer->isResizableOrGrowableShared() ? DataViewMode : length ? ResizableNonSharedDataViewMode : ResizableNonSharedAutoLengthDataViewMode)
+    , m_mode(DataViewMode)
     , m_butterfly(nullptr)
 {
+    if (!arrayBuffer->isResizableOrGrowableShared())
+        m_mode = DataViewMode;
+    else {
+        if (arrayBuffer->isGrowableShared()) {
+            if (length)
+                m_mode = GrowableSharedDataViewMode;
+            else
+                m_mode = GrowableSharedAutoLengthDataViewMode;
+        } else {
+            if (length)
+                m_mode = ResizableNonSharedDataViewMode;
+            else
+                m_mode = ResizableNonSharedAutoLengthDataViewMode;
+        }
+    }
     ASSERT(arrayBuffer->data() == removeArrayPtrTag(arrayBuffer->data()));
     m_vector = VectorType(static_cast<uint8_t*>(arrayBuffer->data()) + byteOffset, m_maxByteLength);
 }
@@ -248,7 +278,7 @@ size_t JSArrayBufferView::byteLength() const
 
 ArrayBuffer* JSArrayBufferView::slowDownAndWasteMemory()
 {
-    ASSERT(m_mode == FastTypedArray || m_mode == OversizeTypedArray);
+    ASSERT(!hasArrayBuffer(m_mode));
 
     // We play this game because we want this to be callable even from places that
     // don't have access to CallFrame* or the VM, and we only allocate so little
@@ -304,7 +334,7 @@ ArrayBuffer* JSArrayBufferView::slowDownAndWasteMemory()
         butterfly()->indexingHeader()->setArrayBuffer(buffer.get());
         m_vector.setWithoutBarrier(buffer->data(), m_maxByteLength);
         WTF::storeStoreFence();
-        m_mode = WastefulTypedArray; // There is no possibility that FastTypedArray or OversizeTypedArray becomes ResizableNonSharedWastefulTypedArray since resizable one starts with ResizableNonSharedWastefulTypedArray.
+        m_mode = WastefulTypedArray; // There is no possibility that FastTypedArray or OversizeTypedArray becomes resizable ones since resizable ones do not start with FastTypedArray or OversizeTypedArray.
     }
     heap->addReference(this, buffer.get());
 
