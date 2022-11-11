@@ -267,7 +267,7 @@ JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoFuncGrow, (JSGlobalObject* global
     if (!thisObject || (ArrayBufferSharingMode::Shared != thisObject->impl()->sharingMode()))
         return throwVMTypeError(globalObject, scope, makeString("Receiver must be SharedArrayBuffer"_s));
 
-    if (!thisObject->impl()->isGrowableShared())
+    if (!thisObject->impl()->isResizableOrGrowableShared())
         return throwVMTypeError(globalObject, scope, makeString("SharedArrayBuffer is not growable"_s));
 
     double newLength = callFrame->argument(0).toIntegerOrInfinity(globalObject);

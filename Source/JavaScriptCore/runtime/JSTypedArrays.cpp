@@ -48,11 +48,11 @@ namespace JSC {
         CREATE_METHOD_TABLE(JS##type##Array) \
     }; \
     const ClassInfo* get##type##ArrayClassInfo() { return &JS##type##Array::s_info; } \
-    template<> const ClassInfo JSGrowableShared##type##Array::s_info = { \
-        #type "Array"_s, &JSGrowableShared##type##Array::Base::s_info, nullptr, nullptr, \
-        CREATE_METHOD_TABLE(JSGrowableShared##type##Array) \
+    template<> const ClassInfo JSResizableOrGrowableShared##type##Array::s_info = { \
+        #type "Array"_s, &JSResizableOrGrowableShared##type##Array::Base::s_info, nullptr, nullptr, \
+        CREATE_METHOD_TABLE(JSResizableOrGrowableShared##type##Array) \
     }; \
-    const ClassInfo* getResizable##type##ArrayClassInfo() { return &JSGrowableShared##type##Array::s_info; } \
+    const ClassInfo* getResizable##type##ArrayClassInfo() { return &JSResizableOrGrowableShared##type##Array::s_info; } \
     MAKE_CONSTRUCTORS(type##Array)
 
 MAKE_S_INFO(Int8);

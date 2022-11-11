@@ -892,8 +892,8 @@ void ArrayMode::dump(PrintStream& out) const
     out.print(type(), "+", arrayClass(), "+", speculation(), "+", conversion(), "+", action());
     if (mayBeLargeTypedArray())
         out.print("+LargeTypedArray");
-    if (mayBeGrowableSharedTypedArray())
-        out.print("+GrowableSharedTypedArray");
+    if (mayBeResizableOrGrowableSharedTypedArray())
+        out.print("+ResizableOrGrowableSharedTypedArray");
 }
 
 } } // namespace JSC::DFG

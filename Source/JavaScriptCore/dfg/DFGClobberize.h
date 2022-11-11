@@ -1055,7 +1055,7 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         case Array::Uint32Array:
         case Array::Float32Array:
         case Array::Float64Array:
-            if (node->arrayMode().mayBeGrowableSharedTypedArray()) {
+            if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray()) {
                 clobberTop();
                 return;
             }
@@ -1188,7 +1188,7 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         case Array::Uint32Array:
         case Array::Float32Array:
         case Array::Float64Array:
-            if (node->arrayMode().mayBeGrowableSharedTypedArray()) {
+            if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray()) {
                 clobberTop();
                 return;
             }
@@ -1363,7 +1363,7 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         return;
 
     case GetTypedArrayByteOffset:
-        if (node->arrayMode().mayBeGrowableSharedTypedArray()) {
+        if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray()) {
             clobberTop();
             return;
         }
@@ -1372,7 +1372,7 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         return;
 
     case GetTypedArrayByteOffsetAsInt52:
-        if (node->arrayMode().mayBeGrowableSharedTypedArray()) {
+        if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray()) {
             clobberTop();
             return;
         }
@@ -1493,7 +1493,7 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
             write(SideState);
             return;
         default:
-            if (mode.mayBeGrowableSharedTypedArray()) {
+            if (mode.mayBeResizableOrGrowableSharedTypedArray()) {
                 clobberTop();
                 return;
             }

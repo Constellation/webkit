@@ -70,7 +70,7 @@ struct JSTypeRange {
 template<typename>
 class JSGenericTypedArrayView;
 template<typename>
-class JSGenericGrowableSharedTypedArrayView;
+class JSGenericResizableOrGrowableSharedTypedArrayView;
 struct Int8Adaptor;
 struct Int16Adaptor;
 struct Int32Adaptor;
@@ -95,17 +95,17 @@ using JSFloat64Array = JSGenericTypedArrayView<Float64Adaptor>;
 using JSBigInt64Array = JSGenericTypedArrayView<BigInt64Adaptor>;
 using JSBigUint64Array = JSGenericTypedArrayView<BigUint64Adaptor>;
 
-using JSGrowableSharedInt8Array = JSGenericGrowableSharedTypedArrayView<Int8Adaptor>;
-using JSGrowableSharedInt16Array = JSGenericGrowableSharedTypedArrayView<Int16Adaptor>;
-using JSGrowableSharedInt32Array = JSGenericGrowableSharedTypedArrayView<Int32Adaptor>;
-using JSGrowableSharedUint8Array = JSGenericGrowableSharedTypedArrayView<Uint8Adaptor>;
-using JSGrowableSharedUint8ClampedArray = JSGenericGrowableSharedTypedArrayView<Uint8ClampedAdaptor>;
-using JSGrowableSharedUint16Array = JSGenericGrowableSharedTypedArrayView<Uint16Adaptor>;
-using JSGrowableSharedUint32Array = JSGenericGrowableSharedTypedArrayView<Uint32Adaptor>;
-using JSGrowableSharedFloat32Array = JSGenericGrowableSharedTypedArrayView<Float32Adaptor>;
-using JSGrowableSharedFloat64Array = JSGenericGrowableSharedTypedArrayView<Float64Adaptor>;
-using JSGrowableSharedBigInt64Array = JSGenericGrowableSharedTypedArrayView<BigInt64Adaptor>;
-using JSGrowableSharedBigUint64Array = JSGenericGrowableSharedTypedArrayView<BigUint64Adaptor>;
+using JSResizableOrGrowableSharedInt8Array = JSGenericResizableOrGrowableSharedTypedArrayView<Int8Adaptor>;
+using JSResizableOrGrowableSharedInt16Array = JSGenericResizableOrGrowableSharedTypedArrayView<Int16Adaptor>;
+using JSResizableOrGrowableSharedInt32Array = JSGenericResizableOrGrowableSharedTypedArrayView<Int32Adaptor>;
+using JSResizableOrGrowableSharedUint8Array = JSGenericResizableOrGrowableSharedTypedArrayView<Uint8Adaptor>;
+using JSResizableOrGrowableSharedUint8ClampedArray = JSGenericResizableOrGrowableSharedTypedArrayView<Uint8ClampedAdaptor>;
+using JSResizableOrGrowableSharedUint16Array = JSGenericResizableOrGrowableSharedTypedArrayView<Uint16Adaptor>;
+using JSResizableOrGrowableSharedUint32Array = JSGenericResizableOrGrowableSharedTypedArrayView<Uint32Adaptor>;
+using JSResizableOrGrowableSharedFloat32Array = JSGenericResizableOrGrowableSharedTypedArrayView<Float32Adaptor>;
+using JSResizableOrGrowableSharedFloat64Array = JSGenericResizableOrGrowableSharedTypedArrayView<Float64Adaptor>;
+using JSResizableOrGrowableSharedBigInt64Array = JSGenericResizableOrGrowableSharedTypedArrayView<BigInt64Adaptor>;
+using JSResizableOrGrowableSharedBigUint64Array = JSGenericResizableOrGrowableSharedTypedArrayView<BigUint64Adaptor>;
 
 #define FOR_EACH_JS_DYNAMIC_CAST_JS_TYPE_OVERLOAD_NON_FORWARD_DECLARED(macro) \
     /* TypedArrays are typedef, thus, we cannot use `class` forward declaration */ \

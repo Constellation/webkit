@@ -52,7 +52,7 @@ Ref<DataView> DataView::create(RefPtr<ArrayBuffer>&& buffer)
 JSArrayBufferView* DataView::wrapImpl(JSGlobalObject* lexicalGlobalObject, JSGlobalObject* globalObject)
 {
     return JSDataView::create(
-        lexicalGlobalObject, globalObject->typedArrayStructure(TypeDataView, isGrowableShared()), possiblySharedBuffer(), byteOffset(),
+        lexicalGlobalObject, globalObject->typedArrayStructure(TypeDataView, isResizableOrGrowableShared()), possiblySharedBuffer(), byteOffset(),
         byteLength());
 }
 

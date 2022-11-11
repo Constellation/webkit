@@ -128,7 +128,7 @@ public:
         u.asBytes.conversion = Array::AsIs;
         u.asBytes.action = Array::Write;
         u.asBytes.mayBeLargeTypedArray = false;
-        u.asBytes.mayBeGrowableSharedTypedArray = false;
+        u.asBytes.mayBeResizableOrGrowableSharedTypedArray = false;
     }
     
     explicit ArrayMode(Array::Type type, Array::Action action)
@@ -139,7 +139,7 @@ public:
         u.asBytes.conversion = Array::AsIs;
         u.asBytes.action = action;
         u.asBytes.mayBeLargeTypedArray = false;
-        u.asBytes.mayBeGrowableSharedTypedArray = false;
+        u.asBytes.mayBeResizableOrGrowableSharedTypedArray = false;
     }
     
     ArrayMode(Array::Type type, Array::Class arrayClass, Array::Action action)
@@ -150,10 +150,10 @@ public:
         u.asBytes.conversion = Array::AsIs;
         u.asBytes.action = action;
         u.asBytes.mayBeLargeTypedArray = false;
-        u.asBytes.mayBeGrowableSharedTypedArray = false;
+        u.asBytes.mayBeResizableOrGrowableSharedTypedArray = false;
     }
     
-    ArrayMode(Array::Type type, Array::Class arrayClass, Array::Speculation speculation, Array::Conversion conversion, Array::Action action, bool mayBeLargeTypedArray = false, bool mayBeGrowableSharedTypedArray = false)
+    ArrayMode(Array::Type type, Array::Class arrayClass, Array::Speculation speculation, Array::Conversion conversion, Array::Action action, bool mayBeLargeTypedArray = false, bool mayBeResizableOrGrowableSharedTypedArray = false)
     {
         u.asBytes.type = type;
         u.asBytes.arrayClass = arrayClass;
@@ -161,7 +161,7 @@ public:
         u.asBytes.conversion = conversion;
         u.asBytes.action = action;
         u.asBytes.mayBeLargeTypedArray = mayBeLargeTypedArray;
-        u.asBytes.mayBeGrowableSharedTypedArray = mayBeGrowableSharedTypedArray;
+        u.asBytes.mayBeResizableOrGrowableSharedTypedArray = mayBeResizableOrGrowableSharedTypedArray;
     }
     
     ArrayMode(Array::Type type, Array::Class arrayClass, Array::Conversion conversion, Array::Action action)
@@ -172,7 +172,7 @@ public:
         u.asBytes.conversion = conversion;
         u.asBytes.action = action;
         u.asBytes.mayBeLargeTypedArray = false;
-        u.asBytes.mayBeGrowableSharedTypedArray = false;
+        u.asBytes.mayBeResizableOrGrowableSharedTypedArray = false;
     }
     
     Array::Type type() const { return static_cast<Array::Type>(u.asBytes.type); }
@@ -181,7 +181,7 @@ public:
     Array::Conversion conversion() const { return static_cast<Array::Conversion>(u.asBytes.conversion); }
     Array::Action action() const { return static_cast<Array::Action>(u.asBytes.action); }
     bool mayBeLargeTypedArray() const { return u.asBytes.mayBeLargeTypedArray; }
-    bool mayBeGrowableSharedTypedArray() const { return u.asBytes.mayBeGrowableSharedTypedArray; }
+    bool mayBeResizableOrGrowableSharedTypedArray() const { return u.asBytes.mayBeResizableOrGrowableSharedTypedArray; }
     
     unsigned asWord() const { return u.asWord; }
     
@@ -194,27 +194,27 @@ public:
 
     ArrayMode withType(Array::Type type) const
     {
-        return ArrayMode(type, arrayClass(), speculation(), conversion(), action(), mayBeLargeTypedArray(), mayBeGrowableSharedTypedArray());
+        return ArrayMode(type, arrayClass(), speculation(), conversion(), action(), mayBeLargeTypedArray(), mayBeResizableOrGrowableSharedTypedArray());
     }
 
     ArrayMode withSpeculation(Array::Speculation speculation) const
     {
-        return ArrayMode(type(), arrayClass(), speculation, conversion(), action(), mayBeLargeTypedArray(), mayBeGrowableSharedTypedArray());
+        return ArrayMode(type(), arrayClass(), speculation, conversion(), action(), mayBeLargeTypedArray(), mayBeResizableOrGrowableSharedTypedArray());
     }
 
     ArrayMode withConversion(Array::Conversion conversion) const
     {
-        return ArrayMode(type(), arrayClass(), speculation(), conversion, action(), mayBeLargeTypedArray(), mayBeGrowableSharedTypedArray());
+        return ArrayMode(type(), arrayClass(), speculation(), conversion, action(), mayBeLargeTypedArray(), mayBeResizableOrGrowableSharedTypedArray());
     }
 
     ArrayMode withTypeAndConversion(Array::Type type, Array::Conversion conversion) const
     {
-        return ArrayMode(type, arrayClass(), speculation(), conversion, action(), mayBeLargeTypedArray(), mayBeGrowableSharedTypedArray());
+        return ArrayMode(type, arrayClass(), speculation(), conversion, action(), mayBeLargeTypedArray(), mayBeResizableOrGrowableSharedTypedArray());
     }
 
-    ArrayMode withArrayClassAndSpeculation(Array::Class arrayClass, Array::Speculation speculation, bool mayBeLargeTypedArray, bool mayBeGrowableSharedTypedArray) const
+    ArrayMode withArrayClassAndSpeculation(Array::Class arrayClass, Array::Speculation speculation, bool mayBeLargeTypedArray, bool mayBeResizableOrGrowableSharedTypedArray) const
     {
-        return ArrayMode(type(), arrayClass, speculation, conversion(), action(), mayBeLargeTypedArray, mayBeGrowableSharedTypedArray);
+        return ArrayMode(type(), arrayClass, speculation, conversion(), action(), mayBeLargeTypedArray, mayBeResizableOrGrowableSharedTypedArray);
     }
 
     static Array::Speculation speculationFromProfile(const ConcurrentJSLocker& locker, ArrayProfile* profile, bool makeSafe)
@@ -252,8 +252,8 @@ public:
         Array::Speculation speculation = speculationFromProfile(locker, profile, makeSafe);
 
         bool mayBeLargeTypedArray = profile->mayBeLargeTypedArray(locker);
-        bool mayBeGrowableSharedTypedArray = profile->mayBeGrowableSharedTypedArray(locker);
-        return withArrayClassAndSpeculation(myArrayClass, speculation, mayBeLargeTypedArray, mayBeGrowableSharedTypedArray);
+        bool mayBeResizableOrGrowableSharedTypedArray = profile->mayBeResizableOrGrowableSharedTypedArray(locker);
+        return withArrayClassAndSpeculation(myArrayClass, speculation, mayBeLargeTypedArray, mayBeResizableOrGrowableSharedTypedArray);
     }
     
     static constexpr SpeculatedType unusedIndexSpeculatedType = SpecInt32Only;
@@ -544,7 +544,7 @@ public:
             && speculation() == other.speculation()
             && conversion() == other.conversion()
             && mayBeLargeTypedArray() == other.mayBeLargeTypedArray()
-            && mayBeGrowableSharedTypedArray() == other.mayBeGrowableSharedTypedArray();
+            && mayBeResizableOrGrowableSharedTypedArray() == other.mayBeResizableOrGrowableSharedTypedArray();
     }
     
     bool operator!=(const ArrayMode& other) const
@@ -599,7 +599,7 @@ private:
             uint8_t conversion : 4;
             uint8_t action : 1;
             uint8_t mayBeLargeTypedArray : 1;
-            uint8_t mayBeGrowableSharedTypedArray : 1;
+            uint8_t mayBeResizableOrGrowableSharedTypedArray : 1;
         } asBytes;
         unsigned asWord;
     } u;

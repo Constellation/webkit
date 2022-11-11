@@ -142,7 +142,7 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
 
         Structure* structure = nullptr;
         if (buffer->isResizableOrGrowableShared()) {
-            structure = JSC_GET_DERIVED_STRUCTURE(vm, growableSharedTypedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
+            structure = JSC_GET_DERIVED_STRUCTURE(vm, resizableOrGrowableSharedTypedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
             RETURN_IF_EXCEPTION(scope, { });
         } else {
             structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);

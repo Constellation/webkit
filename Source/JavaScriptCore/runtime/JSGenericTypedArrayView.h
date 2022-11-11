@@ -433,7 +433,7 @@ protected:
 };
 
 template<typename PassedAdaptor>
-class JSGenericGrowableSharedTypedArrayView final : public JSGenericTypedArrayView<PassedAdaptor> {
+class JSGenericResizableOrGrowableSharedTypedArrayView final : public JSGenericTypedArrayView<PassedAdaptor> {
 public:
     using Base = JSGenericTypedArrayView<PassedAdaptor>;
     using Base::StructureFlags;
