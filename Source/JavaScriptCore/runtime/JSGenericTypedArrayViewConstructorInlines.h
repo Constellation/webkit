@@ -143,7 +143,6 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
         if (buffer->isResizable()) {
             Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, resizableTypedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
             RETURN_IF_EXCEPTION(scope, { });
-            dataLogLn(JSValue(structure));
             RELEASE_AND_RETURN(scope, ViewClass::createResizable(globalObject, structure, WTFMove(buffer), offset, length));
         }
 
