@@ -8476,8 +8476,8 @@ IGNORE_CLANG_WARNINGS_END
         
         switch (m_node->child1().useKind()) {
         case Int32Use: {
-            bool isResizable = false;
-            RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizable));
+            bool isResizableOrGrowableShared = false;
+            RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizableOrGrowableShared));
 
             LValue size = m_out.signExt32To64(lowInt32(m_node->child1()));
 
@@ -8486,8 +8486,8 @@ IGNORE_CLANG_WARNINGS_END
         }
 
         case Int52RepUse: {
-            bool isResizable = false;
-            RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizable));
+            bool isResizableOrGrowableShared = false;
+            RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizableOrGrowableShared));
 
             LValue size = lowStrictInt52(m_node->child1());
 

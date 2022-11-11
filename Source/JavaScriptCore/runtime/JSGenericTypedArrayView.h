@@ -126,7 +126,7 @@ public:
     size_t byteLength() const
     {
         // https://tc39.es/proposal-resizablearraybuffer/#sec-get-%typedarray%.prototype.bytelength
-        if (LIKELY(!isResizable()))
+        if (LIKELY(!isResizableOrGrowableShared()))
             return m_length * sizeof(typename Adaptor::Type);
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
         return integerIndexedObjectByteLength(const_cast<JSGenericTypedArrayView*>(this), getter);

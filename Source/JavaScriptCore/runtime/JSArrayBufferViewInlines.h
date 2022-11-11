@@ -138,7 +138,7 @@ inline ResultType JSArrayBufferView::byteOffsetImpl()
     if (!hasArrayBuffer())
         return 0;
 
-    if (UNLIKELY(isResizable())) {
+    if (UNLIKELY(isResizableOrGrowableShared())) {
         if constexpr (requester == ConcurrentThread)
             return std::nullopt;
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
@@ -188,10 +188,10 @@ bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, Getter& ge
     if (UNLIKELY(typedArray->isDetached()))
         return true;
 
-    if (LIKELY(!typedArray->isResizable()))
+    if (LIKELY(!typedArray->isResizableOrGrowableShared()))
         return false;
 
-    ASSERT(isWastefulTypedArray(typedArray->mode()) && isResizable(typedArray->mode()));
+    ASSERT(isWastefulTypedArray(typedArray->mode()) && isResizableOrGrowableShared(typedArray->mode()));
     RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
     if (!buffer)
         return true;
@@ -219,7 +219,7 @@ std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, 
     if (LIKELY(!typedArray->isAutoLength()))
         return typedArray->lengthUnsafe();
 
-    ASSERT(isWastefulTypedArray(typedArray->mode()) && isResizable(typedArray->mode()));
+    ASSERT(isWastefulTypedArray(typedArray->mode()) && isResizableOrGrowableShared(typedArray->mode()));
     RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
     if (!buffer)
         return std::nullopt;

@@ -103,7 +103,7 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(VM& vm, Structure* s
     : m_structure(structure)
     , m_length(length.value_or(0))
     , m_maxByteLength(!length ? arrayBuffer->maxByteLength().value() - byteOffset : (Checked<size_t>(length.value()) * JSC::elementSize(structure->typeInfo().type())).value())
-    , m_mode(!arrayBuffer->isResizable() ? WastefulTypedArray : length ? ResizableWastefulTypedArray : ResizableAutoLengthWastefulTypedArray)
+    , m_mode(!arrayBuffer->isResizableOrGrowableShared() ? WastefulTypedArray : length ? ResizableWastefulTypedArray : ResizableAutoLengthWastefulTypedArray)
 {
     ASSERT(arrayBuffer->data() == removeArrayPtrTag(arrayBuffer->data()));
     m_vector = VectorType(static_cast<uint8_t*>(arrayBuffer->data()) + byteOffset, m_maxByteLength);
@@ -116,7 +116,7 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(Structure* structure
     : m_structure(structure)
     , m_length(length.value_or(0))
     , m_maxByteLength(!length ? arrayBuffer->maxByteLength().value() - byteOffset : length.value())
-    , m_mode(!arrayBuffer->isResizable() ? DataViewMode : length ? ResizableDataViewMode : ResizableAutoLengthDataViewMode)
+    , m_mode(!arrayBuffer->isResizableOrGrowableShared() ? DataViewMode : length ? ResizableDataViewMode : ResizableAutoLengthDataViewMode)
     , m_butterfly(nullptr)
 {
     ASSERT(arrayBuffer->data() == removeArrayPtrTag(arrayBuffer->data()));
@@ -238,7 +238,7 @@ size_t JSArrayBufferView::byteLength() const
     return result.value();
 #else
     // https://tc39.es/proposal-resizablearraybuffer/#sec-get-%typedarray%.prototype.bytelength
-    if (LIKELY(!isResizable()))
+    if (LIKELY(!isResizableOrGrowableShared()))
         return byteLengthUnsafe();
     IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
     return integerIndexedObjectByteLength(const_cast<JSArrayBufferView*>(this), getter);

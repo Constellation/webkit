@@ -1188,27 +1188,27 @@ public:
         return const_cast<const LazyProperty<JSGlobalObject, Structure>&>(const_cast<JSGlobalObject*>(this)->lazyResizableTypedArrayStructure(type));
     }
 
-    Structure* typedArrayStructure(TypedArrayType type, bool isResizable) const
+    Structure* typedArrayStructure(TypedArrayType type, bool isResizableOrGrowableShared) const
     {
-        if (isResizable)
+        if (isResizableOrGrowableShared)
             return lazyResizableTypedArrayStructure(type).get(this);
         return lazyTypedArrayStructure(type).get(this);
     }
-    Structure* typedArrayStructureConcurrently(TypedArrayType type, bool isResizable) const
+    Structure* typedArrayStructureConcurrently(TypedArrayType type, bool isResizableOrGrowableShared) const
     {
-        if (isResizable)
+        if (isResizableOrGrowableShared)
             return lazyResizableTypedArrayStructure(type).getConcurrently();
         return lazyTypedArrayStructure(type).getConcurrently();
     }
-    bool isOriginalTypedArrayStructure(Structure* structure, bool isResizable)
+    bool isOriginalTypedArrayStructure(Structure* structure, bool isResizableOrGrowableShared)
     {
         TypedArrayType type = typedArrayType(structure->typeInfo().type());
         if (type == NotTypedArray)
             return false;
-        return typedArrayStructureConcurrently(type, isResizable) == structure;
+        return typedArrayStructureConcurrently(type, isResizableOrGrowableShared) == structure;
     }
-    template<TypedArrayType type> Structure* typedArrayStructureWithTypedArrayType() const { return typedArrayStructure(type, /* isResizable */ false); }
-    template<TypedArrayType type> Structure* resizableTypedArrayStructureWithTypedArrayType() const { return typedArrayStructure(type, /* isResizable */ true); }
+    template<TypedArrayType type> Structure* typedArrayStructureWithTypedArrayType() const { return typedArrayStructure(type, /* isResizableOrGrowableShared */ false); }
+    template<TypedArrayType type> Structure* resizableTypedArrayStructureWithTypedArrayType() const { return typedArrayStructure(type, /* isResizableOrGrowableShared */ true); }
 
     JSObject* typedArrayConstructor(TypedArrayType type) const
     {

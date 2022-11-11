@@ -126,7 +126,7 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
             length = lengthOpt;
         else {
             size_t byteLength = buffer->byteLength();
-            if (buffer->isResizable()) {
+            if (buffer->isResizableOrGrowableShared()) {
                 if (UNLIKELY(offset > byteLength)) {
                     throwRangeError(globalObject, scope, "byteOffset exceeds source ArrayBuffer byteLength"_s);
                     return nullptr;
@@ -140,7 +140,7 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
             }
         }
 
-        if (buffer->isResizable()) {
+        if (buffer->isResizableOrGrowableShared()) {
             Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, resizableTypedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
             RETURN_IF_EXCEPTION(scope, { });
             RELEASE_AND_RETURN(scope, ViewClass::createResizable(globalObject, structure, WTFMove(buffer), offset, length));

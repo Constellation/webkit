@@ -3592,7 +3592,7 @@ JITCompiler::Jump SpeculativeJIT::jumpForTypedArrayOutOfBounds(Node* node, GPRRe
         return JITCompiler::Jump();
     JSArrayBufferView* view = m_graph.tryGetFoldableView(
         m_state.forNode(m_graph.child(node, 0)).m_value, node->arrayMode());
-    if (view && !view->isResizable()) {
+    if (view && !view->isResizableOrGrowableShared()) {
         size_t length = view->length();
         Node* indexNode = m_graph.child(node, 1).node();
         if (indexNode->isAnyIntConstant() && static_cast<uint64_t>(indexNode->asAnyInt()) < length)
@@ -11591,8 +11591,8 @@ void SpeculativeJIT::compileNewTypedArrayWithSize(Node* node)
 {
     JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
     auto typedArrayType = node->typedArrayType();
-    bool isResizable = false;
-    RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizable));
+    bool isResizableOrGrowableShared = false;
+    RegisteredStructure structure = m_graph.registerStructure(globalObject->typedArrayStructureConcurrently(typedArrayType, isResizableOrGrowableShared));
     RELEASE_ASSERT(structure.get());
 
 #if USE(LARGE_TYPED_ARRAYS)

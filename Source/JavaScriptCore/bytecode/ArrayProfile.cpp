@@ -141,12 +141,12 @@ void ArrayProfile::computeUpdatedPrediction(const ConcurrentJSLocker&, CodeBlock
         m_arrayProfileFlags.add(ArrayProfileFlag::MayInterceptIndexedAccesses);
 
     JSGlobalObject* globalObject = codeBlock->globalObject();
-    bool isResizable = false;
-    if (!globalObject->isOriginalArrayStructure(lastSeenStructure) && !globalObject->isOriginalTypedArrayStructure(lastSeenStructure, isResizable))
+    bool isResizableOrGrowableShared = false;
+    if (!globalObject->isOriginalArrayStructure(lastSeenStructure) && !globalObject->isOriginalTypedArrayStructure(lastSeenStructure, isResizableOrGrowableShared))
         m_arrayProfileFlags.add(ArrayProfileFlag::UsesNonOriginalArrayStructures);
 
     if (isTypedArrayType(lastSeenStructure->typeInfo().type())) {
-        if (isResizableTypedArray(lastSeenStructure->classInfoForCells()))
+        if (isResizableOrGrowableSharedTypedArray(lastSeenStructure->classInfoForCells()))
             m_arrayProfileFlags.add(ArrayProfileFlag::MayBeResizableTypedArray);
     }
 }

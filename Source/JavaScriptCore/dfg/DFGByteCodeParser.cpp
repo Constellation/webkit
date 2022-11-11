@@ -3837,7 +3837,7 @@ bool ByteCodeParser::handleIntrinsicGetter(Operand result, SpeculatedType predic
             TypedArrayType curType = typedArrayType(structure->typeInfo().type());
             ASSERT(logSize == logElementSize(curType));
             arrayType = refineTypedArrayType(arrayType, curType);
-            mayBeResizableTypedArray |= isResizableTypedArray(structure->classInfoForCells());
+            mayBeResizableTypedArray |= isResizableOrGrowableSharedTypedArray(structure->classInfoForCells());
             ASSERT(arrayType != Array::Generic);
         });
 
@@ -3874,7 +3874,7 @@ bool ByteCodeParser::handleIntrinsicGetter(Operand result, SpeculatedType predic
         variant.structureSet().forEach([&] (Structure* structure) {
             TypedArrayType curType = typedArrayType(structure->typeInfo().type());
             arrayType = refineTypedArrayType(arrayType, curType);
-            mayBeResizableTypedArray |= isResizableTypedArray(structure->classInfoForCells());
+            mayBeResizableTypedArray |= isResizableOrGrowableSharedTypedArray(structure->classInfoForCells());
             ASSERT(arrayType != Array::Generic);
         });
 
@@ -3899,7 +3899,7 @@ bool ByteCodeParser::handleIntrinsicGetter(Operand result, SpeculatedType predic
         variant.structureSet().forEach([&] (Structure* structure) {
             TypedArrayType curType = typedArrayType(structure->typeInfo().type());
             arrayType = refineTypedArrayType(arrayType, curType);
-            mayBeResizableTypedArray |= isResizableTypedArray(structure->classInfoForCells());
+            mayBeResizableTypedArray |= isResizableOrGrowableSharedTypedArray(structure->classInfoForCells());
             ASSERT(arrayType != Array::Generic);
         });
 
@@ -4080,8 +4080,8 @@ bool ByteCodeParser::handleTypedArrayConstructor(
     if (argumentCountIncludingThis != 2)
         return false;
     
-    bool isResizable = false;
-    if (!function->globalObject()->typedArrayStructureConcurrently(type, isResizable))
+    bool isResizableOrGrowableShared = false;
+    if (!function->globalObject()->typedArrayStructureConcurrently(type, isResizableOrGrowableShared))
         return false;
 
     insertChecks();

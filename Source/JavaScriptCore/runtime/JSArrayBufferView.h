@@ -110,9 +110,9 @@ inline bool hasArrayBuffer(TypedArrayMode mode)
     return static_cast<uint8_t>(mode) & isHavingArrayBufferMode;
 }
 
-inline bool isResizable(TypedArrayMode mode)
+inline bool isResizableOrGrowableShared(TypedArrayMode mode)
 {
-    return static_cast<uint8_t>(mode) & isResizableMode;
+    return static_cast<uint8_t>(mode) & isResizableOrGrowableSharedMode;
 }
 
 inline bool isGrowableShared(TypedArrayMode mode)
@@ -203,7 +203,7 @@ protected:
         size_t length() const { return m_length; }
         std::optional<size_t> maxByteLength() const
         {
-            if (JSC::isResizable(m_mode))
+            if (JSC::isResizableOrGrowableShared(m_mode))
                 return m_maxByteLength;
             return std::nullopt;
         }
@@ -238,7 +238,7 @@ public:
     RefPtr<ArrayBufferView> unsharedImpl();
     JS_EXPORT_PRIVATE RefPtr<ArrayBufferView> possiblySharedImpl();
     bool isDetached() { return hasArrayBuffer() && !hasVector(); }
-    bool isResizable() const { return JSC::isResizable(m_mode); }
+    bool isResizableOrGrowableShared() const { return JSC::isResizableOrGrowableShared(m_mode); }
     bool isGrowableShared() const { return JSC::isGrowableShared(m_mode); };
     bool isAutoLength() const { return JSC::isAutoLength(m_mode); }
     void detach();
@@ -253,7 +253,7 @@ public:
 
     size_t length() const
     {
-        if (LIKELY(!isResizable()))
+        if (LIKELY(!isResizableOrGrowableShared()))
             return lengthUnsafe();
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
         if (auto length = integerIndexedObjectLength(const_cast<JSArrayBufferView*>(this), getter))
@@ -265,7 +265,7 @@ public:
 
     std::optional<size_t> maxByteLength() const
     {
-        if (isResizable())
+        if (isResizableOrGrowableShared())
             return m_maxByteLength;
         return std::nullopt;
     }

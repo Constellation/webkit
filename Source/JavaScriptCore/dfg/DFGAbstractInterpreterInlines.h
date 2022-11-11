@@ -3625,7 +3625,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     case GetArrayLength: {
         JSArrayBufferView* view = m_graph.tryGetFoldableView(
             forNode(node->child1()).m_value, node->arrayMode());
-        if (view && !view->isResizable() && isInBounds<int32_t>(view->length())) {
+        if (view && !view->isResizableOrGrowableShared() && isInBounds<int32_t>(view->length())) {
             setConstant(node, jsNumber(view->length()));
             break;
         }
@@ -3636,7 +3636,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     case GetTypedArrayLengthAsInt52: {
         JSArrayBufferView* view = m_graph.tryGetFoldableView(
             forNode(node->child1()).m_value, node->arrayMode());
-        if (view && !view->isResizable()) {
+        if (view && !view->isResizableOrGrowableShared()) {
             if (node->arrayMode().mayBeResizableTypedArray())
                 didFoldClobberWorld();
             setConstant(node, jsNumber(view->length()));
@@ -3989,7 +3989,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         
     case GetTypedArrayByteOffset: {
         JSArrayBufferView* view = m_graph.tryGetFoldableView(forNode(node->child1()).m_value);
-        if (view && !view->isResizable()) {
+        if (view && !view->isResizableOrGrowableShared()) {
             std::optional<size_t> byteOffset = view->byteOffsetConcurrently();
             if (byteOffset && isInBounds<int32_t>(byteOffset)) {
                 if (node->arrayMode().mayBeResizableTypedArray())
@@ -4006,7 +4006,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
 
     case GetTypedArrayByteOffsetAsInt52: {
         JSArrayBufferView* view = m_graph.tryGetFoldableView(forNode(node->child1()).m_value);
-        if (view && !view->isResizable()) {
+        if (view && !view->isResizableOrGrowableShared()) {
             std::optional<size_t> byteOffset = view->byteOffsetConcurrently();
             if (byteOffset) {
                 if (node->arrayMode().mayBeResizableTypedArray())
