@@ -118,7 +118,7 @@ static JSObject* createTypedArray(JSGlobalObject* globalObject, JSTypedArrayType
     bool isResizableOrGrowableShared = buffer->isResizableOrGrowableShared();
     switch (type) {
 #define JSC_TYPED_ARRAY_FACTORY(type) case kJSTypedArrayType##type##Array: { \
-        return JS##type##Array::create(globalObject, globalObject->typedArrayStructure(TypeInt8, isResizableOrGrowableShared), WTFMove(buffer), offset, length.value()); \
+        return JS##type##Array::create(globalObject, globalObject->typedArrayStructure(Type##type, isResizableOrGrowableShared), WTFMove(buffer), offset, length.value()); \
     }
     FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(JSC_TYPED_ARRAY_FACTORY)
 #undef JSC_TYPED_ARRAY_CHECK
