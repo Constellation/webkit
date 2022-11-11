@@ -1055,6 +1055,10 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         case Array::Uint32Array:
         case Array::Float32Array:
         case Array::Float64Array:
+            if (node->arrayMode().mayBeResizableTypedArray()) {
+                clobberTop();
+                return;
+            }
             read(TypedArrayProperties);
             read(MiscFields);
             def(HeapLocation(indexedPropertyLoc, TypedArrayProperties, graph.varArgChild(node, 0), graph.varArgChild(node, 1)), LazyNode(node));
@@ -1184,6 +1188,10 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         case Array::Uint32Array:
         case Array::Float32Array:
         case Array::Float64Array:
+            if (node->arrayMode().mayBeResizableTypedArray()) {
+                clobberTop();
+                return;
+            }
             read(MiscFields);
             write(TypedArrayProperties);
             // FIXME: We can't def() anything here because these operations truncate their inputs.
@@ -1355,11 +1363,19 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         return;
 
     case GetTypedArrayByteOffset:
+        if (node->arrayMode().mayBeResizableTypedArray()) {
+            clobberTop();
+            return;
+        }
         read(MiscFields);
         def(HeapLocation(TypedArrayByteOffsetLoc, MiscFields, node->child1()), LazyNode(node));
         return;
 
     case GetTypedArrayByteOffsetAsInt52:
+        if (node->arrayMode().mayBeResizableTypedArray()) {
+            clobberTop();
+            return;
+        }
         read(MiscFields);
         def(HeapLocation(TypedArrayByteOffsetInt52Loc, MiscFields, node->child1()), LazyNode(node));
         return;
@@ -1477,6 +1493,10 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
             write(SideState);
             return;
         default:
+            if (mode.mayBeResizableTypedArray()) {
+                clobberTop();
+                return;
+            }
             read(MiscFields);
             def(HeapLocation(TypedArrayLengthInt52Loc, MiscFields, node->child1()), LazyNode(node));
             return;

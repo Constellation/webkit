@@ -2499,24 +2499,38 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
             makeHeapTopForNode(node);
             break;
         case Array::Int8Array:
+            if (node->arrayMode().mayBeResizableTypedArray())
+                clobberWorld();
             setNonCellTypeForNode(node, SpecInt32Only);
             break;
         case Array::Int16Array:
+            if (node->arrayMode().mayBeResizableTypedArray())
+                clobberWorld();
             setNonCellTypeForNode(node, SpecInt32Only);
             break;
         case Array::Int32Array:
+            if (node->arrayMode().mayBeResizableTypedArray())
+                clobberWorld();
             setNonCellTypeForNode(node, SpecInt32Only);
             break;
         case Array::Uint8Array:
+            if (node->arrayMode().mayBeResizableTypedArray())
+                clobberWorld();
             setNonCellTypeForNode(node, SpecInt32Only);
             break;
         case Array::Uint8ClampedArray:
+            if (node->arrayMode().mayBeResizableTypedArray())
+                clobberWorld();
             setNonCellTypeForNode(node, SpecInt32Only);
             break;
         case Array::Uint16Array:
+            if (node->arrayMode().mayBeResizableTypedArray())
+                clobberWorld();
             setNonCellTypeForNode(node, SpecInt32Only);
             break;
         case Array::Uint32Array:
+            if (node->arrayMode().mayBeResizableTypedArray())
+                clobberWorld();
             if (node->shouldSpeculateInt32())
                 setNonCellTypeForNode(node, SpecInt32Only);
             else if (node->shouldSpeculateInt52())
@@ -2525,9 +2539,13 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
                 setNonCellTypeForNode(node, SpecAnyIntAsDouble);
             break;
         case Array::Float32Array:
+            if (node->arrayMode().mayBeResizableTypedArray())
+                clobberWorld();
             setNonCellTypeForNode(node, SpecFullDouble);
             break;
         case Array::Float64Array:
+            if (node->arrayMode().mayBeResizableTypedArray())
+                clobberWorld();
             setNonCellTypeForNode(node, SpecFullDouble);
             break;
         default:
@@ -2562,6 +2580,18 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
             break;
         case Array::SlowPutArrayStorage:
             if (node->arrayMode().mayStoreToHole())
+                clobberWorld();
+            break;
+        case Array::Int8Array:
+        case Array::Int16Array:
+        case Array::Int32Array:
+        case Array::Uint8Array:
+        case Array::Uint8ClampedArray:
+        case Array::Uint16Array:
+        case Array::Uint32Array:
+        case Array::Float32Array:
+        case Array::Float64Array:
+            if (node->arrayMode().mayBeResizableTypedArray())
                 clobberWorld();
             break;
         default:
@@ -3595,7 +3625,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     case GetArrayLength: {
         JSArrayBufferView* view = m_graph.tryGetFoldableView(
             forNode(node->child1()).m_value, node->arrayMode());
-        if (view && isInBounds<int32_t>(view->length())) {
+        if (view && !view->isResizable() && isInBounds<int32_t>(view->length())) {
             setConstant(node, jsNumber(view->length()));
             break;
         }
@@ -3606,10 +3636,14 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     case GetTypedArrayLengthAsInt52: {
         JSArrayBufferView* view = m_graph.tryGetFoldableView(
             forNode(node->child1()).m_value, node->arrayMode());
-        if (view) {
+        if (view && !view->isResizable()) {
+            if (node->arrayMode().mayBeResizableTypedArray())
+                didFoldClobberWorld();
             setConstant(node, jsNumber(view->length()));
             break;
         }
+        if (node->arrayMode().mayBeResizableTypedArray())
+            clobberWorld();
         setNonCellTypeForNode(node, SpecInt52Any);
         break;
     }
@@ -3958,10 +3992,14 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         if (view) {
             std::optional<size_t> byteOffset = view->byteOffsetConcurrently();
             if (byteOffset && isInBounds<int32_t>(byteOffset)) {
+                if (node->arrayMode().mayBeResizableTypedArray())
+                    didFoldClobberWorld();
                 setConstant(node, jsNumber(*byteOffset));
                 break;
             }
         }
+        if (node->arrayMode().mayBeResizableTypedArray())
+            clobberWorld();
         setNonCellTypeForNode(node, SpecInt32Only);
         break;
     }
@@ -3971,10 +4009,14 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         if (view) {
             std::optional<size_t> byteOffset = view->byteOffsetConcurrently();
             if (byteOffset) {
+                if (node->arrayMode().mayBeResizableTypedArray())
+                    didFoldClobberWorld();
                 setConstant(node, jsNumber(*byteOffset));
                 break;
             }
         }
+        if (node->arrayMode().mayBeResizableTypedArray())
+            clobberWorld();
         setNonCellTypeForNode(node, SpecInt52Any);
         break;
     }
