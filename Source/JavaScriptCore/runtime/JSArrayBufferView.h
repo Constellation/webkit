@@ -253,9 +253,9 @@ public:
     void* vector() const { return m_vector.getMayBeNull(m_maxByteLength); }
     void* vectorWithoutPACValidation() const { return m_vector.getUnsafe(); }
     
-    inline size_t byteOffset();
-    inline size_t byteOffsetUnsafe();
-    inline std::optional<size_t> byteOffsetConcurrently();
+    size_t byteOffset();
+    size_t byteOffsetUnsafe();
+    std::optional<size_t> byteOffsetConcurrently();
 
     size_t length() const
     {
