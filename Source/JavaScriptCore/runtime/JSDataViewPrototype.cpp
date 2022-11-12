@@ -147,7 +147,7 @@ EncodedJSValue getData(JSGlobalObject* globalObject, CallFrame* callFrame)
     }
 
     if (dataView->isDetached())
-        return throwVMTypeError(globalObject, scope, "Underlying ArrayBuffer has been detached from the view"_s);
+        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
     size_t byteLength = dataView->length();
     if (elementSize > byteLength || byteOffset > byteLength - elementSize)
@@ -202,7 +202,7 @@ EncodedJSValue setData(JSGlobalObject* globalObject, CallFrame* callFrame)
     }
 
     if (dataView->isDetached())
-        return throwVMTypeError(globalObject, scope, "Underlying ArrayBuffer has been detached from the view"_s);
+        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
     size_t byteLength = dataView->length();
     if (elementSize > byteLength || byteOffset > byteLength - elementSize)
@@ -244,7 +244,7 @@ JSC_DEFINE_CUSTOM_GETTER(dataViewProtoGetterByteLength, (JSGlobalObject* globalO
     if (!view)
         return throwVMTypeError(globalObject, scope, "DataView.prototype.byteLength expects |this| to be a DataView object"_s);
     if (view->isDetached())
-        return throwVMTypeError(globalObject, scope, "Underlying ArrayBuffer has been detached from the view"_s);
+        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
     return JSValue::encode(jsNumber(view->length()));
 }
@@ -258,7 +258,7 @@ JSC_DEFINE_CUSTOM_GETTER(dataViewProtoGetterByteOffset, (JSGlobalObject* globalO
     if (!view)
         return throwVMTypeError(globalObject, scope, "DataView.prototype.byteOffset expects |this| to be a DataView object"_s);
     if (view->isDetached())
-        return throwVMTypeError(globalObject, scope, "Underlying ArrayBuffer has been detached from the view"_s);
+        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
     return JSValue::encode(jsNumber(view->byteOffset()));
 }

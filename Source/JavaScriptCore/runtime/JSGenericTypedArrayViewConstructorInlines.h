@@ -159,7 +159,7 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
             auto* view = jsCast<JSArrayBufferView*>(object);
 
             if (view->isDetached()) {
-                throwTypeError(globalObject, scope, "Underlying ArrayBuffer has been detached from the view"_s);
+                throwTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
                 return nullptr;
             }
 

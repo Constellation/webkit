@@ -212,7 +212,7 @@ JSC_DEFINE_HOST_FUNCTION(typedArrayViewPrivateFuncLength, (JSGlobalObject* globa
     JSArrayBufferView* thisObject = jsCast<JSArrayBufferView*>(argument);
 
     if (thisObject->isDetached())
-        return throwVMTypeError(globalObject, scope, "Underlying ArrayBuffer has been detached from the view"_s);
+        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
     return JSValue::encode(jsNumber(thisObject->length()));
 }
@@ -245,7 +245,7 @@ inline EncodedJSValue createTypedArrayIteratorObject(JSGlobalObject* globalObjec
     JSArrayBufferView* thisObject = jsCast<JSArrayBufferView*>(callFrame->thisValue());
 
     if (thisObject->isDetached())
-        return throwVMTypeError(globalObject, scope, "Underlying ArrayBuffer has been detached from the view"_s);
+        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
     return JSValue::encode(JSArrayIterator::create(vm, globalObject->arrayIteratorStructure(), thisObject, jsNumber(static_cast<unsigned>(kind))));
 }
