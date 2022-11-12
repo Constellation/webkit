@@ -154,7 +154,7 @@ inline size_t JSArrayBufferView::byteOffset()
     return byteOffsetImpl<Mutator, size_t>();
 }
 
-inline size_t JSArrayBufferView::byteOffsetUnsafe()
+inline size_t JSArrayBufferView::byteOffsetUnsafe() const
 {
     return byteOffsetUnsafeImpl<Mutator, size_t>();
 }

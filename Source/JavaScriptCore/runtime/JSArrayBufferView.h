@@ -120,6 +120,11 @@ inline bool isGrowableShared(TypedArrayMode mode)
     return static_cast<uint8_t>(mode) & isGrowableSharedMode;
 }
 
+inline bool isResizableNonShared(TypedArrayMode mode)
+{
+    return static_cast<uint8_t>(mode) & isResizableNonSharedMode;
+}
+
 inline bool isAutoLength(TypedArrayMode mode)
 {
     return static_cast<uint8_t>(mode) & isAutoLengthMode;
@@ -240,6 +245,7 @@ public:
     bool isDetached() { return hasArrayBuffer() && !hasVector(); }
     bool isResizableOrGrowableShared() const { return JSC::isResizableOrGrowableShared(m_mode); }
     bool isGrowableShared() const { return JSC::isGrowableShared(m_mode); };
+    bool isResizableNonShared() const { return JSC::isResizableNonShared(m_mode); };
     bool isAutoLength() const { return JSC::isAutoLength(m_mode); }
     void detach();
 

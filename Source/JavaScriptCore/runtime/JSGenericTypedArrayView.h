@@ -113,7 +113,7 @@ public:
         return integerIndexedObjectByteLength(const_cast<JSGenericTypedArrayView*>(this), getter);
     }
 
-    size_t byteSize() const { return sizeOf(m_length, sizeof(typename Adaptor::Type)); }
+    size_t byteSizeUnsafe() const { return sizeOf(m_length, sizeof(typename Adaptor::Type)); }
     
     const typename Adaptor::Type* typedVector() const
     {
@@ -126,6 +126,15 @@ public:
 
     bool inBounds(size_t i) const
     {
+        if (LIKELY(!isResizableOrGrowableShared() || (!isAutoLength() && isGrowableShared())))
+            return i < m_length;
+        size_t byteLength = byteSizeUnsafe() + const_cast<JSGenericTypedArrayView*>(this)->byteOffsetUnsafe();
+        size_t logSize = logElementSize(Adaptor::typeValue);
+        if (byteLength > existingBufferInButterfly()->byteLength())
+            return false;
+        if (isAutoLength())
+            return i < (byteLength >> logSize);
+        ASSERT(isResizableNonShared());
         return i < m_length;
     }
 

@@ -86,6 +86,7 @@ JSArrayBuffer* JSWebAssemblyMemory::buffer(JSGlobalObject* globalObject)
     }
 
     if (m_memory->sharingMode() == MemorySharingMode::Shared && m_memory->shared()) {
+        dataLogLn("Hey");
         m_buffer = ArrayBuffer::createShared(*m_memory->shared());
         m_buffer->makeWasmMemory();
     } else {
