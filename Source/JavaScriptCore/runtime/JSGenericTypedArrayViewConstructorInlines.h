@@ -106,12 +106,10 @@ inline JSObject* constructGenericTypedArrayViewFromIterator(JSGlobalObject* glob
 }
 
 template<typename ViewClass>
-inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* globalObject, JSObject* newTarget, JSObject* callee, EncodedJSValue firstArgument, size_t offset, std::optional<size_t> lengthOpt)
+inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* globalObject, Structure* structure, JSValue firstValue, size_t offset, std::optional<size_t> lengthOpt)
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
-
-    JSValue firstValue = JSValue::decode(firstArgument);
 
     // https://tc39.es/proposal-resizablearraybuffer/#sec-initializetypedarrayfromarraybuffer
     if (JSArrayBuffer* jsBuffer = jsDynamicCast<JSArrayBuffer*>(firstValue)) {
@@ -140,18 +138,10 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
             }
         }
 
-        Structure* structure = nullptr;
-        if (buffer->isResizableOrGrowableShared()) {
-            structure = JSC_GET_DERIVED_STRUCTURE(vm, resizableOrGrowableSharedTypedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
-            RETURN_IF_EXCEPTION(scope, { });
-        } else {
-            structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
-            RETURN_IF_EXCEPTION(scope, { });
-        }
         RELEASE_AND_RETURN(scope, ViewClass::create(globalObject, structure, WTFMove(buffer), offset, length));
     }
     ASSERT(!offset && !lengthOpt);
-    
+
     if (UNLIKELY(ViewClass::TypedArrayStorageType == TypeDataView)) {
         throwTypeError(globalObject, scope, "Expected ArrayBuffer for the first argument."_s);
         return nullptr;
@@ -200,9 +190,6 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
                 && (iteratorFunc != object->globalObject()->arrayProtoValuesFunction()
                     || lengthSlot.isAccessor() || lengthSlot.isCustom() || lengthSlot.isTaintedByOpaqueObject()
                     || hasAnyArrayStorage(object->indexingType()))) {
-
-                    Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
-                    RETURN_IF_EXCEPTION(scope, nullptr);
                     RELEASE_AND_RETURN(scope, constructGenericTypedArrayViewFromIterator<ViewClass>(globalObject, structure, object, iteratorFunc));
             }
 
@@ -216,8 +203,6 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
             }
         }
 
-        Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
-        RETURN_IF_EXCEPTION(scope, nullptr);
         ViewClass* result = ViewClass::createUninitialized(globalObject, structure, length);
         EXCEPTION_ASSERT(!!scope.exception() == !result);
         if (UNLIKELY(!result))
@@ -233,8 +218,6 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
     size_t length = firstValue.toTypedArrayIndex(globalObject, "length"_s);
     RETURN_IF_EXCEPTION(scope, nullptr);
 
-    Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callee);
-    RETURN_IF_EXCEPTION(scope, nullptr);
     RELEASE_AND_RETURN(scope, ViewClass::create(globalObject, structure, length));
 }
 
@@ -249,32 +232,47 @@ ALWAYS_INLINE EncodedJSValue constructGenericTypedArrayViewImpl(JSGlobalObject* 
     size_t argCount = callFrame->argumentCount();
 
     if (!argCount) {
-        if (ViewClass::TypedArrayStorageType == TypeDataView)
-            return throwVMTypeError(globalObject, scope, "DataView constructor requires at least one argument."_s);
-
         Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callFrame->jsCallee());
         RETURN_IF_EXCEPTION(scope, { });
+
+        if constexpr (ViewClass::TypedArrayStorageType == TypeDataView)
+            return throwVMTypeError(globalObject, scope, "DataView constructor requires at least one argument."_s);
+
         RELEASE_AND_RETURN(scope, JSValue::encode(ViewClass::create(globalObject, structure, 0)));
     }
 
+    Structure* structure = nullptr;
     JSValue firstValue = callFrame->uncheckedArgument(0);
     size_t offset = 0;
     std::optional<size_t> length = std::nullopt;
-    if (jsDynamicCast<JSArrayBuffer*>(firstValue) && argCount > 1) {
-        offset = callFrame->uncheckedArgument(1).toTypedArrayIndex(globalObject, "byteOffset"_s);
-        RETURN_IF_EXCEPTION(scope, encodedJSValue());
+    if (auto* arrayBuffer = jsDynamicCast<JSArrayBuffer*>(firstValue)) {
+        if (arrayBuffer->isResizableOrGrowableShared()) {
+            structure = JSC_GET_DERIVED_STRUCTURE(vm, resizableOrGrowableSharedTypedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callFrame->jsCallee());
+            RETURN_IF_EXCEPTION(scope, { });
+        } else {
+            structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callFrame->jsCallee());
+            RETURN_IF_EXCEPTION(scope, { });
+        }
 
-        if (argCount > 2) {
-            // If the length value is present but undefined, treat it as missing.
-            JSValue lengthValue = callFrame->uncheckedArgument(2);
-            if (!lengthValue.isUndefined()) {
-                length = lengthValue.toTypedArrayIndex(globalObject, ViewClass::TypedArrayStorageType == TypeDataView ? "byteLength"_s : "length"_s);
-                RETURN_IF_EXCEPTION(scope, encodedJSValue());
+        if (argCount > 1) {
+            offset = callFrame->uncheckedArgument(1).toTypedArrayIndex(globalObject, "byteOffset"_s);
+            RETURN_IF_EXCEPTION(scope, encodedJSValue());
+
+            if (argCount > 2) {
+                // If the length value is present but undefined, treat it as missing.
+                JSValue lengthValue = callFrame->uncheckedArgument(2);
+                if (!lengthValue.isUndefined()) {
+                    length = lengthValue.toTypedArrayIndex(globalObject, ViewClass::TypedArrayStorageType == TypeDataView ? "byteLength"_s : "length"_s);
+                    RETURN_IF_EXCEPTION(scope, encodedJSValue());
+                }
             }
         }
+    } else {
+        structure = JSC_GET_DERIVED_STRUCTURE(vm, typedArrayStructureWithTypedArrayType<ViewClass::TypedArrayStorageType>, newTarget, callFrame->jsCallee());
+        RETURN_IF_EXCEPTION(scope, { });
     }
 
-    RELEASE_AND_RETURN(scope, JSValue::encode(constructGenericTypedArrayViewWithArguments<ViewClass>(globalObject, newTarget, callFrame->jsCallee(), JSValue::JSValue::encode(firstValue), offset, length)));
+    RELEASE_AND_RETURN(scope, JSValue::encode(constructGenericTypedArrayViewWithArguments<ViewClass>(globalObject, structure, firstValue, offset, length)));
 }
 
 template<typename ViewClass>
