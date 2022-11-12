@@ -151,7 +151,7 @@ public:
     
     typename Adaptor::Type getIndexQuicklyAsNativeValue(size_t i) const
     {
-        ASSERT(i < m_length);
+        ASSERT(inBounds(i));
         return typedVector()[i];
     }
     
