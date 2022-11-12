@@ -130,7 +130,7 @@ public:
             return i < m_length;
         size_t byteLength = byteSizeUnsafe() + const_cast<JSGenericTypedArrayView*>(this)->byteOffsetUnsafe();
         size_t logSize = logElementSize(Adaptor::typeValue);
-        if (byteLength > existingBufferInButterfly()->byteLength())
+        if (byteLength > const_cast<JSGenericTypedArrayView*>(this)->existingBufferInButterfly()->byteLength())
             return false;
         if (isAutoLength())
             return i < (byteLength >> logSize);
