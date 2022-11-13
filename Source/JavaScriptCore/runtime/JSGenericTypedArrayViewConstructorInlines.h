@@ -176,7 +176,7 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
                 return nullptr;
 
             scope.release();
-            if (!result->setFromTypedArray(globalObject, 0, object, 0, length))
+            if (!result->setFromTypedArray(globalObject, 0, view, 0, length, CopyType::Unobservable))
                 return nullptr;
             return result;
         }

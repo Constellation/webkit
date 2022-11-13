@@ -257,6 +257,8 @@ bool JSGenericTypedArrayView<Adaptor>::setWithSpecificType(
 template<typename Adaptor>
 bool JSGenericTypedArrayView<Adaptor>::setFromTypedArray(JSGlobalObject* globalObject, size_t offset, JSArrayBufferView* object, size_t objectOffset, size_t length, CopyType type)
 {
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-settypedarrayfromtypedarray
+
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
