@@ -128,13 +128,20 @@ public:
     {
         if (LIKELY(!isResizableOrGrowableShared() || (!isAutoLength() && isGrowableShared())))
             return i < m_length;
+
+        if (isAutoLength()) {
+            size_t byteOffset = const_cast<JSGenericTypedArrayView*>(this)->byteOffsetUnsafe();
+            size_t byteLength = const_cast<JSGenericTypedArrayView*>(this)->existingBufferInButterfly()->byteLength();
+            size_t logSize = logElementSize(Adaptor::typeValue);
+            if (byteLength > byteOffset)
+                return false;
+            size_t remainingLength = byteLength - byteOffset;
+            return i < (remainingLength >> logSize);
+        }
+
         size_t byteLength = byteSizeUnsafe() + const_cast<JSGenericTypedArrayView*>(this)->byteOffsetUnsafe();
-        size_t logSize = logElementSize(Adaptor::typeValue);
         if (byteLength > const_cast<JSGenericTypedArrayView*>(this)->existingBufferInButterfly()->byteLength())
             return false;
-        if (isAutoLength())
-            return i < (byteLength >> logSize);
-        ASSERT(isResizableNonShared());
         return i < m_length;
     }
 
