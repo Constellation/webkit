@@ -131,7 +131,7 @@ public:
 
         size_t bufferByteLength = const_cast<JSGenericTypedArrayView*>(this)->existingBufferInButterfly()->byteLength();
         size_t byteOffset = const_cast<JSGenericTypedArrayView*>(this)->byteOffsetUnsafe();
-        size_t byteLength = byteSizeUnsafe() + byteOffset; // Keep in mind that byteSizeUnsafe returns 0 for AutoLength TypedArray.
+        size_t byteLength = byteSizeUnsafe() + byteOffset; // Keep in mind that byteSizeUnsafe returns 1 for AutoLength TypedArray.
         if (byteLength > bufferByteLength)
             return false;
         if (isAutoLength()) {
@@ -150,7 +150,7 @@ public:
     }
     bool canSetIndexQuickly(size_t i, JSValue value) const
     {
-        return i < m_length && value.isNumber() && Adaptor::canConvertToJSQuickly;
+        return inBounds(i) && value.isNumber() && Adaptor::canConvertToJSQuickly;
     }
     
     typename Adaptor::Type getIndexQuicklyAsNativeValue(size_t i) const
@@ -166,7 +166,7 @@ public:
     
     void setIndexQuicklyToNativeValue(size_t i, typename Adaptor::Type value)
     {
-        ASSERT(i < m_length);
+        ASSERT(inBounds(i));
         typedVector()[i] = value;
     }
     
@@ -215,6 +215,7 @@ public:
             sortFloat<int64_t>();
             break;
         default: {
+            // FIXME: m_length
             ElementType* array = typedVector();
             std::sort(array, array + m_length);
             break;
@@ -224,6 +225,7 @@ public:
 
     bool canAccessRangeQuickly(size_t offset, size_t length)
     {
+        // FIXME: m_length
         return isSumSmallerThanOrEqual(offset, length, m_length);
     }
     
@@ -351,6 +353,7 @@ protected:
 
     void purifyArray()
     {
+        // FIXME: m_length
         ElementType* array = typedVector();
         for (size_t i = 0; i < m_length; i++)
             array[i] = purifyNaN(array[i]);
