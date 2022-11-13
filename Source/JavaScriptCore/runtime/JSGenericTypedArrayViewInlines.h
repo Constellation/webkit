@@ -110,10 +110,10 @@ JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(
             throwException(globalObject, scope, createRangeError(globalObject, "Length out of range of buffer"_s));
             return nullptr;
         }
-        if (!ArrayBufferView::verifyByteOffsetAlignment(byteOffset, elementSize)) {
-            throwException(globalObject, scope, createRangeError(globalObject, "Byte offset is not aligned"_s));
-            return nullptr;
-        }
+    }
+    if (!ArrayBufferView::verifyByteOffsetAlignment(byteOffset, elementSize)) {
+        throwException(globalObject, scope, createRangeError(globalObject, "Byte offset is not aligned"_s));
+        return nullptr;
     }
     ConstructionContext context(vm, structure, WTFMove(buffer), byteOffset, length);
     ASSERT(context);

@@ -899,41 +899,36 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSubarray(VM& vm, JSGl
     ASSERT(finish.isUndefined() || finish.isNumber());
     size_t begin = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(0), thisLength);
     RETURN_IF_EXCEPTION(scope, { });
-    size_t end = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(1), thisLength, thisLength);
-    RETURN_IF_EXCEPTION(scope, { });
 
-    // FIXME: We need to update and throw here.
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    std::optional<size_t> count;
+    if (!(thisObject->isAutoLength() && callFrame->argument(1).isUndefined())) {
+        size_t end = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(1), thisLength, thisLength);
+        RETURN_IF_EXCEPTION(scope, { });
 
-    // Clamp end to begin.
-    end = std::max(begin, end);
+        // Clamp end to begin.
+        end = std::max(begin, end);
 
-    ASSERT(end >= begin);
-    size_t offset = begin;
-    size_t count = end - begin;
+        ASSERT(end >= begin);
+        count = end - begin;
+    }
 
     RefPtr<ArrayBuffer> arrayBuffer = thisObject->possiblySharedBuffer();
     if (UNLIKELY(!arrayBuffer)) {
         throwOutOfMemoryError(globalObject, scope);
         return { };
     }
-    // FIXME: This is very wrong.
-    RELEASE_ASSERT(thisLength == thisObject->length());
 
-    size_t newByteOffset = thisObject->byteOffset() + offset * ViewClass::elementSize;
+    size_t newByteOffset = thisObject->byteOffset() + begin * ViewClass::elementSize;
 
     scope.release();
     return JSValue::encode(speciesConstruct(globalObject, thisObject, [&]() {
         Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, arrayBuffer->isResizableOrGrowableShared());
-        return ViewClass::create(
-            globalObject, structure, WTFMove(arrayBuffer),
-            thisObject->byteOffset() + offset * ViewClass::elementSize,
-            count);
+        return ViewClass::create(globalObject, structure, WTFMove(arrayBuffer), newByteOffset, count);
     }, [&](MarkedArgumentBuffer& args) {
         args.append(vm.m_typedArrayController->toJS(globalObject, thisObject->globalObject(), arrayBuffer.get()));
         args.append(jsNumber(newByteOffset));
-        args.append(jsNumber(count));
+        if (count)
+            args.append(jsNumber(count.value()));
         ASSERT(!args.hasOverflowed());
     }));
 }
@@ -941,12 +936,9 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSubarray(VM& vm, JSGl
 template<typename ViewClass>
 static inline void validateIntegerIndex(JSGlobalObject* globalObject, ViewClass* thisObject, double index)
 {
+    // https://tc39.es/proposal-resizablearraybuffer/#sec-isvalidintegerindex
     auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
 
-    if (UNLIKELY(thisObject->isDetached())) {
-        throwVMRangeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
-        return;
-    }
     if (UNLIKELY(!isInteger(index))) {
         throwVMRangeError(globalObject, scope, "index should be integer"_s);
         return;
@@ -955,7 +947,10 @@ static inline void validateIntegerIndex(JSGlobalObject* globalObject, ViewClass*
         throwVMRangeError(globalObject, scope, "index should not be negative zero"_s);
         return;
     }
-    if (UNLIKELY(index < 0 || !thisObject->inBounds(index))) {
+
+    IdempotentArrayBufferByteLengthGetter<std::memory_order_relaxed> getter;
+    auto length = integerIndexedObjectByteLength(thisObject, getter);
+    if (UNLIKELY(!length || index < 0 || index > length.value())) {
         throwVMRangeError(globalObject, scope, "index is out of range"_s);
         return;
     }

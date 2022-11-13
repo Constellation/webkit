@@ -57,10 +57,10 @@ JSDataView* JSDataView::create(
             throwRangeError(globalObject, scope, "Length out of range of buffer"_s);
             return nullptr;
         }
-        if (!ArrayBufferView::verifyByteOffsetAlignment(byteOffset, sizeof(uint8_t))) {
-            throwRangeError(globalObject, scope, "Byte offset is not aligned"_s);
-            return nullptr;
-        }
+    }
+    if (!ArrayBufferView::verifyByteOffsetAlignment(byteOffset, sizeof(uint8_t))) {
+        throwRangeError(globalObject, scope, "Byte offset is not aligned"_s);
+        return nullptr;
     }
 
     ConstructionContext context(

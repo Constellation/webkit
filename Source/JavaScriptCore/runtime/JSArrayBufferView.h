@@ -262,9 +262,7 @@ public:
         if (LIKELY(!isResizableOrGrowableShared()))
             return lengthUnsafe();
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
-        if (auto length = integerIndexedObjectLength(const_cast<JSArrayBufferView*>(this), getter))
-            return length.value();
-        return 0;
+        return integerIndexedObjectLength(const_cast<JSArrayBufferView*>(this), getter).value_or(0);
     }
 
     size_t lengthUnsafe() const { return m_length; }
