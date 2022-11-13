@@ -169,38 +169,48 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
             }
 
             length = view->length();
-        } else {
-            // This getPropertySlot operation should not be observed by the Proxy.
-            // So we use VMInquiry. And purge the opaque object cases (proxy and namespace object) by isTaintedByOpaqueObject() guard.
-            PropertySlot lengthSlot(object, PropertySlot::InternalMethodType::VMInquiry, &vm);
-            object->getPropertySlot(globalObject, vm.propertyNames->length, lengthSlot);
+
+            ViewClass* result = ViewClass::createUninitialized(globalObject, structure, length);
+            EXCEPTION_ASSERT(!!scope.exception() == !result);
+            if (UNLIKELY(!result))
+                return nullptr;
+
+            scope.release();
+            if (!result->setFromTypedArray(globalObject, 0, object, 0, length))
+                return nullptr;
+            return result;
+        }
+
+        // This getPropertySlot operation should not be observed by the Proxy.
+        // So we use VMInquiry. And purge the opaque object cases (proxy and namespace object) by isTaintedByOpaqueObject() guard.
+        PropertySlot lengthSlot(object, PropertySlot::InternalMethodType::VMInquiry, &vm);
+        object->getPropertySlot(globalObject, vm.propertyNames->length, lengthSlot);
+        RETURN_IF_EXCEPTION(scope, nullptr);
+        lengthSlot.disallowVMEntry.reset();
+
+        JSValue iteratorFunc = object->get(globalObject, vm.propertyNames->iteratorSymbol);
+        RETURN_IF_EXCEPTION(scope, nullptr);
+
+        // We would like not use the iterator as it is painfully slow. Fortunately, unless
+        // 1) The iterator is not a known iterator.
+        // 2) The base object does not have a length getter.
+        // 3) The base object might have indexed getters.
+        // it should not be observable that we do not use the iterator.
+
+        if (!iteratorFunc.isUndefinedOrNull()
+            && (iteratorFunc != object->globalObject()->arrayProtoValuesFunction()
+                || lengthSlot.isAccessor() || lengthSlot.isCustom() || lengthSlot.isTaintedByOpaqueObject()
+                || hasAnyArrayStorage(object->indexingType()))) {
+                RELEASE_AND_RETURN(scope, constructGenericTypedArrayViewFromIterator<ViewClass>(globalObject, structure, object, iteratorFunc));
+        }
+
+        if (lengthSlot.isUnset())
+            length = 0;
+        else {
+            JSValue value = lengthSlot.getValue(globalObject, vm.propertyNames->length);
             RETURN_IF_EXCEPTION(scope, nullptr);
-            lengthSlot.disallowVMEntry.reset();
-
-            JSValue iteratorFunc = object->get(globalObject, vm.propertyNames->iteratorSymbol);
+            length = value.toLength(globalObject);
             RETURN_IF_EXCEPTION(scope, nullptr);
-
-            // We would like not use the iterator as it is painfully slow. Fortunately, unless
-            // 1) The iterator is not a known iterator.
-            // 2) The base object does not have a length getter.
-            // 3) The base object might have indexed getters.
-            // it should not be observable that we do not use the iterator.
-
-            if (!iteratorFunc.isUndefinedOrNull()
-                && (iteratorFunc != object->globalObject()->arrayProtoValuesFunction()
-                    || lengthSlot.isAccessor() || lengthSlot.isCustom() || lengthSlot.isTaintedByOpaqueObject()
-                    || hasAnyArrayStorage(object->indexingType()))) {
-                    RELEASE_AND_RETURN(scope, constructGenericTypedArrayViewFromIterator<ViewClass>(globalObject, structure, object, iteratorFunc));
-            }
-
-            if (lengthSlot.isUnset())
-                length = 0;
-            else {
-                JSValue value = lengthSlot.getValue(globalObject, vm.propertyNames->length);
-                RETURN_IF_EXCEPTION(scope, nullptr);
-                length = value.toLength(globalObject);
-                RETURN_IF_EXCEPTION(scope, nullptr);
-            }
         }
 
         ViewClass* result = ViewClass::createUninitialized(globalObject, structure, length);
@@ -209,9 +219,8 @@ inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* glo
             return nullptr;
 
         scope.release();
-        if (!result->set(globalObject, 0, object, 0, length))
+        if (!result->setFromArrayLike(globalObject, 0, object, 0, length))
             return nullptr;
-        
         return result;
     }
 

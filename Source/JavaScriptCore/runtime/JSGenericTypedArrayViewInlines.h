@@ -255,8 +255,7 @@ bool JSGenericTypedArrayView<Adaptor>::setWithSpecificType(
 }
 
 template<typename Adaptor>
-bool JSGenericTypedArrayView<Adaptor>::set(
-    JSGlobalObject* globalObject, size_t offset, JSObject* object, size_t objectOffset, size_t length, CopyType type)
+bool JSGenericTypedArrayView<Adaptor>::setFromTypedArray(JSGlobalObject* globalObject, size_t offset, JSArrayBufferView* object, size_t objectOffset, size_t length, CopyType type)
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
@@ -264,7 +263,7 @@ bool JSGenericTypedArrayView<Adaptor>::set(
     auto memmoveFastPath = [&] (JSArrayBufferView* other) {
         // The super fast case: we can just memmove since we're the same underlying storage type.
         length = std::min(length, other->length());
-        
+
         bool success = validateRange(globalObject, offset, length);
         EXCEPTION_ASSERT(!scope.exception() == success);
         if (!success)
@@ -321,37 +320,47 @@ bool JSGenericTypedArrayView<Adaptor>::set(
             globalObject, offset, jsCast<JSBigUint64Array*>(object), objectOffset, length, type));
     case NotTypedArray:
     case TypeDataView: {
-        bool success = validateRange(globalObject, offset, length);
-        EXCEPTION_ASSERT(!scope.exception() == success);
-        if (!success)
-            return false;
-
-        // It is not valid to ever call object->get() with an index of more than MAX_ARRAY_INDEX.
-        // So we iterate in the optimized loop up to MAX_ARRAY_INDEX, then if there is anything to do beyond this, we rely on slower code.
-        size_t safeUnadjustedLength = std::min(length, static_cast<size_t>(MAX_ARRAY_INDEX) + 1);
-        size_t safeLength = objectOffset <= safeUnadjustedLength ? safeUnadjustedLength - objectOffset : 0;
-        for (size_t i = 0; i < safeLength; ++i) {
-            ASSERT(i + objectOffset <= MAX_ARRAY_INDEX);
-            JSValue value = object->get(globalObject, static_cast<unsigned>(i + objectOffset));
-            RETURN_IF_EXCEPTION(scope, false);
-            bool success = setIndex(globalObject, offset + i, value);
-            EXCEPTION_ASSERT(!scope.exception() || !success);
-            if (!success)
-                return false;
-        }
-        for (size_t i = safeLength; i < length; ++i) {
-            JSValue value = object->get(globalObject, static_cast<uint64_t>(i + objectOffset));
-            RETURN_IF_EXCEPTION(scope, false);
-            bool success = setIndex(globalObject, offset + i, value);
-            EXCEPTION_ASSERT(!scope.exception() || !success);
-            if (!success)
-                return false;
-        }
+        RELEASE_ASSERT_NOT_REACHED();
         return true;
     } }
-    
+
     RELEASE_ASSERT_NOT_REACHED();
     return false;
+}
+
+template<typename Adaptor>
+bool JSGenericTypedArrayView<Adaptor>::setFromArrayLike(JSGlobalObject* globalObject, size_t offset, JSObject* object, size_t objectOffset, size_t length)
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    bool success = validateRange(globalObject, offset, length);
+    EXCEPTION_ASSERT(!scope.exception() == success);
+    if (!success)
+        return false;
+
+    // It is not valid to ever call object->get() with an index of more than MAX_ARRAY_INDEX.
+    // So we iterate in the optimized loop up to MAX_ARRAY_INDEX, then if there is anything to do beyond this, we rely on slower code.
+    size_t safeUnadjustedLength = std::min(length, static_cast<size_t>(MAX_ARRAY_INDEX) + 1);
+    size_t safeLength = objectOffset <= safeUnadjustedLength ? safeUnadjustedLength - objectOffset : 0;
+    for (size_t i = 0; i < safeLength; ++i) {
+        ASSERT(i + objectOffset <= MAX_ARRAY_INDEX);
+        JSValue value = object->get(globalObject, static_cast<unsigned>(i + objectOffset));
+        RETURN_IF_EXCEPTION(scope, false);
+        bool success = setIndex(globalObject, offset + i, value);
+        EXCEPTION_ASSERT(!scope.exception() || !success);
+        if (!success)
+            return false;
+    }
+    for (size_t i = safeLength; i < length; ++i) {
+        JSValue value = object->get(globalObject, static_cast<uint64_t>(i + objectOffset));
+        RETURN_IF_EXCEPTION(scope, false);
+        bool success = setIndex(globalObject, offset + i, value);
+        EXCEPTION_ASSERT(!scope.exception() || !success);
+        if (!success)
+            return false;
+    }
+    return true;
 }
 
 template<typename Adaptor>

@@ -213,20 +213,20 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSet(VM& vm, JSGlobalO
     size_t length;
     if (isTypedView(sourceArray->type())) {
         JSArrayBufferView* sourceView = jsCast<JSArrayBufferView*>(sourceArray);
-        if (UNLIKELY(sourceView->isDetached()))
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        length = integerIndexedObjectLength(sourceView, getter).value_or(0);
+        if (isIntegerIndexedObjectOutOfBounds(sourceView, getter))
             return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
-
-        length = jsCast<JSArrayBufferView*>(sourceArray)->length();
-    } else {
-        JSValue lengthValue = sourceArray->get(globalObject, vm.propertyNames->length);
-        RETURN_IF_EXCEPTION(scope, { });
-        length = lengthValue.toLength(globalObject);
+        scope.release();
+        thisObject->setFromTypedArray(globalObject, offset, sourceArray, 0, length, CopyType::Unobservable);
+        return JSValue::encode(jsUndefined());
     }
 
+    JSValue lengthValue = sourceArray->get(globalObject, vm.propertyNames->length);
     RETURN_IF_EXCEPTION(scope, { });
-
+    length = lengthValue.toLength(globalObject);
     scope.release();
-    thisObject->set(globalObject, offset, sourceArray, 0, length, CopyType::Unobservable);
+    thisObject->setFromArrayLike(globalObject, offset, sourceArray, 0, length);
     return JSValue::encode(jsUndefined());
 }
 
@@ -751,7 +751,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncFromFast(VM& vm, JS
     RETURN_IF_EXCEPTION(scope, { });
 
     scope.release();
-    result->set(globalObject, 0, items, 0, length, CopyType::Unobservable);
+    result->setFromTypedArray(globalObject, 0, items, 0, length, CopyType::Unobservable);
     return JSValue::encode(result);
 }
 
@@ -832,47 +832,47 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGloba
     switch (result->type()) {
     case Int8ArrayType:
         scope.release();
-        jsCast<JSInt8Array*>(result)->set(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
+        jsCast<JSInt8Array*>(result)->setFromTypedArray(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
         return JSValue::encode(result);
     case Int16ArrayType:
         scope.release();
-        jsCast<JSInt16Array*>(result)->set(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
+        jsCast<JSInt16Array*>(result)->setFromTypedArray(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
         return JSValue::encode(result);
     case Int32ArrayType:
         scope.release();
-        jsCast<JSInt32Array*>(result)->set(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
+        jsCast<JSInt32Array*>(result)->setFromTypedArray(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
         return JSValue::encode(result);
     case Uint8ArrayType:
         scope.release();
-        jsCast<JSUint8Array*>(result)->set(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
+        jsCast<JSUint8Array*>(result)->setFromTypedArray(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
         return JSValue::encode(result);
     case Uint8ClampedArrayType:
         scope.release();
-        jsCast<JSUint8ClampedArray*>(result)->set(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
+        jsCast<JSUint8ClampedArray*>(result)->setFromTypedArray(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
         return JSValue::encode(result);
     case Uint16ArrayType:
         scope.release();
-        jsCast<JSUint16Array*>(result)->set(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
+        jsCast<JSUint16Array*>(result)->setFromTypedArray(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
         return JSValue::encode(result);
     case Uint32ArrayType:
         scope.release();
-        jsCast<JSUint32Array*>(result)->set(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
+        jsCast<JSUint32Array*>(result)->setFromTypedArray(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
         return JSValue::encode(result);
     case Float32ArrayType:
         scope.release();
-        jsCast<JSFloat32Array*>(result)->set(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
+        jsCast<JSFloat32Array*>(result)->setFromTypedArray(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
         return JSValue::encode(result);
     case Float64ArrayType:
         scope.release();
-        jsCast<JSFloat64Array*>(result)->set(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
+        jsCast<JSFloat64Array*>(result)->setFromTypedArray(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
         return JSValue::encode(result);
     case BigInt64ArrayType:
         scope.release();
-        jsCast<JSBigInt64Array*>(result)->set(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
+        jsCast<JSBigInt64Array*>(result)->setFromTypedArray(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
         return JSValue::encode(result);
     case BigUint64ArrayType:
         scope.release();
-        jsCast<JSBigUint64Array*>(result)->set(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
+        jsCast<JSBigUint64Array*>(result)->setFromTypedArray(globalObject, 0, thisObject, begin, length, CopyType::LeftToRight);
         return JSValue::encode(result);
     default:
         RELEASE_ASSERT_NOT_REACHED();

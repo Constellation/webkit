@@ -235,7 +235,8 @@ public:
 
     // Returns true if successful, and false on error; if it returns false
     // then it will have thrown an exception.
-    bool set(JSGlobalObject*, size_t offset, JSObject*, size_t objectOffset, size_t length, CopyType = CopyType::Unobservable);
+    bool setFromTypedArray(JSGlobalObject*, size_t offset, JSArrayBufferView*, size_t objectOffset, size_t length, CopyType = CopyType::Unobservable);
+    bool setFromArrayLike(JSGlobalObject*, size_t offset, JSObject*, size_t objectOffset, size_t length);
     
     RefPtr<typename Adaptor::ViewType> possiblySharedTypedImpl();
     RefPtr<typename Adaptor::ViewType> unsharedTypedImpl();
