@@ -138,7 +138,7 @@ inline bool isWastefulTypedArray(TypedArrayMode mode)
 template<typename Getter> std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView*, Getter&);
 template<typename Getter> bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView*, Getter&);
 
-extern const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage;
+extern JS_EXPORT_PRIVATE const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage;
 
 enum class CopyType {
     LeftToRight,

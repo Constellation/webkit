@@ -683,7 +683,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncSort(VM& vm, JSGlob
     validateTypedArray(globalObject, thisObject);
     RETURN_IF_EXCEPTION(scope, { });
 
-    thisObject->sort();
+    if (UNLIKELY(!thisObject->sort()))
+        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
     return JSValue::encode(thisObject);
 }

@@ -199,20 +199,24 @@ public:
         return toNativeFromValueWithoutCoercion<Adaptor>(jsValue);
     }
 
-    void sort()
+    bool sort()
     {
         RELEASE_ASSERT(!isDetached());
         switch (Adaptor::typeValue) {
         case TypeFloat32:
-            sortFloat<int32_t>();
-            break;
+            return sortFloat<int32_t>();
         case TypeFloat64:
-            sortFloat<int64_t>();
-            break;
+            return sortFloat<int64_t>();
         default: {
+            IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+            auto lengthValue = integerIndexedObjectLength(this, getter);
+            if (!lengthValue)
+                return false;
+
+            size_t length = lengthValue.value();
             ElementType* array = typedVector();
-            std::sort(array, array + length());
-            break;
+            std::sort(array, array + length);
+            return true;
         }
         }
     }
@@ -345,19 +349,24 @@ protected:
     // For NaN, we normalize the NaN to a peticular representation; the sign bit is 0, all exponential bits
     // are 1 and only the MSB of the mantissa is 1. So, NaN is recognized as the largest integral numbers.
 
-    void purifyArray()
-    {
-        // FIXME: m_length
-        ElementType* array = typedVector();
-        for (size_t i = 0; i < m_length; i++)
-            array[i] = purifyNaN(array[i]);
-    }
-
     template<typename IntegralType>
-    void sortFloat()
+    bool sortFloat()
     {
         // FIXME: Need to get m_length once.
         ASSERT(sizeof(IntegralType) == sizeof(ElementType));
+
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        auto lengthValue = integerIndexedObjectLength(this, getter);
+        if (!lengthValue)
+            return false;
+
+        size_t length = lengthValue.value();
+
+        auto purifyArray = [&]() {
+            ElementType* array = typedVector();
+            for (size_t i = 0; i < length; i++)
+                array[i] = purifyNaN(array[i]);
+        };
 
         // Since there might be another view that sets the bits of
         // our floats to NaNs with negative sign bits we need to
@@ -367,11 +376,13 @@ protected:
         purifyArray();
 
         IntegralType* array = reinterpret_cast_ptr<IntegralType*>(typedVector());
-        std::sort(array, array + m_length, [] (IntegralType a, IntegralType b) {
+        std::sort(array, array + length, [] (IntegralType a, IntegralType b) {
             if (a >= 0 || b >= 0)
                 return a < b;
             return a > b;
         });
+
+        return true;
     }
 };
 
