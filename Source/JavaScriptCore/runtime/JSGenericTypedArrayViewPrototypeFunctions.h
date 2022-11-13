@@ -949,7 +949,7 @@ static inline void validateIntegerIndex(JSGlobalObject* globalObject, ViewClass*
     }
 
     IdempotentArrayBufferByteLengthGetter<std::memory_order_relaxed> getter;
-    auto length = integerIndexedObjectByteLength(thisObject, getter);
+    auto length = integerIndexedObjectLength(thisObject, getter);
     if (UNLIKELY(!length || index < 0 || index > length.value())) {
         throwVMRangeError(globalObject, scope, "index is out of range"_s);
         return;

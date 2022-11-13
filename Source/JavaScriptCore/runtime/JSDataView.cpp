@@ -48,7 +48,7 @@ JSDataView* JSDataView::create(
 
     ASSERT(buffer);
     if (buffer->isDetached()) {
-        throwTypeError(globalObject, scope, "Buffer is already detached"_s);
+        throwTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
         return nullptr;
     }
 
