@@ -218,7 +218,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSet(VM& vm, JSGlobalO
         if (isIntegerIndexedObjectOutOfBounds(sourceView, getter))
             return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
         scope.release();
-        thisObject->setFromTypedArray(globalObject, offset, sourceArray, 0, length, CopyType::Unobservable);
+        thisObject->setFromTypedArray(globalObject, offset, sourceView, 0, length, CopyType::Unobservable);
         return JSValue::encode(jsUndefined());
     }
 
