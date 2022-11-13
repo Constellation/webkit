@@ -259,6 +259,8 @@ bool JSGenericTypedArrayView<Adaptor>::setFromTypedArray(JSGlobalObject* globalO
 {
     // https://tc39.es/proposal-resizablearraybuffer/#sec-settypedarrayfromtypedarray
 
+    ASSERT(isTypedView(object));
+
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 

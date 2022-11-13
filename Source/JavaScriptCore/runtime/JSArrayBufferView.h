@@ -140,6 +140,11 @@ template<typename Getter> bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferVi
 
 extern const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage;
 
+enum class CopyType {
+    LeftToRight,
+    Unobservable,
+};
+
 // When WebCore uses a JSArrayBufferView, it expects to be able to get the native
 // ArrayBuffer and little else. This requires slowing down and wasting memory,
 // and then accessing things via the Butterfly. When JS uses a JSArrayBufferView

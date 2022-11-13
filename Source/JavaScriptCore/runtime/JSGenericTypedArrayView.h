@@ -80,11 +80,6 @@ namespace JSC {
 //     template<T> static T::Type convertTo(uint8_t);
 // };
 
-enum class CopyType {
-    LeftToRight,
-    Unobservable,
-};
-
 template<typename PassedAdaptor>
 class JSGenericTypedArrayView : public JSArrayBufferView {
 public:
@@ -215,9 +210,8 @@ public:
             sortFloat<int64_t>();
             break;
         default: {
-            // FIXME: m_length
             ElementType* array = typedVector();
-            std::sort(array, array + m_length);
+            std::sort(array, array + length());
             break;
         }
         }
@@ -225,8 +219,7 @@ public:
 
     bool canAccessRangeQuickly(size_t offset, size_t length)
     {
-        // FIXME: m_length
-        return isSumSmallerThanOrEqual(offset, length, m_length);
+        return isSumSmallerThanOrEqual(offset, length, this->length());
     }
     
     // Like canSetQuickly, except: if it returns false, it will throw the

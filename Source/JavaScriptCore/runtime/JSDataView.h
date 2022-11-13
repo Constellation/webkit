@@ -52,7 +52,8 @@ public:
     // placate some template specialization we do elsewhere.
     static JSDataView* createUninitialized(JSGlobalObject*, Structure*, size_t length);
     static JSDataView* create(JSGlobalObject*, Structure*, size_t length);
-    bool set(JSGlobalObject*, size_t, JSObject*, size_t, size_t length);
+    bool setFromTypedArray(JSGlobalObject*, size_t offset, JSArrayBufferView*, size_t objectOffset, size_t length, CopyType);
+    bool setFromArrayLike(JSGlobalObject*, size_t offset, JSObject*, size_t objectOffset, size_t length);
     bool setIndex(JSGlobalObject*, size_t, JSValue);
     
     ArrayBuffer* possiblySharedBuffer() const { return m_buffer; }

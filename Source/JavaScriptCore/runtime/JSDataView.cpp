@@ -84,7 +84,13 @@ JSDataView* JSDataView::create(JSGlobalObject*, Structure*, size_t)
     return nullptr;
 }
 
-bool JSDataView::set(JSGlobalObject*, size_t, JSObject*, size_t, size_t)
+bool JSDataView::setFromTypedArray(JSGlobalObject*, size_t, JSArrayBufferView*, size_t, size_t, CopyType)
+{
+    UNREACHABLE_FOR_PLATFORM();
+    return false;
+}
+
+bool JSDataView::setFromArrayLike(JSGlobalObject*, size_t, JSObject*, size_t, size_t)
 {
     UNREACHABLE_FOR_PLATFORM();
     return false;
