@@ -639,8 +639,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncToReversed(VM& vm, JS
 
     size_t length = thisObject->length();
 
-    bool isGrowableShared = false;
-    Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isGrowableShared);
+    bool isResizableOrGrowableShared = false;
+    Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isResizableOrGrowableShared);
     ViewClass* result = ViewClass::createUninitialized(globalObject, structure, length);
     RETURN_IF_EXCEPTION(scope, { });
 
@@ -663,8 +663,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncClone(VM& vm, JSGlo
     RETURN_IF_EXCEPTION(scope, { });
 
     size_t length = thisObject->length();
-    bool isGrowableShared = false;
-    Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isGrowableShared);
+    bool isResizableOrGrowableShared = false;
+    Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isResizableOrGrowableShared);
     ViewClass* result = ViewClass::createUninitialized(globalObject, structure, length);
     RETURN_IF_EXCEPTION(scope, { });
 
@@ -715,8 +715,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncFromFast(VM& vm, JS
 
         size_t length = array->length();
 
-        bool isGrowableShared = false;
-        Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isGrowableShared);
+        bool isResizableOrGrowableShared = false;
+        Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isResizableOrGrowableShared);
         ViewClass* result = ViewClass::createUninitialized(globalObject, structure, length);
         RETURN_IF_EXCEPTION(scope, { });
 
@@ -745,8 +745,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncFromFast(VM& vm, JS
         return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
     size_t length = items->length();
 
-    bool isGrowableShared = false;
-    Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isGrowableShared);
+    bool isResizableOrGrowableShared = false;
+    Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isResizableOrGrowableShared);
     ViewClass* result = ViewClass::createUninitialized(globalObject, structure, length);
     RETURN_IF_EXCEPTION(scope, { });
 
@@ -783,8 +783,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGloba
     size_t length = end - begin;
 
     JSArrayBufferView* result = speciesConstruct(globalObject, thisObject, [&]() {
-        bool isGrowableShared = false;
-        Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isGrowableShared);
+        bool isResizableOrGrowableShared = false;
+        Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isResizableOrGrowableShared);
 
         // If the source TypedArray is resizable, length can be changed.
         // In that case, it is possible that we will have some holes which is not initialized to the zero values.
@@ -892,7 +892,6 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSubarray(VM& vm, JSGl
     if (UNLIKELY(!length))
         return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
-    // Get the length here; later assert that the length didn't change.
     size_t thisLength = length.value();
 
     ASSERT(start.isNumber());
@@ -964,11 +963,12 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncWith(VM& vm, JSGlobal
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
-    validateTypedArray(globalObject, thisObject);
-    RETURN_IF_EXCEPTION(scope, { });
+    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+    auto length = integerIndexedObjectLength(thisObject, getter);
+    if (UNLIKELY(!length))
+        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
-    // Get the length here; later assert that the length didn't change.
-    size_t thisLength = thisObject->length();
+    size_t thisLength = length.value();
 
     double relativeIndex = callFrame->argument(0).toIntegerOrInfinity(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -986,8 +986,8 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncWith(VM& vm, JSGlobal
     ASSERT(!thisObject->isDetached());
     size_t replaceIndex = static_cast<size_t>(actualIndex);
 
-    bool isGrowableShared = false;
-    Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isGrowableShared);
+    bool isResizableOrGrowableShared = false;
+    Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isResizableOrGrowableShared);
     ViewClass* result = ViewClass::createUninitialized(globalObject, structure, thisLength);
     RETURN_IF_EXCEPTION(scope, { });
 
