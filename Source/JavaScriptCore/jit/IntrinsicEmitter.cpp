@@ -34,6 +34,7 @@
 #include "IntrinsicGetterAccessCase.h"
 #include "JSArrayBufferView.h"
 #include "JSCJSValueInlines.h"
+#include "JSTypedArrays.h"
 #include "PolymorphicAccess.h"
 #include "StructureStubInfo.h"
 
@@ -61,6 +62,8 @@ bool IntrinsicGetterAccessCase::canEmitIntrinsicGetter(StructureStubInfo& stubIn
     case TypedArrayByteLengthIntrinsic:
     case TypedArrayLengthIntrinsic: {
         if (!isTypedView(structure->typeInfo().type()))
+            return false;
+        if (isResizableOrGrowableSharedTypedArray(structure->classInfoForCells()))
             return false;
         
         return true;
