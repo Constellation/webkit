@@ -8407,7 +8407,7 @@ void SpeculativeJIT::cageTypedArrayStorage(GPRReg baseReg, GPRReg storageReg, bo
 {
     auto untagArrayPtr = [&]() {
 #if CPU(ARM64E)
-        m_jit.untagArrayPtrLength64(MacroAssembler::Address(baseReg, JSArrayBufferView::offsetOfMaxByteLength()), storageReg, validateAuth);
+        m_jit.untagArrayPtrLength64(MacroAssembler::Address(baseReg, JSArrayBufferView::offsetOfLength()), storageReg, validateAuth);
 #else
         UNUSED_PARAM(validateAuth);
         UNUSED_PARAM(baseReg);
@@ -11696,14 +11696,12 @@ void SpeculativeJIT::emitNewTypedArrayWithSizeInRegister(Node* node, TypedArrayT
         MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfLength()));
     m_jit.zeroExtend32ToWord(sizeGPR, scratchGPR);
     m_jit.lshift64(TrustedImm32(logElementSize(typedArrayType)), scratchGPR);
-    m_jit.store64(scratchGPR, MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfMaxByteLength()));
 #else
     m_jit.store32(
         sizeGPR,
         MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfLength()));
     m_jit.move(sizeGPR, scratchGPR);
     m_jit.lshift32(TrustedImm32(logElementSize(typedArrayType)), scratchGPR);
-    m_jit.store32(scratchGPR, MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfMaxByteLength()));
 #endif
     m_jit.store8(
         TrustedImm32(FastTypedArray),

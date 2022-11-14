@@ -8577,10 +8577,8 @@ IGNORE_CLANG_WARNINGS_END
         m_out.storePtr(storage, fastResultValue, m_heaps.JSArrayBufferView_vector);
 #if USE(LARGE_TYPED_ARRAYS)
         m_out.store64(size64Bits, fastResultValue, m_heaps.JSArrayBufferView_length);
-        m_out.store64(byteSizeWithoutAdjustment, fastResultValue, m_heaps.JSArrayBufferView_maxByteLength);
 #else
         m_out.store32(m_out.castToInt32(size64Bits), fastResultValue, m_heaps.JSArrayBufferView_length);
-        m_out.store32(m_out.castToInt32(byteSizeWithoutAdjustment), fastResultValue, m_heaps.JSArrayBufferView_maxByteLength);
 #endif
         m_out.store32As8(m_out.constInt32(FastTypedArray), fastResultValue, m_heaps.JSArrayBufferView_mode);
 
@@ -17867,9 +17865,9 @@ IGNORE_CLANG_WARNINGS_END
 #if CPU(ARM64E)
             if (kind == Gigacage::Primitive) {
 #if USE(LARGE_TYPED_ARRAYS)
-                LValue size = m_out.load64(base, m_heaps.JSArrayBufferView_maxByteLength);
+                LValue size = m_out.load64(base, m_heaps.JSArrayBufferView_length);
 #else
-                LValue size = m_out.load32(base, m_heaps.JSArrayBufferView_maxByteLength);
+                LValue size = m_out.load32(base, m_heaps.JSArrayBufferView_length);
 #endif
                 return untagArrayPtr(taggedPtr, size);
             }

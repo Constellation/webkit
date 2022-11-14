@@ -73,7 +73,7 @@ public:
     {
         if (isDetached())
             return nullptr;
-        return m_baseAddress.getMayBeNull(maxByteLength());
+        return m_baseAddress.getMayBeNull(m_byteLength);
     }
 
     void* data() const { return baseAddress(); }
@@ -86,7 +86,6 @@ public:
     }
 
     size_t byteLength() const { return m_byteLength; }
-    size_t maxByteLength() const { return m_maxByteLength; }
 
     JS_EXPORT_PRIVATE void setDetachable(bool);
     bool isDetachable() const { return m_isDetachable; }
@@ -159,7 +158,6 @@ protected:
     bool m_isGrowableShared { false };
     size_t m_byteOffset;
     size_t m_byteLength;
-    size_t m_maxByteLength;
 
     using BaseAddress = CagedPtr<Gigacage::Primitive, void, tagCagedPtr>;
     // This is the address of the ArrayBuffer's storage, plus the byte offset.

@@ -209,15 +209,8 @@ protected:
         bool operator!() const { return !m_structure; }
         
         Structure* structure() const { return m_structure; }
-        void* vector() const { return m_vector.getMayBeNull(maxByteLengthUnsafe()); }
+        void* vector() const { return m_vector.getMayBeNull(m_length); }
         size_t length() const { return m_length; }
-        std::optional<size_t> maxByteLength() const
-        {
-            if (JSC::isResizableOrGrowableShared(m_mode))
-                return m_maxByteLength;
-            return std::nullopt;
-        }
-        size_t maxByteLengthUnsafe() const { return m_maxByteLength; }
         TypedArrayMode mode() const { return m_mode; }
         Butterfly* butterfly() const { return m_butterfly; }
         
@@ -226,7 +219,6 @@ protected:
         using VectorType = CagedPtr<Gigacage::Primitive, void, tagCagedPtr>;
         VectorType m_vector;
         size_t m_length;
-        size_t m_maxByteLength;
         TypedArrayMode m_mode;
         Butterfly* m_butterfly;
     };
@@ -255,7 +247,7 @@ public:
     void detach();
 
     bool hasVector() const { return !!m_vector; }
-    void* vector() const { return m_vector.getMayBeNull(m_maxByteLength); }
+    void* vector() const { return m_vector.getMayBeNull(m_length); }
     void* vectorWithoutPACValidation() const { return m_vector.getUnsafe(); }
     
     size_t byteOffset();
@@ -272,12 +264,6 @@ public:
 
     size_t lengthUnsafe() const { return m_length; }
 
-    std::optional<size_t> maxByteLength() const
-    {
-        if (isResizableOrGrowableShared())
-            return m_maxByteLength;
-        return std::nullopt;
-    }
     JS_EXPORT_PRIVATE size_t byteLength() const;
     inline size_t byteLengthUnsafe() const { return lengthUnsafe() * elementSize(type()); }
 
@@ -285,7 +271,6 @@ public:
     
     static ptrdiff_t offsetOfVector() { return OBJECT_OFFSETOF(JSArrayBufferView, m_vector); }
     static ptrdiff_t offsetOfLength() { return OBJECT_OFFSETOF(JSArrayBufferView, m_length); }
-    static ptrdiff_t offsetOfMaxByteLength() { return OBJECT_OFFSETOF(JSArrayBufferView, m_maxByteLength); }
     static ptrdiff_t offsetOfMode() { return OBJECT_OFFSETOF(JSArrayBufferView, m_mode); }
     
     static RefPtr<ArrayBufferView> toWrapped(VM&, JSValue);
@@ -309,7 +294,6 @@ protected:
 
     VectorPtr m_vector;
     size_t m_length;
-    size_t m_maxByteLength { 0 };
     TypedArrayMode m_mode;
 };
 

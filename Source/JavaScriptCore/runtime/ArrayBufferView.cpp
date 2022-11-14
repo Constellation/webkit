@@ -35,14 +35,13 @@ ArrayBufferView::ArrayBufferView(TypedArrayType type, RefPtr<ArrayBuffer>&& buff
     : m_type(type)
     , m_byteOffset(byteOffset)
     , m_byteLength(byteLength)
-    , m_maxByteLength(byteLength)
     , m_buffer(WTFMove(buffer))
 {
     Checked<size_t, CrashOnOverflow> length(byteOffset);
     length += byteLength;
     RELEASE_ASSERT_WITH_SECURITY_IMPLICATION(length <= m_buffer->byteLength());
     if (m_buffer)
-        m_baseAddress = BaseAddress(static_cast<char*>(m_buffer->data()) + m_byteOffset, maxByteLength());
+        m_baseAddress = BaseAddress(static_cast<char*>(m_buffer->data()) + m_byteOffset, m_byteLength);
 }
 
 template<typename Visitor> constexpr decltype(auto) ArrayBufferView::visitDerived(Visitor&& visitor)
