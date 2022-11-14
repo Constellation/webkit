@@ -161,11 +161,7 @@ static EncodedJSValue arrayBufferSlice(JSGlobalObject* globalObject, JSValue arr
 
     // 5. Let len be O.[[ArrayBufferByteLength]].
     // https://tc39.es/proposal-resizablearraybuffer/#sec-sharedarraybuffer.prototype.slice
-    unsigned byteLength = 0;
-    if (mode == ArrayBufferSharingMode::Default)
-        byteLength = thisObject->impl()->byteLength();
-    else
-        byteLength = thisObject->impl()->byteLength(std::memory_order_seq_cst);
+    unsigned byteLength = thisObject->impl()->byteLength();
 
     unsigned firstIndex = 0;
     double relativeStart = startValue.toIntegerOrInfinity(globalObject);

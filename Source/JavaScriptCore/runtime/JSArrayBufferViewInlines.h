@@ -180,6 +180,11 @@ inline JSArrayBufferView* validateTypedArray(JSGlobalObject* globalObject, JSArr
     VM& vm = getVM(globalObject);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    if (UNLIKELY(!isTypedView(typedArray->type()))) {
+        throwTypeError(globalObject, scope, "Argument needs to be a typed array."_s);
+        return nullptr;
+    }
+
     IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
     if (UNLIKELY(isIntegerIndexedObjectOutOfBounds(typedArray, getter))) {
         throwTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
@@ -193,13 +198,13 @@ inline JSArrayBufferView* validateTypedArray(JSGlobalObject* globalObject, JSVal
     VM& vm = getVM(globalObject);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    if (!typedArrayValue.isCell()) {
+    if (UNLIKELY(!typedArrayValue.isCell())) {
         throwTypeError(globalObject, scope, "Argument needs to be a typed array."_s);
         return nullptr;
     }
 
     JSCell* typedArrayCell = typedArrayValue.asCell();
-    if (!isTypedView(typedArrayCell->type())) {
+    if (UNLIKELY(!isTypedView(typedArrayCell->type()))) {
         throwTypeError(globalObject, scope, "Argument needs to be a typed array."_s);
         return nullptr;
     }
