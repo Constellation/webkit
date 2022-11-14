@@ -114,6 +114,7 @@ static unsigned validateAtomicAccess(JSGlobalObject* globalObject, VM& vm, JSArr
 {
     auto scope = DECLARE_THROW_SCOPE(vm);
     unsigned accessIndex = 0;
+    size_t length = typedArrayView->length();
     if (LIKELY(accessIndexValue.isUInt32()))
         accessIndex = accessIndexValue.asUInt32();
     else {
@@ -121,7 +122,7 @@ static unsigned validateAtomicAccess(JSGlobalObject* globalObject, VM& vm, JSArr
         RETURN_IF_EXCEPTION(scope, 0);
     }
 
-    if (accessIndex >= typedArrayView->length()) {
+    if (accessIndex >= length) {
         throwRangeError(globalObject, scope, "Access index out of bounds for atomic access."_s);
         return 0;
     }
