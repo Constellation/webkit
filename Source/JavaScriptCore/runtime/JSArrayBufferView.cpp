@@ -322,11 +322,11 @@ RefPtr<ArrayBufferView> JSArrayBufferView::possiblySharedImpl()
     switch (type()) {
 #define FACTORY(type) \
     case type ## ArrayType: \
-        return type ## Array::tryCreate(buffer, byteOffset, length);
+        return type ## Array::tryCreate(buffer, byteOffset, isAutoLength() ? std::nullopt : std::optional { length });
     FOR_EACH_TYPED_ARRAY_TYPE_EXCLUDING_DATA_VIEW(FACTORY)
 #undef FACTORY
     case DataViewType:
-        return DataView::create(buffer, byteOffset, length);
+        return DataView::create(buffer, byteOffset, isAutoLength() ? std::nullopt : std::optional { length });
     default:
         RELEASE_ASSERT_NOT_REACHED();
         return nullptr;
