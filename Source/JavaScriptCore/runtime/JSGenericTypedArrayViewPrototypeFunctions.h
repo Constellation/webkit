@@ -886,6 +886,20 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSubarray(VM& vm, JSGl
 
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    JSValue start = callFrame->argument(0);
+    if (UNLIKELY(!start.isInt32())) {
+        start = jsNumber(start.toIntegerOrInfinity(globalObject));
+        RETURN_IF_EXCEPTION(scope, { });
+    }
+
+    JSValue finish = callFrame->argument(1);
+    if (!finish.isUndefined()) {
+        if (UNLIKELY(!finish.isInt32())) {
+            finish = jsNumber(finish.toIntegerOrInfinity(globalObject));
+            RETURN_IF_EXCEPTION(scope, { });
+        }
+    }
+
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
     auto length = integerIndexedObjectLength(thisObject, getter);
@@ -896,12 +910,12 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSubarray(VM& vm, JSGl
 
     ASSERT(start.isNumber());
     ASSERT(finish.isUndefined() || finish.isNumber());
-    size_t begin = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(0), thisLength);
+    size_t begin = argumentClampedIndexFromStartOrEnd(globalObject, start, thisLength);
     RETURN_IF_EXCEPTION(scope, { });
 
     std::optional<size_t> count;
-    if (!(thisObject->isAutoLength() && callFrame->argument(1).isUndefined())) {
-        size_t end = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(1), thisLength, thisLength);
+    if (!(thisObject->isAutoLength() && finish.isUndefined())) {
+        size_t end = argumentClampedIndexFromStartOrEnd(globalObject, finish, thisLength, thisLength);
         RETURN_IF_EXCEPTION(scope, { });
 
         // Clamp end to begin.
