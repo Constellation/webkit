@@ -32,7 +32,7 @@ namespace JSC {
 
 class DataView final : public ArrayBufferView {
 public:
-    JS_EXPORT_PRIVATE static Ref<DataView> create(RefPtr<ArrayBuffer>&&, size_t byteOffset, size_t length);
+    JS_EXPORT_PRIVATE static Ref<DataView> create(RefPtr<ArrayBuffer>&&, size_t byteOffset, std::optional<size_t> length);
     static Ref<DataView> create(RefPtr<ArrayBuffer>&&);
 
     JSArrayBufferView* wrapImpl(JSGlobalObject* lexicalGlobalObject, JSGlobalObject* globalObject);
@@ -78,7 +78,7 @@ public:
     }
 
 private:
-    DataView(RefPtr<ArrayBuffer>&&, size_t byteOffset, size_t byteLength);
+    DataView(RefPtr<ArrayBuffer>&&, size_t byteOffset, std::optional<size_t> byteLength);
 };
 
 } // namespace JSC

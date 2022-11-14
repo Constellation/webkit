@@ -186,6 +186,7 @@ public:
     bool isShared() const { return m_shared; }
     bool isResizableOrGrowableShared() const { return m_hasMaxByteLength; }
     bool isGrowableShared() const { return isResizableOrGrowableShared() && isShared(); }
+    bool isResizableNonShared() const { return isResizableOrGrowableShared() && !isShared(); }
     
     void swap(ArrayBufferContents& other)
     {
@@ -263,6 +264,7 @@ public:
     inline ArrayBufferSharingMode sharingMode() const { return isShared() ? ArrayBufferSharingMode::Shared : ArrayBufferSharingMode::Default; }
     inline bool isResizableOrGrowableShared() const { return m_contents.isResizableOrGrowableShared(); }
     inline bool isGrowableShared() const { return m_contents.isGrowableShared(); }
+    inline bool isResizableNonShared() const { return m_contents.isResizableNonShared(); }
 
     inline size_t gcSizeEstimateInBytes() const;
 

@@ -45,8 +45,7 @@ public:
         return vm.dataViewSpace<mode>();
     }
 
-    JS_EXPORT_PRIVATE static JSDataView* create(
-        JSGlobalObject*, Structure*, RefPtr<ArrayBuffer>&&, size_t byteOffset, std::optional<size_t> byteLength);
+    JS_EXPORT_PRIVATE static JSDataView* create(JSGlobalObject*, Structure*, RefPtr<ArrayBuffer>&&, size_t byteOffset, std::optional<size_t> byteLength);
     
     // Dummy methods, which don't actually work; these are just in place to
     // placate some template specialization we do elsewhere.

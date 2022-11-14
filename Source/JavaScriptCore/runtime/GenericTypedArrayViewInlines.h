@@ -57,7 +57,7 @@ Ref<GenericTypedArrayView<Adaptor>> GenericTypedArrayView<Adaptor>::create(
 
 template<typename Adaptor>
 Ref<GenericTypedArrayView<Adaptor>> GenericTypedArrayView<Adaptor>::create(
-    RefPtr<ArrayBuffer>&& buffer, size_t byteOffset, size_t length)
+    RefPtr<ArrayBuffer>&& buffer, size_t byteOffset, std::optional<size_t> length)
 {
     auto result = tryCreate(WTFMove(buffer), byteOffset, length);
     RELEASE_ASSERT(result);
@@ -86,16 +86,19 @@ RefPtr<GenericTypedArrayView<Adaptor>> GenericTypedArrayView<Adaptor>::tryCreate
 
 template<typename Adaptor>
 RefPtr<GenericTypedArrayView<Adaptor>> GenericTypedArrayView<Adaptor>::tryCreate(
-    RefPtr<ArrayBuffer>&& buffer, size_t byteOffset, size_t length)
+    RefPtr<ArrayBuffer>&& buffer, size_t byteOffset, std::optional<size_t> length)
 {
     if (!buffer)
         return nullptr;
-    
-    if (!ArrayBufferView::verifySubRangeLength(*buffer, byteOffset, length, sizeof(typename Adaptor::Type))
-        || !verifyByteOffsetAlignment(byteOffset, sizeof(typename Adaptor::Type))) {
-        return nullptr;
+
+    if (length) {
+        if (!ArrayBufferView::verifySubRangeLength(*buffer, byteOffset, length.value(), sizeof(typename Adaptor::Type)))
+            return nullptr;
     }
-    
+
+    if (!verifyByteOffsetAlignment(byteOffset, sizeof(typename Adaptor::Type)))
+        return nullptr;
+
     return adoptRef(new GenericTypedArrayView(WTFMove(buffer), byteOffset, length));
 }
 

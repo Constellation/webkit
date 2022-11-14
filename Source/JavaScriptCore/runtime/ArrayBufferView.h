@@ -152,7 +152,7 @@ public:
     JS_EXPORT_PRIVATE void operator delete(ArrayBufferView*, std::destroying_delete_t);
 
 protected:
-    JS_EXPORT_PRIVATE ArrayBufferView(TypedArrayType, RefPtr<ArrayBuffer>&&, size_t byteOffset, size_t byteLength);
+    JS_EXPORT_PRIVATE ArrayBufferView(TypedArrayType, RefPtr<ArrayBuffer>&&, size_t byteOffset, std::optional<size_t> byteLength);
 
     inline bool setImpl(ArrayBufferView*, size_t byteOffset);
 
