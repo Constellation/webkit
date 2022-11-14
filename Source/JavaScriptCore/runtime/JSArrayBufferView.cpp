@@ -44,7 +44,7 @@ const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage { "Underlying Arr
 
 JSArrayBufferView::ConstructionContext::ConstructionContext(Structure* structure, size_t length, void* vector)
     : m_structure(structure)
-    , m_vector(vector, (Checked<size_t>(length) * JSC::elementSize(structure->typeInfo().type())).value())
+    , m_vector(vector, length)
     , m_length(length)
     , m_mode(FastTypedArray)
     , m_butterfly(nullptr)
