@@ -67,8 +67,6 @@ public:
     
     size_t length() const
     {
-        if (isDetached())
-            return 0;
         return byteLength() / sizeof(typename Adaptor::Type);
     }
 
