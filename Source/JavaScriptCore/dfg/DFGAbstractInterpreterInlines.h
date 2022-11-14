@@ -3626,9 +3626,13 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         JSArrayBufferView* view = m_graph.tryGetFoldableView(
             forNode(node->child1()).m_value, node->arrayMode());
         if (view && !view->isResizableOrGrowableShared() && isInBounds<int32_t>(view->length())) {
+            if (node->arrayMode().isSomeTypedArrayView() && node->arrayMode().mayBeResizableOrGrowableSharedTypedArray())
+                didFoldClobberWorld();
             setConstant(node, jsNumber(view->length()));
             break;
         }
+        if (node->arrayMode().isSomeTypedArrayView() && node->arrayMode().mayBeResizableOrGrowableSharedTypedArray())
+            clobberWorld();
         setNonCellTypeForNode(node, SpecInt32Only);
         break;
     }

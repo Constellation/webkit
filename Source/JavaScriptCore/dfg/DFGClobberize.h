@@ -1479,6 +1479,10 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
 
         default:
             DFG_ASSERT(graph, node, mode.isSomeTypedArrayView());
+            if (mode.mayBeResizableOrGrowableSharedTypedArray()) {
+                clobberTop();
+                return;
+            }
             read(MiscFields);
             def(HeapLocation(ArrayLengthLoc, MiscFields, node->child1()), LazyNode(node));
             return;
