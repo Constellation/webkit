@@ -531,8 +531,8 @@ void JSGenericTypedArrayView<Adaptor>::getOwnPropertyNames(
     JSGenericTypedArrayView* thisObject = jsCast<JSGenericTypedArrayView*>(object);
 
     if (array.includeStringProperties()) {
-        // FIXME: m_length
-        for (uint64_t i = 0; i < thisObject->m_length; ++i)
+        uint64_t length = thisObject->length();
+        for (uint64_t i = 0; i < length; ++i)
             array.add(Identifier::from(vm, i));
     }
     
