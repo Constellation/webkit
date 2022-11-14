@@ -42,11 +42,11 @@ ArrayBufferView::ArrayBufferView(TypedArrayType type, RefPtr<ArrayBuffer>&& buff
 {
     if (byteLength) {
         Checked<size_t, CrashOnOverflow> length(byteOffset);
-        length += byteLength;
+        length += byteLength.value();
         RELEASE_ASSERT_WITH_SECURITY_IMPLICATION(length <= m_buffer->byteLength());
-    } else {
+    } else
         ASSERT(isAutoLength());
-    }
+
     if (m_buffer)
         m_baseAddress = BaseAddress(static_cast<char*>(m_buffer->data()) + m_byteOffset, m_byteLength);
 }
