@@ -211,6 +211,7 @@ protected:
         Structure* structure() const { return m_structure; }
         void* vector() const { return m_vector.getMayBeNull(m_length); }
         size_t length() const { return m_length; }
+        size_t byteOffset() const { return m_byteOffset; }
         TypedArrayMode mode() const { return m_mode; }
         Butterfly* butterfly() const { return m_butterfly; }
         
@@ -219,6 +220,7 @@ protected:
         using VectorType = CagedPtr<Gigacage::Primitive, void, tagCagedPtr>;
         VectorType m_vector;
         size_t m_length;
+        size_t m_byteOffset;
         TypedArrayMode m_mode;
         Butterfly* m_butterfly;
     };
@@ -250,9 +252,17 @@ public:
     void* vector() const { return m_vector.getMayBeNull(m_length); }
     void* vectorWithoutPACValidation() const { return m_vector.getUnsafe(); }
     
-    size_t byteOffset();
-    size_t byteOffsetUnsafe();
-    std::optional<size_t> byteOffsetConcurrently();
+    size_t byteOffset() const
+    {
+        if (UNLIKELY(isResizableOrGrowableShared())) {
+            IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+            if (UNLIKELY(isIntegerIndexedObjectOutOfBounds(const_cast<JSArrayBufferView*>(this), getter)))
+                return 0;
+        }
+        return byteOffsetUnsafe();
+    }
+
+    size_t byteOffsetUnsafe() const { return m_byteOffset; }
 
     size_t length() const
     {
@@ -271,6 +281,7 @@ public:
     
     static ptrdiff_t offsetOfVector() { return OBJECT_OFFSETOF(JSArrayBufferView, m_vector); }
     static ptrdiff_t offsetOfLength() { return OBJECT_OFFSETOF(JSArrayBufferView, m_length); }
+    static ptrdiff_t offsetOfByteOffset() { return OBJECT_OFFSETOF(JSArrayBufferView, m_byteOffset); }
     static ptrdiff_t offsetOfMode() { return OBJECT_OFFSETOF(JSArrayBufferView, m_mode); }
     
     static RefPtr<ArrayBufferView> toWrapped(VM&, JSValue);
@@ -280,8 +291,6 @@ public:
 
 private:
     enum Requester { Mutator, ConcurrentThread };
-    template<Requester, typename ResultType> ResultType byteOffsetImpl();
-    template<Requester, typename ResultType> ResultType byteOffsetUnsafeImpl();
     template<Requester> ArrayBuffer* possiblySharedBufferImpl();
 
     JS_EXPORT_PRIVATE ArrayBuffer* slowDownAndWasteMemory();
@@ -294,6 +303,7 @@ protected:
 
     VectorPtr m_vector;
     size_t m_length;
+    size_t m_byteOffset { 0 };
     TypedArrayMode m_mode;
 };
 

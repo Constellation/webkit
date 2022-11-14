@@ -119,35 +119,11 @@ void IntrinsicGetterAccessCase::emitIntrinsicGetter(AccessGenerationState& state
     }
 
     case TypedArrayByteOffsetIntrinsic: {
-        GPRReg scratchGPR = state.scratchGPR;
-
-        CCallHelpers::Jump emptyByteOffset = jit.branchTest8(
-            MacroAssembler::Zero,
-            MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfMode()),
-            TrustedImm32(isWastefulTypedArrayMode));
-
-        jit.loadPtr(MacroAssembler::Address(baseGPR, JSObject::butterflyOffset()), scratchGPR);
-        jit.loadPtr(MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfVector()), valueGPR);
-#if CPU(ARM64E)
-        jit.removeArrayPtrTag(valueGPR);
-#endif
-        jit.loadPtr(MacroAssembler::Address(scratchGPR, Butterfly::offsetOfArrayBuffer()), scratchGPR);
-        jit.loadPtr(MacroAssembler::Address(scratchGPR, ArrayBuffer::offsetOfData()), scratchGPR);
-#if CPU(ARM64E)
-        jit.removeArrayPtrTag(scratchGPR);
-#endif
-        jit.subPtr(scratchGPR, valueGPR);
-
-        CCallHelpers::Jump done = jit.jump();
-        
-        emptyByteOffset.link(&jit);
-        jit.move(TrustedImmPtr(nullptr), valueGPR);
-        
-        done.link(&jit);
-
 #if USE(LARGE_TYPED_ARRAYS)
+        jit.load64(MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), valueGPR);
         jit.boxInt52(valueGPR, valueGPR, state.scratchGPR, state.scratchFPR);
 #else
+        jit.load32(MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), valueGPR);
         jit.boxInt32(valueGPR, valueRegs);
 #endif
         state.succeed();

@@ -46,6 +46,7 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(Structure* structure
     : m_structure(structure)
     , m_vector(vector, length)
     , m_length(length)
+    , m_byteOffset(0)
     , m_mode(FastTypedArray)
     , m_butterfly(nullptr)
 {
@@ -57,6 +58,7 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(Structure* structure
 JSArrayBufferView::ConstructionContext::ConstructionContext(VM& vm, Structure* structure, size_t length, unsigned elementSize, InitializationMode mode)
     : m_structure(nullptr)
     , m_length(length)
+    , m_byteOffset(0)
     , m_butterfly(nullptr)
 {
     if (length <= fastSizeLimit) {
@@ -100,6 +102,7 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(VM& vm, Structure* s
 JSArrayBufferView::ConstructionContext::ConstructionContext(VM& vm, Structure* structure, RefPtr<ArrayBuffer>&& arrayBuffer, size_t byteOffset, std::optional<size_t> length)
     : m_structure(structure)
     , m_length(length.value_or(0))
+    , m_byteOffset(byteOffset)
     , m_mode(WastefulTypedArray)
 {
     ASSERT(arrayBuffer->data() == removeArrayPtrTag(arrayBuffer->data()));
@@ -120,6 +123,7 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(VM& vm, Structure* s
 JSArrayBufferView::ConstructionContext::ConstructionContext(Structure* structure, RefPtr<ArrayBuffer>&& arrayBuffer, size_t byteOffset, std::optional<size_t> length, DataViewTag)
     : m_structure(structure)
     , m_length(length.value_or(0))
+    , m_byteOffset(byteOffset)
     , m_mode(DataViewMode)
     , m_butterfly(nullptr)
 {
@@ -138,6 +142,7 @@ JSArrayBufferView::ConstructionContext::ConstructionContext(Structure* structure
 JSArrayBufferView::JSArrayBufferView(VM& vm, ConstructionContext& context)
     : Base(vm, context.structure(), nullptr)
     , m_length(context.length())
+    , m_byteOffset(context.byteOffset())
     , m_mode(context.mode())
 {
     setButterfly(vm, context.butterfly());
@@ -236,6 +241,7 @@ void JSArrayBufferView::detach()
     RELEASE_ASSERT(hasArrayBuffer());
     RELEASE_ASSERT(!isShared());
     m_length = 0;
+    m_byteOffset = 0;
     m_vector.clear();
 }
 

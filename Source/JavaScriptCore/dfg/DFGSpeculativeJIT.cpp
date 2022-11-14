@@ -8478,61 +8478,23 @@ void SpeculativeJIT::compileResolveRope(Node* node)
 void SpeculativeJIT::compileGetTypedArrayByteOffset(Node* node)
 {
     SpeculateCellOperand base(this, node->child1());
-    GPRTemporary vector(this);
-    GPRTemporary data(this);
-    
+    GPRTemporary result(this);
+
     GPRReg baseGPR = base.gpr();
-    GPRReg vectorGPR = vector.gpr();
-    GPRReg dataGPR = data.gpr();
+    GPRReg resultGPR = result.gpr();
 
-    GPRReg arrayBufferGPR = dataGPR;
-
-    JITCompiler::Jump emptyByteOffset = m_jit.branchTest8(
-        MacroAssembler::Zero,
-        MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfMode()),
-        TrustedImm32(isWastefulTypedArrayMode));
     // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
     speculationCheck(UnexpectedResizableArrayBufferView, JSValueSource::unboxedCell(baseGPR), node, m_jit.branchTest8(MacroAssembler::NonZero, CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfMode()), TrustedImm32(isResizableOrGrowableSharedMode)));
 
-    m_jit.loadPtr(MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfVector()), vectorGPR);
-
-    JITCompiler::Jump nullVector = m_jit.branchPtr(JITCompiler::Equal, vectorGPR, TrustedImmPtr(JSArrayBufferView::nullVectorPtr()));
-
-    m_jit.loadPtr(MacroAssembler::Address(baseGPR, JSObject::butterflyOffset()), dataGPR);
-    m_jit.cageWithoutUntagging(Gigacage::JSValue, dataGPR);
-
-    cageTypedArrayStorage(baseGPR, vectorGPR);
-
-    m_jit.loadPtr(MacroAssembler::Address(dataGPR, Butterfly::offsetOfArrayBuffer()), arrayBufferGPR);
-    // FIXME: This needs caging.
-    // https://bugs.webkit.org/show_bug.cgi?id=175515
-    m_jit.loadPtr(MacroAssembler::Address(arrayBufferGPR, ArrayBuffer::offsetOfData()), dataGPR);
-#if CPU(ARM64E)
-    m_jit.removeArrayPtrTag(dataGPR);
-#endif
-
-    m_jit.subPtr(dataGPR, vectorGPR);
-    
-    JITCompiler::Jump done = m_jit.jump();
-    
-#if CPU(ARM64E)
-    nullVector.link(&m_jit);
-#endif
-    emptyByteOffset.link(&m_jit);
-    m_jit.move(TrustedImmPtr(nullptr), vectorGPR);
-    
-    done.link(&m_jit);
-#if !CPU(ARM64E)
-    ASSERT(!JSArrayBufferView::nullVectorPtr());
-    nullVector.link(&m_jit);
-#endif
-
 #if USE(LARGE_TYPED_ARRAYS)
+    m_jit.load64(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), resultGPR);
     // AI promises that the result of GetTypedArrayByteOffset will be Int32, so we must uphold that promise here.
-    speculationCheck(Overflow, JSValueRegs(), nullptr, m_jit.branch32(MacroAssembler::Above, vectorGPR, TrustedImm32(std::numeric_limits<int32_t>::max())));
+    speculationCheck(Overflow, JSValueRegs(), nullptr, m_jit.branch32(MacroAssembler::Above, resultGPR, TrustedImm32(std::numeric_limits<int32_t>::max())));
+#else
+    m_jit.load32(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), resultGPR);
 #endif
 
-    strictInt32Result(vectorGPR, node);
+    strictInt32Result(resultGPR, node);
 }
 
 void SpeculativeJIT::compileGetByValOnDirectArguments(Node* node, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix)
@@ -11690,17 +11652,11 @@ void SpeculativeJIT::emitNewTypedArrayWithSizeInRegister(Node* node, TypedArrayT
         storageGPR,
         MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfVector()));
 #if USE(LARGE_TYPED_ARRAYS)
-    m_jit.store64(
-        sizeGPR,
-        MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfLength()));
-    m_jit.zeroExtend32ToWord(sizeGPR, scratchGPR);
-    m_jit.lshift64(TrustedImm32(logElementSize(typedArrayType)), scratchGPR);
+    m_jit.store64(sizeGPR, MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfLength()));
+    m_jit.store64(TrustedImm32(0), MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfByteOffset()));
 #else
-    m_jit.store32(
-        sizeGPR,
-        MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfLength()));
-    m_jit.move(sizeGPR, scratchGPR);
-    m_jit.lshift32(TrustedImm32(logElementSize(typedArrayType)), scratchGPR);
+    m_jit.store32(sizeGPR, MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfLength()));
+    m_jit.store32(TrustedImm32(0), MacroAssembler::Address(resultGPR, JSArrayBufferView::offsetOfByteOffset()));
 #endif
     m_jit.store8(
         TrustedImm32(FastTypedArray),

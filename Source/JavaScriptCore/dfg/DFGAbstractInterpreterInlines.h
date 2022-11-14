@@ -3990,11 +3990,11 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     case GetTypedArrayByteOffset: {
         JSArrayBufferView* view = m_graph.tryGetFoldableView(forNode(node->child1()).m_value);
         if (view && !view->isResizableOrGrowableShared()) {
-            std::optional<size_t> byteOffset = view->byteOffsetConcurrently();
-            if (byteOffset && isInBounds<int32_t>(byteOffset)) {
+            size_t byteOffset = view->byteOffset();
+            if (isInBounds<int32_t>(byteOffset)) {
                 if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray())
                     didFoldClobberWorld();
-                setConstant(node, jsNumber(*byteOffset));
+                setConstant(node, jsNumber(byteOffset));
                 break;
             }
         }
@@ -4007,13 +4007,11 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     case GetTypedArrayByteOffsetAsInt52: {
         JSArrayBufferView* view = m_graph.tryGetFoldableView(forNode(node->child1()).m_value);
         if (view && !view->isResizableOrGrowableShared()) {
-            std::optional<size_t> byteOffset = view->byteOffsetConcurrently();
-            if (byteOffset) {
-                if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray())
-                    didFoldClobberWorld();
-                setConstant(node, jsNumber(*byteOffset));
-                break;
-            }
+            size_t byteOffset = view->byteOffset();
+            if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray())
+                didFoldClobberWorld();
+            setConstant(node, jsNumber(byteOffset));
+            break;
         }
         if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray())
             clobberWorld();
