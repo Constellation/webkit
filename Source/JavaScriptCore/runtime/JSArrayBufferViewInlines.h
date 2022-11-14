@@ -129,13 +129,13 @@ bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView* typedArray, Getter& ge
         return true;
 
     size_t bufferByteLength = getter(*buffer);
-    size_t byteOffsetStart = typedArray->byteOffsetUnsafe();
+    size_t byteOffsetStart = typedArray->byteOffsetRaw();
     size_t byteOffsetEnd = 0;
     if (typedArray->isAutoLength())
         byteOffsetEnd = bufferByteLength;
     else {
         size_t elementSize = JSC::elementSize(typedArray->type());
-        byteOffsetEnd = byteOffsetStart + typedArray->lengthUnsafe() * elementSize;
+        byteOffsetEnd = byteOffsetStart + typedArray->lengthRaw() * elementSize;
     }
     return byteOffsetStart > bufferByteLength || byteOffsetEnd > bufferByteLength;
 }
@@ -149,7 +149,7 @@ std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, 
         return std::nullopt;
 
     if (LIKELY(!typedArray->isAutoLength()))
-        return typedArray->lengthUnsafe();
+        return typedArray->lengthRaw();
 
     ASSERT(isWastefulTypedArray(typedArray->mode()) && isResizableOrGrowableShared(typedArray->mode()));
     RefPtr<ArrayBuffer> buffer = typedArray->possiblySharedBuffer();
@@ -157,7 +157,7 @@ std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView* typedArray, 
         return std::nullopt;
 
     size_t bufferByteLength = getter(*buffer);
-    size_t byteOffset = typedArray->byteOffsetUnsafe();
+    size_t byteOffset = typedArray->byteOffsetRaw();
     size_t elementSize = JSC::elementSize(typedArray->type());
     return (bufferByteLength - byteOffset) / elementSize;
 }
@@ -170,7 +170,7 @@ size_t integerIndexedObjectByteLength(JSArrayBufferView* typedArray, Getter& get
         return 0;
 
     if (LIKELY(!typedArray->isAutoLength()))
-        return typedArray->byteLengthUnsafe();
+        return typedArray->byteLengthRaw();
 
     return length.value() * JSC::elementSize(typedArray->type());
 }

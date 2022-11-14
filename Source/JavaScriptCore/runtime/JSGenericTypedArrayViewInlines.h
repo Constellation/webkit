@@ -545,9 +545,9 @@ size_t JSGenericTypedArrayView<Adaptor>::estimatedSize(JSCell* cell, VM& vm)
     JSGenericTypedArrayView* thisObject = jsCast<JSGenericTypedArrayView*>(cell);
 
     if (thisObject->m_mode == OversizeTypedArray)
-        return Base::estimatedSize(thisObject, vm) + thisObject->byteSizeUnsafe();
+        return Base::estimatedSize(thisObject, vm) + thisObject->byteLengthRaw();
     if (thisObject->m_mode == FastTypedArray && thisObject->hasVector())
-        return Base::estimatedSize(thisObject, vm) + thisObject->byteSizeUnsafe();
+        return Base::estimatedSize(thisObject, vm) + thisObject->byteLengthRaw();
 
     return Base::estimatedSize(thisObject, vm);
 }
@@ -568,7 +568,7 @@ void JSGenericTypedArrayView<Adaptor>::visitChildrenImpl(JSCell* cell, Visitor& 
         Locker locker { thisObject->cellLock() };
         mode = thisObject->m_mode;
         vector = thisObject->vector();
-        byteSize = thisObject->byteSizeUnsafe();
+        byteSize = thisObject->byteLengthRaw();
     }
     
     switch (mode) {

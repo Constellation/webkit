@@ -268,7 +268,7 @@ JSC_DEFINE_CUSTOM_GETTER(dataViewProtoGetterByteOffset, (JSGlobalObject* globalO
     if (UNLIKELY(!byteLengthValue))
         return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
-    return JSValue::encode(jsNumber(view->byteOffsetUnsafe()));
+    return JSValue::encode(jsNumber(view->byteOffsetRaw()));
 }
 
 JSC_DEFINE_HOST_FUNCTION(dataViewProtoFuncGetInt8, (JSGlobalObject* globalObject, CallFrame* callFrame))

@@ -103,12 +103,12 @@ public:
     {
         // https://tc39.es/proposal-resizablearraybuffer/#sec-get-%typedarray%.prototype.bytelength
         if (LIKELY(!isResizableOrGrowableShared()))
-            return m_length * sizeof(typename Adaptor::Type);
+            return byteLengthRaw();
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
         return integerIndexedObjectByteLength(const_cast<JSGenericTypedArrayView*>(this), getter);
     }
 
-    size_t byteSizeUnsafe() const { return sizeOf(m_length, sizeof(typename Adaptor::Type)); }
+    size_t byteLengthRaw() const { return sizeOf(m_length, sizeof(typename Adaptor::Type)); }
     
     const typename Adaptor::Type* typedVector() const
     {
@@ -125,8 +125,8 @@ public:
             return i < m_length;
 
         size_t bufferByteLength = const_cast<JSGenericTypedArrayView*>(this)->existingBufferInButterfly()->byteLength();
-        size_t byteOffset = const_cast<JSGenericTypedArrayView*>(this)->byteOffsetUnsafe();
-        size_t byteLength = byteSizeUnsafe() + byteOffset; // Keep in mind that byteSizeUnsafe returns 1 for AutoLength TypedArray.
+        size_t byteOffset = const_cast<JSGenericTypedArrayView*>(this)->byteOffsetRaw();
+        size_t byteLength = byteLengthRaw() + byteOffset; // Keep in mind that byteLengthRaw returns 1 for AutoLength TypedArray.
         if (byteLength > bufferByteLength)
             return false;
         if (isAutoLength()) {

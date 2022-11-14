@@ -260,39 +260,39 @@ public:
             if (UNLIKELY(isIntegerIndexedObjectOutOfBounds(const_cast<JSArrayBufferView*>(this), getter)))
                 return 0;
         }
-        return byteOffsetUnsafe();
+        return byteOffsetRaw();
     }
 
-    size_t byteOffsetUnsafe() const { return m_byteOffset; }
+    size_t byteOffsetRaw() const { return m_byteOffset; }
 
     size_t length() const
     {
         if (LIKELY(!isResizableOrGrowableShared()))
-            return lengthUnsafe();
+            return lengthRaw();
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
         return integerIndexedObjectLength(const_cast<JSArrayBufferView*>(this), getter).value_or(0);
     }
 
-    size_t lengthUnsafe() const { return m_length; }
+    size_t lengthRaw() const { return m_length; }
 
     size_t byteLength() const
     {
         // The absence of overflow is already checked in the constructor, so I only add the extra sanity check when asserts are enabled.
         // https://tc39.es/proposal-resizablearraybuffer/#sec-get-%typedarray%.prototype.bytelength
         if (LIKELY(!isResizableOrGrowableShared()))
-            return byteLengthUnsafe();
+            return byteLengthRaw();
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
         return integerIndexedObjectByteLength(const_cast<JSArrayBufferView*>(this), getter);
     }
 
-    size_t byteLengthUnsafe() const
+    size_t byteLengthRaw() const
     {
 #if ASSERT_ENABLED
-        Checked<size_t> result = lengthUnsafe();
+        Checked<size_t> result = lengthRaw();
         result *= elementSize(type());
         return result.value();
 #else
-        return lengthUnsafe() * elementSize(type());
+        return lengthRaw() * elementSize(type());
 #endif
     }
 

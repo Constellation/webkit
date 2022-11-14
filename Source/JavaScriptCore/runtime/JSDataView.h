@@ -65,16 +65,16 @@ public:
             return std::nullopt;
 
         if (LIKELY(!isAutoLength()))
-            return byteLengthUnsafe();
+            return byteLengthRaw();
 
         RefPtr<ArrayBuffer> buffer = possiblySharedBuffer();
         if (!buffer)
             return 0;
 
         size_t result = getter(*buffer);
-        if (result < byteOffsetUnsafe())
+        if (result < byteOffsetRaw())
             return std::nullopt;
-        return result - byteOffsetUnsafe();
+        return result - byteOffsetRaw();
     }
     
     ArrayBuffer* possiblySharedBuffer() const { return m_buffer; }
