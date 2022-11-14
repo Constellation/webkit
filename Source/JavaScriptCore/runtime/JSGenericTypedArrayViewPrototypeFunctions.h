@@ -147,11 +147,10 @@ inline JSArrayBufferView* speciesConstruct(JSGlobalObject* globalObject, ViewCla
             return nullptr;
         }
 
-        if (LIKELY(!view->isDetached()))
-            return view;
+        validateTypedArray(globalObject, view);
+        RETURN_IF_EXCEPTION(scope, nullptr);
 
-        throwTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
-        return nullptr;
+        return view;
     }
 
     throwTypeError(globalObject, scope, "species constructor did not return a TypedArray View"_s);
@@ -350,8 +349,16 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncIncludes(VM& vm, JSGl
     size_t index = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(1), length);
     RETURN_IF_EXCEPTION(scope, { });
 
-    if (UNLIKELY(thisObject->isDetached()))
-        return JSValue::encode(jsBoolean(valueToFind.isUndefined()));
+    {
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        auto lengthValue = integerIndexedObjectLength(thisObject, getter);
+        if (UNLIKELY(!lengthValue))
+            return JSValue::encode(jsBoolean(valueToFind.isUndefined()));
+
+        length = lengthValue.value();
+        if (index >= length)
+            return JSValue::encode(jsBoolean(false));
+    }
 
     typename ViewClass::ElementType* array = thisObject->typedVector();
     auto targetOption = ViewClass::toAdaptorNativeFromValueWithoutCoercion(valueToFind);
@@ -394,8 +401,16 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncIndexOf(VM& vm, JSGlo
     size_t index = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(1), length);
     RETURN_IF_EXCEPTION(scope, { });
 
-    if (UNLIKELY(thisObject->isDetached()))
-        return JSValue::encode(jsNumber(-1));
+    {
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        auto lengthValue = integerIndexedObjectLength(thisObject, getter);
+        if (UNLIKELY(!lengthValue))
+            return JSValue::encode(jsNumber(-1));
+
+        length = lengthValue.value();
+        if (index >= length)
+            return JSValue::encode(jsNumber(-1));
+    }
 
     typename ViewClass::ElementType* array = thisObject->typedVector();
     auto targetOption = ViewClass::toAdaptorNativeFromValueWithoutCoercion(valueToFind);
@@ -550,8 +565,15 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncLastIndexOf(VM& vm, J
             index = static_cast<size_t>(fromDouble);
     }
 
-    if (UNLIKELY(thisObject->isDetached()))
-        return JSValue::encode(jsNumber(-1));
+    {
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        auto lengthValue = integerIndexedObjectLength(thisObject, getter);
+        if (UNLIKELY(!lengthValue))
+            return JSValue::encode(jsNumber(-1));
+
+        length = lengthValue.value();
+        index = std::min(length - 1, index);
+    }
 
     auto targetOption = ViewClass::toAdaptorNativeFromValueWithoutCoercion(valueToFind);
     if (!targetOption)
@@ -741,9 +763,11 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncFromFast(VM& vm, JS
     if (!items->isIteratorProtocolFastAndNonObservable())
         return JSValue::encode(jsUndefined());
 
-    if (UNLIKELY(items->isDetached()))
+    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+    auto lengthValue = integerIndexedObjectLength(items, getter);
+    if (UNLIKELY(!lengthValue))
         return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
-    size_t length = items->length();
+    size_t length = lengthValue.value();
 
     bool isResizableOrGrowableShared = false;
     Structure* structure = globalObject->typedArrayStructure(ViewClass::TypedArrayStorageType, isResizableOrGrowableShared);
@@ -766,15 +790,16 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGloba
     validateTypedArray(globalObject, thisObject);
     RETURN_IF_EXCEPTION(scope, { });
 
-    size_t thisLength = thisObject->length();
+    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+    auto lengthValue = integerIndexedObjectLength(thisObject, getter);
+    if (UNLIKELY(!lengthValue))
+        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
+    size_t thisLength = lengthValue.value();
 
     size_t begin = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(0), thisLength);
     RETURN_IF_EXCEPTION(scope, { });
     size_t end = argumentClampedIndexFromStartOrEnd(globalObject, callFrame->argument(1), thisLength, thisLength);
     RETURN_IF_EXCEPTION(scope, { });
-
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
 
     // Clamp end to begin.
     end = std::max(begin, end);
@@ -799,7 +824,6 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGloba
         ASSERT(!args.hasOverflowed());
     });
     RETURN_IF_EXCEPTION(scope, { });
-    ASSERT(!result->isDetached());
 
     // https://tc39.es/ecma262/#typedarray-species-create
     // If result.[[ContentType]] ≠ exemplar.[[ContentType]], throw a TypeError exception.
@@ -810,7 +834,6 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGloba
     if (!length)
         return JSValue::encode(result);
 
-    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
     auto updatedLength = integerIndexedObjectLength(thisObject, getter);
     if (UNLIKELY(!updatedLength))
         return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
