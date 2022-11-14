@@ -8547,7 +8547,7 @@ IGNORE_CLANG_WARNINGS_END
         {
             PatchpointValue* authenticate = m_out.patchpoint(pointerType());
             authenticate->appendSomeRegister(storage);
-            authenticate->append(byteSizeWithoutAdjustment, B3::ValueRep(B3::ValueRep::SomeLateRegister));
+            authenticate->append(size64Bits, B3::ValueRep(B3::ValueRep::SomeLateRegister));
             authenticate->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
                 jit.move(params[1].gpr(), params[0].gpr());
                 jit.tagArrayPtr(params[2].gpr(), params[0].gpr());
