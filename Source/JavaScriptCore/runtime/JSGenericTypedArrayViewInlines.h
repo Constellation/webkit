@@ -133,7 +133,7 @@ JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(
 template<typename Adaptor>
 JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(VM& vm, Structure* structure, RefPtr<typename Adaptor::ViewType>&& impl)
 {
-    // FIXME: This can be resizable.
+    // FIXME: Propagate auto-length configuration.
     ConstructionContext context(vm, structure, impl->possiblySharedBuffer(), impl->byteOffset(), impl->length());
     ASSERT(context);
     JSGenericTypedArrayView* result =
