@@ -11667,7 +11667,6 @@ void SpeculativeJIT::emitNewTypedArrayWithSizeInRegister(Node* node, TypedArrayT
 #if CPU(ARM64E)
     // sizeGPR is still boxed as a number and there is no 32-bit variant of the PAC instructions.
     m_jit.zeroExtend32ToWord(sizeGPR, scratchGPR);
-    m_jit.lshift64(TrustedImm32(logElementSize(typedArrayType)), scratchGPR);
     m_jit.tagArrayPtr(scratchGPR, storageGPR);
 #endif
 
