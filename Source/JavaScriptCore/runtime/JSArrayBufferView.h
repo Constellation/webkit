@@ -136,6 +136,7 @@ inline bool isWastefulTypedArray(TypedArrayMode mode)
 }
 
 template<typename Getter> std::optional<size_t> integerIndexedObjectLength(JSArrayBufferView*, Getter&);
+template<typename Getter> size_t integerIndexedObjectByteLength(JSArrayBufferView*, Getter&);
 template<typename Getter> bool isIntegerIndexedObjectOutOfBounds(JSArrayBufferView*, Getter&);
 
 extern JS_EXPORT_PRIVATE const ASCIILiteral typedArrayBufferHasBeenDetachedErrorMessage;
@@ -274,8 +275,26 @@ public:
 
     size_t lengthUnsafe() const { return m_length; }
 
-    JS_EXPORT_PRIVATE size_t byteLength() const;
-    inline size_t byteLengthUnsafe() const { return lengthUnsafe() * elementSize(type()); }
+    size_t byteLength() const
+    {
+        // The absence of overflow is already checked in the constructor, so I only add the extra sanity check when asserts are enabled.
+        // https://tc39.es/proposal-resizablearraybuffer/#sec-get-%typedarray%.prototype.bytelength
+        if (LIKELY(!isResizableOrGrowableShared()))
+            return byteLengthUnsafe();
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        return integerIndexedObjectByteLength(const_cast<JSArrayBufferView*>(this), getter);
+    }
+
+    size_t byteLengthUnsafe() const
+    {
+#if ASSERT_ENABLED
+        Checked<size_t> result = lengthUnsafe();
+        result *= elementSize(type());
+        return result.value();
+#else
+        return lengthUnsafe() * elementSize(type());
+#endif
+    }
 
     DECLARE_EXPORT_INFO;
     

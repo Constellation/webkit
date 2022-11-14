@@ -245,23 +245,6 @@ void JSArrayBufferView::detach()
     m_vector.clear();
 }
 
-size_t JSArrayBufferView::byteLength() const
-{
-    // The absence of overflow is already checked in the constructor, so I only add the extra sanity check when asserts are enabled.
-#if ASSERT_ENABLED
-    Checked<size_t> result = length();
-    result *= elementSize(type());
-    return result.value();
-#else
-    // https://tc39.es/proposal-resizablearraybuffer/#sec-get-%typedarray%.prototype.bytelength
-    if (LIKELY(!isResizableOrGrowableShared()))
-        return byteLengthUnsafe();
-    IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
-    return integerIndexedObjectByteLength(const_cast<JSArrayBufferView*>(this), getter);
-
-#endif
-}
-
 ArrayBuffer* JSArrayBufferView::slowDownAndWasteMemory()
 {
     ASSERT(!hasArrayBuffer(m_mode));
