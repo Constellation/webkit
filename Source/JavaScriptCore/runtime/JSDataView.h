@@ -55,6 +55,27 @@ public:
     bool setFromTypedArray(JSGlobalObject*, size_t offset, JSArrayBufferView*, size_t objectOffset, size_t length, CopyType);
     bool setFromArrayLike(JSGlobalObject*, size_t offset, JSObject*, size_t objectOffset, size_t length);
     bool setIndex(JSGlobalObject*, size_t, JSValue);
+
+    template<typename Getter>
+    std::optional<size_t> viewByteLength(Getter& getter)
+    {
+        // https://tc39.es/proposal-resizablearraybuffer/#sec-isviewoutofbounds
+        // https://tc39.es/proposal-resizablearraybuffer/#sec-getviewbytelength
+        if (UNLIKELY(isDetached()))
+            return std::nullopt;
+
+        if (LIKELY(!isAutoLength()))
+            return byteLengthUnsafe();
+
+        RefPtr<ArrayBuffer> buffer = possiblySharedBuffer();
+        if (!buffer)
+            return 0;
+
+        size_t result = getter(*buffer);
+        if (result < byteOffsetUnsafe())
+            return std::nullopt;
+        return result - byteOffsetUnsafe();
+    }
     
     ArrayBuffer* possiblySharedBuffer() const { return m_buffer; }
     ArrayBuffer* unsharedBuffer() const
