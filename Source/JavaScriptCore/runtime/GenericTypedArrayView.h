@@ -104,7 +104,7 @@ public:
     JSArrayBufferView* wrapImpl(JSGlobalObject* lexicalGlobalObject, JSGlobalObject* globalObject);
 
 private:
-    GenericTypedArrayView(RefPtr<ArrayBuffer>&&, size_t byteOffset, size_t length);
+    GenericTypedArrayView(RefPtr<ArrayBuffer>&&, size_t byteOffset, std::optional<size_t> length);
 };
 
 } // namespace JSC

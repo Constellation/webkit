@@ -32,8 +32,8 @@ namespace JSC {
 
 template<typename Adaptor>
 GenericTypedArrayView<Adaptor>::GenericTypedArrayView(
-RefPtr<ArrayBuffer>&& buffer, size_t byteOffset, size_t length)
-    : ArrayBufferView(Adaptor::typeValue, WTFMove(buffer), byteOffset, length * sizeof(typename Adaptor::Type))
+RefPtr<ArrayBuffer>&& buffer, size_t byteOffset, std::optional<size_t> length)
+    : ArrayBufferView(Adaptor::typeValue, WTFMove(buffer), byteOffset, length ? std::optional { length.value() * sizeof(typename Adaptor::Type) } : std::nullopt)
 {
     ASSERT((length / sizeof(typename Adaptor::Type)) < std::numeric_limits<size_t>::max());
 }
