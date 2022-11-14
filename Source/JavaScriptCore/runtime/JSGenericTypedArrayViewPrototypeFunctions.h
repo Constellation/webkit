@@ -203,14 +203,13 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSet(VM& vm, JSGlobalO
     } else
         offset = 0;
 
-    if (UNLIKELY(thisObject->isDetached()))
-        return throwVMTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
-
-    JSObject* sourceArray = callFrame->uncheckedArgument(0).toObject(globalObject);
+    validateTypedArray(globalObject, thisObject);
     RETURN_IF_EXCEPTION(scope, { });
 
-    if (isTypedView(sourceArray->type())) {
-        JSArrayBufferView* sourceView = jsCast<JSArrayBufferView*>(sourceArray);
+    JSValue source = callFrame->uncheckedArgument(0);
+
+    if (source.isObject() && isTypedView(asObject(source)->type())) {
+        JSArrayBufferView* sourceView = jsCast<JSArrayBufferView*>(source);
         IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
         size_t length = integerIndexedObjectLength(sourceView, getter).value_or(0);
         if (isIntegerIndexedObjectOutOfBounds(sourceView, getter))
@@ -220,9 +219,13 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSet(VM& vm, JSGlobalO
         return JSValue::encode(jsUndefined());
     }
 
+    JSObject* sourceArray = source.toObject(globalObject);
+    RETURN_IF_EXCEPTION(scope, { });
+
     JSValue lengthValue = sourceArray->get(globalObject, vm.propertyNames->length);
     RETURN_IF_EXCEPTION(scope, { });
     size_t length = lengthValue.toLength(globalObject);
+
     scope.release();
     thisObject->setFromArrayLike(globalObject, offset, sourceArray, 0, length);
     return JSValue::encode(jsUndefined());
