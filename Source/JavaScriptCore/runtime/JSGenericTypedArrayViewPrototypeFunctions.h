@@ -439,25 +439,37 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncJoin(VM& vm, JSGlobal
 
     size_t length = thisObject->length();
     auto joinWithSeparator = [&] (StringView separator) -> EncodedJSValue {
-        JSStringJoiner joiner(globalObject, separator, length);
-        RETURN_IF_EXCEPTION(scope, { });
-        if (LIKELY(!thisObject->isDetached())) {
-            for (size_t i = 0; i < length; i++) {
-                JSValue value;
-                if constexpr (ViewClass::Adaptor::canConvertToJSQuickly)
-                    value = thisObject->getIndexQuickly(i);
-                else {
-                    auto nativeValue = thisObject->getIndexQuicklyAsNativeValue(i);
-                    value = ViewClass::Adaptor::toJSValue(globalObject, nativeValue);
-                    RETURN_IF_EXCEPTION(scope, { });
-                }
-                joiner.append(globalObject, value);
-                RETURN_IF_EXCEPTION(scope, { });
-            }
-        } else {
+        IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;
+        auto updatedLength = integerIndexedObjectLength(thisObject, getter);
+        if (UNLIKELY(!updatedLength)) {
+            JSStringJoiner joiner(globalObject, separator, length);
+            RETURN_IF_EXCEPTION(scope, { });
             for (size_t i = 0; i < length; i++)
                 joiner.appendEmptyString();
+            RELEASE_AND_RETURN(scope, JSValue::encode(joiner.join(globalObject)));
         }
+
+        JSStringJoiner joiner(globalObject, separator, length);
+        RETURN_IF_EXCEPTION(scope, { });
+
+        size_t accessibleLength = std::min(length, updatedLength.value());
+
+        for (size_t i = 0; i < accessibleLength; i++) {
+            JSValue value;
+            if constexpr (ViewClass::Adaptor::canConvertToJSQuickly)
+                value = thisObject->getIndexQuickly(i);
+            else {
+                auto nativeValue = thisObject->getIndexQuicklyAsNativeValue(i);
+                value = ViewClass::Adaptor::toJSValue(globalObject, nativeValue);
+                RETURN_IF_EXCEPTION(scope, { });
+            }
+            joiner.append(globalObject, value);
+            RETURN_IF_EXCEPTION(scope, { });
+        }
+
+        for (size_t i = accessibleLength; i < length; i++)
+            joiner.appendEmptyString();
+
         RELEASE_AND_RETURN(scope, JSValue::encode(joiner.join(globalObject)));
     };
 
