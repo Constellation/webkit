@@ -229,6 +229,8 @@
     macro(raw) \
     macro(region) \
     macro(replace) \
+    macro(resizable) \
+    macro(resize) \
     macro(resolve) \
     macro(roundingIncrement) \
     macro(roundingMode) \
