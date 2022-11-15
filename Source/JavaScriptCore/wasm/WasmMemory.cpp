@@ -389,7 +389,7 @@ Expected<PageCount, GrowFailReason> Memory::grow(VM& vm, PageCount delta)
             RELEASE_ASSERT_NOT_REACHED();
         }
 
-        m_handle->growToSize(desiredSize);
+        m_handle->resizeToSize(desiredSize);
         return success();
     }
 #endif
