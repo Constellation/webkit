@@ -459,7 +459,6 @@ Expected<void, GrowFailReason> ArrayBuffer::resize(VM& vm, size_t newByteLength)
         ASSERT(memoryHandle->maximum() >= newPageCount);
         size_t desiredSize = newPageCount.bytes();
         RELEASE_ASSERT(desiredSize <= MAX_ARRAY_BUFFER_SIZE);
-        RELEASE_ASSERT(desiredSize > memoryHandle->size());
 
         if (desiredSize > memoryHandle->size()) {
             size_t extraBytes = desiredSize - memoryHandle->size();
