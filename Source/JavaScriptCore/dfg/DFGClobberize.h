@@ -1057,7 +1057,10 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         case Array::Float64Array:
             read(TypedArrayProperties);
             read(MiscFields);
-            def(HeapLocation(indexedPropertyLoc, TypedArrayProperties, graph.varArgChild(node, 0), graph.varArgChild(node, 1)), LazyNode(node));
+            if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray())
+                write(MiscFields);
+            else
+                def(HeapLocation(indexedPropertyLoc, TypedArrayProperties, graph.varArgChild(node, 0), graph.varArgChild(node, 1)), LazyNode(node));
             return;
         // We should not get an AnyTypedArray in a GetByVal as AnyTypedArray is only created from intrinsics, which
         // are only added from Inline Caching a GetById.
@@ -1184,10 +1187,17 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         case Array::Uint32Array:
         case Array::Float32Array:
         case Array::Float64Array:
-            read(MiscFields);
-            write(TypedArrayProperties);
-            // FIXME: We can't def() anything here because these operations truncate their inputs.
-            // https://bugs.webkit.org/show_bug.cgi?id=134737
+            if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray()) {
+                read(TypedArrayProperties);
+                read(MiscFields);
+                write(TypedArrayProperties);
+                write(MiscFields);
+            } else {
+                read(MiscFields);
+                write(TypedArrayProperties);
+                // FIXME: We can't def() anything here because these operations truncate their inputs.
+                // https://bugs.webkit.org/show_bug.cgi?id=134737
+            }
             return;
         case Array::AnyTypedArray:
         case Array::String:
@@ -1356,12 +1366,18 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
 
     case GetTypedArrayByteOffset:
         read(MiscFields);
-        def(HeapLocation(TypedArrayByteOffsetLoc, MiscFields, node->child1()), LazyNode(node));
+        if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray())
+            write(MiscFields);
+        else
+            def(HeapLocation(TypedArrayByteOffsetLoc, MiscFields, node->child1()), LazyNode(node));
         return;
 
     case GetTypedArrayByteOffsetAsInt52:
         read(MiscFields);
-        def(HeapLocation(TypedArrayByteOffsetInt52Loc, MiscFields, node->child1()), LazyNode(node));
+        if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray())
+            write(MiscFields);
+        else
+            def(HeapLocation(TypedArrayByteOffsetInt52Loc, MiscFields, node->child1()), LazyNode(node));
         return;
 
     case GetPrototypeOf: {
@@ -1464,7 +1480,10 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         default:
             DFG_ASSERT(graph, node, mode.isSomeTypedArrayView());
             read(MiscFields);
-            def(HeapLocation(ArrayLengthLoc, MiscFields, node->child1()), LazyNode(node));
+            if (mode.mayBeResizableOrGrowableSharedTypedArray())
+                write(MiscFields);
+            else
+                def(HeapLocation(ArrayLengthLoc, MiscFields, node->child1()), LazyNode(node));
             return;
         }
     }
@@ -1478,7 +1497,10 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
             return;
         default:
             read(MiscFields);
-            def(HeapLocation(TypedArrayLengthInt52Loc, MiscFields, node->child1()), LazyNode(node));
+            if (mode.mayBeResizableOrGrowableSharedTypedArray())
+                write(MiscFields);
+            else
+                def(HeapLocation(TypedArrayLengthInt52Loc, MiscFields, node->child1()), LazyNode(node));
             return;
         }
     }
