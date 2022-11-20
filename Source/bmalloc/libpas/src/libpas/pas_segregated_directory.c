@@ -84,7 +84,7 @@ uint64_t pas_segregated_directory_get_use_epoch(pas_segregated_directory* direct
     size_t last_empty_plus_one;
     size_t index;
 
-    last_empty_plus_one = (size_t)pas_segregated_directory_get_last_empty_plus_one_value(directory);
+    last_empty_plus_one = pas_segregated_directory_get_last_empty_plus_one_value(directory);
 
     for (index = last_empty_plus_one; index--;) {
         pas_segregated_view view;
