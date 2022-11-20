@@ -784,22 +784,38 @@ static inline bool pas_compare_and_swap_bool_strong(bool* ptr, bool old_value, b
 
 static inline bool pas_compare_and_swap_uintptr_weak(uintptr_t* ptr, uintptr_t old_value, uintptr_t new_value)
 {
+#if PAS_CPU(ADDRESS64)
     return pas_compare_and_swap_uint64_weak((uint64_t*)ptr, (uint64_t)old_value, (uint64_t)new_value);
+#else
+    return pas_compare_and_swap_uint32_weak((uint32_t*)ptr, (uint32_t)old_value, (uint32_t)new_value);
+#endif
 }
 
 static inline uintptr_t pas_compare_and_swap_uintptr_strong(uintptr_t* ptr, uintptr_t old_value, uintptr_t new_value)
 {
+#if PAS_CPU(ADDRESS64)
     return (uintptr_t)pas_compare_and_swap_uint64_strong((uint64_t*)ptr, (uint64_t)old_value, (uint64_t)new_value);
+#else
+    return (uintptr_t)pas_compare_and_swap_uint32_strong((uint32_t*)ptr, (uint32_t)old_value, (uint32_t)new_value);
+#endif
 }
 
 static inline bool pas_compare_and_swap_ptr_weak(void* ptr, const void* old_value, const void* new_value)
 {
+#if PAS_CPU(ADDRESS64)
     return pas_compare_and_swap_uint64_weak((uint64_t*)ptr, (uint64_t)old_value, (uint64_t)new_value);
+#else
+    return pas_compare_and_swap_uint32_weak((uint32_t*)ptr, (uint32_t)old_value, (uint32_t)new_value);
+#endif
 }
 
 static inline void* pas_compare_and_swap_ptr_strong(void* ptr, const void* old_value, const void* new_value)
 {
+#if PAS_CPU(ADDRESS64)
     return (void*)pas_compare_and_swap_uint64_strong((uint64_t*)ptr, (uint64_t)old_value, (uint64_t)new_value);
+#else
+    return (void*)pas_compare_and_swap_uint32_strong((uint32_t*)ptr, (uint32_t)old_value, (uint32_t)new_value);
+#endif
 }
 
 #define pas_compiler_fence __pas_compiler_fence
@@ -1013,27 +1029,6 @@ PAS_IGNORE_WARNINGS_BEGIN("atomic-alignment")
 PAS_IGNORE_WARNINGS_END
 #else
     __atomic_store_n((pas_pair*)raw_ptr, value, __ATOMIC_RELAXED);
-#endif
-}
-
-static PAS_ALWAYS_INLINE bool pas_compare_ptr_opaque(uintptr_t a, uintptr_t b)
-{
-#if PAS_COMPILER(CLANG)
-#if PAS_ARM64
-    uint32_t cond = 0;
-    asm volatile (
-        "cmp %x[a], %x[b]\t\n"
-        "cset %w[cond], eq\t\n"
-        /* outputs */  : [cond]"=&r"(cond)
-        /* inputs  */  : [a]"r"(a), [b]"r"(b)
-        /* clobbers */ : "cc", "memory"
-    );
-    return cond;
-#else
-    return a == b;
-#endif
-#else
-    return a == b;
 #endif
 }
 
