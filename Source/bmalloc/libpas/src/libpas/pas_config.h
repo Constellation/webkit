@@ -54,9 +54,12 @@
 
 #if PAS_CPU(ADDRESS64)
 #define PAS_ADDRESS_BITS                 48
+#define PAS_MAX_ADDRESS                  (1ULL << PAS_ADDRESS_BITS)
 #else
-#define PAS_ADDRESS_BITS                 31
+#define PAS_ADDRESS_BITS                 32
+#define PAS_MAX_ADDRESS                  ((1ULL << PAS_ADDRESS_BITS) - (16ULL << 10))
 #endif
+
 
 #if PAS_ARM || PAS_PLATFORM(PLAYSTATION)
 #define PAS_MAX_GRANULES                 256
