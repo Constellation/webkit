@@ -493,7 +493,7 @@ static inline pas_versioned_field pas_segregated_directory_get_last_empty_plus_o
         directory, pas_versioned_field_read);
 }
 
-static inline uintptr_t pas_segregated_directory_get_last_empty_plus_one_value(
+static inline uint64_t pas_segregated_directory_get_last_empty_plus_one_value(
     pas_segregated_directory* directory)
 {
     return pas_segregated_directory_get_last_empty_plus_one_impl(

@@ -52,7 +52,11 @@
 
 #define PAS_RISCV __PAS_RISCV
 
+#if PAS_CPU(ADDRESS64)
 #define PAS_ADDRESS_BITS                 48
+#else
+#define PAS_ADDRESS_BITS                 31
+#endif
 
 #if PAS_ARM || PAS_PLATFORM(PLAYSTATION)
 #define PAS_MAX_GRANULES                 256
@@ -94,8 +98,7 @@
 
 #define PAS_COMPACT_PTR_SIZE             3
 #define PAS_COMPACT_PTR_BITS             (PAS_COMPACT_PTR_SIZE << 3)
-#define PAS_COMPACT_PTR_MASK             ((uintptr_t)(((uint64_t)1 \
-                                                       << (PAS_COMPACT_PTR_BITS & 63)) - 1))
+#define PAS_COMPACT_PTR_MASK             ((uintptr_t)(((uint64_t)1 << (PAS_COMPACT_PTR_BITS & 63)) - 1))
 
 #define PAS_ALLOCATOR_INDEX_BYTES        4
 

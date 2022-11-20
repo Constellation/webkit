@@ -1037,6 +1037,27 @@ static PAS_ALWAYS_INLINE bool pas_compare_ptr_opaque(uintptr_t a, uintptr_t b)
 #endif
 }
 
+static PAS_ALWAYS_INLINE bool pas_compare_64_opaque(uint64_t a, uint64_t b)
+{
+#if PAS_COMPILER(CLANG)
+#if PAS_ARM64
+    uint32_t cond = 0;
+    asm volatile (
+        "cmp %x[a], %x[b]\t\n"
+        "cset %w[cond], eq\t\n"
+        /* outputs */  : [cond]"=&r"(cond)
+        /* inputs  */  : [a]"r"(a), [b]"r"(b)
+        /* clobbers */ : "cc", "memory"
+    );
+    return cond;
+#else
+    return a == b;
+#endif
+#else
+    return a == b;
+#endif
+}
+
 #define PAS_MIN(a, b) ({ \
         PAS_TYPEOF(a) _tmp_a = (a); \
         PAS_TYPEOF(b) _tmp_b = (b); \

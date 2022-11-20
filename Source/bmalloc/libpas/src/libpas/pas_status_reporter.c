@@ -100,7 +100,7 @@ static void dump_occupancy_initial(pas_stream* stream, pas_heap_summary summary)
     dump_ratio_initial(stream, "F", summary.allocated, summary.allocated + summary.free);
 }
 
-static void dump_arrow(pas_stream* stream, uintptr_t index_of_arrow)
+static void dump_arrow(pas_stream* stream, uint64_t index_of_arrow)
 {
     uintptr_t index;
     
@@ -178,7 +178,7 @@ static void report_bitfit_directory_contents(
     for (size_class = pas_compact_atomic_bitfit_size_class_ptr_load(&directory->largest_size_class);
          size_class;
          size_class = pas_compact_atomic_bitfit_size_class_ptr_load(&size_class->next_smaller)) {
-        uintptr_t index_of_first_free;
+        uint64_t index_of_first_free;
 
         index_of_first_free = size_class->first_free.value;
         
