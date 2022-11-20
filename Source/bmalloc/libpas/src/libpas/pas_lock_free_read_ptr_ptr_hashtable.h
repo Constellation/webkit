@@ -75,7 +75,7 @@ static PAS_ALWAYS_INLINE void* pas_lock_free_read_ptr_ptr_hashtable_find(
     for (unsigned hash = hash_key(key, hash_arg); ; ++hash) {
         unsigned index;
         pas_pair* entry;
-        uintptr_t loaded_key;
+        uint64_t loaded_key;
 
         index = hash & table->table_mask;
 
@@ -89,9 +89,9 @@ static PAS_ALWAYS_INLINE void* pas_lock_free_read_ptr_ptr_hashtable_find(
            avoid the synthetic pointer chase. */
         loaded_key = pas_pair_low(*entry);
         if (pas_compare_ptr_opaque(loaded_key, (uintptr_t)key))
-            return (void*)pas_pair_high(entry[pas_depend(loaded_key)]);
+            return (void*)pas_pair_high(entry[pas_depend64(loaded_key)]);
 
-        if (loaded_key == UINTPTR_MAX)
+        if (loaded_key == UINT64_MAX)
             return NULL;
 
 #if PAS_LOCK_FREE_READ_PTR_PTR_HASHTABLE_ENABLE_COLLISION_COUNT
