@@ -4991,7 +4991,7 @@ private:
     {
         DFG::ArrayMode arrayMode = m_node->arrayMode();
         LValue base = lowCell(m_node->child1());
-        if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray()) {
+        if (arrayMode.mayBeResizableOrGrowableSharedTypedArray()) {
 #if USE(LARGE_TYPED_ARRAYS)
             PatchpointValue* patchpoint = m_out.patchpoint(Int64);
 #else
@@ -5239,8 +5239,38 @@ IGNORE_CLANG_WARNINGS_END
             
         default:
             if (m_node->arrayMode().isSomeTypedArrayView()) {
+                DFG::ArrayMode arrayMode = m_node->arrayMode();
                 LValue base = lowCell(m_node->child1());
-                // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
+                if (arrayMode.mayBeResizableOrGrowableSharedTypedArray()) {
+#if USE(LARGE_TYPED_ARRAYS)
+                    PatchpointValue* patchpoint = m_out.patchpoint(Int64);
+#else
+                    PatchpointValue* patchpoint = m_out.patchpoint(Int32);
+#endif
+                    patchpoint->appendSomeRegister(base);
+                    patchpoint->clobber(RegisterSetBuilder::macroClobberedRegisters());
+                    patchpoint->numGPScratchRegisters = 2;
+
+                    CodeOrigin nodeSemanticOrigin = node->origin.semantic;
+                    patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
+                        AllowMacroScratchRegisterUsage allowScratch(jit);
+
+                        GPRReg resultGPR = params[0].gpr();
+                        GPRReg baseGPR = params[1].gpr();
+                        GPRReg scratch1GPR = params.gpScratch(0);
+                        GPRReg scratch2GPR = params.gpScratch(1);
+
+                        jit.loadTypedArrayLength(baseGPR, resultGPR, scratch1GPR, scratch2GPR, arrayMode.type() == Array::AnyTypedArray ? std::nullopt : std::optional { arrayMode.typedArrayType() });
+                    });
+#if USE(LARGE_TYPED_ARRAYS)
+                    speculate(Overflow, noValue(), nullptr, m_out.above(patchpoint, m_out.constInt64(std::numeric_limits<int32_t>::max())));
+                    setInt32(m_out.castToInt32(patchpoint));
+#else
+                    setInt32(patchpoint);
+#endif
+                    return;
+                }
+
                 speculate(UnexpectedResizableArrayBufferView, jsValueValue(base), m_node, m_out.testNonZero32(m_out.load8ZeroExt32(base, m_heaps.JSArrayBufferView_mode), m_out.constInt32(isResizableOrGrowableSharedMode)));
 #if USE(LARGE_TYPED_ARRAYS)
                 LValue length = m_out.load64NonNegative(base, m_heaps.JSArrayBufferView_length);
@@ -5264,8 +5294,28 @@ IGNORE_CLANG_WARNINGS_BEGIN("missing-noreturn")
         RELEASE_ASSERT(m_node->arrayMode().isSomeTypedArrayView());
         // The preprocessor chokes on RELEASE_ASSERT(USE(LARGE_TYPED_ARRAYS)), this is equivalent.
         RELEASE_ASSERT(sizeof(size_t) == sizeof(uint64_t));
+        DFG::ArrayMode arrayMode = m_node->arrayMode();
         LValue base = lowCell(m_node->child1());
-        // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
+        if (arrayMode.mayBeResizableOrGrowableSharedTypedArray()) {
+            PatchpointValue* patchpoint = m_out.patchpoint(Int64);
+            patchpoint->appendSomeRegister(base);
+            patchpoint->clobber(RegisterSetBuilder::macroClobberedRegisters());
+            patchpoint->numGPScratchRegisters = 2;
+
+            CodeOrigin nodeSemanticOrigin = node->origin.semantic;
+            patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
+                AllowMacroScratchRegisterUsage allowScratch(jit);
+
+                GPRReg resultGPR = params[0].gpr();
+                GPRReg baseGPR = params[1].gpr();
+                GPRReg scratch1GPR = params.gpScratch(0);
+                GPRReg scratch2GPR = params.gpScratch(1);
+
+                jit.loadTypedArrayLength(baseGPR, resultGPR, scratch1GPR, scratch2GPR, arrayMode.type() == Array::AnyTypedArray ? std::nullopt : std::optional { arrayMode.typedArrayType() });
+            });
+            setStrictInt52(patchpoint);
+            return;
+        }
         speculate(UnexpectedResizableArrayBufferView, jsValueValue(base), m_node, m_out.testNonZero32(m_out.load8ZeroExt32(base, m_heaps.JSArrayBufferView_mode), m_out.constInt32(isResizableOrGrowableSharedMode)));
         setStrictInt52(m_out.load64NonNegative(base, m_heaps.JSArrayBufferView_length));
     }
