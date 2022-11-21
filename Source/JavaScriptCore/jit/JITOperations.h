@@ -47,6 +47,7 @@ class CallFrame;
 class CallLinkInfo;
 class CodeBlock;
 class JSArray;
+class JSArrayBufferView;
 class JSCell;
 class JSFunction;
 class JSGlobalObject;

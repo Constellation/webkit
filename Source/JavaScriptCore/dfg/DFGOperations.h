@@ -357,6 +357,15 @@ JSC_DECLARE_JIT_OPERATION(operationDateGetUTCSeconds, EncodedJSValue, (VM*, Date
 JSC_DECLARE_JIT_OPERATION(operationDateGetTimezoneOffset, EncodedJSValue, (VM*, DateInstance*));
 JSC_DECLARE_JIT_OPERATION(operationDateGetYear, EncodedJSValue, (VM*, DateInstance*));
 
+#if USE(LARGE_TYPED_ARRAYS)
+using TypedArraySizeType = uint64_t;
+#else
+using TypedArraySizeType = UCPUStrictInt32;
+#endif
+JSC_DECLARE_JIT_OPERATION(operationArrayBufferViewByteOffsetUnboxed, TypedArraySizeType, (JSArrayBufferView*));
+JSC_DECLARE_JIT_OPERATION(operationArrayBufferViewByteLengthUnboxed, TypedArraySizeType, (JSArrayBufferView*));
+JSC_DECLARE_JIT_OPERATION(operationArrayBufferViewLengthUnboxed, TypedArraySizeType, (JSArrayBufferView*));
+
 JSC_DECLARE_JIT_OPERATION(operationProcessTypeProfilerLogDFG, void, (VM*));
 
 JSC_DECLARE_JIT_OPERATION(operationTriggerReoptimizationNow, void, (CodeBlock* baselineCodeBlock, CodeBlock* optimizedCodeBlock, OSRExitBase*));

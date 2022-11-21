@@ -3430,6 +3430,20 @@ JSC_DEFINE_JIT_OPERATION(operationNewArrayWithSpecies, JSObject*, (JSGlobalObjec
     return newArrayWithSpeciesImpl(globalObject, length, array, indexingType);
 }
 
+JSC_DEFINE_JIT_OPERATION(operationArrayBufferViewByteOffsetUnboxed, TypedArraySizeType, (JSArrayBufferView* view))
+{
+    return view->byteOffset();
+}
+
+JSC_DEFINE_JIT_OPERATION(operationArrayBufferViewByteLengthUnboxed, TypedArraySizeType, (JSArrayBufferView* view))
+{
+    return view->byteLength();
+}
+
+JSC_DEFINE_JIT_OPERATION(operationArrayBufferViewLengthUnboxed, TypedArraySizeType, (JSArrayBufferView* view))
+{
+    return view->length();
+}
 
 JSC_DEFINE_JIT_OPERATION(operationProcessTypeProfilerLogDFG, void, (VM* vmPointer))
 {

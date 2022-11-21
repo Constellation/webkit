@@ -2941,11 +2941,25 @@ void SpeculativeJIT::compileGetTypedArrayLengthAsInt52(Node* node)
 {
     // If arrayMode is ForceExit, we would not compile this node and hence, should not have arrived here.
     DFG_ASSERT(m_graph, node, node->arrayMode().isSomeTypedArrayView());
+    if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray()) {
+        SpeculateCellOperand base(this, node->child1());
+        GPRTemporary scratch1(this);
+        GPRTemporary result(this);
+
+        GPRReg baseGPR = base.gpr();
+        GPRReg scratch1GPR = scratch1.gpr();
+        GPRReg resultGPR = result.gpr();
+
+        m_jit.loadTypedArrayLength(baseGPR, resultGPR, scratch1GPR, resultGPR, node->arrayMode().type() == Array::AnyTypedArray ? std::nullopt : std::optional { node->arrayMode().typedArrayType() });
+
+        strictInt52Result(resultGPR, node);
+        return;
+    }
+
     SpeculateCellOperand base(this, node->child1());
     GPRTemporary result(this, Reuse, base);
     GPRReg baseGPR = base.gpr();
     GPRReg resultGPR = result.gpr();
-    // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
     speculationCheck(UnexpectedResizableArrayBufferView, JSValueSource::unboxedCell(baseGPR), node, m_jit.branchTest8(MacroAssembler::NonZero, CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfMode()), TrustedImm32(isResizableOrGrowableSharedMode)));
     m_jit.load64(MacroAssembler::Address(baseGPR, JSArrayBufferView::offsetOfLength()), resultGPR);
     static_assert(MAX_ARRAY_BUFFER_SIZE < (1ull << 52), "there is a risk that the size of a typed array won't fit in an Int52");
@@ -2954,13 +2968,34 @@ void SpeculativeJIT::compileGetTypedArrayLengthAsInt52(Node* node)
 
 void SpeculativeJIT::compileGetTypedArrayByteOffsetAsInt52(Node* node)
 {
+    if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray()) {
+        SpeculateCellOperand base(this, node->child1());
+        GPRTemporary scratch1(this);
+        GPRTemporary scratch2(this);
+        GPRTemporary result(this);
+
+        GPRReg baseGPR = base.gpr();
+        GPRReg scratch1GPR = scratch1.gpr();
+        GPRReg scratch2GPR = scratch2.gpr();
+        GPRReg resultGPR = result.gpr();
+
+        auto outOfBounds = m_jit.branchIfResizableOrGrowableSharedTypedArrayIsOutOfBounds(baseGPR, scratch1GPR, scratch2GPR, node->arrayMode().type() == Array::AnyTypedArray ? std::nullopt : std::optional { node->arrayMode().typedArrayType() });
+        m_jit.load64(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), resultGPR);
+        auto done = m_jit.jump();
+
+        outOfBounds.link(&m_jit);
+        m_jit.move(CCallHelpers::TrustedImm32(0), resultGPR);
+        done.link(&m_jit);
+
+        strictInt52Result(resultGPR, node);
+        return;
+    }
     SpeculateCellOperand base(this, node->child1());
     GPRTemporary result(this);
 
     GPRReg baseGPR = base.gpr();
     GPRReg resultGPR = result.gpr();
 
-    // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
     speculationCheck(UnexpectedResizableArrayBufferView, JSValueSource::unboxedCell(baseGPR), node, m_jit.branchTest8(MacroAssembler::NonZero, CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfMode()), TrustedImm32(isResizableOrGrowableSharedMode)));
 
     m_jit.load64(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), resultGPR);
@@ -3615,12 +3650,20 @@ void SpeculativeJIT::compile(Node* node)
         
         SpeculateCellOperand base(this, baseEdge);
         SpeculateStrictInt32Operand index(this, indexEdge);
-        GPRTemporary scratch (this);
+        GPRTemporary scratch(this);
 
         baseGPR = base.gpr();
         indexGPR = index.gpr();
+        GPRReg scratchGPR = scratch.gpr();
+
+        std::optional<GPRTemporary> scratch2;
+        GPRReg scratch2GPR = InvalidGPRReg;
+        if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray()) {
+            scratch2.emplace(this);
+            scratch2GPR = scratch2->gpr();
+        }
         
-        emitTypedArrayBoundsCheck(node, baseGPR, indexGPR, scratch.gpr());
+        emitTypedArrayBoundsCheck(node, baseGPR, indexGPR, scratchGPR, scratch2GPR);
         
         GPRTemporary args[2];
         

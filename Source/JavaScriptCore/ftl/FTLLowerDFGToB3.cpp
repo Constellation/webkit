@@ -4989,7 +4989,44 @@ private:
 
     LValue emitGetTypedArrayByteOffsetExceptSettingResult()
     {
+        DFG::ArrayMode arrayMode = m_node->arrayMode();
         LValue base = lowCell(m_node->child1());
+        if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray()) {
+#if USE(LARGE_TYPED_ARRAYS)
+            PatchpointValue* patchpoint = m_out.patchpoint(Int64);
+#else
+            PatchpointValue* patchpoint = m_out.patchpoint(Int32);
+#endif
+            patchpoint->appendSomeRegister(base);
+            patchpoint->clobber(RegisterSetBuilder::macroClobberedRegisters());
+            patchpoint->numGPScratchRegisters = 2;
+
+            CodeOrigin nodeSemanticOrigin = node->origin.semantic;
+            patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
+                AllowMacroScratchRegisterUsage allowScratch(jit);
+
+                GPRReg resultGPR = params[0].gpr();
+                GPRReg baseGPR = params[1].gpr();
+                GPRReg scratch1GPR = params.gpScratch(0);
+                GPRReg scratch2GPR = params.gpScratch(1);
+
+                auto outOfBounds = m_jit.branchIfResizableOrGrowableSharedTypedArrayIsOutOfBounds(baseGPR, scratch1GPR, scratch2GPR, arrayMode.type() == Array::AnyTypedArray ? std::nullopt : std::optional { arrayMode.typedArrayType() });
+
+#if USE(LARGE_TYPED_ARRAYS)
+                m_jit.load64(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), resultGPR);
+#else
+                m_jit.load32(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), resultGPR);
+#endif
+                auto done = m_jit.jump();
+
+                outOfBounds.link(&m_jit);
+                m_jit.move(CCallHelpers::TrustedImm32(0), resultGPR);
+                done.link(&m_jit);
+            });
+            return patchpoint;
+        }
+
+        speculate(UnexpectedResizableArrayBufferView, jsValueValue(base), m_node, m_out.testNonZero32(m_out.load8ZeroExt32(base, m_heaps.JSArrayBufferView_mode), m_out.constInt32(isResizableOrGrowableSharedMode)));
 #if USE(LARGE_TYPED_ARRAYS)
         return m_out.load64(base, m_heaps.JSArrayBufferView_byteOffset);
 #else
@@ -20634,8 +20671,6 @@ IGNORE_CLANG_WARNINGS_END
             unsure(isWasteful), unsure(continuation));
 
         LBasicBlock lastNext = m_out.appendTo(isWasteful, continuation);
-        // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
-        speculate(UnexpectedResizableArrayBufferView, jsValueValue(base), nullptr, m_out.testNonZero32(mode, m_out.constInt32(isResizableOrGrowableSharedMode)));
         LValue vector = m_out.loadPtr(base, m_heaps.JSArrayBufferView_vector);
         // FIXME: We could probably make this a mask.
         // https://bugs.webkit.org/show_bug.cgi?id=197701

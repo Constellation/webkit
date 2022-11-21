@@ -573,7 +573,18 @@ public:
         }
     }
 
-    
+    void lshift64(Address src, RegisterID shiftAmount, RegisterID dest)
+    {
+        if (shiftAmount == dest) {
+            move(shiftAmount, scratchRegister());
+            load64(src, dest);
+            lshift64(scratchRegister(), dest);
+        } else {
+            load64(src, dest);
+            lshift64(shiftAmount, dest);
+        }
+    }
+
     void rshift64(TrustedImm32 imm, RegisterID dest)
     {
         m_assembler.sarq_i8r(imm.m_value, dest);
@@ -1946,6 +1957,16 @@ public:
     {
         m_assembler.lock();
         m_assembler.xchgq_rm(reg, address.offset, address.base, address.index, address.scale);
+    }
+
+    void atomicLoad64(Address address, RegisterID dest)
+    {
+        load64(address, dest);
+    }
+
+    void atomicLoad64(BaseIndex address, RegisterID dest)
+    {
+        load64(address, dest);
     }
     
 #if ENABLE(FAST_TLS_JIT)

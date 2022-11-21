@@ -669,13 +669,16 @@ bool AccessCase::doesCalls(VM& vm, Vector<JSCell*>* cellsToMarkIfDoesCalls) cons
     case ProxyObjectLoad:
         doesCalls = true;
         break;
+    case IntrinsicGetter: {
+        doesCalls = this->as<IntrinsicGetterAccessCase>().doesCalls();
+        break;
+    }
     case Delete:
     case DeleteNonConfigurable:
     case DeleteMiss:
     case Load:
     case Miss:
     case GetGetter:
-    case IntrinsicGetter:
     case InHit:
     case InMiss:
     case CheckPrivateBrand:

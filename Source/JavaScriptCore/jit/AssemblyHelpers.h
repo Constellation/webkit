@@ -1175,6 +1175,12 @@ public:
         return branchTestPtr(Zero, stringImplGPR, TrustedImm32(JSString::isRopeInPointer));
     }
 
+#if USE(JSVALUE64)
+    JumpList branchIfResizableOrGrowableSharedTypedArrayIsOutOfBounds(GPRReg baseGPR, GPRReg scratchGPR, GPRReg scratch2GPR, std::optional<TypedArrayType>);
+    void loadTypedArrayByteLength(GPRReg baseGPR, GPRReg valueGPR, GPRReg scratchGPR, GPRReg scratch2GPR, TypedArrayType);
+    void loadTypedArrayLength(GPRReg baseGPR, GPRReg valueGPR, GPRReg scratchGPR, GPRReg scratch2GPR, std::optional<TypedArrayType>);
+#endif
+
     void emitTurnUndefinedIntoNull(JSValueRegs regs)
     {
 #if USE(JSVALUE64)
@@ -2007,6 +2013,9 @@ public:
 
 protected:
     void copyCalleeSavesToEntryFrameCalleeSavesBufferImpl(GPRReg calleeSavesBuffer);
+
+    enum class TypedArrayField { Length, ByteLength };
+    void loadTypedArrayByteLengthImpl(GPRReg baseGPR, GPRReg valueGPR, GPRReg scratchGPR, GPRReg scratch2GPR, std::optional<TypedArrayType>, TypedArrayField);
 
     CodeBlock* const m_codeBlock;
     CodeBlock* const m_baselineCodeBlock;
