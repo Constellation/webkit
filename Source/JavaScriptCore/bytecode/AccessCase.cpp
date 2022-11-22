@@ -1371,26 +1371,41 @@ void AccessCase::generateWithGuard(
         // This code is written such that the result could alias with the base or the property.
 
         TypedArrayType type = toTypedArrayType(m_type);
+        bool isResizableOrGrowableSharedMode = forResizableTypedArray(m_type);
 
         GPRReg propertyGPR = stubInfo.propertyGPR();
 
         fallThrough.append(jit.branch8(CCallHelpers::NotEqual, CCallHelpers::Address(baseGPR, JSCell::typeInfoTypeOffset()), CCallHelpers::TrustedImm32(typeForTypedArrayType(type))));
-        fallThrough.append(jit.branchTest8(CCallHelpers::NonZero, CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfMode()), CCallHelpers::TrustedImm32(isResizableOrGrowableSharedMode)));
 
-        CCallHelpers::Address addressOfLength = CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfLength());
-        jit.signExtend32ToPtr(propertyGPR, scratchGPR);
+        if (!isResizableOrGrowableSharedMode) {
+            fallThrough.append(jit.branchTest8(CCallHelpers::NonZero, CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfMode()), CCallHelpers::TrustedImm32(isResizableOrGrowableSharedMode)));
+            CCallHelpers::Address addressOfLength = CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfLength());
+            jit.signExtend32ToPtr(propertyGPR, scratchGPR);
 #if USE(LARGE_TYPED_ARRAYS)
-        // The length is a size_t, so either 32 or 64 bits depending on the platform.
-        state.failAndRepatch.append(jit.branch64(CCallHelpers::AboveOrEqual, scratchGPR, addressOfLength));
+            // The length is a size_t, so either 32 or 64 bits depending on the platform.
+            state.failAndRepatch.append(jit.branch64(CCallHelpers::AboveOrEqual, scratchGPR, addressOfLength));
 #else
-        state.failAndRepatch.append(jit.branch32(CCallHelpers::AboveOrEqual, propertyGPR, addressOfLength));
+            state.failAndRepatch.append(jit.branch32(CCallHelpers::AboveOrEqual, propertyGPR, addressOfLength));
 #endif
+        }
 
         auto allocator = state.makeDefaultScratchAllocator(scratchGPR);
         GPRReg scratch2GPR = allocator.allocateScratchGPR();
 
         ScratchRegisterAllocator::PreservedState preservedState = allocator.preserveReusedRegistersByPushing(
             jit, ScratchRegisterAllocator::ExtraStackSpace::NoExtraSpace);
+
+        CCallHelpers::JumpList failAndRepatchAfterRestore;
+        if (isResizableOrGrowableSharedMode) {
+            jit.loadTypedArrayLength(baseGPR, scratch2GPR, scratchGPR, scratch2GPR, type);
+            jit.signExtend32ToPtr(propertyGPR, scratchGPR);
+#if USE(LARGE_TYPED_ARRAYS)
+            // The length is a size_t, so either 32 or 64 bits depending on the platform.
+            failAndRepatchAfterRestore.append(jit.branch64(CCallHelpers::AboveOrEqual, scratchGPR, scratch2GPR));
+#else
+            failAndRepatchAfterRestore.append(jit.branch32(CCallHelpers::AboveOrEqual, propertyGPR, scratch2GPR));
+#endif
+        }
 
 #if USE(LARGE_TYPED_ARRAYS)
         jit.load64(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfLength()), scratchGPR);
@@ -1459,6 +1474,11 @@ void AccessCase::generateWithGuard(
         allocator.restoreReusedRegistersByPopping(jit, preservedState);
         state.succeed();
 
+        if (isResizableOrGrowableSharedMode) {
+            failAndRepatchAfterRestore.link(&jit);
+            allocator.restoreReusedRegistersByPopping(jit, preservedState);
+            state.failAndRepatch.append(jit.jump());
+        }
         return;
     }
 
@@ -1787,11 +1807,13 @@ void AccessCase::generateWithGuard(
         // This code is written such that the result could alias with the base or the property.
 
         TypedArrayType type = toTypedArrayType(m_type);
+        bool isResizableOrGrowableSharedMode = forResizableTypedArray(m_type);
 
         GPRReg propertyGPR = stubInfo.propertyGPR();
 
         fallThrough.append(jit.branch8(CCallHelpers::NotEqual, CCallHelpers::Address(baseGPR, JSCell::typeInfoTypeOffset()), CCallHelpers::TrustedImm32(typeForTypedArrayType(type))));
-        fallThrough.append(jit.branchTest8(CCallHelpers::NonZero, CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfMode()), CCallHelpers::TrustedImm32(isResizableOrGrowableSharedMode)));
+        if (!isResizableOrGrowableSharedMode)
+            fallThrough.append(jit.branchTest8(CCallHelpers::NonZero, CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfMode()), CCallHelpers::TrustedImm32(isResizableOrGrowableSharedMode)));
 
         if (isInt(type))
             state.failAndRepatch.append(jit.branchIfNotInt32(valueRegs));
@@ -1812,20 +1834,34 @@ void AccessCase::generateWithGuard(
             ready.link(&jit);
         }
 
-        CCallHelpers::Address addressOfLength = CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfLength());
-        jit.signExtend32ToPtr(propertyGPR, scratchGPR);
+        if (!isResizableOrGrowableSharedMode) {
+            CCallHelpers::Address addressOfLength = CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfLength());
+            jit.signExtend32ToPtr(propertyGPR, scratchGPR);
 #if USE(LARGE_TYPED_ARRAYS)
-        // The length is a UCPURegister, so either 32 or 64 bits depending on the platform.
-        state.failAndRepatch.append(jit.branch64(CCallHelpers::AboveOrEqual, scratchGPR, addressOfLength));
+            // The length is a UCPURegister, so either 32 or 64 bits depending on the platform.
+            state.failAndRepatch.append(jit.branch64(CCallHelpers::AboveOrEqual, scratchGPR, addressOfLength));
 #else
-        state.failAndRepatch.append(jit.branch32(CCallHelpers::AboveOrEqual, propertyGPR, addressOfLength));
+            state.failAndRepatch.append(jit.branch32(CCallHelpers::AboveOrEqual, propertyGPR, addressOfLength));
 #endif
+        }
 
         auto allocator = state.makeDefaultScratchAllocator(scratchGPR);
         GPRReg scratch2GPR = allocator.allocateScratchGPR();
 
         ScratchRegisterAllocator::PreservedState preservedState = allocator.preserveReusedRegistersByPushing(
             jit, ScratchRegisterAllocator::ExtraStackSpace::NoExtraSpace);
+
+        CCallHelpers::JumpList failAndRepatchAfterRestore;
+        if (isResizableOrGrowableSharedMode) {
+            jit.loadTypedArrayLength(baseGPR, scratch2GPR, scratchGPR, scratch2GPR, type);
+            jit.signExtend32ToPtr(propertyGPR, scratchGPR);
+#if USE(LARGE_TYPED_ARRAYS)
+            // The length is a size_t, so either 32 or 64 bits depending on the platform.
+            failAndRepatchAfterRestore.append(jit.branch64(CCallHelpers::AboveOrEqual, scratchGPR, scratch2GPR));
+#else
+            failAndRepatchAfterRestore.append(jit.branch32(CCallHelpers::AboveOrEqual, propertyGPR, scratch2GPR));
+#endif
+        }
 
 #if USE(LARGE_TYPED_ARRAYS)
         jit.load64(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfLength()), scratchGPR);
@@ -1884,6 +1920,12 @@ void AccessCase::generateWithGuard(
 
         allocator.restoreReusedRegistersByPopping(jit, preservedState);
         state.succeed();
+
+        if (isResizableOrGrowableSharedMode) {
+            failAndRepatchAfterRestore.link(&jit);
+            allocator.restoreReusedRegistersByPopping(jit, preservedState);
+            state.failAndRepatch.append(jit.jump());
+        }
         return;
     }
 
