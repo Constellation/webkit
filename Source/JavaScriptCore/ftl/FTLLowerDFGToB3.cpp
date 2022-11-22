@@ -5001,7 +5001,6 @@ private:
             patchpoint->clobber(RegisterSetBuilder::macroClobberedRegisters());
             patchpoint->numGPScratchRegisters = 2;
 
-            CodeOrigin nodeSemanticOrigin = node->origin.semantic;
             patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
                 AllowMacroScratchRegisterUsage allowScratch(jit);
 
@@ -5010,18 +5009,18 @@ private:
                 GPRReg scratch1GPR = params.gpScratch(0);
                 GPRReg scratch2GPR = params.gpScratch(1);
 
-                auto outOfBounds = m_jit.branchIfResizableOrGrowableSharedTypedArrayIsOutOfBounds(baseGPR, scratch1GPR, scratch2GPR, arrayMode.type() == Array::AnyTypedArray ? std::nullopt : std::optional { arrayMode.typedArrayType() });
+                auto outOfBounds = jit.branchIfResizableOrGrowableSharedTypedArrayIsOutOfBounds(baseGPR, scratch1GPR, scratch2GPR, arrayMode.type() == Array::AnyTypedArray ? std::nullopt : std::optional { arrayMode.typedArrayType() });
 
 #if USE(LARGE_TYPED_ARRAYS)
-                m_jit.load64(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), resultGPR);
+                jit.load64(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), resultGPR);
 #else
-                m_jit.load32(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), resultGPR);
+                jit.load32(CCallHelpers::Address(baseGPR, JSArrayBufferView::offsetOfByteOffset()), resultGPR);
 #endif
-                auto done = m_jit.jump();
+                auto done = jit.jump();
 
-                outOfBounds.link(&m_jit);
-                m_jit.move(CCallHelpers::TrustedImm32(0), resultGPR);
-                done.link(&m_jit);
+                outOfBounds.link(&jit);
+                jit.move(CCallHelpers::TrustedImm32(0), resultGPR);
+                done.link(&jit);
             });
             return patchpoint;
         }
@@ -5251,7 +5250,6 @@ IGNORE_CLANG_WARNINGS_END
                     patchpoint->clobber(RegisterSetBuilder::macroClobberedRegisters());
                     patchpoint->numGPScratchRegisters = 2;
 
-                    CodeOrigin nodeSemanticOrigin = node->origin.semantic;
                     patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
                         AllowMacroScratchRegisterUsage allowScratch(jit);
 
@@ -5302,7 +5300,6 @@ IGNORE_CLANG_WARNINGS_BEGIN("missing-noreturn")
             patchpoint->clobber(RegisterSetBuilder::macroClobberedRegisters());
             patchpoint->numGPScratchRegisters = 2;
 
-            CodeOrigin nodeSemanticOrigin = node->origin.semantic;
             patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
                 AllowMacroScratchRegisterUsage allowScratch(jit);
 
