@@ -139,9 +139,10 @@ static_assert(sizeof(ArrayMode) <= sizeof(unsigned));
 struct DataViewData {
     union {
         struct {
-            uint8_t byteSize;
-            bool isSigned;
-            bool isFloatingPoint; // Used for the DataViewSet node.
+            uint8_t byteSize { 0 };
+            bool isSigned : 1 { false };
+            bool isResizable : 1 { false };
+            bool isFloatingPoint : 1 { false };
             TriState isLittleEndian;
         };
         uint64_t asQuadWord;

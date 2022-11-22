@@ -5645,12 +5645,15 @@ void SpeculativeJIT::compile(Node* node)
         GPRReg dataViewGPR = dataView.gpr();
         speculateDataViewObject(node->child1(), dataViewGPR);
 
+        DataViewData data = node->dataViewData();
+
         SpeculateInt32Operand index(this, node->child2());
         GPRReg indexGPR = index.gpr();
 
         GPRTemporary temp1(this);
-        GPRReg t1 = temp1.gpr();
         GPRTemporary temp2(this);
+
+        GPRReg t1 = temp1.gpr();
         GPRReg t2 = temp2.gpr();
 
         std::optional<SpeculateBooleanOperand> isLittleEndianOperand;
@@ -5658,24 +5661,23 @@ void SpeculativeJIT::compile(Node* node)
             isLittleEndianOperand.emplace(this, node->child3());
         GPRReg isLittleEndianGPR = isLittleEndianOperand ? isLittleEndianOperand->gpr() : InvalidGPRReg;
 
-        // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
-        speculationCheck(UnexpectedResizableArrayBufferView, JSValueSource::unboxedCell(dataViewGPR), node, m_jit.branchTest8(MacroAssembler::NonZero, CCallHelpers::Address(dataViewGPR, JSArrayBufferView::offsetOfMode()), TrustedImm32(isResizableOrGrowableSharedMode)));
+        if (data.isResizable)
+            m_jit.loadTypedArrayLength(dataViewGPR, t1, t2, t1, TypeDataView);
+        else {
+            speculationCheck(UnexpectedResizableArrayBufferView, JSValueSource::unboxedCell(dataViewGPR), node, m_jit.branchTest8(MacroAssembler::NonZero, CCallHelpers::Address(dataViewGPR, JSArrayBufferView::offsetOfMode()), TrustedImm32(isResizableOrGrowableSharedMode)));
+#if USE(LARGE_TYPED_ARRAYS)
+            m_jit.load64(MacroAssembler::Address(dataViewGPR, JSArrayBufferView::offsetOfLength()), t1);
+#else
+            // No need for an explicit check against 0 here, negative indices are caught by the comparison with length right after
+            m_jit.load32(MacroAssembler::Address(dataViewGPR, JSArrayBufferView::offsetOfLength()), t1);
+#endif
+        }
 
-        DataViewData data = node->dataViewData();
-
+        speculationCheck(OutOfBounds, JSValueRegs(), node, m_jit.branch32(MacroAssembler::LessThan, indexGPR, TrustedImm32(0)));
         m_jit.zeroExtend32ToWord(indexGPR, t2);
         if (data.byteSize > 1)
             m_jit.add64(TrustedImm32(data.byteSize - 1), t2);
-#if USE(LARGE_TYPED_ARRAYS)
-        speculationCheck(OutOfBounds, JSValueRegs(), node,
-            m_jit.branch32(MacroAssembler::LessThan, indexGPR, TrustedImm32(0)));
-        m_jit.load64(MacroAssembler::Address(dataViewGPR, JSArrayBufferView::offsetOfLength()), t1);
-#else
-        // No need for an explicit check against 0 here, negative indices are caught by the comparison with length right after
-        m_jit.load32(MacroAssembler::Address(dataViewGPR, JSArrayBufferView::offsetOfLength()), t1);
-#endif
-        speculationCheck(OutOfBounds, JSValueRegs(), node,
-            m_jit.branch64(MacroAssembler::AboveOrEqual, t2, t1));
+        speculationCheck(OutOfBounds, JSValueRegs(), node, m_jit.branch64(MacroAssembler::AboveOrEqual, t2, t1));
 
         m_jit.loadPtr(JITCompiler::Address(dataViewGPR, JSArrayBufferView::offsetOfVector()), t2);
         cageTypedArrayStorage(dataViewGPR, t2, false);
@@ -5860,10 +5862,11 @@ void SpeculativeJIT::compile(Node* node)
         }
 
         GPRTemporary temp1(this);
-        GPRReg t1 = temp1.gpr();
         GPRTemporary temp2(this);
-        GPRReg t2 = temp2.gpr();
         GPRTemporary temp3(this);
+
+        GPRReg t1 = temp1.gpr();
+        GPRReg t2 = temp2.gpr();
         GPRReg t3 = temp3.gpr();
 
         std::optional<SpeculateBooleanOperand> isLittleEndianOperand;
@@ -5871,22 +5874,23 @@ void SpeculativeJIT::compile(Node* node)
             isLittleEndianOperand.emplace(this, m_graph.varArgChild(node, 3));
         GPRReg isLittleEndianGPR = isLittleEndianOperand ? isLittleEndianOperand->gpr() : InvalidGPRReg;
 
-        // FIXME: We should record UnexpectedResizableArrayBufferView in ArrayProfile, propagate it to DFG::ArrayMode, and accept it here.
-        speculationCheck(UnexpectedResizableArrayBufferView, JSValueSource::unboxedCell(dataViewGPR), node, m_jit.branchTest8(MacroAssembler::NonZero, CCallHelpers::Address(dataViewGPR, JSArrayBufferView::offsetOfMode()), TrustedImm32(isResizableOrGrowableSharedMode)));
+        if (data.isResizable)
+            m_jit.loadTypedArrayLength(dataViewGPR, t1, t2, t1, TypeDataView);
+        else {
+            speculationCheck(UnexpectedResizableArrayBufferView, JSValueSource::unboxedCell(dataViewGPR), node, m_jit.branchTest8(MacroAssembler::NonZero, CCallHelpers::Address(dataViewGPR, JSArrayBufferView::offsetOfMode()), TrustedImm32(isResizableOrGrowableSharedMode)));
+#if USE(LARGE_TYPED_ARRAYS)
+            m_jit.load64(MacroAssembler::Address(dataViewGPR, JSArrayBufferView::offsetOfLength()), t1);
+#else
+            // No need for an explicit check against 0 here, negative indices are caught by the comparison with length right after
+            m_jit.load32(MacroAssembler::Address(dataViewGPR, JSArrayBufferView::offsetOfLength()), t1);
+#endif
+        }
 
+        speculationCheck(OutOfBounds, JSValueRegs(), node, m_jit.branch32(MacroAssembler::LessThan, indexGPR, TrustedImm32(0)));
         m_jit.zeroExtend32ToWord(indexGPR, t2);
         if (data.byteSize > 1)
             m_jit.add64(TrustedImm32(data.byteSize - 1), t2);
-#if USE(LARGE_TYPED_ARRAYS)
-        speculationCheck(OutOfBounds, JSValueRegs(), node,
-            m_jit.branch32(MacroAssembler::LessThan, indexGPR, TrustedImm32(0)));
-        m_jit.load64(MacroAssembler::Address(dataViewGPR, JSArrayBufferView::offsetOfLength()), t1);
-#else
-        // No need for an explicit check against 0 here, negative indices are caught by the comparison with length right after
-        m_jit.load32(MacroAssembler::Address(dataViewGPR, JSArrayBufferView::offsetOfLength()), t1);
-#endif
-        speculationCheck(OutOfBounds, JSValueRegs(), node,
-            m_jit.branch64(MacroAssembler::AboveOrEqual, t2, t1));
+        speculationCheck(OutOfBounds, JSValueRegs(), node, m_jit.branch64(MacroAssembler::AboveOrEqual, t2, t1));
 
         m_jit.loadPtr(JITCompiler::Address(dataViewGPR, JSArrayBufferView::offsetOfVector()), t2);
         cageTypedArrayStorage(dataViewGPR, t2, false);
