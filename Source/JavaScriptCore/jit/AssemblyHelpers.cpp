@@ -1574,8 +1574,12 @@ void AssemblyHelpers::loadTypedArrayByteLengthImpl(GPRReg baseGPR, GPRReg valueG
     //     ResizableNonSharedWastefulTypedArray
     //     ResizableNonSharedAutoLengthWastefulTypedArray
 
-    loadPtr(Address(baseGPR, JSObject::butterflyOffset()), scratch2GPR);
-    loadPtr(Address(scratch2GPR, Butterfly::offsetOfArrayBuffer()), scratch2GPR);
+    if (typedArrayType && typedArrayType.value() == TypeDataView)
+        loadPtr(Address(baseGPR, JSDataView::offsetOfBuffer()), scratch2GPR);
+    else {
+        loadPtr(Address(baseGPR, JSObject::butterflyOffset()), scratch2GPR);
+        loadPtr(Address(scratch2GPR, Butterfly::offsetOfArrayBuffer()), scratch2GPR);
+    }
 
     auto isGrowableShared = branchTest32(NonZero, scratchGPR, TrustedImm32(isGrowableSharedMode));
 #if USE(LARGE_TYPED_ARRAYS)
