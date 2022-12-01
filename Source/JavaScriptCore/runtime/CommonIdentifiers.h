@@ -227,6 +227,7 @@
     macro(propertyIsEnumerable) \
     macro(prototype) \
     macro(raw) \
+    macro(rawJSON) \
     macro(region) \
     macro(replace) \
     macro(resizable) \
