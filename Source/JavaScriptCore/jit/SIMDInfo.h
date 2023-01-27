@@ -39,10 +39,50 @@ typedef union v128_u {
     v128_u() = default;
 } v128_t;
 
+inline v128_t vectorAllOnes()
+{
+    v128_t result;
+    result.u64x2[0] = UINT64_MAX;
+    result.u64x2[1] = UINT64_MAX;
+    return result;
+}
+
+inline v128_t vectorAllZeros()
+{
+    v128_t result;
+    result.u64x2[0] = 0;
+    result.u64x2[1] = 0;
+    return result;
+}
+
 // Comparing based on bits. Not using float/double comparison.
 inline bool bitEquals(const v128_t& lhs, const v128_t rhs)
 {
     return lhs.u64x2[0] == rhs.u64x2[0] && lhs.u64x2[1] == rhs.u64x2[1];
+}
+
+inline v128_t vectorOr(v128_t lhs, v128_t rhs)
+{
+    v128_t result;
+    result.u64x2[0] = lhs.u64x2[0] | rhs.u64x2[0];
+    result.u64x2[1] = lhs.u64x2[1] | rhs.u64x2[1];
+    return result;
+}
+
+inline v128_t vectorAnd(v128_t lhs, v128_t rhs)
+{
+    v128_t result;
+    result.u64x2[0] = lhs.u64x2[0] & rhs.u64x2[0];
+    result.u64x2[1] = lhs.u64x2[1] & rhs.u64x2[1];
+    return result;
+}
+
+inline v128_t vectorXor(v128_t lhs, v128_t rhs)
+{
+    v128_t result;
+    result.u64x2[0] = lhs.u64x2[0] ^ rhs.u64x2[0];
+    result.u64x2[1] = lhs.u64x2[1] ^ rhs.u64x2[1];
+    return result;
 }
 
 enum class SIMDLane : uint8_t {
