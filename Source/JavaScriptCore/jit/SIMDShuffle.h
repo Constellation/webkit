@@ -124,6 +124,24 @@ public:
         return isLargerElementShuffle(pattern, 16);
     }
 
+    static bool isAllOutOfBoundsForUnaryShuffle(v128_t pattern)
+    {
+        for (unsigned i = 0; i < 16; ++i) {
+            if (pattern.u8x16[i] < 16)
+                return false;
+        }
+        return true;
+    }
+
+    static bool isAllOutOfBoundsForBinaryShuffle(v128_t pattern)
+    {
+        for (unsigned i = 0; i < 16; ++i) {
+            if (pattern.u8x16[i] < 32)
+                return false;
+        }
+        return true;
+    }
+
 private:
     static bool isLargerElementShuffle(v128_t pattern, unsigned size)
     {

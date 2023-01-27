@@ -2653,14 +2653,19 @@ private:
         }
 
         case VectorSwizzle: {
-            if constexpr (isARM64()) {
-                if (m_value->numChildren() == 2 && m_value->child(1)->isConstant()) {
-                    v128_t pattern = m_value->child(1)->as<Const128Value>()->value();
-                    if (SIMDShuffle::isIdentity(pattern)) {
-                        replaceWithIdentity(m_value->child(0));
-                        break;
-                    }
+            if (m_value->numChildren() == 2 && m_value->child(1)->isConstant()) {
+                v128_t pattern = m_value->child(1)->as<Const128Value>()->value();
+                if (SIMDShuffle::isIdentity(pattern)) {
+                    replaceWithIdentity(m_value->child(0));
+                    break;
+                }
 
+                if (SIMDShuffle::isAllOutOfBoundsForUnaryShuffle(pattern)) {
+                    replaceWithNewValue(m_proc.addConstant(m_value->origin(), B3::V128, vectorAllZeros()));
+                    break;
+                }
+
+                if constexpr (isARM64()) {
                     if (auto lane = SIMDShuffle::isI64x2DupElement(pattern)) {
                         replaceWithNew<SIMDValue>(m_value->origin(), VectorDupElement, B3::V128, SIMDLane::i64x2, SIMDSignMode::None, lane.value(), m_value->child(0));
                         break;
@@ -2682,7 +2687,9 @@ private:
                     }
                     break;
                 }
+            }
 
+            if constexpr (isARM64()) {
                 if (m_value->numChildren() == 3 && m_value->child(2)->isConstant()) {
                     v128_t pattern = m_value->child(2)->as<Const128Value>()->value();
                     if (auto child = SIMDShuffle::isOnlyOneSideMask(pattern)) {
