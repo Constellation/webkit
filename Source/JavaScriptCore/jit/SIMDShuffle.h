@@ -127,7 +127,13 @@ public:
     static bool isAllOutOfBoundsForUnaryShuffle(v128_t pattern)
     {
         for (unsigned i = 0; i < 16; ++i) {
-            if (pattern.u8x16[i] < 16)
+            if constexpr (isX86()) {
+                if (!(pattern.u8x16[i] & 0x80))
+                    return false;
+            } else if constexpr (isARM64()) {
+                if (pattern.u8x16[i] < 16)
+                    return false;
+            } else
                 return false;
         }
         return true;
@@ -136,7 +142,13 @@ public:
     static bool isAllOutOfBoundsForBinaryShuffle(v128_t pattern)
     {
         for (unsigned i = 0; i < 16; ++i) {
-            if (pattern.u8x16[i] < 32)
+            if constexpr (isX86()) {
+                if (!(pattern.u8x16[i] & 0x80))
+                    return false;
+            } else if constexpr (isARM64()) {
+                if (pattern.u8x16[i] < 32)
+                    return false;
+            } else
                 return false;
         }
         return true;
