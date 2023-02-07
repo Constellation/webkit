@@ -891,6 +891,41 @@ private:
                 break;
             }
 
+            case NewRegExpViaConstructor: {
+                ASSERT(node->structure()->classInfoForCells() == RegExpObject::info());
+                if (node->child1().useKind() == StringUse) {
+                    String pattern = node->child1()->tryGetString(m_graph);
+                    if (!pattern.isNull()) {
+                        if (node->child2()) {
+                            String flags = node->child2()->tryGetString(m_graph);
+                            if (!flags.isNull()) {
+                                auto result = Yarr::parseFlags(flags);
+                                if (!result)
+                                    break;
+                                if (auto* regExp = m_graph.m_vm.regExpCache()->lookupConcurrently(pattern, result.value())) {
+                                    FrozenValue* frozenRegExp = m_graph.freezeStrong(regExp);
+                                    Node* zero = m_insertionSet.insertConstant(indexInBlock, node->origin, jsNumber(0));
+                                    Node* result = m_insertionSet.insertNode(indexInBlock, SpecNone, NewRegexp, node->origin, OpInfo(frozenRegExp), Edge(zero));
+                                    node->convertToIdentityOn(result);
+                                    changed = true;
+                                    break;
+                                }
+                            }
+                        } else {
+                            if (auto* regExp = m_graph.m_vm.regExpCache()->lookupConcurrently(pattern, { })) {
+                                FrozenValue* frozenRegExp = m_graph.freezeStrong(regExp);
+                                Node* zero = m_insertionSet.insertConstant(indexInBlock, node->origin, jsNumber(0));
+                                Node* result = m_insertionSet.insertNode(indexInBlock, SpecNone, NewRegexp, node->origin, OpInfo(frozenRegExp), Edge(zero));
+                                node->convertToIdentityOn(result);
+                                changed = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+
             case ResolveRope: {
                 if (m_state.forNode(node->child1()).m_type & ~SpecStringIdent)
                     break;

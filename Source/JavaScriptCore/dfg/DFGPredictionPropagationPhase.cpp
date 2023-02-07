@@ -1222,6 +1222,10 @@ private:
             setPrediction(SpecSymbol);
             break;
         }
+        case NewRegExpViaConstructor: {
+            setPrediction(SpecRegExpObject);
+            break;
+        }
             
         case CreateDirectArguments: {
             setPrediction(SpecDirectArguments);

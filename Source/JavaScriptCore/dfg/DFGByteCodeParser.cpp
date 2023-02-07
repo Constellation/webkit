@@ -76,6 +76,7 @@
 #include "PrivateFieldPutKind.h"
 #include "PutByIdFlags.h"
 #include "PutByStatus.h"
+#include "RegExpConstructor.h"
 #include "RegExpPrototype.h"
 #include "SetPrivateBrandStatus.h"
 #include "StackAlignment.h"
@@ -4316,6 +4317,17 @@ bool ByteCodeParser::handleConstantFunction(
             resultNode = addToGraph(CallObjectConstructor, OpInfo(m_graph.freeze(function->globalObject())), OpInfo(prediction), get(virtualRegisterForArgumentIncludingThis(1, registerOffset)));
         set(result, resultNode);
         return true;
+    }
+
+    if (function->classInfo() == RegExpConstructor::info()) {
+        if (argumentCountIncludingThis > 1) {
+            insertChecks();
+            if (argumentCountIncludingThis == 2)
+                set(result, addToGraph(NewRegExpViaConstructor, OpInfo(m_graph.registerStructure(function->globalObject()->regExpStructure())), OpInfo(0), get(virtualRegisterForArgumentIncludingThis(1, registerOffset))));
+            else
+                set(result, addToGraph(NewRegExpViaConstructor, OpInfo(m_graph.registerStructure(function->globalObject()->regExpStructure())), OpInfo(0), get(virtualRegisterForArgumentIncludingThis(1, registerOffset)), get(virtualRegisterForArgumentIncludingThis(2, registerOffset))));
+            return true;
+        }
     }
 
     for (unsigned typeIndex = 0; typeIndex < NumberOfTypedArrayTypes; ++typeIndex) {

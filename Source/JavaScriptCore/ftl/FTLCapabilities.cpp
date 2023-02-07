@@ -77,6 +77,7 @@ inline CapabilityLevel canCompile(Node* node)
     case NewAsyncGenerator:
     case NewStringObject:
     case NewSymbol:
+    case NewRegExpViaConstructor:
     case NewArray:
     case NewArrayWithSpread:
     case NewInternalFieldObject:

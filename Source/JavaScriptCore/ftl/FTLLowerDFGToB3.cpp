@@ -1161,6 +1161,9 @@ private:
         case NewSymbol:
             compileNewSymbol();
             break;
+        case NewRegExpViaConstructor:
+            compileNewRegExpViaConstructor();
+            break;
         case NewArray:
             compileNewArray();
             break;
@@ -7757,6 +7760,22 @@ IGNORE_CLANG_WARNINGS_END
             setJSValue(vmCall(pointerType(), operationNewSymbolWithStringDescription, weakPointer(globalObject), lowString(m_node->child1())));
         else
             setJSValue(vmCall(pointerType(), operationNewSymbolWithDescription, weakPointer(globalObject), lowJSValue(m_node->child1())));
+    }
+
+    void compileNewRegExpViaConstructor()
+    {
+        JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
+        if (m_node->child1().useKind() == StringUse) {
+            if (m_node->child2())
+                setJSValue(vmCall(pointerType(), operationNewRegExpViaConstructorString, weakPointer(globalObject), lowString(m_node->child1()), lowString(m_node->child2())));
+            else
+                setJSValue(vmCall(pointerType(), operationNewRegExpViaConstructorString, weakPointer(globalObject), lowString(m_node->child1()), m_out.intPtrZero));
+            return;
+        }
+        if (m_node->child2())
+            setJSValue(vmCall(pointerType(), operationNewRegExpViaConstructorGeneric, weakPointer(globalObject), lowJSValue(m_node->child1()), lowJSValue(m_node->child2())));
+        else
+            setJSValue(vmCall(pointerType(), operationNewRegExpViaConstructorWithoutFlagsGeneric, weakPointer(globalObject), lowJSValue(m_node->child1())));
     }
 
     void compileNewArray()

@@ -2136,6 +2136,7 @@ public:
         case NewAsyncGenerator:
         case NewInternalFieldObject:
         case NewStringObject:
+        case NewRegExpViaConstructor:
             return true;
         default:
             return false;

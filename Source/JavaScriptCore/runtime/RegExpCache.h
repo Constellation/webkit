@@ -58,6 +58,8 @@ public:
         return ensureEmptyRegExpSlow(vm);
     }
 
+    RegExp* lookupConcurrently(const String& patternString, OptionSet<Yarr::Flags> flags);
+
 private:
     static constexpr unsigned maxStrongCacheablePatternLength = 256;
 
@@ -69,6 +71,8 @@ private:
 
     RegExp* lookupOrCreate(const WTF::String& patternString, OptionSet<Yarr::Flags>);
     void addToStrongCache(RegExp*);
+
+    Lock m_weakCacheLock;
     RegExpCacheMap m_weakCache; // Holds all regular expressions currently live.
     int m_nextEntryInStrongCache;
     std::array<Strong<RegExp>, maxStrongCacheableEntries> m_strongCache; // Holds a select few regular expressions that have compiled and executed

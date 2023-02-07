@@ -49,6 +49,7 @@
 #include "MathCommon.h"
 #include "NumberConstructor.h"
 #include "PutByStatus.h"
+#include "RegExpCache.h"
 #include "RegExpObject.h"
 #include "RegExpPrototype.h"
 #include "SetPrivateBrandStatus.h"
@@ -2966,6 +2967,32 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         
     case NewStringObject: {
         ASSERT(node->structure()->classInfoForCells() == StringObject::info());
+        setForNode(node, node->structure());
+        break;
+    }
+
+    case NewRegExpViaConstructor: {
+        ASSERT(node->structure()->classInfoForCells() == RegExpObject::info());
+        if (node->child1().useKind() == StringUse) {
+            String pattern = node->child1()->tryGetString(m_graph);
+            if (!pattern.isNull()) {
+                if (node->child2()) {
+                    String flags = node->child2()->tryGetString(m_graph);
+                    if (!flags.isNull()) {
+                        m_state.setShouldTryConstantFolding(true);
+                        didFoldClobberWorld();
+                        setForNode(node, node->structure());
+                        break;
+                    }
+                } else {
+                    m_state.setShouldTryConstantFolding(true);
+                    didFoldClobberWorld();
+                    setForNode(node, node->structure());
+                    break;
+                }
+            }
+        }
+        clobberWorld();
         setForNode(node, node->structure());
         break;
     }

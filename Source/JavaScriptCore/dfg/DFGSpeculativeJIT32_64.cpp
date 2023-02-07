@@ -3102,6 +3102,11 @@ void SpeculativeJIT::compile(Node* node)
         compileNewSymbol(node);
         break;
     }
+
+    case NewRegExpViaConstructor: {
+        compileNewRegExpViaConstructor(node);
+        break;
+    }
         
     case NewArray: {
         compileNewArray(node);

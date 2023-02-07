@@ -1827,6 +1827,10 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
             clobberTop();
         return;
 
+    case NewRegExpViaConstructor:
+        clobberTop();
+        return;
+
     case NewObject:
     case NewGenerator:
     case NewAsyncGenerator:

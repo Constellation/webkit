@@ -33,19 +33,36 @@
 
 namespace JSC {
 
+RegExp* RegExpCache::lookupConcurrently(const String& patternString, OptionSet<Yarr::Flags> flags)
+{
+    if (patternString.length() > maxStrongCacheablePatternLength)
+        return nullptr;
+    RegExpKey key(flags, patternString.isolatedCopy());
+    {
+        Locker { m_weakCacheLock };
+        return m_weakCache.get(key);
+    }
+}
+
 RegExp* RegExpCache::lookupOrCreate(const String& patternString, OptionSet<Yarr::Flags> flags)
 {
     RegExpKey key(flags, patternString);
-    if (RegExp* regExp = m_weakCache.get(key))
-        return regExp;
+    {
+        Locker { m_weakCacheLock };
+        if (RegExp* regExp = m_weakCache.get(key))
+            return regExp;
+    }
 
     RegExp* regExp = RegExp::createWithoutCaching(*m_vm, patternString, flags);
 #if ENABLE(REGEXP_TRACING)
     m_vm->addRegExpToTrace(regExp);
 #endif
 
-    weakAdd(m_weakCache, key, Weak<RegExp>(regExp, this));
-    return regExp;
+    {
+        Locker { m_weakCacheLock };
+        weakAdd(m_weakCache, key, Weak<RegExp>(regExp, this));
+        return regExp;
+    }
 }
 
 RegExpCache::RegExpCache(VM* vm)
@@ -63,6 +80,7 @@ RegExp* RegExpCache::ensureEmptyRegExpSlow(VM& vm)
 
 void RegExpCache::finalize(Handle<Unknown> handle, void*)
 {
+    Locker { m_weakCacheLock };
     RegExp* regExp = static_cast<RegExp*>(handle.get().asCell());
     weakRemove(m_weakCache, regExp->key(), regExp);
 }
@@ -72,6 +90,7 @@ void RegExpCache::addToStrongCache(RegExp* regExp)
     String pattern = regExp->pattern();
     if (pattern.length() > maxStrongCacheablePatternLength)
         return;
+
     m_strongCache[m_nextEntryInStrongCache].set(*m_vm, regExp);
     m_nextEntryInStrongCache++;
     if (m_nextEntryInStrongCache == maxStrongCacheableEntries)
@@ -84,6 +103,7 @@ void RegExpCache::deleteAllCode()
         m_strongCache[i].clear();
     m_nextEntryInStrongCache = 0;
 
+    Locker { m_weakCacheLock };
     RegExpCacheMap::iterator end = m_weakCache.end();
     for (RegExpCacheMap::iterator it = m_weakCache.begin(); it != end; ++it) {
         RegExp* regExp = it->value.get();

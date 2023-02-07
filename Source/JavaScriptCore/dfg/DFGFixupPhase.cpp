@@ -1683,6 +1683,15 @@ private:
             break;
         }
 
+        case NewRegExpViaConstructor: {
+            if (node->child1()->shouldSpeculateString() && (!node->child2() || node->child2()->shouldSpeculateString())) {
+                fixEdge<StringUse>(node->child1());
+                if (node->child2())
+                    fixEdge<StringUse>(node->child2());
+            }
+            break;
+        }
+
         case NewArrayWithSpread: {
             watchHavingABadTime(node);
             

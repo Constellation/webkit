@@ -438,6 +438,7 @@ namespace JSC { namespace DFG {
     macro(CallObjectConstructor, NodeResultJS) \
     macro(CallStringConstructor, NodeResultJS | NodeMustGenerate) \
     macro(CallNumberConstructor, NodeResultJS | NodeMustGenerate) \
+    macro(NewRegExpViaConstructor, NodeResultJS | NodeMustGenerate) \
     macro(NumberToStringWithRadix, NodeResultJS | NodeMustGenerate) \
     macro(NumberToStringWithValidRadixConstant, NodeResultJS) \
     macro(FunctionToString, NodeResultJS) \

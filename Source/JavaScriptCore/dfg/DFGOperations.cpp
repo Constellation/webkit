@@ -72,6 +72,7 @@
 #include "ObjectPrototypeInlines.h"
 #include "Operations.h"
 #include "ParseInt.h"
+#include "RegExpConstructor.h"
 #include "RegExpGlobalDataInlines.h"
 #include "RegExpMatchesArray.h"
 #include "RegExpObjectInlines.h"
@@ -2842,6 +2843,35 @@ JSC_DEFINE_JIT_OPERATION(operationNewStringObject, JSCell*, (VM* vmPointer, JSSt
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
     
     return StringObject::create(vm, structure, string);
+}
+
+
+JSC_DEFINE_JIT_OPERATION(operationNewRegExpViaConstructorString, JSObject*, (JSGlobalObject* globalObject, JSString* string, JSString* flags))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+    if (flags)
+        return regExpCreate(globalObject, JSValue(), string, flags);
+    return regExpCreate(globalObject, JSValue(), string, jsUndefined());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationNewRegExpViaConstructorGeneric, JSObject*, (JSGlobalObject* globalObject, EncodedJSValue encodedString, EncodedJSValue encodedFlags))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+    // FIXME: This is wrong if pattern is RegExp.
+    return regExpCreate(globalObject, JSValue(), JSValue::decode(encodedString), JSValue::decode(encodedFlags));
+}
+
+JSC_DEFINE_JIT_OPERATION(operationNewRegExpViaConstructorWithoutFlagsGeneric, JSObject*, (JSGlobalObject* globalObject, EncodedJSValue encodedString))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+    // FIXME: This is wrong if pattern is RegExp.
+    return regExpCreate(globalObject, JSValue(), JSValue::decode(encodedString), jsUndefined());
 }
 
 JSC_DEFINE_JIT_OPERATION(operationToStringOnCell, JSString*, (JSGlobalObject* globalObject, JSCell* cell))

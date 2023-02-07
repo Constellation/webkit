@@ -606,6 +606,7 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node, bool igno
     case NumberToStringWithRadix:
     case SetFunctionName:
     case NewStringObject:
+    case NewRegExpViaConstructor:
     case InByVal:
     case InById:
     case EnumeratorInByVal:

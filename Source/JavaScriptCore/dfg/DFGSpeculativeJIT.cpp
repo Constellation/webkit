@@ -11883,6 +11883,60 @@ void SpeculativeJIT::compileNewSymbol(Node* node)
     cellResult(resultGPR, node);
 }
 
+void SpeculativeJIT::compileNewRegExpViaConstructor(Node* node)
+{
+    if (node->child1().useKind() == StringUse) {
+        SpeculateCellOperand operand1(this, node->child1());
+        std::optional<SpeculateCellOperand> operand2;
+        if (node->child2())
+            operand2.emplace(this, node->child2());
+
+        GPRReg operand1GPR = operand1.gpr();
+        GPRReg operand2GPR = InvalidGPRReg;
+        if (node->child2())
+            operand2GPR = operand2->gpr();
+
+        speculateString(node->child1(), operand1GPR);
+        if (node->child2())
+            speculateString(node->child2(), operand2GPR);
+
+        flushRegisters();
+        GPRFlushedCallResult result(this);
+        GPRReg resultGPR = result.gpr();
+        if (node->child2())
+            callOperation(operationNewRegExpViaConstructorString, resultGPR, LinkableConstant::globalObject(*this, node), operand1GPR, operand2GPR);
+        else
+            callOperation(operationNewRegExpViaConstructorString, resultGPR, LinkableConstant::globalObject(*this, node), operand1GPR, TrustedImmPtr(nullptr));
+        exceptionCheck();
+        cellResult(resultGPR, node);
+        return;
+    }
+
+    if (node->child2()) {
+        JSValueOperand operand1(this, node->child1());
+        JSValueOperand operand2(this, node->child2());
+        JSValueRegs operand1Regs = operand1.jsValueRegs();
+        JSValueRegs operand2Regs = operand2.jsValueRegs();
+        flushRegisters();
+        GPRFlushedCallResult result(this);
+        GPRReg resultGPR = result.gpr();
+        callOperation(operationNewRegExpViaConstructorGeneric, resultGPR, LinkableConstant::globalObject(*this, node), operand1Regs, operand2Regs);
+        exceptionCheck();
+        cellResult(resultGPR, node);
+        return;
+    }
+
+    JSValueOperand operand1(this, node->child1());
+    JSValueRegs operand1Regs = operand1.jsValueRegs();
+    flushRegisters();
+    GPRFlushedCallResult result(this);
+    GPRReg resultGPR = result.gpr();
+    callOperation(operationNewRegExpViaConstructorWithoutFlagsGeneric, resultGPR, LinkableConstant::globalObject(*this, node), operand1Regs);
+    exceptionCheck();
+    cellResult(resultGPR, node);
+    return;
+}
+
 void SpeculativeJIT::compileNewTypedArrayWithSize(Node* node)
 {
     JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
