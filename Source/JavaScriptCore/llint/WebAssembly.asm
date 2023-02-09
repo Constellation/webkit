@@ -748,6 +748,138 @@ end
 
 # Entry point
 
+# EncodedJSValue vmEntryToWasm(void* code, VM* vm, WasmProtoCallFrame* protoFrame)
+if C_LOOP or C_LOOP_WIN
+    _llint_vm_entry_to_wasm:
+else
+    global _vmEntryToWasm
+    _vmEntryToWasm:
+end
+    functionPrologue()
+    pushCalleeSaves() # FIXME THIS IS WRONG
+
+    const entry = a0
+    const vm = a1
+    const protoCallFrame = a2
+
+    vmEntryRecord(cfr, sp)
+
+    checkStackPointerAlignment(t4, 0xbad0dc01)
+
+    loadi VM::disallowVMEntryCount[vm], t4
+    btinz t4, .checkVMEntryPermission
+
+    storep vm, VMEntryRecord::m_vm[sp]
+    loadp VM::topCallFrame[vm], t4
+    storep t4, VMEntryRecord::m_prevTopCallFrame[sp]
+    loadp VM::topEntryFrame[vm], t4
+    storep t4, VMEntryRecord::m_prevTopEntryFrame[sp]
+    loadp Wasm::WasmProtoCallFrame::m_callee[protoCallFrame], t4
+    storep t4, VMEntryRecord::m_callee[sp]
+
+    # We do not check stack size because C++ caller already did it.
+    loadp Wasm::WasmProtoCallFrame::m_stackSizeInBytes[protoCallFrame], t4
+    subp sp, t4, t3
+    move t3, sp
+    loadi Wasm::WasmProtoCallFrame::m_numberOfStackSlots[protoCallFrame], t4
+    loadp Wasm::WasmProtoCallFrame::m_stackSlots[protoCallFrame], t3
+.copyArgsLoop:
+    btiz t4, .copyArgsDone
+    subi 1, t4
+    loadq [t3, t4, 8], extraTempReg
+    storeq extraTempReg, ThisArgumentOffset + 8[sp, t4, 8]
+    jmp .copyArgsLoop
+
+.copyArgsDone:
+    if ARM64 or ARM64E
+        move sp, t4
+        storep t4, VM::topCallFrame[vm]
+    else
+        storep sp, VM::topCallFrame[vm]
+    end
+    storep cfr, VM::topEntryFrame[vm]
+
+    checkStackPointerAlignment(extraTempReg, 0xbad0dc02)
+
+if ARM64 or ARM64E
+    forEachArgumentFPR(macro (offset, fpr1, fpr2)
+        loadpaird offset + Wasm::WasmProtoCallFrame::m_fprArguments[protoCallFrame], fpr2, fpr1
+    end)
+else
+    forEachArgumentFPR(macro (offset, fpr)
+        loadpaird offset + Wasm::WasmProtoCallFrame::m_fprArguments[protoCallFrame], fpr
+    end)
+end
+
+    # After this point, ws1 is Wasm::ProtoCallFrame, ws0 is code-pointer.
+    move a2, ws1
+    move a0, ws0
+
+if ARM64 or ARM64E
+    forEachArgumentJSR(macro (offset, gpr1, gpr2)
+        loadpairq offset + Wasm::WasmProtoCallFrame::m_gprArguments[ws1], gpr2, gpr1
+    end)
+elsif JSVALUE64
+    forEachArgumentJSR(macro (offset, gpr)
+        loadq offset + Wasm::WasmProtoCallFrame::m_gprArguments[ws1], gpr
+    end)
+else
+    forEachArgumentJSR(macro (offset, gprMsw, gpLsw)
+        load2ia offset + Wasm::WasmProtoCallFrame::m_gprArguments[ws1], gpLsw, gprMsw
+    end)
+end
+
+    loadp Wasm::WasmProtoCallFrame::m_instance[ws1], wasmInstance
+    loadp Wasm::WasmProtoCallFrame::m_memoryBase[ws1], memoryBase
+    loadp Wasm::WasmProtoCallFrame::m_boundsCheckingSize[ws1], boundsCheckingSize
+
+    addp 16, sp
+    if ARM64E
+        leap _g_config, ws1
+        jmp JSCConfigGateMapOffset + (constexpr Gate::vmEntryToWasm) * PtrSize[ws1], NativeToJITGatePtrTag # WasmEntryPtrTag
+        global _vmEntryToWasmTrampoline
+        _vmEntryToWasmTrampoline:
+        call ws0, JSEntryPtrTag
+    else
+        call ws0, JSEntryPtrTag
+    end
+    if ARM64E
+        global _vmEntryToWasmGateAfter
+        _vmEntryToWasmGateAfter:
+    end
+    subp 16, sp
+
+    # We may have just made a call into a JS function, so we can't rely on sp
+    # for anything but the fact that our own locals (ie the VMEntryRecord) are
+    # not below it. It also still has to be aligned, though.
+    checkStackPointerAlignment(t2, 0xbad0dc03)
+
+    vmEntryRecord(cfr, t4)
+
+    loadp VMEntryRecord::m_vm[t4], vm
+    loadp VMEntryRecord::m_prevTopCallFrame[t4], t2
+    storep t2, VM::topCallFrame[vm]
+    loadp VMEntryRecord::m_prevTopEntryFrame[t4], t2
+    storep t2, VM::topEntryFrame[vm]
+
+    subp cfr, CalleeRegisterSaveSize, sp
+
+    popCalleeSaves()
+    functionEpilogue()
+    ret
+
+.checkVMEntryPermission:
+    move vm, a0
+    move protoCallFrame, a1
+    cCall2(_llint_check_vm_entry_permission)
+    move ValueUndefined, r0
+
+    subp cfr, CalleeRegisterSaveSize, sp
+    popCalleeSaves()
+    functionEpilogue()
+    ret
+
+
 op(wasm_function_prologue, macro ()
     if not WEBASSEMBLY or C_LOOP or C_LOOP_WIN
         error

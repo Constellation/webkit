@@ -2600,7 +2600,7 @@ extern "C" void llint_write_barrier_slow(CallFrame* callFrame, JSCell* cell)
     vm.writeBarrier(cell);
 }
 
-extern "C" SlowPathReturnType llint_check_vm_entry_permission(VM* vm, ProtoCallFrame*)
+extern "C" SlowPathReturnType llint_check_vm_entry_permission(VM* vm, void*)
 {
     ASSERT_UNUSED(vm, vm->disallowVMEntryCount);
     if (Options::crashOnDisallowedVMEntry())

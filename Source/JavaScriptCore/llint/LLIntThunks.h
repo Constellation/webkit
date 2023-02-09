@@ -31,6 +31,9 @@
 #include <wtf/Scope.h>
 
 namespace JSC {
+namespace Wasm {
+class WasmProtoCallFrame;
+}
 
 struct ProtoCallFrame;
 typedef int64_t EncodedJSValue;
@@ -38,6 +41,7 @@ typedef int64_t EncodedJSValue;
 extern "C" {
     EncodedJSValue vmEntryToJavaScript(void*, VM*, ProtoCallFrame*);
     EncodedJSValue vmEntryToNative(void*, VM*, ProtoCallFrame*);
+    EncodedJSValue vmEntryToWasm(void*, VM*, Wasm::WasmProtoCallFrame*);
     EncodedJSValue vmEntryCustomGetter(CPURegister, CPURegister, CPURegister, CPURegister);
     EncodedJSValue vmEntryCustomSetter(CPURegister, CPURegister, CPURegister, CPURegister, CPURegister);
     EncodedJSValue vmEntryHostFunction(JSGlobalObject*, CallFrame*, void*);
@@ -47,6 +51,7 @@ extern "C" {
 extern "C" {
     void jitCagePtrGateAfter(void);
     void vmEntryToJavaScriptGateAfter(void);
+    void vmEntryToWasmGateAfter(void);
 
     void llint_function_for_call_arity_checkUntagGateAfter(void);
     void llint_function_for_call_arity_checkTagGateAfter(void);
@@ -54,15 +59,6 @@ extern "C" {
     void llint_function_for_construct_arity_checkTagGateAfter(void);
 }
 #endif
-
-inline EncodedJSValue vmEntryToWasm(void* code, VM* vm, ProtoCallFrame* frame)
-{
-    auto clobberizeValidator = makeScopeExit([&] {
-        vm->didEnterVM = true;
-    });
-    code = retagCodePtr<WasmEntryPtrTag, JSEntryPtrTag>(code);
-    return vmEntryToJavaScript(code, vm, frame);
-}
 
 namespace LLInt {
 

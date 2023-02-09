@@ -1707,7 +1707,7 @@ end
 
 # stub to call into JavaScript or Native functions
 # EncodedJSValue vmEntryToJavaScript(void* code, VM* vm, ProtoCallFrame* protoFrame)
-# EncodedJSValue vmEntryToNativeFunction(void* code, VM* vm, ProtoCallFrame* protoFrame)
+# EncodedJSValue vmEntryToNative(void* code, VM* vm, ProtoCallFrame* protoFrame)
 
 if C_LOOP or C_LOOP_WIN
     _llint_vm_entry_to_javascript:

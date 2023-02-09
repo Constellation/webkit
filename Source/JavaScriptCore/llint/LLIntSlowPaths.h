@@ -154,7 +154,7 @@ extern "C" SlowPathReturnType llint_slow_path_checkpoint_osr_exit_from_inlined_c
 #if ENABLE(C_LOOP)
 extern "C" SlowPathReturnType llint_stack_check_at_vm_entry(VM*, Register*) REFERENCED_FROM_ASM WTF_INTERNAL;
 #endif
-extern "C" SlowPathReturnType llint_check_vm_entry_permission(VM*, ProtoCallFrame*) REFERENCED_FROM_ASM WTF_INTERNAL;
+extern "C" SlowPathReturnType llint_check_vm_entry_permission(VM*, void*) REFERENCED_FROM_ASM WTF_INTERNAL;
 extern "C" NO_RETURN_DUE_TO_CRASH void llint_crash() REFERENCED_FROM_ASM WTF_INTERNAL;
 
 } } // namespace JSC::LLInt

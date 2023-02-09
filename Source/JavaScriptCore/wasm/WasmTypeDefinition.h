@@ -365,8 +365,8 @@ private:
     Type* m_payload;
     FunctionArgCount m_argCount;
     FunctionArgCount m_retCount;
-    bool m_hasRecursiveReference { false };
-    bool m_argumentsOrResultsIncludeV128 { false };
+    bool m_hasRecursiveReference : 1 { false };
+    bool m_argumentsOrResultsIncludeV128 : 1 { false };
 };
 
 // FIXME auto-generate this. https://bugs.webkit.org/show_bug.cgi?id=165231
