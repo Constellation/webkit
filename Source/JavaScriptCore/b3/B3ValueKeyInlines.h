@@ -57,6 +57,52 @@ inline ValueKey::ValueKey(Kind kind, Type type, Value* a, Value* b, Value* c)
     u.indices[2] = c->index();
 }
 
+inline ValueKey::ValueKey(Kind kind, Type type, SIMDInfo simdInfo, Value* a)
+    : m_simdInfo(simdInfo)
+    , m_kind(kind)
+    , m_type(type)
+{
+    u.indices[0] = a->index();
+}
+
+inline ValueKey::ValueKey(Kind kind, Type type, SIMDInfo simdInfo, Value* a, Value* b)
+    : m_simdInfo(simdInfo)
+    , m_kind(kind)
+    , m_type(type)
+{
+    u.indices[0] = a->index();
+    u.indices[1] = b->index();
+}
+
+inline ValueKey::ValueKey(Kind kind, Type type, SIMDInfo simdInfo, Value* a, Value* b, Value* c)
+    : m_simdInfo(simdInfo)
+    , m_kind(kind)
+    , m_type(type)
+{
+    u.indices[0] = a->index();
+    u.indices[1] = b->index();
+    u.indices[2] = c->index();
+}
+
+inline ValueKey::ValueKey(Kind kind, Type type, SIMDInfo simdInfo, Value* a, uint8_t immediate)
+    : m_simdInfo(simdInfo)
+    , m_kind(kind)
+    , m_type(type)
+{
+    u.indices[0] = a->index();
+    u.indices[1] = immediate;
+}
+
+inline ValueKey::ValueKey(Kind kind, Type type, SIMDInfo simdInfo, Value* a, Value* b, uint8_t immediate)
+    : m_simdInfo(simdInfo)
+    , m_kind(kind)
+    , m_type(type)
+{
+    u.indices[0] = a->index();
+    u.indices[1] = b->index();
+    u.indices[2] = immediate;
+}
+
 inline Value* ValueKey::child(Procedure& proc, unsigned index) const
 {
     return proc.values()[index];

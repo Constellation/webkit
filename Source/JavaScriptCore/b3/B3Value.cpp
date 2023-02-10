@@ -889,6 +889,66 @@ ValueKey Value::key() const
         return ValueKey(
             SlotBase, type(),
             static_cast<int64_t>(as<SlotBaseValue>()->slot()->index()));
+    case VectorNot:
+    case VectorAbs:
+    case VectorNeg:
+    case VectorPopcnt:
+    case VectorCeil:
+    case VectorFloor:
+    case VectorTrunc:
+    case VectorTruncSat:
+    case VectorConvert:
+    case VectorConvertLow:
+    case VectorNearest:
+    case VectorSqrt:
+    case VectorExtendLow:
+    case VectorExtendHigh:
+    case VectorPromote:
+    case VectorDemote:
+    case VectorBitmask:
+    case VectorAnyTrue:
+    case VectorAllTrue:
+    case VectorExtaddPairwise:
+        return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0));
+    case VectorExtractLane:
+    case VectorDupElement:
+    case VectorSplat:
+        return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0), as<SIMDValue>()->immediate());
+    case VectorEqual:
+    case VectorNotEqual:
+    case VectorLessThan:
+    case VectorLessThanOrEqual:
+    case VectorBelow:
+    case VectorBelowOrEqual:
+    case VectorGreaterThan:
+    case VectorGreaterThanOrEqual:
+    case VectorAbove:
+    case VectorAboveOrEqual:
+    case VectorAdd:
+    case VectorSub:
+    case VectorAddSat:
+    case VectorSubSat:
+    case VectorMul:
+    case VectorDotProduct:
+    case VectorDiv:
+    case VectorMin:
+    case VectorMax:
+    case VectorPmin:
+    case VectorPmax:
+    case VectorNarrow:
+    case VectorAnd:
+    case VectorAndnot:
+    case VectorOr:
+    case VectorXor:
+    case VectorShl:
+    case VectorShr:
+    case VectorMulSat:
+    case VectorAvgRound:
+        return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0), child(1));
+    case VectorReplaceLane:
+        return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0), child(1), as<SIMDValue>()->immediate());
+    case VectorBitwiseSelect:
+        return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0), child(1), child(2));
     default:
         return ValueKey();
     }

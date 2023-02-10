@@ -91,8 +91,15 @@ public:
         u.vectorValue = value;
     }
 
+    ValueKey(Kind kind, Type type, SIMDInfo simdInfo, Value* a);
+    ValueKey(Kind kind, Type type, SIMDInfo simdInfo, Value* a, Value* b);
+    ValueKey(Kind kind, Type type, SIMDInfo simdInfo, Value* a, Value* b, Value* c);
+    ValueKey(Kind kind, Type type, SIMDInfo simdInfo, Value* a, uint8_t);
+    ValueKey(Kind kind, Type type, SIMDInfo simdInfo, Value* a, Value* b, uint8_t);
+
     static ValueKey intConstant(Type type, int64_t value);
 
+    SIMDInfo simdInfo() const { return m_simdInfo; }
     Kind kind() const { return m_kind; }
     Opcode opcode() const { return kind().opcode(); }
     Type type() const { return m_type; }
@@ -105,7 +112,8 @@ public:
 
     bool operator==(const ValueKey& other) const
     {
-        return m_kind == other.m_kind
+        return m_simdInfo == other.m_simdInfo
+            && m_kind == other.m_kind
             && m_type == other.m_type
             && u == other.u;
     }
@@ -159,7 +167,8 @@ public:
     }
         
 private:
-    Kind m_kind;
+    SIMDInfo m_simdInfo { };
+    Kind m_kind { };
     Type m_type { Void };
     union U {
         unsigned indices[4];
