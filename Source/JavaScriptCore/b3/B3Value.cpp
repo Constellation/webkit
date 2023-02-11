@@ -949,6 +949,10 @@ ValueKey Value::key() const
         return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0), child(1), as<SIMDValue>()->immediate());
     case VectorBitwiseSelect:
         return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0), child(1), child(2));
+    case VectorSwizzle:
+        if (numChildren() == 2)
+            return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0), child(1));
+        return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0), child(1), child(2));
     default:
         return ValueKey();
     }
