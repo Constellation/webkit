@@ -703,6 +703,7 @@ Effects Value::effects() const
     case VectorExtaddPairwise:
     case VectorMulSat:
     case VectorSwizzle:
+    case VectorMulByElement:
         break;
     case Div:
     case UDiv:
@@ -946,6 +947,7 @@ ValueKey Value::key() const
     case VectorAvgRound:
         return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0), child(1));
     case VectorReplaceLane:
+    case VectorMulByElement:
         return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0), child(1), as<SIMDValue>()->immediate());
     case VectorBitwiseSelect:
         return ValueKey(kind(), type(), as<SIMDValue>()->simdInfo(), child(0), child(1), child(2));
