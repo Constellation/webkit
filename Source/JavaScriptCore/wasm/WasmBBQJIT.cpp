@@ -1711,7 +1711,7 @@ public:
         return Location::fromGPR(m_scratchGPR);
     }
 
-    inline uint32_t sizeOfLoadOp(LoadOpType op)
+    static inline uint32_t sizeOfLoadOp(LoadOpType op)
     {
         switch (op) {
         case LoadOpType::I32Load8S:
@@ -1736,7 +1736,7 @@ public:
         RELEASE_ASSERT_NOT_REACHED();
     }
 
-    inline TypeKind typeOfLoadOp(LoadOpType op)
+    static inline TypeKind typeOfLoadOp(LoadOpType op)
     {
         switch (op) {
         case LoadOpType::I32Load8S:
@@ -2070,13 +2070,294 @@ public:
 
     // Atomics
 
-    PartialResult WARN_UNUSED_RETURN atomicLoad(ExtAtomicOpType, Type, ExpressionType, ExpressionType&, uint32_t) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN atomicStore(ExtAtomicOpType, Type, ExpressionType, ExpressionType, uint32_t) BBQ_STUB
+    static inline Width accessWidth(ExtAtomicOpType op)
+    {
+        return static_cast<Width>(memoryLog2Alignment(op));
+    }
+
+    static inline uint32_t sizeOfAtomicOpMemoryAccess(ExtAtomicOpType op)
+    {
+        return bytesForWidth(accessWidth(op));
+    }
+
+    static const char* atomicOpName(ExtAtomicOpType op)
+    {
+        switch (op) {
+        case ExtAtomicOpType::I32AtomicLoad: return "I32AtomicLoad";
+        case ExtAtomicOpType::I64AtomicLoad: return "I64AtomicLoad";
+        case ExtAtomicOpType::I32AtomicLoad8U: return "I32AtomicLoad8U";
+        case ExtAtomicOpType::I32AtomicLoad16U: return "I32AtomicLoad16U";
+        case ExtAtomicOpType::I64AtomicLoad8U: return "I64AtomicLoad8U";
+        case ExtAtomicOpType::I64AtomicLoad16U: return "I64AtomicLoad16U";
+        case ExtAtomicOpType::I64AtomicLoad32U: return "I64AtomicLoad32U";
+        case ExtAtomicOpType::I32AtomicStore: return "I32AtomicStore";
+        case ExtAtomicOpType::I64AtomicStore: return "I64AtomicStore";
+        case ExtAtomicOpType::I32AtomicStore8U: return "I32AtomicStore8U";
+        case ExtAtomicOpType::I32AtomicStore16U: return "I32AtomicStore16U";
+        case ExtAtomicOpType::I64AtomicStore8U: return "I64AtomicStore8U";
+        case ExtAtomicOpType::I64AtomicStore16U: return "I64AtomicStore16U";
+        case ExtAtomicOpType::I64AtomicStore32U: return "I64AtomicStore32U";
+        default:
+            return "";
+        }
+    }
+
+    Value WARN_UNUSED_RETURN emitAtomicLoadOp(ExtAtomicOpType loadOp, Type valueType, Location pointer, uint32_t offset)
+    {
+        ASSERT(pointer.isGPR());
+
+        // For Atomic access, we need SimpleAddress (offset = 0).
+        if (offset)
+            m_jit.add64(TrustedImm64(static_cast<int64_t>(offset)), pointer.asGPR());
+        Address address = Address(pointer.asGPR());
+
+        if (accessWidth(loadOp) != Width8)
+            addExceptionLateLinkTask(ExceptionType::OutOfBoundsMemoryAccess, m_jit.branchTest64(ResultCondition::NonZero, pointer.asGPR(), TrustedImm64(sizeOfAtomicOpMemoryAccess(loadOp) - 1)));
+
+        Value result = topValue(valueType.isI64() ? TypeKind::I64 : TypeKind::I32);
+        Location resultLocation = allocate(result);
+
+        m_jit.move(TrustedImm32(0), resultLocation.asGPR());
+
+        switch (loadOp) {
+        case ExtAtomicOpType::I32AtomicLoad: {
+#if CPU(ARM64)
+            m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
+#else
+            m_jit.atomicXchgAdd32(resultLocation.asGPR(), address);
+#endif
+            break;
+        }
+        case ExtAtomicOpType::I64AtomicLoad: {
+#if CPU(ARM64)
+            m_jit.atomicXchgAdd64(resultLocation.asGPR(), address, resultLocation.asGPR());
+#else
+            m_jit.atomicXchgAdd64(resultLocation.asGPR(), address);
+#endif
+            break;
+        }
+        case ExtAtomicOpType::I32AtomicLoad8U: {
+#if CPU(ARM64)
+            m_jit.atomicXchgAdd8(resultLocation.asGPR(), address, resultLocation.asGPR());
+#else
+            m_jit.atomicXchgAdd8(resultLocation.asGPR(), address);
+#endif
+            m_jit.zeroExtend8To32(resultLocation.asGPR(), resultLocation.asGPR());
+            break;
+        }
+        case ExtAtomicOpType::I32AtomicLoad16U: {
+#if CPU(ARM64)
+            m_jit.atomicXchgAdd16(resultLocation.asGPR(), address, resultLocation.asGPR());
+#else
+            m_jit.atomicXchgAdd16(resultLocation.asGPR(), address);
+#endif
+            m_jit.zeroExtend16To32(resultLocation.asGPR(), resultLocation.asGPR());
+            break;
+        }
+        case ExtAtomicOpType::I64AtomicLoad8U: {
+#if CPU(ARM64)
+            m_jit.atomicXchgAdd8(resultLocation.asGPR(), address, resultLocation.asGPR());
+#else
+            m_jit.atomicXchgAdd8(resultLocation.asGPR(), address);
+#endif
+            m_jit.zeroExtend8To32(resultLocation.asGPR(), resultLocation.asGPR());
+            break;
+        }
+        case ExtAtomicOpType::I64AtomicLoad16U: {
+#if CPU(ARM64)
+            m_jit.atomicXchgAdd16(resultLocation.asGPR(), address, resultLocation.asGPR());
+#else
+            m_jit.atomicXchgAdd16(resultLocation.asGPR(), address);
+#endif
+            m_jit.zeroExtend16To32(resultLocation.asGPR(), resultLocation.asGPR());
+            break;
+        }
+        case ExtAtomicOpType::I64AtomicLoad32U: {
+#if CPU(ARM64)
+            m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
+#else
+            m_jit.atomicXchgAdd32(resultLocation.asGPR(), address);
+#endif
+            m_jit.zeroExtend32ToWord(resultLocation.asGPR(), resultLocation.asGPR());
+            break;
+        }
+        default:
+            RELEASE_ASSERT_NOT_REACHED();
+            break;
+        }
+
+        return result;
+    }
+
+    PartialResult WARN_UNUSED_RETURN atomicLoad(ExtAtomicOpType loadOp, Type valueType, ExpressionType pointer, ExpressionType& result, uint32_t offset)
+    {
+        if (UNLIKELY(sumOverflows<uint32_t>(offset, sizeOfAtomicOpMemoryAccess(loadOp)))) {
+            // FIXME: Same issue as in AirIRGenerator::load(): https://bugs.webkit.org/show_bug.cgi?id=166435
+            emitThrowException(ExceptionType::OutOfBoundsMemoryAccess);
+            consume(pointer);
+            result = valueType.isI64() ? Value::fromI64(0) : Value::fromI32(0);
+        } else
+            result = emitAtomicLoadOp(loadOp, valueType, emitCheckAndPreparePointer(pointer, offset, sizeOfAtomicOpMemoryAccess(loadOp)), offset);
+
+        LOG_INSTRUCTION(atomicOpName(loadOp), pointer, offset, RESULT(result));
+
+        return { };
+    }
+
+    void emitAtomicStoreOp(ExtAtomicOpType storeOp, Type, Location pointer, Value value, uint32_t offset)
+    {
+        ASSERT(pointer.isGPR());
+
+        // For Atomic access, we need SimpleAddress (offset = 0).
+        if (offset)
+            m_jit.add64(TrustedImm64(static_cast<int64_t>(offset)), pointer.asGPR());
+        Address address = Address(pointer.asGPR());
+
+        if (accessWidth(storeOp) != Width8)
+            addExceptionLateLinkTask(ExceptionType::OutOfBoundsMemoryAccess, m_jit.branchTest64(ResultCondition::NonZero, pointer.asGPR(), TrustedImm64(sizeOfAtomicOpMemoryAccess(storeOp) - 1)));
+
+        GPRReg scratch1 = InvalidGPRReg;
+        Location valueLocation;
+        if (value.isConst()) {
+            ScratchScope<2, 0> scratches(*this);
+            valueLocation = Location::fromGPR(scratches.gpr(0));
+            emitMoveConst(value, valueLocation);
+            scratch1 = scratches.gpr(1);
+        } else {
+            ScratchScope<1, 0> scratches(*this);
+            valueLocation = loadIfNecessary(value);
+            scratch1 = scratches.gpr(0);
+        }
+        ASSERT(valueLocation.isRegister());
+
+        consume(value);
+
+        switch (storeOp) {
+        case ExtAtomicOpType::I32AtomicStore: {
+#if CPU(ARM64)
+            m_jit.atomicXchg32(valueLocation.asGPR(), address, scratch1);
+#else
+            m_jit.store32(valueLocation.asGPR(), address);
+#endif
+            break;
+        }
+        case ExtAtomicOpType::I64AtomicStore: {
+#if CPU(ARM64)
+            m_jit.atomicXchg64(valueLocation.asGPR(), address, scratch1);
+#else
+            m_jit.store64(valueLocation.asGPR(), address);
+#endif
+            break;
+        }
+        case ExtAtomicOpType::I32AtomicStore8U: {
+#if CPU(ARM64)
+            m_jit.atomicXchg8(valueLocation.asGPR(), address, scratch1);
+#else
+            m_jit.store8(valueLocation.asGPR(), address);
+#endif
+            break;
+        }
+        case ExtAtomicOpType::I32AtomicStore16U: {
+#if CPU(ARM64)
+            m_jit.atomicXchg16(valueLocation.asGPR(), address, scratch1);
+#else
+            m_jit.store16(valueLocation.asGPR(), address);
+#endif
+            break;
+        }
+        case ExtAtomicOpType::I64AtomicStore8U: {
+#if CPU(ARM64)
+            m_jit.atomicXchg8(valueLocation.asGPR(), address, scratch1);
+#else
+            m_jit.store8(valueLocation.asGPR(), address);
+#endif
+            break;
+        }
+        case ExtAtomicOpType::I64AtomicStore16U: {
+#if CPU(ARM64)
+            m_jit.atomicXchg16(valueLocation.asGPR(), address, scratch1);
+#else
+            m_jit.store16(valueLocation.asGPR(), address);
+#endif
+            break;
+        }
+        case ExtAtomicOpType::I64AtomicStore32U: {
+#if CPU(ARM64)
+            m_jit.atomicXchg32(valueLocation.asGPR(), address, scratch1);
+#else
+            m_jit.store32(valueLocation.asGPR(), address);
+#endif
+            break;
+        }
+        default:
+            RELEASE_ASSERT_NOT_REACHED();
+            break;
+        }
+    }
+
+    PartialResult WARN_UNUSED_RETURN atomicStore(ExtAtomicOpType storeOp, Type valueType, ExpressionType pointer, ExpressionType value, uint32_t offset)
+    {
+        Location valueLocation = locationOf(value);
+        if (UNLIKELY(sumOverflows<uint32_t>(offset, sizeOfAtomicOpMemoryAccess(storeOp)))) {
+            // FIXME: Same issue as in AirIRGenerator::load(): https://bugs.webkit.org/show_bug.cgi?id=166435
+            emitThrowException(ExceptionType::OutOfBoundsMemoryAccess);
+            consume(pointer);
+            consume(value);
+        } else
+            emitAtomicStoreOp(storeOp, valueType, emitCheckAndPreparePointer(pointer, offset, sizeOfAtomicOpMemoryAccess(storeOp)), value, offset);
+
+        LOG_INSTRUCTION(atomicOpName(storeOp), pointer, offset, value, valueLocation);
+
+        return { };
+    }
+
     PartialResult WARN_UNUSED_RETURN atomicBinaryRMW(ExtAtomicOpType, Type, ExpressionType, ExpressionType, ExpressionType&, uint32_t) BBQ_STUB
     PartialResult WARN_UNUSED_RETURN atomicCompareExchange(ExtAtomicOpType, Type, ExpressionType, ExpressionType, ExpressionType, ExpressionType&, uint32_t) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN atomicWait(ExtAtomicOpType, ExpressionType, ExpressionType, ExpressionType, ExpressionType&, uint32_t) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN atomicNotify(ExtAtomicOpType, ExpressionType, ExpressionType, ExpressionType&, uint32_t) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN atomicFence(ExtAtomicOpType, uint8_t) BBQ_STUB
+
+    PartialResult WARN_UNUSED_RETURN atomicWait(ExtAtomicOpType op, ExpressionType pointer, ExpressionType value, ExpressionType timeout, ExpressionType& result, uint32_t offset)
+    {
+        Vector<Value, 8> arguments = {
+            instanceValue(),
+            pointer,
+            Value::fromI32(offset),
+            value,
+            timeout
+        };
+
+        if (op == ExtAtomicOpType::MemoryAtomicWait32)
+            emitCCall(&operationMemoryAtomicWait32, arguments, TypeKind::I32, result);
+        else
+            emitCCall(&operationMemoryAtomicWait64, arguments, TypeKind::I32, result);
+        Location resultLocation = allocate(result);
+
+        LOG_INSTRUCTION(op == ExtAtomicOpType::MemoryAtomicWait32 ? "AtomicWait32" : "AtomicWait64", pointer, value, timeout, offset, RESULT(result));
+
+        addExceptionLateLinkTask(ExceptionType::OutOfBoundsMemoryAccess, m_jit.branch32(RelationalCondition::LessThan, resultLocation.asGPR(), TrustedImm32(0)));
+        return { };
+    }
+
+    PartialResult WARN_UNUSED_RETURN atomicNotify(ExtAtomicOpType, ExpressionType pointer, ExpressionType count, ExpressionType& result, uint32_t offset)
+    {
+        Vector<Value, 8> arguments = {
+            instanceValue(),
+            pointer,
+            Value::fromI32(offset),
+            count
+        };
+        emitCCall(&operationMemoryAtomicNotify, arguments, TypeKind::I32, result);
+        Location resultLocation = allocate(result);
+
+        LOG_INSTRUCTION("AtomicNotify", pointer, count, offset, RESULT(result));
+
+        addExceptionLateLinkTask(ExceptionType::OutOfBoundsMemoryAccess, m_jit.branch32(RelationalCondition::LessThan, resultLocation.asGPR(), TrustedImm32(0)));
+        return { };
+    }
+
+    PartialResult WARN_UNUSED_RETURN atomicFence(ExtAtomicOpType, uint8_t)
+    {
+        m_jit.memoryFence();
+        return { };
+    }
 
     // Saturated truncation.
 
