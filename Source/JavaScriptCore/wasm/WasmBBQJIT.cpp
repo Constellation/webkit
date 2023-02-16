@@ -2367,9 +2367,14 @@ public:
         Value result = topValue(valueType.kind);
         Location resultLocation = allocate(result);
 
-        Location valueLocation = loadIfNecessary(value);
-        ASSERT(valueLocation.isGPR());
-
+        Location valueLocation;
+        if (value.isConst()) {
+            ScratchScope<1, 0> scratches(*this);
+            valueLocation = Location::fromGPR(scratches.gpr(0));
+            emitMoveConst(value, valueLocation);
+        } else
+            valueLocation = loadIfNecessary(value);
+        ASSERT(valueLocation.isRegister());
         consume(value);
 
         switch (op) {
@@ -2652,7 +2657,7 @@ public:
         } else
             result = emitAtomicBinaryRMWOp(op, valueType, emitCheckAndPreparePointer(pointer, offset, sizeOfAtomicOpMemoryAccess(op)), value, offset);
 
-        LOG_INSTRUCTION("", pointer, offset, value, valueLocation);
+        LOG_INSTRUCTION("", pointer, offset, value, valueLocation, RESULT(result));
 
         return { };
     }
@@ -2674,13 +2679,37 @@ public:
         Value result = topValue(expected.type());
         Location resultLocation = allocate(result);
 
-        Location valueLocation = loadIfNecessary(value);
-        ASSERT(valueLocation.isGPR());
-        Location expectedLocation = loadIfNecessary(expected);
-        ASSERT(expectedLocation.isGPR());
-
         ScratchScope<1, 0> scratches(*this);
         GPRReg scratchGPR = scratches.gpr(0);
+
+        // FIXME: We should have a better way to write this.
+        Location valueLocation;
+        Location expectedLocation;
+        if (value.isConst()) {
+            if (expected.isConst()) {
+                ScratchScope<2, 0> scratches(*this);
+                valueLocation = Location::fromGPR(scratches.gpr(0));
+                expectedLocation = Location::fromGPR(scratches.gpr(1));
+                emitMoveConst(value, valueLocation);
+                emitMoveConst(expected, expectedLocation);
+            } else {
+                ScratchScope<1, 0> scratches(*this);
+                valueLocation = Location::fromGPR(scratches.gpr(0));
+                emitMoveConst(value, valueLocation);
+                expectedLocation = loadIfNecessary(expected);
+            }
+        } else {
+            valueLocation = loadIfNecessary(value);
+            if (expected.isConst()) {
+                ScratchScope<1, 0> scratches(*this);
+                expectedLocation = Location::fromGPR(scratches.gpr(0));
+                emitMoveConst(expected, expectedLocation);
+            } else
+                expectedLocation = loadIfNecessary(expected);
+        }
+
+        ASSERT(valueLocation.isRegister());
+        ASSERT(expectedLocation.isRegister());
 
         consume(value);
         consume(expected);
