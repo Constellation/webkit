@@ -2376,41 +2376,60 @@ public:
         Location expectedLocation = loadIfNecessary(expected);
         ASSERT(expectedLocation.isGPR());
 
-        auto emitStrongCAS = [&](GPRReg expectedGPR, GPRReg valueGPR, GPRReg resultGPR) {
-            m_jit.move(expectedGPR, resultGPR);
-            switch (accessWidth) {
-            case Width8:
-                m_jit.atomicStrongCAS8(resultGPR, valueGPR, address);
-                break;
-            case Width16:
-                m_jit.atomicStrongCAS16(resultGPR, valueGPR, address);
-                break;
-            case Width32:
-                m_jit.atomicStrongCAS32(resultGPR, valueGPR, address);
-                break;
-            case Width64:
-                m_jit.atomicStrongCAS64(resultGPR, valueGPR, address);
-                break;
-            default:
-                RELEASE_ASSERT_NOT_REACHED();
-                break;
-            }
-            return;
-        };
-
-        if (valueWidth == accessWidth) {
-            consume(value);
-            consume(expected);
-            emitStrongCAS(expectedLocation.asGPR(), valueLocation.asGPR(), resultLocation.asGPR());
-            sanitizeAtomicResult(op, expected.type(), resultLocation.asGPR());
-            return result;
-        }
-
         ScratchScope<1, 0> scratches(*this);
         GPRReg scratchGPR = scratches.gpr(0);
 
         consume(value);
         consume(expected);
+
+        auto emitStrongCAS = [&](GPRReg expectedGPR, GPRReg valueGPR, GPRReg resultGPR) {
+            if (isX86_64() || isARM64_LSE()) {
+                m_jit.move(expectedGPR, resultGPR);
+                switch (accessWidth) {
+                case Width8:
+                    m_jit.atomicStrongCAS8(resultGPR, valueGPR, address);
+                    break;
+                case Width16:
+                    m_jit.atomicStrongCAS16(resultGPR, valueGPR, address);
+                    break;
+                case Width32:
+                    m_jit.atomicStrongCAS32(resultGPR, valueGPR, address);
+                    break;
+                case Width64:
+                    m_jit.atomicStrongCAS64(resultGPR, valueGPR, address);
+                    break;
+                default:
+                    RELEASE_ASSERT_NOT_REACHED();
+                    break;
+                }
+                return;
+            }
+
+            m_jit.move(expectedGPR, resultGPR);
+            switch (accessWidth) {
+            case Width8:
+                m_jit.atomicStrongCAS8(StatusCondition::Success, resultGPR, valueGPR, address, scratchGPR);
+                break;
+            case Width16:
+                m_jit.atomicStrongCAS16(StatusCondition::Success, resultGPR, valueGPR, address, scratchGPR);
+                break;
+            case Width32:
+                m_jit.atomicStrongCAS32(StatusCondition::Success, resultGPR, valueGPR, address, scratchGPR);
+                break;
+            case Width64:
+                m_jit.atomicStrongCAS64(StatusCondition::Success, resultGPR, valueGPR, address, scratchGPR);
+                break;
+            default:
+                RELEASE_ASSERT_NOT_REACHED();
+                break;
+            }
+        };
+
+        if (valueWidth == accessWidth) {
+            emitStrongCAS(expectedLocation.asGPR(), valueLocation.asGPR(), resultLocation.asGPR());
+            sanitizeAtomicResult(op, expected.type(), resultLocation.asGPR());
+            return result;
+        }
 
         sanitizeAtomicResult(op, expected.type(), expectedLocation.asGPR(), scratchGPR);
 
@@ -2437,28 +2456,32 @@ public:
         switch (accessWidth) {
         case Width8:
 #if CPU(ARM64)
-            m_jit.atomicXchgAdd8(resultLocation.asGPR(), address, resultLocation.asGPR());
+            if (isARM64_LSE())
+                m_jit.atomicXchgAdd8(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
             m_jit.atomicXchgAdd8(resultLocation.asGPR(), address);
 #endif
             break;
         case Width16:
 #if CPU(ARM64)
-            m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
+            if (isARM64_LSE())
+                m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
             m_jit.atomicXchgAdd32(resultLocation.asGPR(), address);
 #endif
             break;
         case Width32:
 #if CPU(ARM64)
-            m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
+            if (isARM64_LSE())
+                m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
             m_jit.atomicXchgAdd32(resultLocation.asGPR(), address);
 #endif
             break;
         case Width64:
 #if CPU(ARM64)
-            m_jit.atomicXchgAdd64(resultLocation.asGPR(), address, resultLocation.asGPR());
+            if (isARM64_LSE())
+                m_jit.atomicXchgAdd64(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
             m_jit.atomicXchgAdd64(resultLocation.asGPR(), address);
 #endif
