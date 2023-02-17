@@ -2468,7 +2468,7 @@ public:
         } else {
             ScratchScope<1, 0> scratches(*this);
             valueLocation = loadIfNecessary(value);
-            scratchGPR = scratches.gpr(1);
+            scratchGPR = scratches.gpr(0);
         }
         ASSERT(valueLocation.isRegister());
         consume(value);
