@@ -2151,28 +2151,32 @@ public:
         auto reloopLabel = m_jit.label();
         switch (accessWidth) {
         case Width8:
-            if (isX86_64())
-                m_jit.load8SignedExtendTo32(address, oldGPR);
-            else
-                m_jit.loadLinkAcq8(address, oldGPR);
+#if CPU(ARM64)
+            m_jit.loadLinkAcq8(address, oldGPR);
+#else
+            m_jit.load8SignedExtendTo32(address, oldGPR);
+#endif
             break;
         case Width16:
-            if (isX86_64())
-                m_jit.load16SignedExtendTo32(address, oldGPR);
-            else
-                m_jit.loadLinkAcq16(address, oldGPR);
+#if CPU(ARM64)
+            m_jit.loadLinkAcq16(address, oldGPR);
+#else
+            m_jit.load16SignedExtendTo32(address, oldGPR);
+#endif
             break;
         case Width32:
-            if (isX86_64())
-                m_jit.load32(address, oldGPR);
-            else
-                m_jit.loadLinkAcq32(address, oldGPR);
+#if CPU(ARM64)
+            m_jit.loadLinkAcq32(address, oldGPR);
+#else
+            m_jit.load32(address, oldGPR);
+#endif
             break;
         case Width64:
-            if (isX86_64())
-                m_jit.load64(address, oldGPR);
-            else
-                m_jit.loadLinkAcq64(address, oldGPR);
+#if CPU(ARM64)
+            m_jit.loadLinkAcq64(address, oldGPR);
+#else
+            m_jit.load64(address, oldGPR);
+#endif
             break;
         case Width128:
             RELEASE_ASSERT_NOT_REACHED();
