@@ -6248,13 +6248,50 @@ public:
         m_jit.move(TrustedImmPtr(bitwise_cast<uintptr_t>(taggedFunctionPtr)), m_scratchGPR);
         m_jit.call(m_scratchGPR, OperationPtrTag);
 
-        // Push return value(s) onto the stack
-        Vector<Value, 8> returnedValues;
-        returnValuesFromCall(returnedValues, *functionType->as<FunctionSignature>(), callInfo);
+        // FIXME: Probably we should make CCall more lower level, and we should bind the result to Value separately.
+        result = Value::fromTemp(returnType, m_parser->expressionStack().size());
+        Location resultLocation;
+        switch (returnType) {
+        case TypeKind::I32:
+        case TypeKind::I31ref:
+        case TypeKind::I64:
+        case TypeKind::Ref:
+        case TypeKind::RefNull:
+        case TypeKind::Arrayref:
+        case TypeKind::Structref:
+        case TypeKind::Funcref:
+        case TypeKind::Externref:
+        case TypeKind::Rec:
+        case TypeKind::Sub:
+        case TypeKind::Array:
+        case TypeKind::Struct:
+        case TypeKind::Func: {
+            resultLocation = Location::fromGPR(GPRInfo::returnValueGPR);
+            break;
+        }
+        case TypeKind::F32:
+        case TypeKind::F64:
+        case TypeKind::V128: {
+            resultLocation = Location::fromFPR(FPRInfo::returnValueFPR);
+            break;
+        }
+        case TypeKind::Void:
+            RELEASE_ASSERT_NOT_REACHED();
+            break;
+        }
 
-        // TODO: Handle returning multiple values from a C call
-        ASSERT(returnedValues.size() == 1);
-        result = returnedValues[0];
+        RegisterBinding& currentBinding = resultLocation.isGPR() ? m_gprBindings[resultLocation.asGPR()] : m_fprBindings[resultLocation.asFPR()];
+        if (currentBinding.isScratch()) {
+            // FIXME: This is a total hack and could cause problems. We assume scratch registers (allocated by a ScratchScope)
+            // will never be live across a call. So far, this is probably true, but it's fragile. Probably the fix here is to
+            // exclude all possible return value registers from ScratchScope so we can guarantee there's never any interference.
+            currentBinding = RegisterBinding::none();
+            if (resultLocation.isGPR())
+                m_gprSet.add(resultLocation.asGPR(), Width::Width64);
+            else
+                m_fprSet.add(resultLocation.asFPR(), Width::Width64);
+        }
+        bind(result, resultLocation);
     }
 
     PartialResult WARN_UNUSED_RETURN addCall(unsigned functionIndex, const TypeDefinition& signature, Vector<Value>& arguments, ResultList& results, CallType callType = CallType::Call)
