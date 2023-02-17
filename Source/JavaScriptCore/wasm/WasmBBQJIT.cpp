@@ -2132,6 +2132,97 @@ public:
         sanitizeAtomicResult(op, resultType, result, result);
     }
 
+    template<typename Functor>
+    void emitAtomicOpGeneric(ExtAtomicOpType op, Address address, GPRReg oldGPR, const Functor& functor)
+    {
+        Width accessWidth = this->accessWidth(op);
+        ScratchScope<1, 0> scratches(*this);
+        GPRReg scratchGPR = scratches.gpr(0);
+
+        // We need a CAS loop or a LL/SC loop. Using prepare/attempt jargon, we want:
+        //
+        // Block #reloop:
+        //     Prepare
+        //     Operation
+        //     Attempt
+        //   Successors: Then:#done, Else:#reloop
+        // Block #done:
+        //     Move oldValue, result
+
+        // Prepare
+        auto reloopLabel = m_jit.label();
+        switch (accessWidth) {
+        case Width8:
+            if (isX86_64())
+                m_jit.load8SignedExtendTo32(address, oldGPR);
+            else
+                m_jit.loadLinkAcq8(address, oldGPR);
+            break;
+        case Width16:
+            if (isX86_64())
+                m_jit.load16SignedExtendTo32(address, oldGPR);
+            else
+                m_jit.loadLinkAcq16(address, oldGPR);
+            break;
+        case Width32:
+            if (isX86_64())
+                m_jit.load32(address, oldGPR);
+            else
+                m_jit.loadLinkAcq32(address, oldGPR);
+            break;
+        case Width64:
+            if (isX86_64())
+                m_jit.load64(address, oldGPR);
+            else
+                m_jit.loadLinkAcq64(address, oldGPR);
+            break;
+        case Width128:
+            RELEASE_ASSERT_NOT_REACHED();
+        }
+
+        // Operation
+        functor(oldGPR, scratchGPR);
+
+#if CPU(X86_64)
+        switch (accessWidth) {
+        case Width8:
+            m_jit.branchAtomicStrongCAS8(StatusCondition::Failure, oldGPR, scratchGPR, address).linkTo(reloopLabel, &m_jit);
+            break;
+        case Width16:
+            m_jit.branchAtomicStrongCAS16(StatusCondition::Failure, oldGPR, scratchGPR, address).linkTo(reloopLabel, &m_jit);
+            break;
+        case Width32:
+            m_jit.branchAtomicStrongCAS32(StatusCondition::Failure, oldGPR, scratchGPR, address).linkTo(reloopLabel, &m_jit);
+            break;
+        case Width64:
+            m_jit.branchAtomicStrongCAS64(StatusCondition::Failure, oldGPR, scratchGPR, address).linkTo(reloopLabel, &m_jit);
+            break;
+        case Width128:
+            RELEASE_ASSERT_NOT_REACHED();
+        }
+#elif CPU(ARM64)
+        ScratchScope<1, 0> scratches2(*this);
+        GPRReg boolResultGPR = scratches2.gpr(0);
+        switch (accessWidth) {
+        case Width8:
+            m_jit.storeCondRel8(scratchGPR, address, boolResultGPR);
+            break;
+        case Width16:
+            m_jit.storeCondRel16(scratchGPR, address, boolResultGPR);
+            break;
+        case Width32:
+            m_jit.storeCondRel32(scratchGPR, address, boolResultGPR);
+            break;
+        case Width64:
+            m_jit.storeCondRel64(scratchGPR, address, boolResultGPR);
+            break;
+        case Width128:
+            RELEASE_ASSERT_NOT_REACHED();
+        }
+        m_jit.branchTest32(ResultCondition::NonZero, boolResultGPR).linkTo(reloopLabel, &m_jit);
+#endif
+    }
+
     Value WARN_UNUSED_RETURN emitAtomicLoadOp(ExtAtomicOpType loadOp, Type valueType, Location pointer, uint32_t offset)
     {
         ASSERT(pointer.isGPR());
@@ -2147,13 +2238,19 @@ public:
         Value result = topValue(valueType.kind);
         Location resultLocation = allocate(result);
 
-        m_jit.move(TrustedImm32(0), resultLocation.asGPR());
+        if (!(isARM64_LSE() || isX86_64())) {
+            emitAtomicOpGeneric(loadOp, address, resultLocation.asGPR(), [&](GPRReg oldGPR, GPRReg newGPR) {
+                m_jit.move(oldGPR, newGPR);
+            });
+            sanitizeAtomicResult(loadOp, valueType.kind, resultLocation.asGPR());
+            return result;
+        }
 
+        m_jit.move(TrustedImm32(0), resultLocation.asGPR());
         switch (loadOp) {
         case ExtAtomicOpType::I32AtomicLoad: {
 #if CPU(ARM64)
-            if (isARM64_LSE())
-                m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
+            m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
             m_jit.atomicXchgAdd32(resultLocation.asGPR(), address);
 #endif
@@ -2161,8 +2258,7 @@ public:
         }
         case ExtAtomicOpType::I64AtomicLoad: {
 #if CPU(ARM64)
-            if (isARM64_LSE())
-                m_jit.atomicXchgAdd64(resultLocation.asGPR(), address, resultLocation.asGPR());
+            m_jit.atomicXchgAdd64(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
             m_jit.atomicXchgAdd64(resultLocation.asGPR(), address);
 #endif
@@ -2170,8 +2266,7 @@ public:
         }
         case ExtAtomicOpType::I32AtomicLoad8U: {
 #if CPU(ARM64)
-            if (isARM64_LSE())
-                m_jit.atomicXchgAdd8(resultLocation.asGPR(), address, resultLocation.asGPR());
+            m_jit.atomicXchgAdd8(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
             m_jit.atomicXchgAdd8(resultLocation.asGPR(), address);
 #endif
@@ -2179,8 +2274,7 @@ public:
         }
         case ExtAtomicOpType::I32AtomicLoad16U: {
 #if CPU(ARM64)
-            if (isARM64_LSE())
-                m_jit.atomicXchgAdd16(resultLocation.asGPR(), address, resultLocation.asGPR());
+            m_jit.atomicXchgAdd16(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
             m_jit.atomicXchgAdd16(resultLocation.asGPR(), address);
 #endif
@@ -2188,8 +2282,7 @@ public:
         }
         case ExtAtomicOpType::I64AtomicLoad8U: {
 #if CPU(ARM64)
-            if (isARM64_LSE())
-                m_jit.atomicXchgAdd8(resultLocation.asGPR(), address, resultLocation.asGPR());
+            m_jit.atomicXchgAdd8(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
             m_jit.atomicXchgAdd8(resultLocation.asGPR(), address);
 #endif
@@ -2197,8 +2290,7 @@ public:
         }
         case ExtAtomicOpType::I64AtomicLoad16U: {
 #if CPU(ARM64)
-            if (isARM64_LSE())
-                m_jit.atomicXchgAdd16(resultLocation.asGPR(), address, resultLocation.asGPR());
+            m_jit.atomicXchgAdd16(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
             m_jit.atomicXchgAdd16(resultLocation.asGPR(), address);
 #endif
@@ -2206,8 +2298,7 @@ public:
         }
         case ExtAtomicOpType::I64AtomicLoad32U: {
 #if CPU(ARM64)
-            if (isARM64_LSE())
-                m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
+            m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
             m_jit.atomicXchgAdd32(resultLocation.asGPR(), address);
 #endif
