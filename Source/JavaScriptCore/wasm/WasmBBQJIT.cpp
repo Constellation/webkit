@@ -2466,6 +2466,7 @@ public:
             emitMoveConst(value, valueLocation);
             scratchGPR = scratches.gpr(1);
         } else {
+            ScratchScope<1, 0> scratches(*this);
             valueLocation = loadIfNecessary(value);
             scratchGPR = scratches.gpr(1);
         }
@@ -2735,24 +2736,24 @@ public:
             case ExtAtomicOpType::I32AtomicRmw16AddU:
             case ExtAtomicOpType::I32AtomicRmw8AddU:
             case ExtAtomicOpType::I32AtomicRmwAdd:
-                m_jit.add32(valueLocation.asGPR(), oldGPR, newGPR);
+                m_jit.add32(oldGPR, valueLocation.asGPR(), newGPR);
                 break;
             case ExtAtomicOpType::I64AtomicRmw8AddU:
             case ExtAtomicOpType::I64AtomicRmw16AddU:
             case ExtAtomicOpType::I64AtomicRmw32AddU:
             case ExtAtomicOpType::I64AtomicRmwAdd:
-                m_jit.add64(valueLocation.asGPR(), oldGPR, newGPR);
+                m_jit.add64(oldGPR, valueLocation.asGPR(), newGPR);
                 break;
             case ExtAtomicOpType::I32AtomicRmw8SubU:
             case ExtAtomicOpType::I32AtomicRmw16SubU:
             case ExtAtomicOpType::I32AtomicRmwSub:
-                m_jit.sub32(oldGPR, valueLocation.asGPR(), oldGPR, newGPR);
+                m_jit.sub32(oldGPR, valueLocation.asGPR(), newGPR);
                 break;
             case ExtAtomicOpType::I64AtomicRmw8SubU:
             case ExtAtomicOpType::I64AtomicRmw16SubU:
             case ExtAtomicOpType::I64AtomicRmw32SubU:
             case ExtAtomicOpType::I64AtomicRmwSub:
-                m_jit.sub64(oldGPR, valueLocation.asGPR(), oldGPR, newGPR);
+                m_jit.sub64(oldGPR, valueLocation.asGPR(), newGPR);
                 break;
             case ExtAtomicOpType::I32AtomicRmw8AndU:
             case ExtAtomicOpType::I32AtomicRmw16AndU:
