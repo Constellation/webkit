@@ -2458,13 +2458,17 @@ public:
         Value result = topValue(valueType.kind);
         Location resultLocation = allocate(result);
 
+        GPRReg scratchGPR = InvalidGPRReg;
         Location valueLocation;
         if (value.isConst()) {
-            ScratchScope<1, 0> scratches(*this);
+            ScratchScope<2, 0> scratches(*this);
             valueLocation = Location::fromGPR(scratches.gpr(0));
             emitMoveConst(value, valueLocation);
-        } else
+            scratchGPR = scratches.gpr(1);
+        } else {
             valueLocation = loadIfNecessary(value);
+            scratchGPR = scratches.gpr(1);
+        }
         ASSERT(valueLocation.isRegister());
         consume(value);
 
@@ -2526,9 +2530,6 @@ public:
         case ExtAtomicOpType::I64AtomicRmw32SubU:
         case ExtAtomicOpType::I64AtomicRmwSub:
             if (isX86() || isARM64_LSE()) {
-                ScratchScope<1, 0> scratches(*this);
-                GPRReg scratchGPR = scratches.gpr(0);
-
                 m_jit.move(valueLocation.asGPR(), scratchGPR);
                 if (valueType.isI64())
                     m_jit.neg64(scratchGPR);
@@ -2585,9 +2586,6 @@ public:
         case ExtAtomicOpType::I64AtomicRmwAnd:
 #if CPU(ARM64)
             if (isARM64_LSE()) {
-                ScratchScope<1, 0> scratches(*this);
-                GPRReg scratchGPR = scratches.gpr(0);
-
                 m_jit.move(valueLocation.asGPR(), scratchGPR);
                 if (valueType.isI64())
                     m_jit.not64(scratchGPR);
@@ -2732,6 +2730,78 @@ public:
             break;
         }
 
+        emitAtomicOpGeneric(op, address, resultLocation.asGPR(), scratchGPR, [&](GPRReg oldGPR, GPRReg newGPR) {
+            switch (op) {
+            case ExtAtomicOpType::I32AtomicRmw16AddU:
+            case ExtAtomicOpType::I32AtomicRmw8AddU:
+            case ExtAtomicOpType::I32AtomicRmwAdd:
+                m_jit.add32(valueLocation.asGPR(), oldGPR, newGPR);
+                break;
+            case ExtAtomicOpType::I64AtomicRmw8AddU:
+            case ExtAtomicOpType::I64AtomicRmw16AddU:
+            case ExtAtomicOpType::I64AtomicRmw32AddU:
+            case ExtAtomicOpType::I64AtomicRmwAdd:
+                m_jit.add64(valueLocation.asGPR(), oldGPR, newGPR);
+                break;
+            case ExtAtomicOpType::I32AtomicRmw8SubU:
+            case ExtAtomicOpType::I32AtomicRmw16SubU:
+            case ExtAtomicOpType::I32AtomicRmwSub:
+                m_jit.sub32(oldGPR, valueLocation.asGPR(), oldGPR, newGPR);
+                break;
+            case ExtAtomicOpType::I64AtomicRmw8SubU:
+            case ExtAtomicOpType::I64AtomicRmw16SubU:
+            case ExtAtomicOpType::I64AtomicRmw32SubU:
+            case ExtAtomicOpType::I64AtomicRmwSub:
+                m_jit.sub64(oldGPR, valueLocation.asGPR(), oldGPR, newGPR);
+                break;
+            case ExtAtomicOpType::I32AtomicRmw8AndU:
+            case ExtAtomicOpType::I32AtomicRmw16AndU:
+            case ExtAtomicOpType::I32AtomicRmwAnd:
+                m_jit.and32(oldGPR, valueLocation.asGPR(), newGPR);
+                break;
+            case ExtAtomicOpType::I64AtomicRmw8AndU:
+            case ExtAtomicOpType::I64AtomicRmw16AndU:
+            case ExtAtomicOpType::I64AtomicRmw32AndU:
+            case ExtAtomicOpType::I64AtomicRmwAnd:
+                m_jit.and64(oldGPR, valueLocation.asGPR(), newGPR);
+                break;
+            case ExtAtomicOpType::I32AtomicRmw8OrU:
+            case ExtAtomicOpType::I32AtomicRmw16OrU:
+            case ExtAtomicOpType::I32AtomicRmwOr:
+                m_jit.or32(oldGPR, valueLocation.asGPR(), newGPR);
+                break;
+            case ExtAtomicOpType::I64AtomicRmw8OrU:
+            case ExtAtomicOpType::I64AtomicRmw16OrU:
+            case ExtAtomicOpType::I64AtomicRmw32OrU:
+            case ExtAtomicOpType::I64AtomicRmwOr:
+                m_jit.or64(oldGPR, valueLocation.asGPR(), newGPR);
+                break;
+            case ExtAtomicOpType::I32AtomicRmw8XorU:
+            case ExtAtomicOpType::I32AtomicRmw16XorU:
+            case ExtAtomicOpType::I32AtomicRmwXor:
+                m_jit.xor32(oldGPR, valueLocation.asGPR(), newGPR);
+                break;
+            case ExtAtomicOpType::I64AtomicRmw8XorU:
+            case ExtAtomicOpType::I64AtomicRmw16XorU:
+            case ExtAtomicOpType::I64AtomicRmw32XorU:
+            case ExtAtomicOpType::I64AtomicRmwXor:
+                m_jit.xor64(oldGPR, valueLocation.asGPR(), newGPR);
+                break;
+            case ExtAtomicOpType::I32AtomicRmw8XchgU:
+            case ExtAtomicOpType::I32AtomicRmw16XchgU:
+            case ExtAtomicOpType::I32AtomicRmwXchg:
+            case ExtAtomicOpType::I64AtomicRmw8XchgU:
+            case ExtAtomicOpType::I64AtomicRmw16XchgU:
+            case ExtAtomicOpType::I64AtomicRmw32XchgU:
+            case ExtAtomicOpType::I64AtomicRmwXchg:
+                emitSanitizeAtomicResult(op, valueType.kind, oldGPR, newGPR);
+                break;
+            default:
+                RELEASE_ASSERT_NOT_REACHED();
+                break;
+            }
+        });
+        emitSanitizeAtomicResult(op, valueType.kind, resultLocation.asGPR());
         return result;
     }
 
