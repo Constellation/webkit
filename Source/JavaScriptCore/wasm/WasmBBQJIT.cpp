@@ -2795,7 +2795,7 @@ public:
             case ExtAtomicOpType::I64AtomicRmw16XchgU:
             case ExtAtomicOpType::I64AtomicRmw32XchgU:
             case ExtAtomicOpType::I64AtomicRmwXchg:
-                emitSanitizeAtomicResult(op, valueType.kind, oldGPR, newGPR);
+                emitSanitizeAtomicResult(op, valueType.kind, valueLocation.asGPR(), newGPR);
                 break;
             default:
                 RELEASE_ASSERT_NOT_REACHED();
