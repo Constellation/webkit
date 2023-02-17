@@ -2875,43 +2875,45 @@ public:
         auto done = m_jit.jump();
 
         failure.link(&m_jit);
-        m_jit.move(TrustedImm32(0), resultLocation.asGPR());
-        switch (accessWidth) {
-        case Width8:
+        if (isARM64_LSE() || isX86_64()) {
+            m_jit.move(TrustedImm32(0), resultLocation.asGPR());
+            switch (accessWidth) {
+            case Width8:
 #if CPU(ARM64)
-            if (isARM64_LSE())
                 m_jit.atomicXchgAdd8(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
-            m_jit.atomicXchgAdd8(resultLocation.asGPR(), address);
+                m_jit.atomicXchgAdd8(resultLocation.asGPR(), address);
 #endif
-            break;
-        case Width16:
+                break;
+            case Width16:
 #if CPU(ARM64)
-            if (isARM64_LSE())
                 m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
-            m_jit.atomicXchgAdd32(resultLocation.asGPR(), address);
+                m_jit.atomicXchgAdd32(resultLocation.asGPR(), address);
 #endif
-            break;
-        case Width32:
+                break;
+            case Width32:
 #if CPU(ARM64)
-            if (isARM64_LSE())
                 m_jit.atomicXchgAdd32(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
-            m_jit.atomicXchgAdd32(resultLocation.asGPR(), address);
+                m_jit.atomicXchgAdd32(resultLocation.asGPR(), address);
 #endif
-            break;
-        case Width64:
+                break;
+            case Width64:
 #if CPU(ARM64)
-            if (isARM64_LSE())
                 m_jit.atomicXchgAdd64(resultLocation.asGPR(), address, resultLocation.asGPR());
 #else
-            m_jit.atomicXchgAdd64(resultLocation.asGPR(), address);
+                m_jit.atomicXchgAdd64(resultLocation.asGPR(), address);
 #endif
-            break;
-        default:
-            RELEASE_ASSERT_NOT_REACHED();
-            break;
+                break;
+            default:
+                RELEASE_ASSERT_NOT_REACHED();
+                break;
+            }
+        } else {
+            emitAtomicOpGeneric(op, address, resultLocation.asGPR(), scratchGPR, [&](GPRReg oldGPR, GPRReg newGPR) {
+                emitSanitizeAtomicResult(op, canonicalWidth(accessWidth) == Width64 ? TypeKind::I64 : TypeKind::I32, oldGPR, newGPR);
+            });
         }
 
         done.link(&m_jit);
