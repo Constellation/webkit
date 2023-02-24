@@ -963,6 +963,9 @@ public:
         {
             m_touchedLocals.add(local);
         }
+
+        Value exception() const { return m_exception; }
+
     private:
         friend class BBQJIT;
 
@@ -976,6 +979,7 @@ public:
         MacroAssembler::Jump m_ifBranch;
         LocalOrTempIndex m_enclosedHeight; // Height of enclosed expression stack, used as the base for all temporary locations.
         BitVector m_touchedLocals; // Number of locals allocated to registers in this block.
+        Value m_exception { };
     };
 
     friend struct ControlData;
@@ -5942,8 +5946,36 @@ public:
     PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&) BBQ_STUB
     PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&) BBQ_STUB
     PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN addThrow(unsigned, Vector<ExpressionType>&, Stack&) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN addRethrow(unsigned, ControlType&) BBQ_STUB
+
+    PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Vector<ExpressionType>& arguments, Stack&)
+    {
+        Checked<int32_t> calleeStackSize = WTF::roundUpToMultipleOf(stackAlignmentBytes(), arguments.size() * sizeof(uint64_t));
+        m_maxCalleeStackSize = std::max<int>(calleeStackSize, m_maxCalleeStackSize);
+
+        for (unsigned i = 0; i < arguments.size(); i++) {
+            Location stackLocation = Location::fromStackArgument(i * sizeof(uint64_t));
+            Value argument = arguments[i];
+            if (argument.type() == TypeKind::V128)
+                emitMove(Value::fromF64(0), stackLocation);
+            else
+                emitMove(argument, stackLocation);
+            consume(argument);
+        }
+        flushRegisters();
+        m_jit.move(GPRInfo::wasmContextInstancePointer, GPRInfo::argumentGPR0);
+        emitThrowImpl(m_jit, exceptionIndex);
+
+        return { };
+    }
+
+    PartialResult WARN_UNUSED_RETURN addRethrow(unsigned, ControlType& data)
+    {
+        flushRegisters();
+        emitMove(data.exception(), Location::fromGPR(GPRInfo::argumentGPR1));
+        m_jit.move(GPRInfo::wasmContextInstancePointer, GPRInfo::argumentGPR0);
+        emitRethrowImpl(m_jit);
+        return { };
+    }
 
     PartialResult WARN_UNUSED_RETURN addReturn(const ControlData& data, const Stack& returnValues)
     {
