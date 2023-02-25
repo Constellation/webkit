@@ -6002,9 +6002,48 @@ public:
         return { };
     }
 
+    void emitCatchPrologue()
+    {
+        JIT_COMMENT(m_jit, "shared catch prologue");
+        m_jit.loadPtr(CCallHelpers::addressFor(CallFrameSlot::callee), GPRInfo::regT0);
+        m_jit.move(GPRInfo::regT0, GPRInfo::regT3);
+        m_jit.and64(CCallHelpers::TrustedImm64(JSValue::WasmMask), GPRInfo::regT3);
+        auto isWasmCallee = m_jit.branch64(CCallHelpers::Equal, GPRInfo::regT3, CCallHelpers::TrustedImm32(JSValue::WasmTag));
+        CCallHelpers::JumpList doneCases;
+        {
+            // FIXME: Handling precise allocations in WasmB3IRGenerator catch entrypoints might be unnecessary
+            // https://bugs.webkit.org/show_bug.cgi?id=231213
+            auto preciseAllocationCase = m_jit.branchTestPtr(CCallHelpers::NonZero, GPRInfo::regT0, CCallHelpers::TrustedImm32(PreciseAllocation::halfAlignment));
+            m_jit.andPtr(CCallHelpers::TrustedImmPtr(MarkedBlock::blockMask), GPRInfo::regT0);
+            m_jit.loadPtr(CCallHelpers::Address(GPRInfo::regT0, MarkedBlock::offsetOfHeader + MarkedBlock::Header::offsetOfVM()), GPRInfo::regT0);
+            doneCases.append(m_jit.jump());
+
+            preciseAllocationCase.link(&m_jit);
+            m_jit.loadPtr(CCallHelpers::Address(GPRInfo::regT0, PreciseAllocation::offsetOfWeakSet() + WeakSet::offsetOfVM() - PreciseAllocation::headerSize()), GPRInfo::regT0);
+            doneCases.append(m_jit.jump());
+        }
+
+        isWasmCallee.link(&m_jit);
+        m_jit.loadPtr(CCallHelpers::addressFor(CallFrameSlot::codeBlock), GPRInfo::regT0);
+        m_jit.loadPtr(CCallHelpers::Address(GPRInfo::regT0, Instance::offsetOfVM()), GPRInfo::regT0);
+
+        doneCases.link(&m_jit);
+
+        JIT_COMMENT(m_jit, "restore callee saves from vm entry buffer");
+        m_jit.restoreCalleeSavesFromVMEntryFrameCalleeSavesBuffer(GPRInfo::regT0, GPRInfo::regT3);
+
+        m_jit.loadPtr(CCallHelpers::Address(GPRInfo::regT0, VM::callFrameForCatchOffset()), GPRInfo::callFrameRegister);
+        m_jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::Address(GPRInfo::regT0, VM::callFrameForCatchOffset()));
+
+        JIT_COMMENT(m_jit, "Configure wasm context instance");
+        m_jit.loadPtr(CCallHelpers::Address(GPRInfo::callFrameRegister, CallFrameSlot::codeBlock * sizeof(Register)), GPRInfo::wasmContextInstancePointer);
+        // jit.addPtr(CCallHelpers::TrustedImm32(-code.frameSize()), GPRInfo::callFrameRegister, CCallHelpers::stackPointerRegister);
+    }
+
     void emitCatchAllImpl(ControlData& dataCatch)
     {
         m_catchEntrypoints.append(m_jit.label());
+        emitCatchPrologue();
         restoreWebAssemblyGlobalState();
         m_jit.prepareWasmCallOperation(GPRInfo::wasmContextInstancePointer);
         m_jit.setupArguments<decltype(operationWasmRetrieveAndClearExceptionIfCatchable)>(GPRInfo::wasmContextInstancePointer);
@@ -6018,6 +6057,7 @@ public:
     void emitCatchImpl(ControlData& dataCatch, const TypeDefinition& exceptionSignature, ResultList& results)
     {
         m_catchEntrypoints.append(m_jit.label());
+        emitCatchPrologue();
         restoreWebAssemblyGlobalState();
         m_jit.prepareWasmCallOperation(GPRInfo::wasmContextInstancePointer);
         m_jit.setupArguments<decltype(operationWasmRetrieveAndClearExceptionIfCatchable)>(GPRInfo::wasmContextInstancePointer);
@@ -6215,8 +6255,10 @@ public:
     {
         ++m_callSiteIndex;
         bool mayHaveExceptionHandlers = !m_hasExceptionHandlers || m_hasExceptionHandlers.value();
-        if (mayHaveExceptionHandlers)
+        if (mayHaveExceptionHandlers) {
             m_jit.store32(CCallHelpers::TrustedImm32(m_callSiteIndex), CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
+            flushRegisters();
+        }
     }
 
     PartialResult WARN_UNUSED_RETURN addReturn(const ControlData& data, const Stack& returnValues)
