@@ -5953,8 +5953,74 @@ public:
         return { };
     }
 
-    PartialResult WARN_UNUSED_RETURN addCatch(unsigned, const TypeDefinition&, Stack&, ControlType&, ResultList&)
+    void finalizePreviousBlockForCatch(ControlType& data, Stack& expressionStack)
     {
+        if (!ControlType::isAnyCatch(entry)) {
+        } else {
+            checkConsistency();
+            VirtualRegister dst = virtualRegisterForLocal(entry.stackSize());
+            for (TypedExpression& value : stack) {
+                WasmMov::emit(this, dst, value);
+                value = TypedExpression { value.type(), dst };
+                dst -= 1;
+            }
+        }
+        WasmJmp::emit(this, entry.m_continuation->bind(this));
+
+        if (!ControlType::isAnyCatch(data)) {
+            materializeConstantsAndLocals(stack);
+        }
+
+        data.endBlock(*this, data, expressionStack, false, true);
+        ControlData dataElse(*this, BlockType::Block, data.signature(), data.enclosedHeight());
+        data.linkJumps(&m_jit);
+        dataElse.addBranch(m_jit.jump());
+        data.linkIfBranch(&m_jit); // Link specifically the conditional branch of the preceding If
+        LOG_DEDENT();
+        LOG_INSTRUCTION("Catch");
+        LOG_INDENT();
+
+        // We don't care at this point about the values live at the end of the previous control block,
+        // we just need the right number of temps for our arguments on the top of the stack.
+        expressionStack.clear();
+        while (expressionStack.size() < data.signature()->as<FunctionSignature>()->argumentCount()) {
+            Type type = data.signature()->as<FunctionSignature>()->argumentType(expressionStack.size());
+            expressionStack.constructAndAppend(type, Value::fromTemp(type.kind, dataElse.enclosedHeight() + expressionStack.size()));
+        }
+
+        dataElse.startBlock(*this, expressionStack);
+        data = dataElse;
+        return { };
+    }
+
+    PartialResult WARN_UNUSED_RETURN addCatch(unsigned exceptionIndex, const TypeDefinition& exceptionSignature, Stack& expressionStack, ControlType& data, ResultList& results)
+    {
+        if (ControlType::isAnyCatch(entry)) {
+            // This is super unfortunate, but catch block has implicit stack slot at the bottome of the block because it needs to keep exception (which can be used via rethrow).
+            // So, at the end of the block, we adjust temps off by sizeof-reference so that its stack layout becomes expected state.
+            adjustTempsInCatch();
+        }
+        data.endBlock(*this, data, expressionStack, false, true);
+        ControlData dataCatch(*this, BlockType::Catch, data.signature(), data.enclosedHeight());
+        data.linkJumps(&m_jit);
+        dataCatch.addBranch(m_jit.jump());
+        LOG_DEDENT();
+        LOG_INSTRUCTION("Catch");
+        LOG_INDENT();
+
+        // We don't care at this point about the values live at the end of the previous control block,
+        // we just need the right number of temps for our arguments on the top of the stack.
+        expressionStack.clear();
+        while (expressionStack.size() < data.signature()->as<FunctionSignature>()->argumentCount()) {
+            Type type = data.signature()->as<FunctionSignature>()->argumentType(expressionStack.size());
+            expressionStack.constructAndAppend(type, Value::fromTemp(type.kind, dataElse.enclosedHeight() + expressionStack.size()));
+        }
+
+        dataElse.startBlock(*this, expressionStack);
+        data = dataElse;
+        return { };
+
+        finalizePreviousBlockForCatch(preCatchStack, data);
     }
 
     PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned, const TypeDefinition&, ControlType&, ResultList&)
@@ -6129,8 +6195,6 @@ public:
                 entry.enclosedExpressionStack.constructAndAppend(type, Value::fromTemp(type.kind, i + entryData.enclosedHeight()));
             }
         }
-        if (ControlType::isTry(entryData) || ControlType::isAnyCatch(entryData))
-            --m_tryCatchDepth;
 
         switch (entryData.blockType()) {
         case BlockType::TopLevel:
@@ -6149,6 +6213,16 @@ public:
             entryData.convertLoopToBlock();
             entryData.endBlock(*this, entryData, entry.enclosedExpressionStack, false, true);
             entryData.linkJumpsTo(entryData.loopLabel(), &m_jit);
+            break;
+        case BlockType::Try:
+            --m_tryCatchDepth;
+            entryData.endBlock(*this, entryData, entry.enclosedExpressionStack, false, true);
+            entryData.linkJumps(&m_jit);
+            break;
+        case BlockType::Catch:
+            --m_tryCatchDepth;
+            entryData.endBlock(*this, entryData, entry.enclosedExpressionStack, false, true);
+            entryData.linkJumps(&m_jit);
             break;
         default:
             entryData.endBlock(*this, entryData, entry.enclosedExpressionStack, false, true);
