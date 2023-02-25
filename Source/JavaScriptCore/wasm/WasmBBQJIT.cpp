@@ -6004,6 +6004,7 @@ public:
 
     void emitCatchAllImpl(ControlData& dataCatch)
     {
+        m_catchEntrypoints.append(m_jit.label());
         restoreWebAssemblyGlobalState();
         m_jit.prepareWasmCallOperation(GPRInfo::wasmContextInstancePointer);
         m_jit.setupArguments<decltype(operationWasmRetrieveAndClearExceptionIfCatchable)>(GPRInfo::wasmContextInstancePointer);
@@ -6014,8 +6015,9 @@ public:
         dataCatch.startBlock(*this, emptyStack);
     }
 
-    void emitCatchImpl(ControlData& dataCatch, unsigned, const TypeDefinition& exceptionSignature, ResultList& results)
+    void emitCatchImpl(ControlData& dataCatch, const TypeDefinition& exceptionSignature, ResultList& results)
     {
+        m_catchEntrypoints.append(m_jit.label());
         restoreWebAssemblyGlobalState();
         m_jit.prepareWasmCallOperation(GPRInfo::wasmContextInstancePointer);
         m_jit.setupArguments<decltype(operationWasmRetrieveAndClearExceptionIfCatchable)>(GPRInfo::wasmContextInstancePointer);
@@ -6089,7 +6091,7 @@ public:
         LOG_DEDENT();
         LOG_INSTRUCTION("Catch");
         LOG_INDENT();
-        emitCatchImpl(dataCatch, exceptionIndex, exceptionSignature, results);
+        emitCatchImpl(dataCatch, exceptionSignature, results);
         data = WTFMove(dataCatch);
         m_exceptionHandlers.append({ HandlerType::Catch, data.tryStart(), data.tryEnd(), 0, m_tryCatchDepth, exceptionIndex });
         return { };
@@ -6110,7 +6112,7 @@ public:
         LOG_DEDENT();
         LOG_INSTRUCTION("Catch");
         LOG_INDENT();
-        emitCatchImpl(dataCatch, exceptionIndex, exceptionSignature, results);
+        emitCatchImpl(dataCatch, exceptionSignature, results);
         data = WTFMove(dataCatch);
         m_exceptionHandlers.append({ HandlerType::Catch, data.tryStart(), data.tryEnd(), 0, m_tryCatchDepth, exceptionIndex });
         return { };
@@ -7835,6 +7837,11 @@ public:
         return WTFMove(m_exceptionHandlers);
     }
 
+    Vector<CCallHelpers::Label>&& takeCatchEntrypoints()
+    {
+        return WTFMove(m_catchEntrypoints);
+    }
+
 private:
     bool isScratch(Location loc)
     {
@@ -8734,6 +8741,7 @@ private:
 
     std::array<JumpList, numberOfExceptionTypes> m_exceptions { };
     Vector<UnlinkedHandlerInfo> m_exceptionHandlers;
+    Vector<CCallHelpers::Label> m_catchEntrypoints;
 };
 
 Expected<std::unique_ptr<InternalFunction>, String> parseAndCompileBBQ(CompilationContext& compilationContext, Callee& callee, const FunctionData& function, const TypeDefinition& signature, Vector<UnlinkedWasmToWasmCall>& unlinkedWasmToWasmCalls, const ModuleInformation& info, MemoryMode mode, uint32_t functionIndex, std::optional<bool> hasExceptionHandlers, TierUpCount* tierUp)
@@ -8750,6 +8758,7 @@ Expected<std::unique_ptr<InternalFunction>, String> parseAndCompileBBQ(Compilati
     WASM_FAIL_IF_HELPER_FAILS(parser.parse());
 
     result->exceptionHandlers = irGenerator.takeExceptionHandlers();
+    compilationContext.catchEntrypoints = irGenerator.takeCatchEntrypoints();
 
     return result;
 }
