@@ -753,14 +753,14 @@ public:
             case TypeKind::F32:
             case TypeKind::F64: {
                 if (remainingFPRs.isEmpty())
-                    return generator.canonicalSlot(Value::fromTemp(type, m_enclosedHeight + i));
+                    return generator.canonicalSlot(Value::fromTemp(type, enclosedHeight() + i));
                 auto reg = *remainingFPRs.begin();
                 remainingFPRs.remove(reg);
                 return Location::fromFPR(reg.fpr());
             }
             default:
                 if (remainingGPRs.isEmpty())
-                    return generator.canonicalSlot(Value::fromTemp(type, m_enclosedHeight + i));
+                    return generator.canonicalSlot(Value::fromTemp(type, enclosedHeight() + i));
                 auto reg = *remainingGPRs.begin();
                 remainingGPRs.remove(reg);
                 return Location::fromGPR(reg.gpr());
@@ -791,7 +791,7 @@ public:
                 // If this is the end of the enclosing wasm block, we know we won't need them again, so this can be skipped.
                 if (value.isConst() && (resultIndex < 0 || !endOfWasmBlock)) {
                     Value constant = value;
-                    value = Value::fromTemp(value.type(), static_cast<LocalOrTempIndex>(m_enclosedHeight + i));
+                    value = Value::fromTemp(value.type(), static_cast<LocalOrTempIndex>(enclosedHeight() + i));
                     Location slot = generator.locationOf(value);
                     generator.emitMoveConst(constant, slot);
                 }
@@ -832,7 +832,7 @@ public:
             for (unsigned i = 0; i < targetArity; ++i) {
                 Value& value = expressionStack[i + offset].value();
                 if (value.isConst())
-                    value = Value::fromTemp(value.type(), static_cast<LocalOrTempIndex>(m_enclosedHeight + i));
+                    value = Value::fromTemp(value.type(), static_cast<LocalOrTempIndex>(enclosedHeight() + i));
             }
         }
 
@@ -5734,9 +5734,9 @@ public:
             MacroAssembler::Call call = jit.nearCall();
             jit.jump(tierUpResume);
 
-            bool isSIMD = generator.m_isSIMD;
+            bool usesSIMD = generator.m_usesSIMD;
             jit.addLinkTask([=] (LinkBuffer& linkBuffer) {
-                MacroAssembler::repatchNearCall(linkBuffer.locationOfNearCall<NoPtrTag>(call), CodeLocationLabel<JITThunkPtrTag>(Thunks::singleton().stub(triggerOMGEntryTierUpThunkGenerator(isSIMD)).code()));
+                MacroAssembler::repatchNearCall(linkBuffer.locationOfNearCall<NoPtrTag>(call), CodeLocationLabel<JITThunkPtrTag>(Thunks::singleton().stub(triggerOMGEntryTierUpThunkGenerator(usesSIMD)).code()));
             });
         });
     }
@@ -5939,13 +5939,43 @@ public:
         return { };
     }
 
-    PartialResult WARN_UNUSED_RETURN addTry(BlockSignature, Stack&, ControlType&, Stack&) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN addCatch(unsigned, const TypeDefinition&, Stack&, ControlType&, ResultList&) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned, const TypeDefinition&, ControlType&, ResultList&) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN addCatchAll(Stack&, ControlType&) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&) BBQ_STUB
-    PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&) BBQ_STUB
+    PartialResult WARN_UNUSED_RETURN addTry(BlockSignature signature, Stack& enclosingStack, ControlType& result, Stack& newStack)
+    {
+        m_usesExceptions = true;
+        ++m_tryCatchDepth;
+        result = ControlData(*this, BlockType::Try, signature, currentControlData().enclosedHeight() + enclosingStack.size() - signature->as<FunctionSignature>()->argumentCount());
+        currentControlData().endBlock(*this, result, enclosingStack, true, false);
+
+        LOG_INSTRUCTION("Try", *signature);
+        LOG_INDENT();
+        splitStack(signature, enclosingStack, newStack);
+        result.startBlock(*this, newStack);
+        return { };
+    }
+
+    PartialResult WARN_UNUSED_RETURN addCatch(unsigned, const TypeDefinition&, Stack&, ControlType&, ResultList&)
+    {
+    }
+
+    PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned, const TypeDefinition&, ControlType&, ResultList&)
+    {
+    }
+
+    PartialResult WARN_UNUSED_RETURN addCatchAll(Stack&, ControlType&)
+    {
+    }
+
+    PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&)
+    {
+    }
+
+    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&)
+    {
+    }
+
+    PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&)
+    {
+    }
 
     PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Vector<ExpressionType>& arguments, Stack&)
     {
@@ -6091,15 +6121,17 @@ public:
         ControlData& entryData = entry.controlData;
 
         unsigned returnCount = entryData.signature()->as<FunctionSignature>()->returnCount();
-        unsigned offset = stack.size() - returnCount;
         for (unsigned i = 0; i < returnCount; ++i) {
             if (i < stack.size())
-                entry.enclosedExpressionStack.append(stack[i + offset]);
+                entry.enclosedExpressionStack.append(stack[i]);
             else {
                 Type type = entryData.signature()->as<FunctionSignature>()->returnType(i);
                 entry.enclosedExpressionStack.constructAndAppend(type, Value::fromTemp(type.kind, i + entryData.enclosedHeight()));
             }
         }
+        if (ControlType::isTry(entryData) || ControlType::isAnyCatch(entryData))
+            --m_tryCatchDepth;
+
         switch (entryData.blockType()) {
         case BlockType::TopLevel:
             entryData.endBlock(*this, entryData, entry.enclosedExpressionStack, false, true);
@@ -6532,7 +6564,7 @@ public:
 
     void notifyFunctionUsesSIMD()
     {
-        m_isSIMD = true;
+        m_usesSIMD = true;
     }
 
     PartialResult WARN_UNUSED_RETURN addSIMDLoad(ExpressionType pointer, uint32_t uoffset, ExpressionType& result)
@@ -8449,7 +8481,9 @@ private:
     int m_localStorage { 0 }; // Stack offset pointing to the local with the lowest address.
     constexpr static int tempSlotSize { 16 }; // Size of the stack slot for a stack temporary. Currently the size of the largest possible temporary (a v128).
     int m_blockCount;
-    bool m_isSIMD { false }; // Whether the function we are compiling uses SIMD instructions or not.
+    bool m_usesSIMD { false }; // Whether the function we are compiling uses SIMD instructions or not.
+    bool m_usesExceptions { false };
+    Checked<unsigned> m_tryCatchDepth { 0 };
 
     RegisterID m_scratchGPR { GPRInfo::nonPreservedNonArgumentGPR0 }; // Scratch registers to hold temporaries in operations.
     FPRegisterID m_scratchFPR { FPRInfo::nonPreservedNonArgumentFPR0 };
