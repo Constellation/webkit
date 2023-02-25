@@ -5970,7 +5970,7 @@ public:
         return { };
     }
 
-    void emitCatchAllImpl(ControlData& dataCatch, unsigned)
+    void emitCatchAllImpl(ControlData& dataCatch)
     {
         restoreWebAssemblyGlobalState();
         m_jit.prepareWasmCallOperation(GPRInfo::wasmContextInstancePointer);
@@ -6079,12 +6079,12 @@ public:
         LOG_DEDENT();
         LOG_INSTRUCTION("CatchAll");
         LOG_INDENT();
-        emitCatchAllImpl(dataCatch, exceptionIndex);
+        emitCatchAllImpl(dataCatch);
         data = WTFMove(dataCatch);
         return { };
     }
 
-    PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&)
+    PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType& data)
     {
         m_usesExceptions = true;
         ControlData dataCatch(*this, BlockType::Catch, data.signature(), data.enclosedHeight());
@@ -6093,7 +6093,7 @@ public:
         LOG_DEDENT();
         LOG_INSTRUCTION("CatchAll");
         LOG_INDENT();
-        emitCatchAllImpl(dataCatch, exceptionIndex);
+        emitCatchAllImpl(dataCatch);
         data = WTFMove(dataCatch);
         return { };
     }
