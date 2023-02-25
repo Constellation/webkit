@@ -735,36 +735,40 @@ public:
                     m_results.append(Location::fromArgumentLocation(wasmCallInfo.results[i]));
                 return;
             }
+
+            // This function is intentionally not using implicitSlot since arguments and results should not include implicit slot.
+            auto allocateArgumentOrResult = [&](BBQJIT& generator, TypeKind type, unsigned i, RegisterSet& remainingGPRs, RegisterSet& remainingFPRs) -> Location {
+                switch (type) {
+                case TypeKind::V128:
+                case TypeKind::F32:
+                case TypeKind::F64: {
+                    if (remainingFPRs.isEmpty())
+                        return generator.canonicalSlot(Value::fromTemp(type, this->enclosedHeight() + i));
+                    auto reg = *remainingFPRs.begin();
+                    remainingFPRs.remove(reg);
+                    return Location::fromFPR(reg.fpr());
+                }
+                default:
+                    if (remainingGPRs.isEmpty())
+                        return generator.canonicalSlot(Value::fromTemp(type, this->enclosedHeight() + i));
+                    auto reg = *remainingGPRs.begin();
+                    remainingGPRs.remove(reg);
+                    return Location::fromGPR(reg.gpr());
+                }
+            };
+
             const auto& functionSignature = signature->as<FunctionSignature>();
             auto gprSetCopy = generator.m_validGPRs;
             auto fprSetCopy = generator.m_validFPRs;
-            for (unsigned i = 0; i < functionSignature->argumentCount(); ++i)
-                m_arguments.append(allocateArgumentOrResult(generator, functionSignature->argumentType(i).kind, i, gprSetCopy, fprSetCopy));
+            if (!isAnyCatch(*this)) {
+                for (unsigned i = 0; i < functionSignature->argumentCount(); ++i)
+                    m_arguments.append(allocateArgumentOrResult(generator, functionSignature->argumentType(i).kind, i, gprSetCopy, fprSetCopy));
+            }
+
             gprSetCopy = generator.m_validGPRs;
             fprSetCopy = generator.m_validFPRs;
             for (unsigned i = 0; i < functionSignature->returnCount(); ++i)
                 m_results.append(allocateArgumentOrResult(generator, functionSignature->returnType(i).kind, i, gprSetCopy, fprSetCopy));
-        }
-
-        Location allocateArgumentOrResult(BBQJIT& generator, TypeKind type, unsigned i, RegisterSet& remainingGPRs, RegisterSet& remainingFPRs)
-        {
-            switch (type) {
-            case TypeKind::V128:
-            case TypeKind::F32:
-            case TypeKind::F64: {
-                if (remainingFPRs.isEmpty())
-                    return generator.canonicalSlot(Value::fromTemp(type, enclosedHeight() + i));
-                auto reg = *remainingFPRs.begin();
-                remainingFPRs.remove(reg);
-                return Location::fromFPR(reg.fpr());
-            }
-            default:
-                if (remainingGPRs.isEmpty())
-                    return generator.canonicalSlot(Value::fromTemp(type, enclosedHeight() + i));
-                auto reg = *remainingGPRs.begin();
-                remainingGPRs.remove(reg);
-                return Location::fromGPR(reg.gpr());
-            }
         }
 
         template<typename Stack>
@@ -791,7 +795,7 @@ public:
                 // If this is the end of the enclosing wasm block, we know we won't need them again, so this can be skipped.
                 if (value.isConst() && (resultIndex < 0 || !endOfWasmBlock)) {
                     Value constant = value;
-                    value = Value::fromTemp(value.type(), static_cast<LocalOrTempIndex>(enclosedHeight() + i));
+                    value = Value::fromTemp(value.type(), static_cast<LocalOrTempIndex>(enclosedHeight() + implicitSlot() + i));
                     Location slot = generator.locationOf(value);
                     generator.emitMoveConst(constant, slot);
                 }
@@ -805,17 +809,12 @@ public:
                 }
             }
 
-            unsigned offset = expressionStack.size() - targetArity;
-
             // Finally, we move all passed temporaries to the successor, in its argument slots.
-            auto& targetLocations = target.blockType() == BlockType::Loop || isChildBlock
-                ? target.argumentLocations()
-                : target.resultLocations();
-            if (targetArity == 1) {
-                Value value = expressionStack[offset].value();
-                generator.emitMove(value, targetLocations[0]);
-                generator.consume(value); // We consider a value consumed when we pass it to a successor.
-            } else {
+            if (targetArity) {
+                unsigned offset = expressionStack.size() - targetArity;
+                auto& targetLocations = target.blockType() == BlockType::Loop || isChildBlock
+                    ? target.argumentLocations()
+                    : target.resultLocations();
                 Vector<Value, 8> resultValues;
                 Vector<Location, 8> resultLocations;
                 for (unsigned i = 0; i < targetArity; ++i) {
@@ -825,14 +824,15 @@ public:
                 generator.emitShuffle(resultValues, resultLocations);
                 for (const Value& value : resultValues)
                     generator.consume(value);
-            }
 
-            // As one final step, we convert any constants into temporaries on the stack, so we don't blindly assume they have
-            // the same constant values in the successor.
-            for (unsigned i = 0; i < targetArity; ++i) {
-                Value& value = expressionStack[i + offset].value();
-                if (value.isConst())
-                    value = Value::fromTemp(value.type(), static_cast<LocalOrTempIndex>(enclosedHeight() + i));
+                // As one final step, we convert any constants into temporaries on the stack, so we don't blindly assume they have
+                // the same constant values in the successor.
+                for (unsigned i = 0; i < targetArity; ++i) {
+                    Value& value = expressionStack[i + offset].value();
+                    // This function is intentionally not using implicitSlot since results should not include implicit slot.
+                    if (value.isConst())
+                        value = Value::fromTemp(value.type(), static_cast<LocalOrTempIndex>(enclosedHeight() + i));
+                }
             }
         }
 
@@ -854,7 +854,7 @@ public:
 
             for (unsigned i = 0; i < predecessor.resultLocations().size(); ++i) {
                 unsigned offset = expressionStack.size() - predecessor.resultLocations().size();
-                expressionStack[i + offset].value() = Value::fromTemp(expressionStack[i].type().kind, predecessor.enclosedHeight() + i);
+                expressionStack[i + offset].value() = Value::fromTemp(expressionStack[i].type().kind, predecessor.enclosedHeight() + predecessor.implicitSlot() + i);
                 generator.bind(expressionStack[i + offset].value(), predecessor.resultLocations()[i]);
             }
         }
@@ -898,6 +898,12 @@ public:
                 m_ifBranch.link(masm);
         }
 
+        JumpList releaseJumps()
+        {
+            auto branchList = std::exchange(m_branchList, { });
+            return branchList;
+        }
+
         void dump(PrintStream& out) const
         {
             UNUSED_PARAM(out);
@@ -907,6 +913,8 @@ public:
         {
             return m_enclosedHeight;
         }
+
+        unsigned implicitSlot() const { return isAnyCatch(*this) ? 1 : 0; }
 
         const Vector<Location, 2>& argumentLocations() const
         {
@@ -942,6 +950,12 @@ public:
             return m_catchKind;
         }
 
+        void setCatchKind(CatchKind catchKind)
+        {
+            ASSERT(m_blockType == BlockType::Catch);
+            m_catchKind = catchKind;
+        }
+
         void setIfBranch(MacroAssembler::Jump branch)
         {
             ASSERT(m_blockType == BlockType::If);
@@ -964,14 +978,12 @@ public:
             m_touchedLocals.add(local);
         }
 
-        Value exception() const { return m_exception; }
-
     private:
         friend class BBQJIT;
 
         BlockSignature m_signature;
         BlockType m_blockType;
-        CatchKind m_catchKind;
+        CatchKind m_catchKind { CatchKind::Catch };
         Vector<Location, 2> m_arguments; // List of input locations to write values into when entering this block.
         Vector<Location, 2> m_results; // List of result locations to write values into when exiting this block.
         JumpList m_branchList; // List of branch control info for branches targeting the end of this block.
@@ -979,7 +991,6 @@ public:
         MacroAssembler::Jump m_ifBranch;
         LocalOrTempIndex m_enclosedHeight; // Height of enclosed expression stack, used as the base for all temporary locations.
         BitVector m_touchedLocals; // Number of locals allocated to registers in this block.
-        Value m_exception { };
     };
 
     friend struct ControlData;
@@ -1498,7 +1509,13 @@ public:
 
     Value topValue(TypeKind type)
     {
-        return Value::fromTemp(type, currentControlData().enclosedHeight() + m_parser->expressionStack().size());
+        return Value::fromTemp(type, currentControlData().enclosedHeight() + currentControlData().implicitSlot() + m_parser->expressionStack().size());
+    }
+
+    Value exception(const ControlData& control)
+    {
+        ASSERT(ControlData::isAnyCatch(control));
+        return Value::fromTemp(TypeKind::Externref, control.enclosedHeight() + control.implicitSlot());
     }
 
     PartialResult WARN_UNUSED_RETURN getGlobal(uint32_t index, Value& result)
@@ -5847,7 +5864,7 @@ public:
 
     PartialResult WARN_UNUSED_RETURN addBlock(BlockSignature signature, Stack& enclosingStack, ControlType& result, Stack& newStack)
     {
-        result = ControlData(*this, BlockType::Block, signature, currentControlData().enclosedHeight() + enclosingStack.size() - signature->as<FunctionSignature>()->argumentCount());
+        result = ControlData(*this, BlockType::Block, signature, currentControlData().enclosedHeight() + currentControlData().implicitSlot() + enclosingStack.size() - signature->as<FunctionSignature>()->argumentCount());
         currentControlData().endBlock(*this, result, enclosingStack, true, false);
 
         LOG_INSTRUCTION("Block", *signature);
@@ -5859,7 +5876,7 @@ public:
 
     PartialResult WARN_UNUSED_RETURN addLoop(BlockSignature signature, Stack& enclosingStack, ControlType& result, Stack& newStack, uint32_t)
     {
-        result = ControlData(*this, BlockType::Loop, signature, currentControlData().enclosedHeight() + enclosingStack.size() - signature->as<FunctionSignature>()->argumentCount());
+        result = ControlData(*this, BlockType::Loop, signature, currentControlData().enclosedHeight() + currentControlData().implicitSlot() + enclosingStack.size() - signature->as<FunctionSignature>()->argumentCount());
         currentControlData().endBlock(*this, result, enclosingStack, true, false);
 
         LOG_INSTRUCTION("Loop", *signature);
@@ -5877,7 +5894,7 @@ public:
             emitMove(condition, conditionLocation);
         consume(condition);
 
-        result = ControlData(*this, BlockType::If, signature, currentControlData().enclosedHeight() + enclosingStack.size() - signature->as<FunctionSignature>()->argumentCount());
+        result = ControlData(*this, BlockType::If, signature, currentControlData().enclosedHeight() + currentControlData().implicitSlot() + enclosingStack.size() - signature->as<FunctionSignature>()->argumentCount());
         currentControlData().endBlock(*this, result, enclosingStack, true, false);
 
         LOG_INSTRUCTION("If", *signature, condition, conditionLocation);
@@ -5908,7 +5925,7 @@ public:
         expressionStack.clear();
         while (expressionStack.size() < data.signature()->as<FunctionSignature>()->argumentCount()) {
             Type type = data.signature()->as<FunctionSignature>()->argumentType(expressionStack.size());
-            expressionStack.constructAndAppend(type, Value::fromTemp(type.kind, dataElse.enclosedHeight() + expressionStack.size()));
+            expressionStack.constructAndAppend(type, Value::fromTemp(type.kind, dataElse.enclosedHeight() + dataElse.implicitSlot() + expressionStack.size()));
         }
 
         dataElse.startBlock(*this, expressionStack);
@@ -5933,7 +5950,7 @@ public:
         Stack expressionStack;
         auto functionSignature = elseData.signature()->as<FunctionSignature>();
         for (unsigned i = 0; i < functionSignature->argumentCount(); i ++)
-            expressionStack.constructAndAppend(functionSignature->argumentType(i), Value::fromTemp(functionSignature->argumentType(i).kind, data.enclosedHeight() + i));
+            expressionStack.constructAndAppend(functionSignature->argumentType(i), Value::fromTemp(functionSignature->argumentType(i).kind, data.enclosedHeight() + data.implicitSlot() + i));
         elseData.startBlock(*this, expressionStack);
         data = elseData;
         return { };
@@ -5943,7 +5960,7 @@ public:
     {
         m_usesExceptions = true;
         ++m_tryCatchDepth;
-        result = ControlData(*this, BlockType::Try, signature, currentControlData().enclosedHeight() + enclosingStack.size() - signature->as<FunctionSignature>()->argumentCount());
+        result = ControlData(*this, BlockType::Try, signature, currentControlData().enclosedHeight() + currentControlData().implicitSlot() + enclosingStack.size() - signature->as<FunctionSignature>()->argumentCount());
         currentControlData().endBlock(*this, result, enclosingStack, true, false);
 
         LOG_INSTRUCTION("Try", *signature);
@@ -5953,86 +5970,132 @@ public:
         return { };
     }
 
-    void finalizePreviousBlockForCatch(ControlType& data, Stack& expressionStack)
+    void emitCatchAllImpl(ControlData& dataCatch, unsigned)
     {
-        if (!ControlType::isAnyCatch(entry)) {
-        } else {
-            checkConsistency();
-            VirtualRegister dst = virtualRegisterForLocal(entry.stackSize());
-            for (TypedExpression& value : stack) {
-                WasmMov::emit(this, dst, value);
-                value = TypedExpression { value.type(), dst };
-                dst -= 1;
+        restoreWebAssemblyGlobalState();
+        m_jit.prepareWasmCallOperation(GPRInfo::wasmContextInstancePointer);
+        m_jit.setupArguments<decltype(operationWasmRetrieveAndClearExceptionIfCatchable)>(GPRInfo::wasmContextInstancePointer);
+        m_jit.callOperation(operationWasmRetrieveAndClearExceptionIfCatchable);
+        static_assert(noOverlap(GPRInfo::nonPreservedNonArgumentGPR0, GPRInfo::returnValueGPR, GPRInfo::returnValueGPR2));
+        bind(this->exception(dataCatch), Location::fromGPR(GPRInfo::returnValueGPR));
+        Stack emptyStack { };
+        dataCatch.startBlock(*this, emptyStack);
+    }
+
+    void emitCatchImpl(ControlData& dataCatch, unsigned, const TypeDefinition& exceptionSignature, ResultList& results)
+    {
+        restoreWebAssemblyGlobalState();
+        m_jit.prepareWasmCallOperation(GPRInfo::wasmContextInstancePointer);
+        m_jit.setupArguments<decltype(operationWasmRetrieveAndClearExceptionIfCatchable)>(GPRInfo::wasmContextInstancePointer);
+        m_jit.callOperation(operationWasmRetrieveAndClearExceptionIfCatchable);
+        static_assert(noOverlap(GPRInfo::nonPreservedNonArgumentGPR0, GPRInfo::returnValueGPR, GPRInfo::returnValueGPR2));
+        bind(this->exception(dataCatch), Location::fromGPR(GPRInfo::returnValueGPR));
+        Stack emptyStack { };
+        dataCatch.startBlock(*this, emptyStack);
+
+        for (unsigned i = 0; i < exceptionSignature.as<FunctionSignature>()->argumentCount(); ++i) {
+            Type type = exceptionSignature.as<FunctionSignature>()->argumentType(i);
+            Value result = Value::fromTemp(type.kind, dataCatch.enclosedHeight() + dataCatch.implicitSlot() + i);
+            Location slot = canonicalSlot(result);
+            switch (type.kind) {
+            case TypeKind::I32:
+                m_jit.load32(Address(GPRInfo::returnValueGPR2, i * sizeof(uint64_t)), m_scratchGPR);
+                m_jit.store32(m_scratchGPR, slot.asAddress());
+                break;
+            case TypeKind::I31ref:
+            case TypeKind::I64:
+            case TypeKind::Ref:
+            case TypeKind::RefNull:
+            case TypeKind::Arrayref:
+            case TypeKind::Structref:
+            case TypeKind::Funcref:
+            case TypeKind::Externref:
+            case TypeKind::Rec:
+            case TypeKind::Sub:
+            case TypeKind::Array:
+            case TypeKind::Struct:
+            case TypeKind::Func: {
+                m_jit.load64(Address(GPRInfo::returnValueGPR2, i * sizeof(uint64_t)), m_scratchGPR);
+                m_jit.store64(m_scratchGPR, slot.asAddress());
+                break;
             }
+            case TypeKind::F32:
+                m_jit.loadFloat(Address(GPRInfo::returnValueGPR2, i * sizeof(uint64_t)), m_scratchFPR);
+                m_jit.storeFloat(m_scratchFPR, slot.asAddress());
+                break;
+            case TypeKind::F64:
+                m_jit.loadDouble(Address(GPRInfo::returnValueGPR2, i * sizeof(uint64_t)), m_scratchFPR);
+                m_jit.storeDouble(m_scratchFPR, slot.asAddress());
+                break;
+            case TypeKind::V128:
+                materializeVectorConstant(v128_t { }, Location::fromFPR(m_scratchFPR));
+                m_jit.storeVector(m_scratchFPR, slot.asAddress());
+                break;
+            case TypeKind::Void:
+                RELEASE_ASSERT_NOT_REACHED();
+                break;
+            }
+            bind(result, slot);
+            results.append(result);
         }
-        WasmJmp::emit(this, entry.m_continuation->bind(this));
-
-        if (!ControlType::isAnyCatch(data)) {
-            materializeConstantsAndLocals(stack);
-        }
-
-        data.endBlock(*this, data, expressionStack, false, true);
-        ControlData dataElse(*this, BlockType::Block, data.signature(), data.enclosedHeight());
-        data.linkJumps(&m_jit);
-        dataElse.addBranch(m_jit.jump());
-        data.linkIfBranch(&m_jit); // Link specifically the conditional branch of the preceding If
-        LOG_DEDENT();
-        LOG_INSTRUCTION("Catch");
-        LOG_INDENT();
-
-        // We don't care at this point about the values live at the end of the previous control block,
-        // we just need the right number of temps for our arguments on the top of the stack.
-        expressionStack.clear();
-        while (expressionStack.size() < data.signature()->as<FunctionSignature>()->argumentCount()) {
-            Type type = data.signature()->as<FunctionSignature>()->argumentType(expressionStack.size());
-            expressionStack.constructAndAppend(type, Value::fromTemp(type.kind, dataElse.enclosedHeight() + expressionStack.size()));
-        }
-
-        dataElse.startBlock(*this, expressionStack);
-        data = dataElse;
-        return { };
     }
 
     PartialResult WARN_UNUSED_RETURN addCatch(unsigned exceptionIndex, const TypeDefinition& exceptionSignature, Stack& expressionStack, ControlType& data, ResultList& results)
     {
-        if (ControlType::isAnyCatch(entry)) {
-            // This is super unfortunate, but catch block has implicit stack slot at the bottome of the block because it needs to keep exception (which can be used via rethrow).
-            // So, at the end of the block, we adjust temps off by sizeof-reference so that its stack layout becomes expected state.
-            adjustTempsInCatch();
-        }
+        m_usesExceptions = true;
         data.endBlock(*this, data, expressionStack, false, true);
         ControlData dataCatch(*this, BlockType::Catch, data.signature(), data.enclosedHeight());
-        data.linkJumps(&m_jit);
+        dataCatch.addBranch(data.releaseJumps());
         dataCatch.addBranch(m_jit.jump());
         LOG_DEDENT();
         LOG_INSTRUCTION("Catch");
         LOG_INDENT();
-
-        // We don't care at this point about the values live at the end of the previous control block,
-        // we just need the right number of temps for our arguments on the top of the stack.
-        expressionStack.clear();
-        while (expressionStack.size() < data.signature()->as<FunctionSignature>()->argumentCount()) {
-            Type type = data.signature()->as<FunctionSignature>()->argumentType(expressionStack.size());
-            expressionStack.constructAndAppend(type, Value::fromTemp(type.kind, dataElse.enclosedHeight() + expressionStack.size()));
-        }
-
-        dataElse.startBlock(*this, expressionStack);
-        data = dataElse;
+        emitCatchImpl(dataCatch, exceptionIndex, exceptionSignature, results);
+        data = WTFMove(dataCatch);
         return { };
-
-        finalizePreviousBlockForCatch(preCatchStack, data);
     }
 
-    PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned, const TypeDefinition&, ControlType&, ResultList&)
+    PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned exceptionIndex, const TypeDefinition& exceptionSignature, ControlType& data, ResultList& results)
     {
+        m_usesExceptions = true;
+        ControlData dataCatch(*this, BlockType::Catch, data.signature(), data.enclosedHeight());
+        dataCatch.addBranch(data.releaseJumps());
+        LOG_DEDENT();
+        LOG_INSTRUCTION("Catch");
+        LOG_INDENT();
+        emitCatchImpl(dataCatch, exceptionIndex, exceptionSignature, results);
+        data = WTFMove(dataCatch);
+        return { };
     }
 
-    PartialResult WARN_UNUSED_RETURN addCatchAll(Stack&, ControlType&)
+    PartialResult WARN_UNUSED_RETURN addCatchAll(Stack& expressionStack, ControlType& data)
     {
+        m_usesExceptions = true;
+        data.endBlock(*this, data, expressionStack, false, true);
+        ControlData dataCatch(*this, BlockType::Catch, data.signature(), data.enclosedHeight());
+        dataCatch.setCatchKind(CatchKind::CatchAll);
+        dataCatch.addBranch(data.releaseJumps());
+        dataCatch.addBranch(m_jit.jump());
+        LOG_DEDENT();
+        LOG_INSTRUCTION("CatchAll");
+        LOG_INDENT();
+        emitCatchAllImpl(dataCatch, exceptionIndex);
+        data = WTFMove(dataCatch);
+        return { };
     }
 
     PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&)
     {
+        m_usesExceptions = true;
+        ControlData dataCatch(*this, BlockType::Catch, data.signature(), data.enclosedHeight());
+        dataCatch.setCatchKind(CatchKind::CatchAll);
+        dataCatch.addBranch(data.releaseJumps());
+        LOG_DEDENT();
+        LOG_INSTRUCTION("CatchAll");
+        LOG_INDENT();
+        emitCatchAllImpl(dataCatch, exceptionIndex);
+        data = WTFMove(dataCatch);
+        return { };
     }
 
     PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&)
@@ -6067,7 +6130,7 @@ public:
     PartialResult WARN_UNUSED_RETURN addRethrow(unsigned, ControlType& data)
     {
         flushRegisters();
-        emitMove(data.exception(), Location::fromGPR(GPRInfo::argumentGPR1));
+        emitMove(this->exception(data), Location::fromGPR(GPRInfo::argumentGPR1));
         m_jit.move(GPRInfo::wasmContextInstancePointer, GPRInfo::argumentGPR0);
         emitRethrowImpl(m_jit);
         return { };
@@ -6077,13 +6140,7 @@ public:
     {
         CallInformation wasmCallInfo = wasmCallingConvention().callInformationFor(*data.signature(), CallRole::Callee);
 
-        if (LIKELY(wasmCallInfo.results.size() == 1)) {
-            ASSERT(returnValues.size() >= 1);
-            emitMove(returnValues.last(), Location::fromArgumentLocation(wasmCallInfo.results[0]));
-            LOG_INSTRUCTION("Return", Location::fromArgumentLocation(wasmCallInfo.results[0]));
-        } else if (wasmCallInfo.results.size()) {
-            // For multi-value return, a parallel move might be necessary. This is comparatively complex
-            // and slow, so we limit it to this slow path.
+        if (!wasmCallInfo.results.isEmpty()) {
             Vector<Value, 8> returnValuesForShuffle;
             Vector<Location, 8> returnLocationsForShuffle;
             for (unsigned i = 0; i < wasmCallInfo.results.size(); ++i) {
@@ -6190,7 +6247,7 @@ public:
         if (unreachable) {
             for (unsigned i = 0; i < returnCount; ++i) {
                 Type type = entryData.signature()->as<FunctionSignature>()->returnType(i);
-                entry.enclosedExpressionStack.constructAndAppend(type, Value::fromTemp(type.kind, i + entryData.enclosedHeight()));
+                entry.enclosedExpressionStack.constructAndAppend(type, Value::fromTemp(type.kind, entryData.enclosedHeight() + entryData.implicitSlot() + 1));
             }
         } else {
             unsigned offset = stack.size() - returnCount;
@@ -6354,7 +6411,7 @@ public:
     void returnValuesFromCall(Vector<Value, N>& results, const FunctionSignature& functionType, const CallInformation& callInfo)
     {
         for (size_t i = 0; i < callInfo.results.size(); i ++) {
-            Value result = Value::fromTemp(functionType.returnType(i).kind, currentControlData().enclosedHeight() + m_parser->expressionStack().size() + i);
+            Value result = Value::fromTemp(functionType.returnType(i).kind, currentControlData().enclosedHeight() + currentControlData().implicitSlot() + m_parser->expressionStack().size() + i);
             Location returnLocation = Location::fromArgumentLocation(callInfo.results[i]);
             if (returnLocation.isRegister()) {
                 RegisterBinding& currentBinding = returnLocation.isGPR() ? m_gprBindings[returnLocation.asGPR()] : m_fprBindings[returnLocation.asFPR()];
@@ -6430,7 +6487,7 @@ public:
         m_jit.call(m_scratchGPR, OperationPtrTag);
 
         // FIXME: Probably we should make CCall more lower level, and we should bind the result to Value separately.
-        result = Value::fromTemp(returnType, currentControlData().enclosedHeight() + m_parser->expressionStack().size());
+        result = Value::fromTemp(returnType, currentControlData().enclosedHeight() + currentControlData().implicitSlot() + m_parser->expressionStack().size());
         Location resultLocation;
         switch (returnType) {
         case TypeKind::I32:
@@ -8000,6 +8057,13 @@ private:
     {
         ASSERT(srcVector.size() == dstVector.size());
 
+        if (srcVector.size() == 1) {
+            emitMove(srcVector[0], dstVector[0]);
+            return;
+        }
+
+        // For multi-value return, a parallel move might be necessary. This is comparatively complex
+        // and slow, so we limit it to this slow path.
         ScratchScope<1, 1> scratches(*this);
         Location gpTemp = Location::fromGPR(scratches.gpr(0));
         Location fpTemp = Location::fromFPR(scratches.fpr(0));
