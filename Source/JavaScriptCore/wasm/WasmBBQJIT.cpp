@@ -6179,21 +6179,23 @@ public:
 
     PartialResult WARN_UNUSED_RETURN endBlock(ControlEntry& entry, Stack& stack)
     {
-        return addEndToUnreachable(entry, stack);
+        return addEndToUnreachable(entry, stack, false);
     }
 
-    PartialResult WARN_UNUSED_RETURN addEndToUnreachable(ControlEntry& entry, Stack& stack)
+    PartialResult WARN_UNUSED_RETURN addEndToUnreachable(ControlEntry& entry, Stack& stack, bool unreachable = true)
     {
         ControlData& entryData = entry.controlData;
 
         unsigned returnCount = entryData.signature()->as<FunctionSignature>()->returnCount();
-        for (unsigned i = 0; i < returnCount; ++i) {
-            if (i < stack.size())
-                entry.enclosedExpressionStack.append(stack[i]);
-            else {
+        if (unreachable) {
+            for (unsigned i = 0; i < returnCount; ++i) {
                 Type type = entryData.signature()->as<FunctionSignature>()->returnType(i);
                 entry.enclosedExpressionStack.constructAndAppend(type, Value::fromTemp(type.kind, i + entryData.enclosedHeight()));
             }
+        } else {
+            unsigned offset = stack.size() - returnCount;
+            for (unsigned i = 0; i < returnCount; ++i)
+                entry.enclosedExpressionStack.append(stack[i + offset]);
         }
 
         switch (entryData.blockType()) {
