@@ -5813,7 +5813,7 @@ public:
         } else
             m_jit.storePairPtr(GPRInfo::wasmContextInstancePointer, m_scratchGPR, GPRInfo::callFrameRegister, CCallHelpers::TrustedImm32(CallFrameSlot::codeBlock * sizeof(Register)));
 
-        m_frameSizeLabel = m_jit.moveWithPatch(TrustedImmPtr(nullptr), m_scratchGPR);
+        m_frameSizeLabels.append(m_jit.moveWithPatch(TrustedImmPtr(nullptr), m_scratchGPR));
 
         bool mayHaveExceptionHandlers = !m_hasExceptionHandlers || m_hasExceptionHandlers.value();
         if (mayHaveExceptionHandlers)
@@ -6037,7 +6037,8 @@ public:
 
         JIT_COMMENT(m_jit, "Configure wasm context instance");
         m_jit.loadPtr(CCallHelpers::Address(GPRInfo::callFrameRegister, CallFrameSlot::codeBlock * sizeof(Register)), GPRInfo::wasmContextInstancePointer);
-        // jit.addPtr(CCallHelpers::TrustedImm32(-code.frameSize()), GPRInfo::callFrameRegister, CCallHelpers::stackPointerRegister);
+        m_frameSizeLabels.append(m_jit.moveWithPatch(TrustedImmPtr(nullptr), GPRInfo::regT0));
+        m_jit.addPtr(GPRInfo::regT0, GPRInfo::callFrameRegister, CCallHelpers::stackPointerRegister);
     }
 
     void emitCatchAllImpl(ControlData& dataCatch)
@@ -6425,11 +6426,11 @@ public:
     PartialResult WARN_UNUSED_RETURN endTopLevel(BlockSignature, const Stack&)
     {
         int frameSize = m_frameSize + m_maxCalleeStackSize;
-        DataLabelPtr frameSizeLabel = m_frameSizeLabel;
         CCallHelpers& jit = m_jit;
-        m_jit.addLinkTask([frameSize, frameSizeLabel, &jit](LinkBuffer& linkBuffer) {
+        m_jit.addLinkTask([frameSize, labels = WTFMove(m_frameSizeLabels), &jit](LinkBuffer& linkBuffer) {
             int roundedFrameSize = WTF::roundUpToMultipleOf(stackAlignmentBytes(), frameSize);
-            jit.repatchPointer(linkBuffer.locationOf<NoPtrTag>(frameSizeLabel), bitwise_cast<void*>(static_cast<uintptr_t>(roundedFrameSize)));
+            for (auto label : labels)
+                jit.repatchPointer(linkBuffer.locationOf<NoPtrTag>(label), bitwise_cast<void*>(static_cast<uintptr_t>(roundedFrameSize)));
         });
 
         LOG_DEDENT();
@@ -8755,7 +8756,7 @@ private:
     uint32_t m_lastUseTimestamp; // Monotonically increasing integer incrementing with each register use.
     Vector<RefPtr<SharedTask<void(BBQJIT&, CCallHelpers&)>>, 8> m_latePaths; // Late paths to emit after the rest of the function body.
 
-    DataLabelPtr m_frameSizeLabel;
+    Vector<DataLabelPtr> m_frameSizeLabels;
     int m_frameSize { 0 };
     int m_maxCalleeStackSize { 0 };
     int m_localStorage { 0 }; // Stack offset pointing to the local with the lowest address.
