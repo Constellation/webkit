@@ -6170,7 +6170,7 @@ public:
             ++m_callSiteIndex;
             data.setTryInfo(data.tryStart(), m_callSiteIndex, data.tryCatchDepth());
         }
-        m_exceptionHandlers.append({ HandlerType::Delegate, data.tryStart(), ++m_callSiteIndex, 0, m_tryCatchDepth, depth });
+        m_exceptionHandlers.append({ HandlerType::Delegate, data.tryStart(), m_callSiteIndex, 0, m_tryCatchDepth, depth });
         return { };
     }
 
