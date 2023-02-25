@@ -956,6 +956,28 @@ public:
             m_catchKind = catchKind;
         }
 
+        unsigned tryStart() const
+        {
+            return m_tryStart;
+        }
+
+        unsigned tryEnd() const
+        {
+            return m_tryEnd;
+        }
+
+        unsigned tryCatchDepth() const
+        {
+            return m_tryCatchDepth;
+        }
+
+        void setTryInfo(unsigned tryStart, unsigned tryEnd, unsigned tryCatchDepth)
+        {
+            m_tryStart = tryStart;
+            m_tryEnd = tryEnd;
+            m_tryCatchDepth = tryCatchDepth;
+        }
+
         void setIfBranch(MacroAssembler::Jump branch)
         {
             ASSERT(m_blockType == BlockType::If);
@@ -991,6 +1013,9 @@ public:
         MacroAssembler::Jump m_ifBranch;
         LocalOrTempIndex m_enclosedHeight; // Height of enclosed expression stack, used as the base for all temporary locations.
         BitVector m_touchedLocals; // Number of locals allocated to registers in this block.
+        unsigned m_tryStart { 0 };
+        unsigned m_tryEnd { 0 };
+        unsigned m_tryCatchDepth { 0 };
     };
 
     friend struct ControlData;
@@ -5960,7 +5985,9 @@ public:
     {
         m_usesExceptions = true;
         ++m_tryCatchDepth;
+        ++m_callSiteIndex;
         result = ControlData(*this, BlockType::Try, signature, currentControlData().enclosedHeight() + currentControlData().implicitSlot() + enclosingStack.size() - signature->as<FunctionSignature>()->argumentCount());
+        result.setTryInfo(m_callSiteIndex, m_callSiteIndex, m_tryCatchDepth);
         currentControlData().endBlock(*this, result, enclosingStack, true, false);
 
         LOG_INSTRUCTION("Try", *signature);
@@ -6045,6 +6072,13 @@ public:
         m_usesExceptions = true;
         data.endBlock(*this, data, expressionStack, false, true);
         ControlData dataCatch(*this, BlockType::Catch, data.signature(), data.enclosedHeight());
+        dataCatch.setCatchKind(CatchKind::Catch);
+        if (ControlData::isTry(data)) {
+            ++m_callSiteIndex;
+            data.setTryInfo(data.tryStart(), m_callSiteIndex, data.tryCatchDepth());
+        }
+        dataCatch.setTryInfo(data.tryStart(), data.tryEnd(), data.tryCatchDepth());
+
         dataCatch.addBranch(data.releaseJumps());
         dataCatch.addBranch(m_jit.jump());
         LOG_DEDENT();
@@ -6052,6 +6086,7 @@ public:
         LOG_INDENT();
         emitCatchImpl(dataCatch, exceptionIndex, exceptionSignature, results);
         data = WTFMove(dataCatch);
+        m_exceptionHandlers.append({ HandlerType::Catch, data.tryStart(), data.tryEnd(), 0, m_tryCatchDepth, exceptionIndex });
         return { };
     }
 
@@ -6059,12 +6094,20 @@ public:
     {
         m_usesExceptions = true;
         ControlData dataCatch(*this, BlockType::Catch, data.signature(), data.enclosedHeight());
+        dataCatch.setCatchKind(CatchKind::Catch);
+        if (ControlData::isTry(data)) {
+            ++m_callSiteIndex;
+            data.setTryInfo(data.tryStart(), m_callSiteIndex, data.tryCatchDepth());
+        }
+        dataCatch.setTryInfo(data.tryStart(), data.tryEnd(), data.tryCatchDepth());
+
         dataCatch.addBranch(data.releaseJumps());
         LOG_DEDENT();
         LOG_INSTRUCTION("Catch");
         LOG_INDENT();
         emitCatchImpl(dataCatch, exceptionIndex, exceptionSignature, results);
         data = WTFMove(dataCatch);
+        m_exceptionHandlers.append({ HandlerType::Catch, data.tryStart(), data.tryEnd(), 0, m_tryCatchDepth, exceptionIndex });
         return { };
     }
 
@@ -6074,6 +6117,12 @@ public:
         data.endBlock(*this, data, expressionStack, false, true);
         ControlData dataCatch(*this, BlockType::Catch, data.signature(), data.enclosedHeight());
         dataCatch.setCatchKind(CatchKind::CatchAll);
+        if (ControlData::isTry(data)) {
+            ++m_callSiteIndex;
+            data.setTryInfo(data.tryStart(), m_callSiteIndex, data.tryCatchDepth());
+        }
+        dataCatch.setTryInfo(data.tryStart(), data.tryEnd(), data.tryCatchDepth());
+
         dataCatch.addBranch(data.releaseJumps());
         dataCatch.addBranch(m_jit.jump());
         LOG_DEDENT();
@@ -6081,6 +6130,7 @@ public:
         LOG_INDENT();
         emitCatchAllImpl(dataCatch);
         data = WTFMove(dataCatch);
+        m_exceptionHandlers.append({ HandlerType::CatchAll, data.tryStart(), data.tryEnd(), 0, m_tryCatchDepth, 0 });
         return { };
     }
 
@@ -6089,21 +6139,39 @@ public:
         m_usesExceptions = true;
         ControlData dataCatch(*this, BlockType::Catch, data.signature(), data.enclosedHeight());
         dataCatch.setCatchKind(CatchKind::CatchAll);
+        if (ControlData::isTry(data)) {
+            ++m_callSiteIndex;
+            data.setTryInfo(data.tryStart(), m_callSiteIndex, data.tryCatchDepth());
+        }
+        dataCatch.setTryInfo(data.tryStart(), data.tryEnd(), data.tryCatchDepth());
+
         dataCatch.addBranch(data.releaseJumps());
         LOG_DEDENT();
         LOG_INSTRUCTION("CatchAll");
         LOG_INDENT();
         emitCatchAllImpl(dataCatch);
         data = WTFMove(dataCatch);
+        m_exceptionHandlers.append({ HandlerType::CatchAll, data.tryStart(), data.tryEnd(), 0, m_tryCatchDepth, 0 });
         return { };
     }
 
-    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&)
+    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType& target, ControlType& data)
     {
+        return addDelegateToUnreachable(target, data);
     }
 
-    PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&)
+    PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType& target, ControlType& data)
     {
+        unsigned depth = 0;
+        if (ControlType::isTry(target))
+            depth = target.tryCatchDepth();
+
+        if (ControlData::isTry(data)) {
+            ++m_callSiteIndex;
+            data.setTryInfo(data.tryStart(), m_callSiteIndex, data.tryCatchDepth());
+        }
+        m_exceptionHandlers.append({ HandlerType::Delegate, data.tryStart(), ++m_callSiteIndex, 0, m_tryCatchDepth, depth });
+        return { };
     }
 
     PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Vector<ExpressionType>& arguments, Stack&)
@@ -8624,6 +8692,7 @@ private:
     bool m_usesSIMD { false }; // Whether the function we are compiling uses SIMD instructions or not.
     bool m_usesExceptions { false };
     Checked<unsigned> m_tryCatchDepth { 0 };
+    Checked<unsigned> m_callSiteIndex { 0 };
 
     RegisterID m_scratchGPR { GPRInfo::nonPreservedNonArgumentGPR0 }; // Scratch registers to hold temporaries in operations.
     FPRegisterID m_scratchFPR { FPRInfo::nonPreservedNonArgumentFPR0 };
@@ -8642,6 +8711,7 @@ private:
     InternalFunction* m_compilation;
 
     std::array<JumpList, numberOfExceptionTypes> m_exceptions { };
+    Vector<UnlinkedHandlerInfo> m_exceptionHandlers;
 };
 
 Expected<std::unique_ptr<InternalFunction>, String> parseAndCompileBBQ(CompilationContext& compilationContext, Callee& callee, const FunctionData& function, const TypeDefinition& signature, Vector<UnlinkedWasmToWasmCall>& unlinkedWasmToWasmCalls, const ModuleInformation& info, MemoryMode mode, uint32_t functionIndex, std::optional<bool> hasExceptionHandlers, TierUpCount* tierUp)
