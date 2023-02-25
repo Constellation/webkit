@@ -1173,7 +1173,7 @@ private:
 public:
     static constexpr bool tierSupportsSIMD = true;
 
-    BBQJIT(CCallHelpers& jit, const TypeDefinition& signature, Callee& callee, const FunctionData& function, uint32_t functionIndex, const ModuleInformation& info, Vector<UnlinkedWasmToWasmCall>& unlinkedWasmToWasmCalls, MemoryMode mode, InternalFunction* compilation, TierUpCount* tierUp)
+    BBQJIT(CCallHelpers& jit, const TypeDefinition& signature, Callee& callee, const FunctionData& function, uint32_t functionIndex, const ModuleInformation& info, Vector<UnlinkedWasmToWasmCall>& unlinkedWasmToWasmCalls, MemoryMode mode, InternalFunction* compilation, std::optional<bool> hasExceptionHandlers, TierUpCount* tierUp)
         : m_jit(jit)
         , m_callee(callee)
         , m_function(function)
@@ -1182,6 +1182,7 @@ public:
         , m_info(info)
         , m_mode(mode)
         , m_unlinkedWasmToWasmCalls(unlinkedWasmToWasmCalls)
+        , m_hasExceptionHandlers(hasExceptionHandlers)
         , m_tierUp(tierUp)
         , m_gprBindings(jit.numberOfRegisters(), RegisterBinding::none())
         , m_fprBindings(jit.numberOfFPRegisters(), RegisterBinding::none())
@@ -5814,6 +5815,10 @@ public:
 
         m_frameSizeLabel = m_jit.moveWithPatch(TrustedImmPtr(nullptr), m_scratchGPR);
 
+        bool mayHaveExceptionHandlers = !m_hasExceptionHandlers || m_hasExceptionHandlers.value();
+        if (mayHaveExceptionHandlers)
+            m_jit.store32(CCallHelpers::TrustedImm32(PatchpointExceptionHandle::s_invalidCallSiteIndex), CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
+
         // Because we compile in a single pass, we always need to pessimistically check for stack underflow/overflow.
         ASSERT(m_scratchGPR == GPRInfo::nonPreservedNonArgumentGPR0);
         m_jit.subPtr(GPRInfo::callFrameRegister, m_scratchGPR, m_scratchGPR);
@@ -6204,6 +6209,14 @@ public:
         return { };
     }
 
+    void prepareForExceptions()
+    {
+        ++m_callSiteIndex;
+        bool mayHaveExceptionHandlers = !m_hasExceptionHandlers || m_hasExceptionHandlers.value();
+        if (mayHaveExceptionHandlers)
+            m_jit.store32(CCallHelpers::TrustedImm32(m_callSiteIndex), CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
+    }
+
     PartialResult WARN_UNUSED_RETURN addReturn(const ControlData& data, const Stack& returnValues)
     {
         CallInformation wasmCallInfo = wasmCallingConvention().callInformationFor(*data.signature(), CallRole::Callee);
@@ -6516,6 +6529,7 @@ public:
         m_jit.prepareWasmCallOperation(GPRInfo::wasmContextInstancePointer);
 
         // Preserve caller-saved registers and other info
+        prepareForExceptions();
         saveValuesAcrossCall(callInfo);
 
         // Move argument values to parameter locations
@@ -6544,6 +6558,7 @@ public:
         m_jit.prepareWasmCallOperation(GPRInfo::wasmContextInstancePointer);
 
         // Preserve caller-saved registers and other info
+        prepareForExceptions();
         saveValuesAcrossCall(callInfo);
 
         // Move argument values to parameter locations
@@ -6601,6 +6616,7 @@ public:
         m_maxCalleeStackSize = std::max<int>(calleeStackSize, m_maxCalleeStackSize);
 
         // Preserve caller-saved registers and other info
+        prepareForExceptions();
         saveValuesAcrossCall(callInfo);
 
         // Move argument values to parameter locations
@@ -6655,6 +6671,7 @@ public:
 
         // Safe to use across saveValues/passParameters since neither clobber the scratch GPR.
         m_jit.loadPtr(Address(calleeCode), m_scratchGPR);
+        prepareForExceptions();
         saveValuesAcrossCall(wasmCalleeInfo);
         passParametersToCall(arguments, wasmCalleeInfo);
         m_jit.call(m_scratchGPR, WasmEntryPtrTag);
@@ -7813,6 +7830,11 @@ public:
 #undef BBQ_STUB
 #undef BBQ_CONTROL_STUB
 
+    Vector<UnlinkedHandlerInfo>&& takeExceptionHandlers()
+    {
+        return WTFMove(m_exceptionHandlers);
+    }
+
 private:
     bool isScratch(Location loc)
     {
@@ -8665,6 +8687,7 @@ private:
     const ModuleInformation& m_info;
     MemoryMode m_mode;
     Vector<UnlinkedWasmToWasmCall>& m_unlinkedWasmToWasmCalls;
+    std::optional<bool> m_hasExceptionHandlers;
     TierUpCount* m_tierUp;
     FunctionParser<BBQJIT>* m_parser;
     Vector<uint32_t, 4> m_arguments;
@@ -8688,7 +8711,6 @@ private:
     int m_maxCalleeStackSize { 0 };
     int m_localStorage { 0 }; // Stack offset pointing to the local with the lowest address.
     constexpr static int tempSlotSize { 16 }; // Size of the stack slot for a stack temporary. Currently the size of the largest possible temporary (a v128).
-    int m_blockCount;
     bool m_usesSIMD { false }; // Whether the function we are compiling uses SIMD instructions or not.
     bool m_usesExceptions { false };
     Checked<unsigned> m_tryCatchDepth { 0 };
@@ -8718,15 +8740,16 @@ Expected<std::unique_ptr<InternalFunction>, String> parseAndCompileBBQ(Compilati
 {
     CompilerTimingScope totalTime("BBQ", "Total BBQ");
 
-    UNUSED_PARAM(hasExceptionHandlers);
     UNUSED_PARAM(tierUp);
     auto result = makeUnique<InternalFunction>();
 
     compilationContext.wasmEntrypointJIT = makeUnique<CCallHelpers>();
 
-    BBQJIT irGenerator(*compilationContext.wasmEntrypointJIT, signature, callee, function, functionIndex, info, unlinkedWasmToWasmCalls, mode, result.get(), tierUp);
+    BBQJIT irGenerator(*compilationContext.wasmEntrypointJIT, signature, callee, function, functionIndex, info, unlinkedWasmToWasmCalls, mode, result.get(), hasExceptionHandlers, tierUp);
     FunctionParser<BBQJIT> parser(irGenerator, function.data.data(), function.data.size(), signature, info);
     WASM_FAIL_IF_HELPER_FAILS(parser.parse());
+
+    result->exceptionHandlers = irGenerator.takeExceptionHandlers();
 
     return result;
 }
