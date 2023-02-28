@@ -148,7 +148,7 @@ ALWAYS_INLINE SlowPathReturnType linkFor(CallFrame* calleeFrame, JSGlobalObject*
 
         CodeBlock** codeBlockSlot = calleeFrame->addressOfCodeBlock();
         functionExecutable->prepareForExecution<FunctionExecutable>(vm, callee, scope, kind, *codeBlockSlot);
-        RETURN_IF_EXCEPTION(throwScope, handleThrowException());
+        RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(throwScope, handleThrowException());
 
         codeBlock = *codeBlockSlot;
         ASSERT(codeBlock);
@@ -210,7 +210,7 @@ ALWAYS_INLINE SlowPathReturnType virtualForWithFunction(JSGlobalObject* globalOb
 
         CodeBlock** codeBlockSlot = calleeFrame->addressOfCodeBlock();
         functionExecutable->prepareForExecution<FunctionExecutable>(vm, function, scope, kind, *codeBlockSlot);
-        RETURN_IF_EXCEPTION(throwScope, handleThrowException());
+        RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(throwScope, handleThrowException());
     }
 
     // FIXME: Support wasm IC.

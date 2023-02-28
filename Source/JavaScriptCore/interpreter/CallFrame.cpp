@@ -338,8 +338,8 @@ void CallFrame::convertToStackOverflowFrame(VM& vm, CodeBlock* codeBlockToKeepAl
         throwOriginFrame = throwOriginFrame->callerFrame(entryFrame);
     } while (throwOriginFrame && throwOriginFrame->callee().isWasm());
 
-    JSObject* originCallee = throwOriginFrame ? throwOriginFrame->jsCallee() : vmEntryRecord(vm.topEntryFrame)->callee();
-    JSObject* stackOverflowCallee = originCallee->globalObject()->stackOverflowFrameCallee();
+    JSGlobalObject* originGlobalObject = throwOriginFrame ? throwOriginFrame->jsCallee()->globalObject() : vm.entryScope->globalObject();
+    JSObject* stackOverflowCallee = originGlobalObject->stackOverflowFrameCallee();
 
     setCodeBlock(codeBlockToKeepAliveUntilFrameIsUnwound);
     setCallee(stackOverflowCallee);

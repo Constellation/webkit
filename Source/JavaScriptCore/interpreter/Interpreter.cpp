@@ -1078,7 +1078,7 @@ ALWAYS_INLINE JSValue Interpreter::executeCallImpl(VM& vm, JSObject* function, c
     size_t argsCount = 1 + args.size(); // implicit "this" parameter
 
     VMEntryScope entryScope(vm, globalObject);
-    if (UNLIKELY(!vm.isSafeToRecurseSoft() || args.size() > maxArguments))
+    if (UNLIKELY(args.size() > maxArguments))
         return throwStackOverflowError(globalObject, scope);
 
     if (UNLIKELY(vm.traps().needHandling(VMTraps::NonDebuggerAsyncEvents))) {
@@ -1164,7 +1164,7 @@ JSObject* Interpreter::executeConstruct(JSGlobalObject* lexicalGlobalObject, JSO
     }
 
     VMEntryScope entryScope(vm, globalObject);
-    if (UNLIKELY(!vm.isSafeToRecurseSoft() || args.size() > maxArguments)) {
+    if (UNLIKELY(args.size() > maxArguments)) {
         throwStackOverflowError(globalObject, throwScope);
         return nullptr;
     }

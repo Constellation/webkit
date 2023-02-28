@@ -181,7 +181,7 @@ JSC_DEFINE_JIT_OPERATION(operationMaterializeRemoteFunctionTargetCode, SlowPathR
             JSScope* scope = targetFunction->scopeUnchecked();
             FunctionExecutable* functionExecutable = static_cast<FunctionExecutable*>(executable);
             functionExecutable->prepareForExecution<FunctionExecutable>(vm, targetFunction, scope, CodeForCall, codeBlockSlot);
-            RETURN_IF_EXCEPTION(throwScope, encodeResult(nullptr, nullptr));
+            RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(throwScope, encodeResult(nullptr, nullptr));
         }
         return encodeResult(executable->entrypointFor(CodeForCall, MustCheckArity).taggedPtr(), codeBlockSlot);
     }

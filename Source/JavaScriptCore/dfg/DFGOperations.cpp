@@ -4038,7 +4038,7 @@ JSC_DEFINE_JIT_OPERATION(operationLinkDirectCall, void, (OptimizingCallLinkInfo*
         RELEASE_ASSERT(isCall(kind) || functionExecutable->constructAbility() != ConstructAbility::CannotConstruct);
 
         functionExecutable->prepareForExecution<FunctionExecutable>(vm, callee, scope, kind, codeBlock);
-        RETURN_IF_EXCEPTION(throwScope, void());
+        RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(throwScope, void());
 
         unsigned argumentStackSlots = callLinkInfo->maxArgumentCountIncludingThisForDirectCall();
         if (argumentStackSlots < static_cast<size_t>(codeBlock->numParameters()))

@@ -113,7 +113,7 @@ ALWAYS_INLINE JSValue Interpreter::executeCachedCall(CallFrameClosure& closure)
         // Reload CodeBlock since GC can replace CodeBlock owned by Executable.
         CodeBlock* codeBlock;
         closure.functionExecutable->prepareForExecution<FunctionExecutable>(vm, closure.function, closure.scope, CodeForCall, codeBlock);
-        RETURN_IF_EXCEPTION(throwScope, throwScope.exception());
+        RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(throwScope, throwScope.exception());
 
         ASSERT(codeBlock);
         codeBlock->m_shouldAlwaysBeInlined = false;
