@@ -748,6 +748,43 @@ end
 
 # Entry point
 
+macro pushCalleeSavesForWasmEntry()
+    subp (3 * SlotSize + StackAlignment - 1) & ~StackAlignmentMask, sp
+    if ARM64 or ARM64E
+        storepairq wasmInstance, PB, -16[cfr]
+        storepairq memoryBase, boundsCheckingSize, -32[cfr]
+    elsif X86_64 or RISCV64
+        storep PB, -0x8[cfr]
+        storep wasmInstance, -0x10[cfr]
+        storep boundsCheckingSize, -0x18[cfr]
+        storep memoryBase, -0x20[cfr]
+    elsif ARMv7
+        storep PB, -4[cfr]
+        storep wasmInstance, -8[cfr]
+    else
+        error
+    end
+    pushCalleeSaves()
+end
+
+macro popCalleeSavesForWasmEntry()
+    popCalleeSaves()
+    if ARM64 or ARM64E
+        loadpairq -16[cfr], wasmInstance, PB
+        loadpairq -32[cfr], memoryBase, boundsCheckingSize
+    elsif X86_64 or RISCV64
+        loadp -0x8[cfr], PB
+        loadp -0x10[cfr], wasmInstance
+        loadp -0x18[cfr], boundsCheckingSize
+        loadp -0x20[cfr], memoryBase
+    elsif ARMv7
+        loadp -4[cfr], PB
+        loadp -8[cfr], wasmInstance
+    else
+        error
+    end
+end
+
 # EncodedJSValue vmEntryToWasm(void* code, VM* vm, WasmProtoCallFrame* protoFrame)
 if C_LOOP or C_LOOP_WIN
     _llint_vm_entry_to_wasm:
@@ -756,7 +793,7 @@ else
     _vmEntryToWasm:
 end
     functionPrologue()
-    pushCalleeSaves() # FIXME THIS IS WRONG
+    pushCalleeSavesForWasmEntry()
 
     const entry = a0
     const vm = a1
@@ -830,8 +867,10 @@ else
 end
 
     loadp Wasm::WasmProtoCallFrame::m_instance[ws1], wasmInstance
+if not ARMv7
     loadp Wasm::WasmProtoCallFrame::m_memoryBase[ws1], memoryBase
     loadp Wasm::WasmProtoCallFrame::m_boundsCheckingSize[ws1], boundsCheckingSize
+end
 
     addp 16, sp
     if ARM64E
@@ -864,7 +903,7 @@ end
 
     subp cfr, CalleeRegisterSaveSize, sp
 
-    popCalleeSaves()
+    popCalleeSavesForWasmEntry()
     functionEpilogue()
     ret
 
@@ -875,7 +914,7 @@ end
     move ValueUndefined, r0
 
     subp cfr, CalleeRegisterSaveSize, sp
-    popCalleeSaves()
+    popCalleeSavesForWasmEntry()
     functionEpilogue()
     ret
 
