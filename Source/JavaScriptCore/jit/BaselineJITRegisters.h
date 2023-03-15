@@ -318,6 +318,27 @@ namespace PutByVal {
     }
 }
 
+#if USE(JSVALUE64) && !OS(WINDOWS)
+namespace PutByValWithThis {
+    constexpr JSValueRegs baseJSR { GPRInfo::regT0 };
+    constexpr JSValueRegs propertyJSR { GPRInfo::regT4 };
+    constexpr JSValueRegs valueJSR { GPRInfo::regT2 };
+    constexpr JSValueRegs thisJSR { GPRInfo::regT5 };
+    constexpr GPRReg profileGPR { GPRInfo::regT1 };
+    constexpr GPRReg stubInfoGPR { GPRInfo::regT3 };
+
+    static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, thisJSR, profileGPR, stubInfoGPR), "Required for DataIC");
+
+    // Slow path only registers
+    namespace SlowPath {
+        constexpr GPRReg globalObjectGPR { GPRInfo::regT6 };
+        constexpr GPRReg bytecodeOffsetGPR { globalObjectGPR };
+        static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, thisJSR, profileGPR, bytecodeOffsetGPR, stubInfoGPR), "Required for call to CTI thunk");
+        static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, thisJSR, profileGPR, globalObjectGPR, stubInfoGPR), "Required for call to slow operation");
+    }
+}
+#endif
+
 namespace InById {
     constexpr JSValueRegs baseJSR { GetById::baseJSR };
     constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };

@@ -175,8 +175,6 @@ JSC_DECLARE_JIT_OPERATION(operationPutDoubleByValDirectBeyondArrayBoundsStrict, 
 JSC_DECLARE_JIT_OPERATION(operationPutDoubleByValDirectBeyondArrayBoundsNonStrict, void, (JSGlobalObject*, JSObject*, int32_t index, double value));
 JSC_DECLARE_JIT_OPERATION(operationPutByIdWithThisNonStrict, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, uintptr_t));
 JSC_DECLARE_JIT_OPERATION(operationPutByIdWithThisStrict, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, uintptr_t));
-JSC_DECLARE_JIT_OPERATION(operationPutByValWithThisNonStrict, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, EncodedJSValue));
-JSC_DECLARE_JIT_OPERATION(operationPutByValWithThisStrict, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, EncodedJSValue));
 JSC_DECLARE_JIT_OPERATION(operationDefineDataProperty, void, (JSGlobalObject*, JSObject*, EncodedJSValue, EncodedJSValue, int32_t));
 JSC_DECLARE_JIT_OPERATION(operationDefineDataPropertyString, void, (JSGlobalObject*, JSObject*, JSString*, EncodedJSValue, int32_t));
 JSC_DECLARE_JIT_OPERATION(operationDefineDataPropertyStringIdent, void, (JSGlobalObject*, JSObject*, UniquedStringImpl*, EncodedJSValue, int32_t));

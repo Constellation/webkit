@@ -487,6 +487,11 @@ static CodePtr<OperationPtrTag> slowOperationFromUnlinkedStructureStubInfo(const
             RELEASE_ASSERT_NOT_REACHED();
         }
         break;
+    case AccessType::PutByValWithThis:
+        if (unlinkedStubInfo.ecmaMode.isStrict())
+            return operationPutByValWithThisStrictOptimize;
+        else
+            return operationPutByValWithThisNonStrictOptimize;
     case AccessType::PutPrivateName:
         return unlinkedStubInfo.privateFieldPutKind.isDefine() ? operationPutByValDefinePrivateFieldOptimize : operationPutByValSetPrivateFieldOptimize;
     case AccessType::SetPrivateBrand:
@@ -660,6 +665,20 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         m_baseTagGPR = BaselineJITRegisters::PutByVal::baseJSR.tagGPR();
         m_extraTagGPR = BaselineJITRegisters::PutByVal::propertyJSR.tagGPR();
         m_valueTagGPR = BaselineJITRegisters::PutByVal::valueJSR.tagGPR();
+#endif
+        break;
+    case AccessType::PutByValWithThis:
+        hasConstantIdentifier = false;
+#if USE(JSVALUE64)
+        m_baseGPR = BaselineJITRegisters::PutByValWithThis::baseJSR.payloadGPR();
+        m_valueGPR = BaselineJITRegisters::PutByValWithThis::valueJSR.payloadGPR();
+        m_extraGPR = BaselineJITRegisters::PutByValWithThis::thisJSR.payloadGPR();
+        m_extra2GPR = BaselineJITRegisters::PutByValWithThis::propertyJSR.payloadGPR();
+        m_stubInfoGPR = BaselineJITRegisters::PutByValWithThis::stubInfoGPR;
+        m_arrayProfileGPR = BaselineJITRegisters::PutByValWithThis::profileGPR;
+#else
+        // Registers are exhausted, we cannot have this IC on 32bit.
+        RELEASE_ASSERT_NOT_REACHED();
 #endif
         break;
     case AccessType::SetPrivateBrand:

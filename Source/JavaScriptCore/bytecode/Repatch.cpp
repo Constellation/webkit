@@ -2100,7 +2100,7 @@ void resetPutBy(CodeBlock* codeBlock, StructureStubInfo& stubInfo, PutByKind kin
         break;
     }
     case PutByKind::ByValWithThis: {
-        using FunctionType = decltype(&operationPutByValStrictOptimize);
+        using FunctionType = decltype(&operationPutByValWithThisStrictOptimize);
         FunctionType unoptimizedFunction = reinterpret_cast<FunctionType>(readPutICCallTarget(codeBlock, stubInfo).taggedPtr());
         if (unoptimizedFunction == operationPutByValWithThisStrictGeneric || unoptimizedFunction == operationPutByValWithThisStrictOptimize)
             optimizedFunction = operationPutByValWithThisStrictOptimize;

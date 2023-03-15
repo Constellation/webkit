@@ -63,6 +63,7 @@ enum class AccessType : int8_t {
     GetByValWithThis,
     PutById,
     PutByVal,
+    PutByValWithThis,
     PutPrivateName,
     InById,
     InByVal,
@@ -191,7 +192,7 @@ public:
             m_baseGPR);
     }
 
-    bool thisValueIsInExtraGPR() const { return accessType == AccessType::GetByIdWithThis || accessType == AccessType::GetByValWithThis; }
+    bool thisValueIsInExtraGPR() const { return accessType == AccessType::GetByIdWithThis || accessType == AccessType::GetByValWithThis || accessType == AccessType::PutByValWithThis; }
 
 #if ASSERT_ENABLED
     void checkConsistency();
@@ -370,6 +371,7 @@ public:
     {
         switch (accessType) {
         case AccessType::GetByValWithThis:
+        case AccessType::PutByValWithThis:
             return m_extra2GPR;
         default:
             return m_extraGPR;
@@ -383,6 +385,7 @@ public:
     {
         switch (accessType) {
         case AccessType::GetByValWithThis:
+        case AccessType::PutByValWithThis:
             return m_extra2TagGPR;
         default:
             return m_extraTagGPR;

@@ -223,6 +223,8 @@ JSC_DECLARE_JIT_OPERATION(operationPutByValWithThisNonStrictOptimize, void, (JSG
 JSC_DECLARE_JIT_OPERATION(operationPutByValWithThisStrictOptimize, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, EncodedJSValue, StructureStubInfo*, ArrayProfile*));
 JSC_DECLARE_JIT_OPERATION(operationPutByValWithThisNonStrictGeneric, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, EncodedJSValue, StructureStubInfo*, ArrayProfile*));
 JSC_DECLARE_JIT_OPERATION(operationPutByValWithThisStrictGeneric, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, EncodedJSValue, StructureStubInfo*, ArrayProfile*));
+JSC_DECLARE_JIT_OPERATION(operationPutByValWithThisNonStrict, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, EncodedJSValue));
+JSC_DECLARE_JIT_OPERATION(operationPutByValWithThisStrict, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, EncodedJSValue));
 
 JSC_DECLARE_JIT_OPERATION(operationCallDirectEvalSloppy, EncodedJSValue, (void*, JSScope*, EncodedJSValue));
 JSC_DECLARE_JIT_OPERATION(operationCallDirectEvalStrict, EncodedJSValue, (void*, JSScope*, EncodedJSValue));

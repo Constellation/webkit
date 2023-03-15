@@ -1761,32 +1761,6 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdWithThisNonStrict, void, (JSGlobalObjec
     putWithThis<false>(globalObject, encodedBase, encodedThis, encodedValue, ident);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisStrict, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBase, EncodedJSValue encodedThis, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue))
-{
-    VM& vm = globalObject->vm();
-    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
-    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
-
-    Identifier property = JSValue::decode(encodedSubscript).toPropertyKey(globalObject);
-    RETURN_IF_EXCEPTION(scope, void());
-    scope.release();
-    putWithThis<true>(globalObject, encodedBase, encodedThis, encodedValue, property);
-}
-
-JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisNonStrict, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBase, EncodedJSValue encodedThis, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue))
-{
-    VM& vm = globalObject->vm();
-    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
-    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
-
-    Identifier property = JSValue::decode(encodedSubscript).toPropertyKey(globalObject);
-    RETURN_IF_EXCEPTION(scope, void());
-    scope.release();
-    putWithThis<false>(globalObject, encodedBase, encodedThis, encodedValue, property);
-}
-
 ALWAYS_INLINE static void defineDataProperty(JSGlobalObject* globalObject, JSObject* base, const Identifier& propertyName, JSValue value, int32_t attributes)
 {
     PropertyDescriptor descriptor = toPropertyDescriptor(value, jsUndefined(), jsUndefined(), DefinePropertyAttributes(attributes));

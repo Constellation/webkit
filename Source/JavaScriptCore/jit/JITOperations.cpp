@@ -1598,7 +1598,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisNonStrictOptimize, void, (JSGl
     JSValue subscript = JSValue::decode(encodedSubscript);
     JSValue value = JSValue::decode(encodedValue);
 
-    putByValWithThisOptimize(globalObject, callFrame->codeBlock(), baseValue, subscript, value, stubInfo, profile, ECMAMode::sloppy());
+    putByValWithThisOptimize(globalObject, callFrame->codeBlock(), baseValue, thisValue, subscript, value, stubInfo, profile, ECMAMode::sloppy());
 }
 
 JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisStrictOptimize, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBaseValue, EncodedJSValue encodedThisValue, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue, StructureStubInfo* stubInfo, ArrayProfile* profile))
@@ -1612,7 +1612,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisStrictOptimize, void, (JSGloba
     JSValue subscript = JSValue::decode(encodedSubscript);
     JSValue value = JSValue::decode(encodedValue);
 
-    putByValWithThisOptimize(globalObject, callFrame->codeBlock(), baseValue, subscript, value, stubInfo, profile, ECMAMode::strict());
+    putByValWithThisOptimize(globalObject, callFrame->codeBlock(), baseValue, thisValue, subscript, value, stubInfo, profile, ECMAMode::strict());
 }
 
 JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisNonStrictGeneric, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBaseValue, EncodedJSValue encodedThisValue, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue, StructureStubInfo* stubInfo, ArrayProfile* profile))
@@ -1628,7 +1628,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisNonStrictGeneric, void, (JSGlo
 
     stubInfo->tookSlowPath = true;
 
-    putByValWithThis(globalObject, baseValue, subscript, value, profile, ECMAMode::sloppy());
+    putByValWithThis(globalObject, baseValue, thisValue, subscript, value, profile, ECMAMode::sloppy());
 }
 
 JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisStrictGeneric, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBaseValue, EncodedJSValue encodedThisValue, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue, StructureStubInfo* stubInfo, ArrayProfile* profile))
@@ -1644,7 +1644,35 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisStrictGeneric, void, (JSGlobal
 
     stubInfo->tookSlowPath = true;
 
-    putByValWithThis(globalObject, baseValue, subscript, value, profile, ECMAMode::strict());
+    putByValWithThis(globalObject, baseValue, thisValue, subscript, value, profile, ECMAMode::strict());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisStrict, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBaseValue, EncodedJSValue encodedThisValue, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    JSValue baseValue = JSValue::decode(encodedBaseValue);
+    JSValue thisValue = JSValue::decode(encodedThisValue);
+    JSValue subscript = JSValue::decode(encodedSubscript);
+    JSValue value = JSValue::decode(encodedValue);
+
+    putByValWithThis(globalObject, baseValue, thisValue, subscript, value, nullptr, ECMAMode::strict());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisNonStrict, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBaseValue, EncodedJSValue encodedThisValue, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    JSValue baseValue = JSValue::decode(encodedBaseValue);
+    JSValue thisValue = JSValue::decode(encodedThisValue);
+    JSValue subscript = JSValue::decode(encodedSubscript);
+    JSValue value = JSValue::decode(encodedValue);
+
+    putByValWithThis(globalObject, baseValue, thisValue, subscript, value, nullptr, ECMAMode::sloppy());
 }
 
 JSC_DEFINE_JIT_OPERATION(operationCallDirectEvalSloppy, EncodedJSValue, (void* frame, JSScope* callerScopeChain, EncodedJSValue encodedThisValue))
