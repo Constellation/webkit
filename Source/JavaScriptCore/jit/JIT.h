@@ -912,6 +912,7 @@ namespace JSC {
         Vector<JITGetByValWithThisGenerator> m_getByValsWithThis;
         Vector<JITPutByIdGenerator> m_putByIds;
         Vector<JITPutByValGenerator> m_putByVals;
+        Vector<JITPutByValWithThisGenerator> m_putByValsWithThis;
         Vector<JITInByIdGenerator> m_inByIds;
         Vector<JITInByValGenerator> m_inByVals;
         Vector<JITDelByIdGenerator> m_delByIds;

@@ -514,8 +514,6 @@ void JITInstanceOfGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath
 
 JITGetByValGenerator::JITGetByValGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSetBuilder& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR)
     : Base(codeBlock, stubInfo, jitType, codeOrigin, accessType)
-    , m_base(base)
-    , m_result(result)
 {
     std::visit([&](auto* stubInfo) {
         setUpStubInfo(*stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, property, result, stubInfoGPR);
@@ -550,8 +548,6 @@ void JITGetByValGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
 
 JITGetByValWithThisGenerator::JITGetByValWithThisGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSetBuilder& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs thisRegs, JSValueRegs result, GPRReg stubInfoGPR)
     : Base(codeBlock, stubInfo, jitType, codeOrigin, accessType)
-    , m_base(base)
-    , m_result(result)
 {
     std::visit([&](auto* stubInfo) {
         setUpStubInfo(*stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, property, thisRegs, result, stubInfoGPR);
@@ -586,8 +582,6 @@ void JITGetByValWithThisGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& sl
 
 JITPutByValGenerator::JITPutByValGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSetBuilder& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs value, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, PutKind putKind, ECMAMode ecmaMode, PrivateFieldPutKind privateFieldPutKind)
     : Base(codeBlock, stubInfo, jitType, codeOrigin, accessType)
-    , m_base(base)
-    , m_value(value)
 {
     std::visit([&](auto* stubInfo) {
         setUpStubInfo(*stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, property, value, arrayProfileGPR, stubInfoGPR, putKind, ecmaMode, privateFieldPutKind);
@@ -607,6 +601,34 @@ void JITPutByValGenerator::generateFastPath(CCallHelpers& jit)
 }
 
 void JITPutByValGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
+{
+    ASSERT(m_stubInfo);
+    Base::finalize(fastPath, slowPath, fastPath.locationOf<JITStubRoutinePtrTag>(m_start));
+    if (m_stubInfo->useDataIC)
+        m_stubInfo->m_codePtr = m_stubInfo->slowPathStartLocation;
+}
+
+JITPutByValWithThisGenerator::JITPutByValWithThisGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSetBuilder& usedRegisters, JSValueRegs baseRegs, JSValueRegs propertyRegs, JSValueRegs valueRegs, JSValueRegs thisRegs, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, ECMAMode ecmaMode)
+    : Base(codeBlock, stubInfo, jitType, codeOrigin, accessType)
+{
+    std::visit([&](auto* stubInfo) {
+        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, baseRegs, propertyRegs, valueRegs, thisRegs, arrayProfileGPR, stubInfoGPR, ecmaMode);
+    }, stubInfo);
+}
+
+void JITPutByValWithThisGenerator::generateFastPath(CCallHelpers& jit)
+{
+    ASSERT(m_stubInfo);
+    m_start = jit.label();
+    if (m_stubInfo->useDataIC) {
+        jit.move(CCallHelpers::TrustedImmPtr(m_stubInfo), m_stubInfo->m_stubInfoGPR);
+        jit.farJump(CCallHelpers::Address(m_stubInfo->m_stubInfoGPR, StructureStubInfo::offsetOfCodePtr()), JITStubRoutinePtrTag);
+    } else
+        m_slowPathJump = jit.patchableJump();
+    m_done = jit.label();
+}
+
+void JITPutByValWithThisGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
 {
     ASSERT(m_stubInfo);
     Base::finalize(fastPath, slowPath, fastPath.locationOf<JITStubRoutinePtrTag>(m_start));

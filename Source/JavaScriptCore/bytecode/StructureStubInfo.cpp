@@ -738,6 +738,7 @@ void StructureStubInfo::checkConsistency()
         RELEASE_ASSERT(hasConstantIdentifier);
         break;
     case AccessType::GetByValWithThis:
+    case AccessType::PutByValWithThis:
     default:
         break;
     }

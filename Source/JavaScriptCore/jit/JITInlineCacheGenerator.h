@@ -316,8 +316,68 @@ public:
         }
     }
 
-    JSValueRegs m_base;
-    JSValueRegs m_value;
+    CCallHelpers::PatchableJump m_slowPathJump;
+};
+
+class JITPutByValWithThisGenerator final : public JITInlineCacheGenerator {
+    using Base = JITInlineCacheGenerator;
+public:
+    JITPutByValWithThisGenerator() = default;
+
+    JITPutByValWithThisGenerator(
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSetBuilder& usedRegisters,
+        JSValueRegs base, JSValueRegs property, JSValueRegs result, JSValueRegs thisRegs, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, ECMAMode);
+
+    CCallHelpers::Jump slowPathJump() const
+    {
+        ASSERT(m_slowPathJump.m_jump.isSet());
+        return m_slowPathJump.m_jump;
+    }
+
+    void finalize(LinkBuffer& fastPathLinkBuffer, LinkBuffer& slowPathLinkBuffer);
+
+    void generateFastPath(CCallHelpers&);
+
+    void generateEmptyPath(CCallHelpers&);
+
+    template<typename StubInfo>
+    static void setUpStubInfo(StubInfo& stubInfo,
+        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters,
+        JSValueRegs baseRegs, JSValueRegs propertyRegs, JSValueRegs valueRegs, JSValueRegs thisRegs, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, ECMAMode ecmaMode)
+    {
+        JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
+        if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
+            stubInfo.m_baseGPR = baseRegs.payloadGPR();
+            stubInfo.m_extraGPR = thisRegs.payloadGPR();
+            stubInfo.m_valueGPR = valueRegs.payloadGPR();
+            stubInfo.m_extra2GPR = propertyRegs.payloadGPR();
+            stubInfo.m_stubInfoGPR = stubInfoGPR;
+            if constexpr (!std::is_same_v<std::decay_t<StubInfo>, DFG::UnlinkedStructureStubInfo>)
+                stubInfo.m_arrayProfileGPR = arrayProfileGPR;
+            else
+                UNUSED_PARAM(arrayProfileGPR);
+#if USE(JSVALUE32_64)
+            stubInfo.m_baseTagGPR = baseRegs.tagGPR();
+            stubInfo.m_valueTagGPR = valueRegs.tagGPR();
+            stubInfo.m_extraTagGPR = thisRegs.tagGPR();
+            stubInfo.m_extra2TagGPR = propertyRegs.tagGPR();
+#endif
+            stubInfo.hasConstantIdentifier = false;
+        } else {
+            UNUSED_PARAM(baseRegs);
+            UNUSED_PARAM(propertyRegs);
+            UNUSED_PARAM(thisRegs);
+            UNUSED_PARAM(valueRegs);
+            UNUSED_PARAM(stubInfoGPR);
+            UNUSED_PARAM(arrayProfileGPR);
+        }
+        if constexpr (!std::is_same_v<std::decay_t<StubInfo>, StructureStubInfo>) {
+            stubInfo.putKind = PutKind::NotDirect;
+            stubInfo.ecmaMode = ecmaMode;
+            stubInfo.privateFieldPutKind = PrivateFieldPutKind::None;
+        } else
+            UNUSED_PARAM(ecmaMode);
+    }
 
     CCallHelpers::PatchableJump m_slowPathJump;
 };
@@ -585,9 +645,6 @@ public:
         }
     }
 
-    JSValueRegs m_base;
-    JSValueRegs m_result;
-
     CCallHelpers::PatchableJump m_slowPathJump;
 };
 
@@ -639,9 +696,6 @@ public:
             UNUSED_PARAM(stubInfoGPR);
         }
     }
-
-    JSValueRegs m_base;
-    JSValueRegs m_result;
 
     CCallHelpers::PatchableJump m_slowPathJump;
 };
