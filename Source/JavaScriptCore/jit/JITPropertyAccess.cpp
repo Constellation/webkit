@@ -373,7 +373,7 @@ void JIT::emit_op_put_by_val(const JSInstruction* currentInstruction)
     emitGetVirtualRegister(base, baseJSR);
     emitGetVirtualRegister(property, propertyJSR);
     emitGetVirtualRegister(value, valueJSR);
-    materializePointerIntoMetadata(bytecode, OpPutByValWithThis::Metadata::offsetOfArrayProfile(), profileGPR);
+    materializePointerIntoMetadata(bytecode, Op::Metadata::offsetOfArrayProfile(), profileGPR);
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
 
@@ -486,7 +486,7 @@ void JIT::emit_op_put_by_val_with_this(const JSInstruction* currentInstruction)
     emitGetVirtualRegister(property, propertyJSR);
     emitGetVirtualRegister(thisValue, thisJSR);
     emitGetVirtualRegister(value, valueJSR);
-    materializePointerIntoMetadata(bytecode, Op::Metadata::offsetOfArrayProfile(), profileGPR);
+    materializePointerIntoMetadata(bytecode, OpPutByValWithThis::Metadata::offsetOfArrayProfile(), profileGPR);
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
 
