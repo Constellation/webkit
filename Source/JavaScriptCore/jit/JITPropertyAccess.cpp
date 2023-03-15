@@ -512,7 +512,7 @@ void JIT::emit_op_put_by_val_with_this(const JSInstruction* currentInstruction)
     emitWriteBarrier(base, ShouldFilterBase);
 }
 
-void JIT::emitSlow_op_put_by_val_with_this(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
+void JIT::emitSlow_op_put_by_val_with_this(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
     uint32_t bytecodeOffset = m_bytecodeIndex.offset();
     ASSERT(BytecodeIndex(bytecodeOffset) == m_bytecodeIndex);
