@@ -1214,10 +1214,24 @@ JSC_DEFINE_COMMON_SLOW_PATH(slow_path_put_by_val_with_this)
     JSValue thisValue = GET_C(bytecode.m_thisValue).jsValue();
     JSValue subscript = GET_C(bytecode.m_property).jsValue();
     JSValue value = GET_C(bytecode.m_value).jsValue();
-    
+    bool isStrictMode = bytecode.m_ecmaMode.isStrict();
+    auto& metadata = bytecode.metadata(codeBlock);
+
+    if (std::optional<uint32_t> index = subscript.tryGetAsUint32Index()) {
+        uint32_t i = *index;
+        if (baseValue.isObject()) {
+            JSObject* object = asObject(baseValue);
+            if (!object->trySetIndexQuickly(vm, i, value, &metadata.m_arrayProfile))
+                object->methodTable()->putByIndex(object, globalObject, i, value, isStrictMode);
+            END();
+        }
+        baseValue.putByIndex(globalObject, i, value, isStrictMode);
+        END();
+    }
+
     auto property = subscript.toPropertyKey(globalObject);
     CHECK_EXCEPTION();
-    PutPropertySlot slot(thisValue, bytecode.m_ecmaMode.isStrict());
+    PutPropertySlot slot(thisValue, isStrictMode);
     baseValue.put(globalObject, property, value, slot);
     END();
 }

@@ -49,6 +49,7 @@ enum class GetByKind {
 enum class PutByKind {
     ById,
     ByVal,
+    ByValWithThis,
 };
 
 enum class DelByKind {

@@ -782,6 +782,11 @@ static CodePtr<CFunctionPtrTag> appropriateGenericPutByFunction(const PutPropert
         }
         break;
     }
+    case PutByKind::ByValWithThis: {
+        if (slot.isStrictMode())
+            return operationPutByValWithThisStrictGeneric;
+        return operationPutByValWithThisNonStrictGeneric;
+    }
     }
     // Make win port compiler happy
     RELEASE_ASSERT_NOT_REACHED();
@@ -827,6 +832,10 @@ static CodePtr<CFunctionPtrTag> appropriateOptimizingPutByFunction(const PutProp
             return operationPutByValSetPrivateFieldOptimize;
         }
         break;
+    case PutByKind::ByValWithThis:
+        if (slot.isStrictMode())
+            return operationPutByValWithThisStrictOptimize;
+        return operationPutByValWithThisNonStrictOptimize;
     }
     // Make win port compiler happy
     RELEASE_ASSERT_NOT_REACHED();
@@ -2090,6 +2099,17 @@ void resetPutBy(CodeBlock* codeBlock, StructureStubInfo& stubInfo, PutByKind kin
         }
         break;
     }
+    case PutByKind::ByValWithThis: {
+        using FunctionType = decltype(&operationPutByValStrictOptimize);
+        FunctionType unoptimizedFunction = reinterpret_cast<FunctionType>(readPutICCallTarget(codeBlock, stubInfo).taggedPtr());
+        if (unoptimizedFunction == operationPutByValWithThisStrictGeneric || unoptimizedFunction == operationPutByValWithThisStrictOptimize)
+            optimizedFunction = operationPutByValWithThisStrictOptimize;
+        else {
+            ASSERT(unoptimizedFunction == operationPutByValWithThisNonStrictGeneric || unoptimizedFunction == operationPutByValWithThisNonStrictOptimize);
+            optimizedFunction = operationPutByValWithThisNonStrictOptimize;
+        }
+        break;
+    }
     }
 
     repatchSlowPathCall(codeBlock, stubInfo, optimizedFunction);
@@ -2098,6 +2118,9 @@ void resetPutBy(CodeBlock* codeBlock, StructureStubInfo& stubInfo, PutByKind kin
         InlineAccess::resetStubAsJumpInAccess(codeBlock, stubInfo);
         break;
     case PutByKind::ByVal:
+        InlineAccess::resetStubAsJumpInAccessNotUsingInlineAccess(codeBlock, stubInfo);
+        break;
+    case PutByKind::ByValWithThis:
         InlineAccess::resetStubAsJumpInAccessNotUsingInlineAccess(codeBlock, stubInfo);
         break;
     }

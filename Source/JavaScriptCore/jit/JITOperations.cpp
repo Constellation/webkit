@@ -1085,6 +1085,45 @@ static void directPutByVal(JSGlobalObject* globalObject, JSObject* baseObject, J
     CommonSlowPaths::putDirectWithReify(vm, globalObject, baseObject, property, value, slot);
 }
 
+static void putByValWithThis(JSGlobalObject* globalObject, JSValue baseValue, JSValue thisValue, JSValue subscript, JSValue value, ArrayProfile* arrayProfile, ECMAMode ecmaMode)
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+    if (std::optional<uint32_t> index = subscript.tryGetAsUint32Index()) {
+        uint32_t i = *index;
+        if (baseValue.isObject()) {
+            JSObject* object = asObject(baseValue);
+            if (object->trySetIndexQuickly(vm, i, value, arrayProfile))
+                return;
+
+            if (arrayProfile)
+                arrayProfile->setOutOfBounds();
+            scope.release();
+            object->methodTable()->putByIndex(object, globalObject, i, value, ecmaMode.isStrict());
+            return;
+        }
+
+        scope.release();
+        baseValue.putByIndex(globalObject, i, value, ecmaMode.isStrict());
+        return;
+    }
+
+    if (subscript.isNumber()) {
+        if (baseValue.isObject()) {
+            if (arrayProfile)
+                arrayProfile->setOutOfBounds();
+        }
+    }
+
+    auto property = subscript.toPropertyKey(globalObject);
+    // Don't put to an object if toString threw an exception.
+    RETURN_IF_EXCEPTION(scope, void());
+
+    scope.release();
+    PutPropertySlot slot(thisValue, ecmaMode.isStrict());
+    baseValue.putInline(globalObject, property, value, slot);
+}
+
 enum class OptimizationResult {
     NotOptimized,
     SeenOnce,
@@ -1133,6 +1172,49 @@ static ALWAYS_INLINE void putByValOptimize(JSGlobalObject* globalObject, CodeBlo
     }
 
     RELEASE_AND_RETURN(scope, putByVal(globalObject, baseValue, subscript, value, profile, ecmaMode));
+}
+
+static ALWAYS_INLINE void putByValWithThisOptimize(JSGlobalObject* globalObject, CodeBlock* codeBlock, JSValue baseValue, JSValue thisValue, JSValue subscript, JSValue value, StructureStubInfo* stubInfo, ArrayProfile* profile, ECMAMode ecmaMode)
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    if (baseValue.isObject()) {
+        JSObject* baseObject = asObject(baseValue);
+        if (!isCopyOnWrite(baseObject->indexingMode()) && subscript.isInt32()) {
+            Structure* structure = baseObject->structure();
+            if (stubInfo->considerCachingGeneric(vm, codeBlock, structure)) {
+                if (profile) {
+                    ConcurrentJSLocker locker(codeBlock->m_lock);
+                    profile->computeUpdatedPrediction(locker, codeBlock, structure);
+                }
+                repatchArrayPutByVal(globalObject, codeBlock, baseValue, subscript, *stubInfo, PutKind::NotDirect, ecmaMode);
+            }
+        }
+
+        if (CacheableIdentifier::isCacheableIdentifierCell(subscript)) {
+            const Identifier propertyName = subscript.toPropertyKey(globalObject);
+            RETURN_IF_EXCEPTION(scope, void());
+            if (subscript.isSymbol() || !parseIndex(propertyName)) {
+                AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
+                PutPropertySlot slot(thisValue, ecmaMode.isStrict(), codeBlock->putByIdContext());
+
+                Structure* structure = CommonSlowPaths::originalStructureBeforePut(baseValue);
+                baseObject->putInline(globalObject, propertyName, value, slot);
+                RETURN_IF_EXCEPTION(scope, void());
+
+                if (accessType != static_cast<AccessType>(stubInfo->accessType))
+                    return;
+
+                CacheableIdentifier identifier = CacheableIdentifier::createFromCell(subscript.asCell());
+                if (stubInfo->considerCachingBy(vm, codeBlock, structure, identifier))
+                    repatchPutBy(globalObject, codeBlock, baseValue, structure, identifier, slot, *stubInfo, PutByKind::ByValWithThis, PutKind::NotDirect);
+                return;
+            }
+        }
+    }
+
+    RELEASE_AND_RETURN(scope, putByValWithThis(globalObject, baseValue, thisValue, subscript, value, profile, ecmaMode));
 }
 
 JSC_DEFINE_JIT_OPERATION(operationPutByValStrictOptimize, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBaseValue, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue, StructureStubInfo* stubInfo, ArrayProfile* profile))
@@ -1503,6 +1585,66 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValSetPrivateFieldGeneric, void, (JSGloba
         stubInfo->tookSlowPath = true;
 
     putPrivateName<false>(globalObject, baseValue, subscript, value);
+}
+
+JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisNonStrictOptimize, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBaseValue, EncodedJSValue encodedThisValue, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue, StructureStubInfo* stubInfo, ArrayProfile* profile))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    JSValue baseValue = JSValue::decode(encodedBaseValue);
+    JSValue thisValue = JSValue::decode(encodedThisValue);
+    JSValue subscript = JSValue::decode(encodedSubscript);
+    JSValue value = JSValue::decode(encodedValue);
+
+    putByValWithThisOptimize(globalObject, callFrame->codeBlock(), baseValue, subscript, value, stubInfo, profile, ECMAMode::sloppy());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisStrictOptimize, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBaseValue, EncodedJSValue encodedThisValue, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue, StructureStubInfo* stubInfo, ArrayProfile* profile))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    JSValue baseValue = JSValue::decode(encodedBaseValue);
+    JSValue thisValue = JSValue::decode(encodedThisValue);
+    JSValue subscript = JSValue::decode(encodedSubscript);
+    JSValue value = JSValue::decode(encodedValue);
+
+    putByValWithThisOptimize(globalObject, callFrame->codeBlock(), baseValue, subscript, value, stubInfo, profile, ECMAMode::strict());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisNonStrictGeneric, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBaseValue, EncodedJSValue encodedThisValue, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue, StructureStubInfo* stubInfo, ArrayProfile* profile))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    JSValue baseValue = JSValue::decode(encodedBaseValue);
+    JSValue thisValue = JSValue::decode(encodedThisValue);
+    JSValue subscript = JSValue::decode(encodedSubscript);
+    JSValue value = JSValue::decode(encodedValue);
+
+    stubInfo->tookSlowPath = true;
+
+    putByValWithThis(globalObject, baseValue, subscript, value, profile, ECMAMode::sloppy());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationPutByValWithThisStrictGeneric, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBaseValue, EncodedJSValue encodedThisValue, EncodedJSValue encodedSubscript, EncodedJSValue encodedValue, StructureStubInfo* stubInfo, ArrayProfile* profile))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    JSValue baseValue = JSValue::decode(encodedBaseValue);
+    JSValue thisValue = JSValue::decode(encodedThisValue);
+    JSValue subscript = JSValue::decode(encodedSubscript);
+    JSValue value = JSValue::decode(encodedValue);
+
+    stubInfo->tookSlowPath = true;
+
+    putByValWithThis(globalObject, baseValue, subscript, value, profile, ECMAMode::strict());
 }
 
 JSC_DEFINE_JIT_OPERATION(operationCallDirectEvalSloppy, EncodedJSValue, (void* frame, JSScope* callerScopeChain, EncodedJSValue encodedThisValue))

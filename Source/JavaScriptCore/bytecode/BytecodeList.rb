@@ -849,6 +849,9 @@ op :put_by_val_with_this,
         property: VirtualRegister,
         value: VirtualRegister,
         ecmaMode: ECMAMode,
+    },
+    metadata: {
+        arrayProfile: ArrayProfile,
     }
 
 op :del_by_val,
