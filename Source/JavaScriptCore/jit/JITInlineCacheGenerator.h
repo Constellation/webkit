@@ -371,11 +371,9 @@ public:
             UNUSED_PARAM(stubInfoGPR);
             UNUSED_PARAM(arrayProfileGPR);
         }
-        if constexpr (!std::is_same_v<std::decay_t<StubInfo>, StructureStubInfo>) {
-            stubInfo.putKind = PutKind::NotDirect;
+        if constexpr (!std::is_same_v<std::decay_t<StubInfo>, StructureStubInfo>)
             stubInfo.ecmaMode = ecmaMode;
-            stubInfo.privateFieldPutKind = PrivateFieldPutKind::None;
-        } else
+        else
             UNUSED_PARAM(ecmaMode);
     }
 
