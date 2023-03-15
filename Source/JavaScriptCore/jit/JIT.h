@@ -503,6 +503,7 @@ namespace JSC {
         template<typename Op = OpPutByVal>
         void emit_op_put_by_val(const JSInstruction*);
         void emit_op_put_by_val_direct(const JSInstruction*);
+        void emit_op_put_by_val_with_this(const JSInstruction*);
         void emit_op_put_private_name(const JSInstruction*);
         void emit_op_put_getter_by_id(const JSInstruction*);
         void emit_op_put_setter_by_id(const JSInstruction*);
@@ -599,6 +600,7 @@ namespace JSC {
         void emitSlow_op_new_object(const JSInstruction*, Vector<SlowCaseEntry>::iterator&);
         void emitSlow_op_put_by_id(const JSInstruction*, Vector<SlowCaseEntry>::iterator&);
         void emitSlow_op_put_by_val(const JSInstruction*, Vector<SlowCaseEntry>::iterator&);
+        void emitSlow_op_put_by_val_with_this(const JSInstruction*, Vector<SlowCaseEntry>::iterator&);
         void emitSlow_op_put_private_name(const JSInstruction*, Vector<SlowCaseEntry>::iterator&);
         void emitSlow_op_sub(const JSInstruction*, Vector<SlowCaseEntry>::iterator&);
 
@@ -659,6 +661,7 @@ namespace JSC {
         static MacroAssemblerCodeRef<JITThunkPtrTag> slow_op_del_by_id_callSlowOperationThenCheckExceptionGenerator(VM&);
         static MacroAssemblerCodeRef<JITThunkPtrTag> slow_op_del_by_val_callSlowOperationThenCheckExceptionGenerator(VM&);
         static MacroAssemblerCodeRef<JITThunkPtrTag> slow_op_put_by_val_callSlowOperationThenCheckExceptionGenerator(VM&);
+        static MacroAssemblerCodeRef<JITThunkPtrTag> slow_op_put_by_val_with_this_callSlowOperationThenCheckExceptionGenerator(VM&);
         static MacroAssemblerCodeRef<JITThunkPtrTag> slow_op_put_private_name_callSlowOperationThenCheckExceptionGenerator(VM&);
 
         static MacroAssemblerCodeRef<JITThunkPtrTag> slow_op_put_to_scopeGenerator(VM&);
@@ -939,6 +942,7 @@ namespace JSC {
         unsigned m_getByValWithThisIndex { UINT_MAX };
         unsigned m_putByIdIndex { UINT_MAX };
         unsigned m_putByValIndex { UINT_MAX };
+        unsigned m_putByValWithThisIndex { UINT_MAX };
         unsigned m_inByIdIndex { UINT_MAX };
         unsigned m_inByValIndex { UINT_MAX };
         unsigned m_delByValIndex { UINT_MAX };
