@@ -748,6 +748,18 @@ op :in_by_val,
         arrayProfile: ArrayProfile,
     }
 
+op :put_by_val_with_this,
+    args: {
+        base: VirtualRegister,
+        thisValue: VirtualRegister,
+        property: VirtualRegister,
+        value: VirtualRegister,
+        ecmaMode: ECMAMode,
+    },
+    metadata: {
+        arrayProfile: ArrayProfile,
+    }
+
 op :enumerator_next,
     args: {
         # out
@@ -840,18 +852,6 @@ op :del_by_id,
         base: VirtualRegister,
         property: unsigned,
         ecmaMode: ECMAMode,
-    }
-
-op :put_by_val_with_this,
-    args: {
-        base: VirtualRegister,
-        thisValue: VirtualRegister,
-        property: VirtualRegister,
-        value: VirtualRegister,
-        ecmaMode: ECMAMode,
-    },
-    metadata: {
-        arrayProfile: ArrayProfile,
     }
 
 op :del_by_val,
