@@ -1749,7 +1749,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdWithThisStrict, void, (JSGlobalObject* 
     putWithThis<true>(globalObject, encodedBase, encodedThis, encodedValue, ident);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdWithThis, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBase, EncodedJSValue encodedThis, EncodedJSValue encodedValue, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdWithThisNonStrict, void, (JSGlobalObject* globalObject, EncodedJSValue encodedBase, EncodedJSValue encodedThis, EncodedJSValue encodedValue, uintptr_t rawCacheableIdentifier))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);

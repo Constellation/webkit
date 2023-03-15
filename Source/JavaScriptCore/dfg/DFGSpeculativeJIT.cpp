@@ -14791,7 +14791,7 @@ void SpeculativeJIT::compilePutByIdWithThis(Node* node)
     JSValueRegs valueRegs = value.jsValueRegs();
 
     flushRegisters();
-    callOperation(node->ecmaMode().isStrict() ? operationPutByIdWithThisStrict : operationPutByIdWithThis,
+    callOperation(node->ecmaMode().isStrict() ? operationPutByIdWithThisStrict : operationPutByIdWithThisNonStrict,
         LinkableConstant::globalObject(*this, node), baseRegs, thisRegs, valueRegs, node->cacheableIdentifier().rawBits());
     exceptionCheck();
 

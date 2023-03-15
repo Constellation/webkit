@@ -173,7 +173,7 @@ JSC_DECLARE_JIT_OPERATION(operationPutDoubleByValBeyondArrayBoundsStrict, void, 
 JSC_DECLARE_JIT_OPERATION(operationPutDoubleByValBeyondArrayBoundsNonStrict, void, (JSGlobalObject*, JSObject*, int32_t index, double value));
 JSC_DECLARE_JIT_OPERATION(operationPutDoubleByValDirectBeyondArrayBoundsStrict, void, (JSGlobalObject*, JSObject*, int32_t index, double value));
 JSC_DECLARE_JIT_OPERATION(operationPutDoubleByValDirectBeyondArrayBoundsNonStrict, void, (JSGlobalObject*, JSObject*, int32_t index, double value));
-JSC_DECLARE_JIT_OPERATION(operationPutByIdWithThis, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, uintptr_t));
+JSC_DECLARE_JIT_OPERATION(operationPutByIdWithThisNonStrict, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, uintptr_t));
 JSC_DECLARE_JIT_OPERATION(operationPutByIdWithThisStrict, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, uintptr_t));
 JSC_DECLARE_JIT_OPERATION(operationPutByValWithThisNonStrict, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, EncodedJSValue));
 JSC_DECLARE_JIT_OPERATION(operationPutByValWithThisStrict, void, (JSGlobalObject*, EncodedJSValue, EncodedJSValue, EncodedJSValue, EncodedJSValue));

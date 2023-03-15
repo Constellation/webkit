@@ -4403,7 +4403,7 @@ private:
         LValue thisValue = lowJSValue(m_node->child2());
         LValue value = lowJSValue(m_node->child3());
 
-        vmCall(Void, m_node->ecmaMode().isStrict() ? operationPutByIdWithThisStrict : operationPutByIdWithThis,
+        vmCall(Void, m_node->ecmaMode().isStrict() ? operationPutByIdWithThisStrict : operationPutByIdWithThisNonStrict,
             weakPointer(globalObject), base, thisValue, value, m_out.constIntPtr(m_node->cacheableIdentifier().rawBits()));
     }
 
