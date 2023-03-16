@@ -6589,7 +6589,7 @@ void SpeculativeJIT::compilePutByValWithThis(Node* node)
     RegisterSetBuilder usedRegisters = this->usedRegisters();
 
     JumpList slowCases;
-    if (!m_state.forNode(node->child1()).isType(SpecCell))
+    if (!m_state.forNode(m_graph.varArgChild(node, 0)).isType(SpecCell))
         slowCases.append(branchIfNotCell(baseGPR));
 
     JSValueRegs baseRegs { baseGPR };
@@ -6603,7 +6603,7 @@ void SpeculativeJIT::compilePutByValWithThis(Node* node)
         baseRegs, propertyRegs, valueRegs, thisValueRegs, InvalidGPRReg, stubInfoGPR, ecmaMode);
 
     std::visit([&](auto* stubInfo) {
-        if (m_state.forNode(m_state.forNode(m_graph.varArgChild(node, 2)).isType(SpecString))
+        if (m_state.forNode(m_graph.varArgChild(node, 2)).isType(SpecString))
             stubInfo->propertyIsString = true;
         else if (m_state.forNode(m_graph.varArgChild(node, 2)).isType(SpecInt32Only))
             stubInfo->propertyIsInt32 = true;
