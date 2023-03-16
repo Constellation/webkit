@@ -3006,7 +3006,6 @@ private:
         case BottomValue:
         case TypeOf:
         case PutByIdWithThis:
-        case PutByValWithThis:
         case CompareEqPtr:
         case GetGlobalThis:
         case ExtractValueFromWeakMapGet:
