@@ -591,44 +591,136 @@ bool toPropertyDescriptor(JSGlobalObject* globalObject, JSValue in, PropertyDesc
     }
     JSObject* description = asObject(in);
 
-    JSValue enumerable = description->getIfPropertyExists(globalObject, vm.propertyNames->enumerable);
-    RETURN_IF_EXCEPTION(scope, false);
-    if (enumerable)
-        desc.setEnumerable(enumerable.toBoolean(globalObject));
+    JSValue enumerable;
+    JSValue configurable;
+    JSValue value;
+    JSValue writable;
+    JSValue get;
+    JSValue set;
 
-    JSValue configurable = description->getIfPropertyExists(globalObject, vm.propertyNames->configurable);
-    RETURN_IF_EXCEPTION(scope, false);
-    if (configurable)
-        desc.setConfigurable(configurable.toBoolean(globalObject));
+    if (globalObject->propertyDescriptorFastPathWatchpointSet().state() == ClearWatchpoint)
+        globalObject->tryInstallPropertyDescriptorFastPathWatchpoint();
+    if (globalObject->propertyDescriptorFastPathWatchpointSet().isStillValid() && globalObject->objectPrototypeChainIsSane() && description->inherits<JSFinalObject>() && description->getPrototypeDirect() == globalObject->objectPrototype() && description->structure()->canPerformFastPropertyEnumeration()) {
+        description->fastForEachPropertyWithSideEffectFreeFunctor(vm, [&](const PropertyTableEntry& entry) -> bool {
+            PropertyName propertyName(entry.key());
+            if (propertyName == vm.propertyNames->enumerable)
+                enumerable = description->getDirect(entry.offset());
+            else if (propertyName == vm.propertyNames->configurable)
+                configurable = description->getDirect(entry.offset());
+            else if (propertyName == vm.propertyNames->value)
+                value = description->getDirect(entry.offset());
+            else if (propertyName == vm.propertyNames->writable)
+                writable = description->getDirect(entry.offset());
+            else if (propertyName == vm.propertyNames->get)
+                get = description->getDirect(entry.offset());
+            else if (propertyName == vm.propertyNames->set)
+                set = description->getDirect(entry.offset());
+            return true;
+        });
 
-    JSValue value = description->getIfPropertyExists(globalObject, vm.propertyNames->value);
-    RETURN_IF_EXCEPTION(scope, false);
-    if (value)
-        desc.setValue(value);
-
-    JSValue writable = description->getIfPropertyExists(globalObject, vm.propertyNames->writable);
-    RETURN_IF_EXCEPTION(scope, false);
-    if (writable)
-        desc.setWritable(writable.toBoolean(globalObject));
-
-    JSValue get = description->getIfPropertyExists(globalObject, vm.propertyNames->get);
-    RETURN_IF_EXCEPTION(scope, false);
-    if (get) {
-        if (!get.isUndefined() && !get.isCallable()) {
-            throwTypeError(globalObject, scope, "Getter must be a function."_s);
-            return false;
+        if (enumerable)
+            desc.setEnumerable(enumerable.toBoolean(globalObject));
+        if (configurable)
+            desc.setConfigurable(configurable.toBoolean(globalObject));
+        if (value)
+            desc.setValue(value);
+        if (writable)
+            desc.setWritable(writable.toBoolean(globalObject));
+        if (get) {
+            if (!get.isUndefined() && !get.isCallable()) {
+                throwTypeError(globalObject, scope, "Getter must be a function."_s);
+                return false;
+            }
+            desc.setGetter(get);
         }
-        desc.setGetter(get);
-    }
-
-    JSValue set = description->getIfPropertyExists(globalObject, vm.propertyNames->set);
-    RETURN_IF_EXCEPTION(scope, false);
-    if (set) {
-        if (!set.isUndefined() && !set.isCallable()) {
-            throwTypeError(globalObject, scope, "Setter must be a function."_s);
-            return false;
+        if (set) {
+            if (!set.isUndefined() && !set.isCallable()) {
+                throwTypeError(globalObject, scope, "Setter must be a function."_s);
+                return false;
+            }
+            desc.setSetter(set);
         }
-        desc.setSetter(set);
+#if 0
+        enumerable = description->getDirect(vm, vm.propertyNames->enumerable);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (enumerable)
+            desc.setEnumerable(enumerable.toBoolean(globalObject));
+
+        configurable = description->getDirect(vm, vm.propertyNames->configurable);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (configurable)
+            desc.setConfigurable(configurable.toBoolean(globalObject));
+
+        value = description->getDirect(vm, vm.propertyNames->value);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (value)
+            desc.setValue(value);
+
+        writable = description->getDirect(vm, vm.propertyNames->writable);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (writable)
+            desc.setWritable(writable.toBoolean(globalObject));
+
+        get = description->getDirect(vm, vm.propertyNames->get);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (get) {
+            if (!get.isUndefined() && !get.isCallable()) {
+                throwTypeError(globalObject, scope, "Getter must be a function."_s);
+                return false;
+            }
+            desc.setGetter(get);
+        }
+
+        set = description->getDirect(vm, vm.propertyNames->set);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (set) {
+            if (!set.isUndefined() && !set.isCallable()) {
+                throwTypeError(globalObject, scope, "Setter must be a function."_s);
+                return false;
+            }
+            desc.setSetter(set);
+        }
+#endif
+    } else {
+        enumerable = description->getIfPropertyExists(globalObject, vm.propertyNames->enumerable);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (enumerable)
+            desc.setEnumerable(enumerable.toBoolean(globalObject));
+
+        configurable = description->getIfPropertyExists(globalObject, vm.propertyNames->configurable);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (configurable)
+            desc.setConfigurable(configurable.toBoolean(globalObject));
+
+        value = description->getIfPropertyExists(globalObject, vm.propertyNames->value);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (value)
+            desc.setValue(value);
+
+        writable = description->getIfPropertyExists(globalObject, vm.propertyNames->writable);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (writable)
+            desc.setWritable(writable.toBoolean(globalObject));
+
+        get = description->getIfPropertyExists(globalObject, vm.propertyNames->get);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (get) {
+            if (!get.isUndefined() && !get.isCallable()) {
+                throwTypeError(globalObject, scope, "Getter must be a function."_s);
+                return false;
+            }
+            desc.setGetter(get);
+        }
+
+        set = description->getIfPropertyExists(globalObject, vm.propertyNames->set);
+        RETURN_IF_EXCEPTION(scope, false);
+        if (set) {
+            if (!set.isUndefined() && !set.isCallable()) {
+                throwTypeError(globalObject, scope, "Setter must be a function."_s);
+                return false;
+            }
+            desc.setSetter(set);
+        }
     }
 
     if (!desc.isAccessorDescriptor())

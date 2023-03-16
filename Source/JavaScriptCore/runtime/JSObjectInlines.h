@@ -207,6 +207,28 @@ template<typename PropertyNameType> inline JSValue JSObject::getIfPropertyExists
     return slot.getValue(globalObject, propertyName);
 }
 
+template<typename PropertyNameType> inline JSValue JSObject::getOwnPropertyIfPropertyExists(JSGlobalObject* globalObject, const PropertyNameType& propertyName)
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    PropertySlot slot(this, PropertySlot::InternalMethodType::HasProperty);
+    bool hasProperty = getOwnPropertySlot(globalObject, propertyName, slot);
+    RETURN_IF_EXCEPTION(scope, { });
+    if (!hasProperty)
+        return { };
+
+    if (LIKELY(!slot.isTaintedByOpaqueObject()))
+        RELEASE_AND_RETURN(scope, slot.getValue(globalObject, propertyName));
+
+    {
+        PropertySlot slot(this, PropertySlot::InternalMethodType::GetOwnProperty);
+        if (!getOwnPropertySlot(globalObject, propertyName, slot))
+            return { };
+        RELEASE_AND_RETURN(scope, slot.getValue(globalObject, propertyName));
+    }
+}
+
 // FIXME: Given the single special purpose this is used for, it's unclear if this needs to be a JSObject member function.
 inline bool JSObject::noSideEffectMayHaveNonIndexProperty(VM& vm, PropertyName propertyName)
 {
