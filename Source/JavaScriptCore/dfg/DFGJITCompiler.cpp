@@ -263,6 +263,7 @@ void JITCompiler::link(LinkBuffer& linkBuffer)
     finalizeInlineCaches(m_getByValsWithThis, linkBuffer);
     finalizeInlineCaches(m_putByIds, linkBuffer);
     finalizeInlineCaches(m_putByVals, linkBuffer);
+    finalizeInlineCaches(m_putByValsWithThis, linkBuffer);
     finalizeInlineCaches(m_delByIds, linkBuffer);
     finalizeInlineCaches(m_delByVals, linkBuffer);
     finalizeInlineCaches(m_inByIds, linkBuffer);

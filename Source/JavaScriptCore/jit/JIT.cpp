@@ -975,6 +975,7 @@ void JIT::link()
     finalizeICs(m_getByValsWithThis);
     finalizeICs(m_putByIds);
     finalizeICs(m_putByVals);
+    finalizeICs(m_putByValsWithThis);
     finalizeICs(m_delByIds);
     finalizeICs(m_delByVals);
     finalizeICs(m_inByIds);
