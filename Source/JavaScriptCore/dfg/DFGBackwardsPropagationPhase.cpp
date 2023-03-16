@@ -458,9 +458,9 @@ private:
         }
 
         case GetByValWithThis: {
-            m_graph.child1()->mergeFlags(NodeBytecodeUsesAsValue);
-            m_graph.child2()->mergeFlags(NodeBytecodeUsesAsValue);
-            m_graph.child3()->mergeFlags(NodeBytecodeUsesAsNumber | NodeBytecodeUsesAsOther | NodeBytecodeUsesAsInt | NodeBytecodeUsesAsArrayIndex);
+            node->child1()->mergeFlags(NodeBytecodeUsesAsValue);
+            node->child2()->mergeFlags(NodeBytecodeUsesAsValue);
+            node->child3()->mergeFlags(NodeBytecodeUsesAsNumber | NodeBytecodeUsesAsOther | NodeBytecodeUsesAsInt | NodeBytecodeUsesAsArrayIndex);
             break;
         }
 
