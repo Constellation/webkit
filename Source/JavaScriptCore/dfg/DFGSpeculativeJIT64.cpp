@@ -4639,20 +4639,7 @@ void SpeculativeJIT::compile(Node* node)
     }
 
     case PutByValWithThis: {
-        JSValueOperand base(this, m_graph.varArgChild(node, 0));
-        GPRReg baseGPR = base.gpr();
-        JSValueOperand thisValue(this, m_graph.varArgChild(node, 1));
-        GPRReg thisValueGPR = thisValue.gpr();
-        JSValueOperand property(this, m_graph.varArgChild(node, 2));
-        GPRReg propertyGPR = property.gpr();
-        JSValueOperand value(this, m_graph.varArgChild(node, 3));
-        GPRReg valueGPR = value.gpr();
-
-        flushRegisters();
-        callOperation(node->ecmaMode().isStrict() ? operationPutByValWithThisStrict : operationPutByValWithThisNonStrict, LinkableConstant::globalObject(*this, node), baseGPR, thisValueGPR, propertyGPR, valueGPR);
-        exceptionCheck();
-
-        noResult(node);
+        compilePutByValWithThis(node);
         break;
     }
 
@@ -6554,6 +6541,98 @@ void SpeculativeJIT::compileGetByValWithThis(Node* node)
     addSlowPathGenerator(WTFMove(slowPath));
 
     jsValueResult(resultGPR, node);
+}
+
+void SpeculativeJIT::compilePutByValWithThis(Node* node)
+{
+#if OS(WINDOWS)
+    JSValueOperand base(this, m_graph.varArgChild(node, 0));
+    JSValueOperand thisValue(this, m_graph.varArgChild(node, 1));
+    JSValueOperand property(this, m_graph.varArgChild(node, 2));
+    JSValueOperand value(this, m_graph.varArgChild(node, 3));
+
+    GPRReg baseGPR = base.gpr();
+    GPRReg thisValueGPR = thisValue.gpr();
+    GPRReg propertyGPR = property.gpr();
+    GPRReg valueGPR = value.gpr();
+
+    flushRegisters();
+    callOperation(node->ecmaMode().isStrict() ? operationPutByValWithThisStrict : operationPutByValWithThisNonStrict, LinkableConstant::globalObject(*this, node), baseGPR, thisValueGPR, propertyGPR, valueGPR);
+    exceptionCheck();
+
+    noResult(node);
+#else
+    JSValueOperand base(this, m_graph.varArgChild(node, 0));
+    JSValueOperand thisValue(this, m_graph.varArgChild(node, 1));
+    JSValueOperand property(this, m_graph.varArgChild(node, 2));
+    JSValueOperand value(this, m_graph.varArgChild(node, 3));
+
+    GPRReg baseGPR = base.gpr();
+    GPRReg thisValueGPR = thisValue.gpr();
+    GPRReg propertyGPR = property.gpr();
+    GPRReg valueGPR = value.gpr();
+
+    GPRTemporary stubInfoTemp;
+    GPRReg stubInfoGPR = InvalidGPRReg;
+    if (m_graph.m_plan.isUnlinked()) {
+        stubInfoTemp = GPRTemporary(this);
+        stubInfoGPR = stubInfoTemp.gpr();
+    }
+
+    speculate(node, m_graph.varArgChild(node, 0));
+    speculate(node, m_graph.varArgChild(node, 1));
+    speculate(node, m_graph.varArgChild(node, 2));
+    speculate(node, m_graph.varArgChild(node, 3));
+
+    CodeOrigin codeOrigin = node->origin.semantic;
+    CallSiteIndex callSite = recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
+    RegisterSetBuilder usedRegisters = this->usedRegisters();
+
+    JumpList slowCases;
+    if (!m_state.forNode(node->child1()).isType(SpecCell))
+        slowCases.append(branchIfNotCell(baseGPR));
+
+    JSValueRegs baseRegs { baseGPR };
+    JSValueRegs propertyRegs { propertyGPR };
+    JSValueRegs thisValueRegs { thisValueGPR };
+    JSValueRegs valueRegs { valueGPR };
+    ECMAMode ecmaMode = node->ecmaMode();
+    auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
+    JITPutByValWithThisGenerator gen(
+        codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, AccessType::PutByValWithThis, usedRegisters,
+        baseRegs, propertyRegs, valueRegs, thisValueRegs, InvalidGPRReg, stubInfoGPR, ecmaMode);
+
+    std::visit([&](auto* stubInfo) {
+        if (m_state.forNode(m_state.forNode(m_graph.varArgChild(node, 2)).isType(SpecString))
+            stubInfo->propertyIsString = true;
+        else if (m_state.forNode(m_graph.varArgChild(node, 2)).isType(SpecInt32Only))
+            stubInfo->propertyIsInt32 = true;
+        else if (m_state.forNode(m_graph.varArgChild(node, 2)).isType(SpecSymbol))
+            stubInfo->propertyIsSymbol = true;
+    }, stubInfo);
+
+    std::unique_ptr<SlowPathGenerator> slowPath;
+    auto operation = ecmaMode.isStrict() ? operationPutByValWithThisStrictOptimize : operationPutByValWithThisNonStrictOptimize;
+    if (m_graph.m_plan.isUnlinked()) {
+        gen.generateDFGDataICFastPath(*this, stubInfoConstant.index(), stubInfoGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
+        ASSERT(!gen.stubInfo());
+        slowPath = slowPathICCall(
+            slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operation,
+            NoResult, LinkableConstant::globalObject(*this, node), baseRegs, thisValueRegs, propertyRegs, valueRegs, stubInfoGPR, nullptr);
+    } else {
+        gen.generateFastPath(*this);
+        slowCases.append(gen.slowPathJump());
+        slowPath = slowPathCall(
+            slowCases, this, operation,
+            NoResult, LinkableConstant::globalObject(*this, node), baseRegs, thisValueRegs, propertyRegs, valueRegs, TrustedImmPtr(gen.stubInfo()), nullptr);
+    }
+
+    addPutByValWithThis(gen, slowPath.get());
+    addSlowPathGenerator(WTFMove(slowPath));
+
+    noResult(node);
+#endif
 }
 
 #endif

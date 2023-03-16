@@ -1419,6 +1419,7 @@ public:
     void compilePutByValForCellWithString(Node*);
     void compilePutByValForCellWithSymbol(Node*);
     void compileGetByValWithThis(Node*);
+    void compilePutByValWithThis(Node*);
     void compilePutPrivateName(Node*);
     void compilePutPrivateNameById(Node*);
     void compileCheckPrivateBrand(Node*);
