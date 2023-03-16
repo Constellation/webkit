@@ -4409,6 +4409,7 @@ private:
 
     void compilePutByValWithThis()
     {
+#if OS(WINDOWS)
         JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
         LValue base = lowJSValue(m_graph.varArgChild(m_node, 0));
         LValue thisValue = lowJSValue(m_graph.varArgChild(m_node, 1));
@@ -4417,6 +4418,121 @@ private:
 
         vmCall(Void, m_node->ecmaMode().isStrict() ? operationPutByValWithThisStrict : operationPutByValWithThisNonStrict,
             weakPointer(globalObject), base, thisValue, property, value);
+#else
+        JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
+        Edge child1 = m_graph.varArgChild(m_node, 0);
+        Edge child2 = m_graph.varArgChild(m_node, 1);
+        Edge child3 = m_graph.varArgChild(m_node, 2);
+        Edge child4 = m_graph.varArgChild(m_node, 3);
+
+        Node* node = m_node;
+
+        LValue base = lowJSValue(child1, ManualOperandSpeculation);
+        LValue thisValue = lowJSValue(child2, ManualOperandSpeculation);
+        LValue property = lowJSValue(child3, ManualOperandSpeculation);
+        LValue value = lowJSValue(child4, ManualOperandSpeculation);
+
+        speculate(child1);
+        speculate(child2);
+        speculate(child3);
+        speculate(child4);
+
+        bool baseIsCell = abstractValue(child1).isType(SpecCell);
+        bool propertyIsString = false;
+        bool propertyIsInt32 = false;
+        bool propertyIsSymbol = false;
+        if (abstractValue(child3).isType(SpecString))
+            propertyIsString = true;
+        else if (abstractValue(child3).isType(SpecInt32Only))
+            propertyIsInt32 = true;
+        else if (abstractValue(child3).isType(SpecSymbol))
+            propertyIsSymbol = true;
+
+        PatchpointValue* patchpoint = m_out.patchpoint(Void);
+        patchpoint->appendSomeRegister(base);
+        patchpoint->appendSomeRegister(thisValue);
+        patchpoint->appendSomeRegister(property);
+        patchpoint->appendSomeRegister(value);
+        patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
+        patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
+        patchpoint->clobber(RegisterSetBuilder::macroClobberedGPRs());
+        patchpoint->numGPScratchRegisters = Options::useDataICInFTL() ? 1 : 0;
+
+        RefPtr<PatchpointExceptionHandle> exceptionHandle = preparePatchpointForExceptions(patchpoint);
+
+        State* state = &m_ftlState;
+        CodeOrigin nodeSemanticOrigin = node->origin.semantic;
+        ECMAMode ecmaMode = m_node->ecmaMode();
+        patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
+            AllowMacroScratchRegisterUsage allowScratch(jit);
+
+            CallSiteIndex callSiteIndex = state->jitCode->common.codeOrigins->addUniqueCallSiteIndex(nodeSemanticOrigin);
+
+            // This is the direct exit target for operation calls.
+            Box<CCallHelpers::JumpList> exceptions = exceptionHandle->scheduleExitCreation(params)->jumps(jit);
+
+            // This is the exit for call IC's created by the IC for getters. We don't have
+            // to do anything weird other than call this, since it will associate the exit with
+            // the callsite index.
+            exceptionHandle->scheduleExitCreationForUnwind(params, callSiteIndex);
+
+            GPRReg baseGPR = params[0].gpr();
+            GPRReg thisGPR = params[1].gpr();
+            GPRReg propertyGPR = params[2].gpr();
+            GPRReg valueGPR = params[3].gpr();
+            GPRReg stubInfoGPR = Options::useDataICInFTL() ? params.gpScratch(0) : InvalidGPRReg;
+
+            auto* stubInfo = state->addStructureStubInfo();
+            auto generator = Box<JITPutByValWithThisGenerator>::create(
+                jit.codeBlock(), stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::PutByValWithThis,
+                params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(valueGPR), JSValueRegs(thisGPR), InvalidGPRReg, stubInfoGPR, ecmaMode);
+
+            generator->stubInfo()->propertyIsString = propertyIsString;
+            generator->stubInfo()->propertyIsInt32 = propertyIsInt32;
+            generator->stubInfo()->propertyIsSymbol = propertyIsSymbol;
+
+            CCallHelpers::Jump notCell;
+            if (!baseIsCell)
+                notCell = jit.branchIfNotCell(baseGPR);
+
+            generator->generateFastPath(jit);
+            CCallHelpers::Label done = jit.label();
+
+            params.addLatePath([=] (CCallHelpers& jit) {
+                AllowMacroScratchRegisterUsage allowScratch(jit);
+
+                if (notCell.isSet())
+                    notCell.link(&jit);
+                if (!Options::useDataICInFTL())
+                    generator->slowPathJump().link(&jit);
+                CCallHelpers::Label slowPathBegin = jit.label();
+                CCallHelpers::Call slowPathCall;
+                auto operation = ecmaMode.isStrict() ? operationPutByValWithThisStrictOptimize : operationPutByValWithThisNonStrictOptimize;
+                if (Options::useDataICInFTL()) {
+                    jit.move(CCallHelpers::TrustedImmPtr(generator->stubInfo()), stubInfoGPR);
+                    generator->stubInfo()->m_slowOperation = operation;
+                    slowPathCall = callOperation(
+                        *state, params.unavailableRegisters(), jit, nodeSemanticOrigin,
+                        exceptions.get(), CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), InvalidGPRReg,
+                        CCallHelpers::TrustedImmPtr(jit.codeBlock()->globalObjectFor(nodeSemanticOrigin)),
+                        baseGPR, thisGPR, propertyGPR, valueGPR, stubInfoGPR, CCallHelpers::TrustedImmPtr(nullptr)).call();
+                } else {
+                    slowPathCall = callOperation(
+                        *state, params.unavailableRegisters(), jit, nodeSemanticOrigin,
+                        exceptions.get(), operation, InvalidGPRReg,
+                        CCallHelpers::TrustedImmPtr(jit.codeBlock()->globalObjectFor(nodeSemanticOrigin)),
+                        baseGPR, thisGPR, propertyGPR, valueGPR, CCallHelpers::TrustedImmPtr(generator->stubInfo()), CCallHelpers::TrustedImmPtr(nullptr)).call();
+                }
+                jit.jump().linkTo(done, &jit);
+
+                generator->reportSlowPathCall(slowPathBegin, slowPathCall);
+
+                jit.addLinkTask([=] (LinkBuffer& linkBuffer) {
+                    generator->finalize(linkBuffer, linkBuffer);
+                });
+            });
+        });
+#endif
     }
     
     void compilePutPrivateNameById()
