@@ -1313,7 +1313,11 @@ private:
             }
             break;
         }
-            
+
+        case PutByValWithThis: {
+            break;
+        }
+
         case AtomicsAdd:
         case AtomicsAnd:
         case AtomicsCompareExchange:

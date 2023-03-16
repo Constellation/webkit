@@ -456,7 +456,14 @@ private:
             m_graph.varArgChild(node, 1)->mergeFlags(NodeBytecodeUsesAsNumber | NodeBytecodeUsesAsOther | NodeBytecodeUsesAsInt | NodeBytecodeUsesAsArrayIndex);
             break;
         }
-            
+
+        case GetByValWithThis: {
+            m_graph.child1()->mergeFlags(NodeBytecodeUsesAsValue);
+            m_graph.child2()->mergeFlags(NodeBytecodeUsesAsValue);
+            m_graph.child3()->mergeFlags(NodeBytecodeUsesAsNumber | NodeBytecodeUsesAsOther | NodeBytecodeUsesAsInt | NodeBytecodeUsesAsArrayIndex);
+            break;
+        }
+
         case NewTypedArray:
         case NewArrayWithSize:
         case NewArrayWithSpecies: {
@@ -501,7 +508,15 @@ private:
             m_graph.varArgChild(node, 2)->mergeFlags(NodeBytecodeUsesAsValue);
             break;
         }
-            
+
+        case PutByValWithThis: {
+            m_graph.varArgChild(node, 0)->mergeFlags(NodeBytecodeUsesAsValue);
+            m_graph.varArgChild(node, 1)->mergeFlags(NodeBytecodeUsesAsValue);
+            m_graph.varArgChild(node, 2)->mergeFlags(NodeBytecodeUsesAsNumber | NodeBytecodeUsesAsOther | NodeBytecodeUsesAsInt | NodeBytecodeUsesAsArrayIndex);
+            m_graph.varArgChild(node, 3)->mergeFlags(NodeBytecodeUsesAsValue);
+            break;
+        }
+
         case Switch: {
             SwitchData* data = node->switchData();
             switch (data->kind) {
