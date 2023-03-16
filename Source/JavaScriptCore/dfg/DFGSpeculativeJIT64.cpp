@@ -6599,7 +6599,7 @@ void SpeculativeJIT::compilePutByValWithThis(Node* node)
     ECMAMode ecmaMode = node->ecmaMode();
     auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
     JITPutByValWithThisGenerator gen(
-        codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, AccessType::PutByValWithThis, usedRegisters,
+        codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters,
         baseRegs, propertyRegs, valueRegs, thisValueRegs, InvalidGPRReg, stubInfoGPR, ecmaMode);
 
     std::visit([&](auto* stubInfo) {

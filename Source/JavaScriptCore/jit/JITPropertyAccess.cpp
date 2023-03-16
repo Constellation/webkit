@@ -495,7 +495,7 @@ void JIT::emit_op_put_by_val_with_this(const JSInstruction* currentInstruction)
     ECMAMode ecmaMode = this->ecmaMode(bytecode);
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     JITPutByValWithThisGenerator gen(
-        nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::PutByValWithThis, RegisterSetBuilder::stubUnavailableRegisters(),
+        nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         baseJSR, propertyJSR, valueJSR, thisJSR, profileGPR, stubInfoGPR, ecmaMode);
     if (isOperandConstantInt(property))
         stubInfo->propertyIsInt32 = true;

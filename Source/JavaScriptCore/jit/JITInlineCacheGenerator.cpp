@@ -608,11 +608,11 @@ void JITPutByValGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
         m_stubInfo->m_codePtr = m_stubInfo->slowPathStartLocation;
 }
 
-JITPutByValWithThisGenerator::JITPutByValWithThisGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSetBuilder& usedRegisters, JSValueRegs baseRegs, JSValueRegs propertyRegs, JSValueRegs valueRegs, JSValueRegs thisRegs, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, ECMAMode ecmaMode)
-    : Base(codeBlock, stubInfo, jitType, codeOrigin, accessType)
+JITPutByValWithThisGenerator::JITPutByValWithThisGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters, JSValueRegs baseRegs, JSValueRegs propertyRegs, JSValueRegs valueRegs, JSValueRegs thisRegs, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, ECMAMode ecmaMode)
+    : Base(codeBlock, stubInfo, jitType, codeOrigin, AccessType::PutByValWithThis)
 {
     std::visit([&](auto* stubInfo) {
-        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, baseRegs, propertyRegs, valueRegs, thisRegs, arrayProfileGPR, stubInfoGPR, ecmaMode);
+        setUpStubInfo(*stubInfo, AccessType::PutByValWithThis, codeOrigin, callSiteIndex, usedRegisters, baseRegs, propertyRegs, valueRegs, thisRegs, arrayProfileGPR, stubInfoGPR, ecmaMode);
     }, stubInfo);
 }
 

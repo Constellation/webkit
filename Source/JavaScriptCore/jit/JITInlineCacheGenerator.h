@@ -325,7 +325,7 @@ public:
     JITPutByValWithThisGenerator() = default;
 
     JITPutByValWithThisGenerator(
-        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSetBuilder& usedRegisters,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSetBuilder& usedRegisters,
         JSValueRegs base, JSValueRegs property, JSValueRegs result, JSValueRegs thisRegs, GPRReg arrayProfileGPR, GPRReg stubInfoGPR, ECMAMode);
 
     CCallHelpers::Jump slowPathJump() const

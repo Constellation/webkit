@@ -4483,7 +4483,7 @@ private:
 
             auto* stubInfo = state->addStructureStubInfo();
             auto generator = Box<JITPutByValWithThisGenerator>::create(
-                jit.codeBlock(), stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::PutByValWithThis,
+                jit.codeBlock(), stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
                 params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(valueGPR), JSValueRegs(thisGPR), InvalidGPRReg, stubInfoGPR, ecmaMode);
 
             generator->stubInfo()->propertyIsString = propertyIsString;

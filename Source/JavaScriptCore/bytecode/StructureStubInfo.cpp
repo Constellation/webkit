@@ -669,7 +669,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         break;
     case AccessType::PutByValWithThis:
         hasConstantIdentifier = false;
-#if USE(JSVALUE64)
+#if USE(JSVALUE64) && !OS(WINDOWS)
         m_baseGPR = BaselineJITRegisters::PutByValWithThis::baseJSR.payloadGPR();
         m_valueGPR = BaselineJITRegisters::PutByValWithThis::valueJSR.payloadGPR();
         m_extraGPR = BaselineJITRegisters::PutByValWithThis::thisJSR.payloadGPR();
