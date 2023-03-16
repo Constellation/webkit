@@ -4419,7 +4419,6 @@ private:
         vmCall(Void, m_node->ecmaMode().isStrict() ? operationPutByValWithThisStrict : operationPutByValWithThisNonStrict,
             weakPointer(globalObject), base, thisValue, property, value);
 #else
-        JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
         Edge child1 = m_graph.varArgChild(m_node, 0);
         Edge child2 = m_graph.varArgChild(m_node, 1);
         Edge child3 = m_graph.varArgChild(m_node, 2);
