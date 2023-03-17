@@ -834,7 +834,7 @@ inline void JSObject::setPrivateBrand(JSGlobalObject* globalObject, JSValue bran
 template<typename Functor>
 bool JSObject::fastForEachPropertyWithSideEffectFreeFunctor(VM& vm, const Functor& functor)
 {
-    if (!hasNonReifiedStaticProperties())
+    if (hasNonReifiedStaticProperties())
         return false;
 
     Structure* structure = this->structure();

@@ -336,7 +336,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorAssign, (JSGlobalObject* globalObject,
         RETURN_IF_EXCEPTION(scope, { });
 
         if (targetCanPerformFastPut) {
-            if (!source->hasNonReifiedStaticProperties()) {
+            if (source->hasNonReifiedStaticProperties()) {
                 source->reifyAllStaticProperties(globalObject);
                 RETURN_IF_EXCEPTION(scope, { });
             }
@@ -363,7 +363,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorEntries, (JSGlobalObject* globalObject
     JSObject* target = targetValue.toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
 
-    if (!target->hasNonReifiedStaticProperties()) {
+    if (target->hasNonReifiedStaticProperties()) {
         target->reifyAllStaticProperties(globalObject);
         RETURN_IF_EXCEPTION(scope, { });
     }
@@ -509,7 +509,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorValues, (JSGlobalObject* globalObject,
     JSObject* target = targetValue.toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
 
-    if (!target->hasNonReifiedStaticProperties()) {
+    if (target->hasNonReifiedStaticProperties()) {
         target->reifyAllStaticProperties(globalObject);
         RETURN_IF_EXCEPTION(scope, { });
     }
@@ -604,7 +604,7 @@ bool toPropertyDescriptor(JSGlobalObject* globalObject, JSValue in, PropertyDesc
 
     bool canUseFastPath = false;
     if (globalObject->propertyDescriptorFastPathWatchpointSet().isStillValid() && globalObject->objectPrototypeChainIsSane() && description->inherits<JSFinalObject>() && description->getPrototypeDirect() == globalObject->objectPrototype() && description->structure()->canPerformFastPropertyEnumeration()) {
-        if (!description->hasNonReifiedStaticProperties()) {
+        if (description->hasNonReifiedStaticProperties()) {
             description->reifyAllStaticProperties(globalObject);
             RETURN_IF_EXCEPTION(scope, { });
         }

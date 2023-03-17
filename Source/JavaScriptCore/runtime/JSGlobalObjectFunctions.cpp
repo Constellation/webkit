@@ -917,7 +917,7 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncCopyDataProperties, (JSGlobalObject* globalOb
         return excludedSet->contains(propertyName.uid());
     };
 
-    if (!source->hasNonReifiedStaticProperties()) {
+    if (source->hasNonReifiedStaticProperties()) {
         source->reifyAllStaticProperties(globalObject);
         RETURN_IF_EXCEPTION(scope, { });
     }
