@@ -336,7 +336,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorAssign, (JSGlobalObject* globalObject,
         RETURN_IF_EXCEPTION(scope, { });
 
         if (targetCanPerformFastPut) {
-            if (!source->staticPropertiesReified()) {
+            if (!source->hasNonReifiedStaticProperties()) {
                 source->reifyAllStaticProperties(globalObject);
                 RETURN_IF_EXCEPTION(scope, { });
             }
@@ -363,7 +363,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorEntries, (JSGlobalObject* globalObject
     JSObject* target = targetValue.toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
 
-    if (!target->staticPropertiesReified()) {
+    if (!target->hasNonReifiedStaticProperties()) {
         target->reifyAllStaticProperties(globalObject);
         RETURN_IF_EXCEPTION(scope, { });
     }
@@ -509,7 +509,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorValues, (JSGlobalObject* globalObject,
     JSObject* target = targetValue.toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
 
-    if (!target->staticPropertiesReified()) {
+    if (!target->hasNonReifiedStaticProperties()) {
         target->reifyAllStaticProperties(globalObject);
         RETURN_IF_EXCEPTION(scope, { });
     }
@@ -600,8 +600,15 @@ bool toPropertyDescriptor(JSGlobalObject* globalObject, JSValue in, PropertyDesc
 
     if (globalObject->propertyDescriptorFastPathWatchpointSet().state() == ClearWatchpoint)
         globalObject->tryInstallPropertyDescriptorFastPathWatchpoint();
+
+
+    bool canUseFastPath = false;
     if (globalObject->propertyDescriptorFastPathWatchpointSet().isStillValid() && globalObject->objectPrototypeChainIsSane() && description->inherits<JSFinalObject>() && description->getPrototypeDirect() == globalObject->objectPrototype() && description->structure()->canPerformFastPropertyEnumeration()) {
-        description->fastForEachPropertyWithSideEffectFreeFunctor(vm, [&](const PropertyTableEntry& entry) -> bool {
+        if (!description->hasNonReifiedStaticProperties()) {
+            description->reifyAllStaticProperties(globalObject);
+            RETURN_IF_EXCEPTION(scope, { });
+        }
+        canUseFastPath = description->fastForEachPropertyWithSideEffectFreeFunctor(vm, [&](const PropertyTableEntry& entry) -> bool {
             PropertyName propertyName(entry.key());
             if (propertyName == vm.propertyNames->enumerable)
                 enumerable = description->getDirect(entry.offset());
@@ -617,71 +624,33 @@ bool toPropertyDescriptor(JSGlobalObject* globalObject, JSValue in, PropertyDesc
                 set = description->getDirect(entry.offset());
             return true;
         });
-
-        if (enumerable)
-            desc.setEnumerable(enumerable.toBoolean(globalObject));
-        if (configurable)
-            desc.setConfigurable(configurable.toBoolean(globalObject));
-        if (value)
-            desc.setValue(value);
-        if (writable)
-            desc.setWritable(writable.toBoolean(globalObject));
-        if (get) {
-            if (!get.isUndefined() && !get.isCallable()) {
-                throwTypeError(globalObject, scope, "Getter must be a function."_s);
-                return false;
+        if (canUseFastPath) {
+            if (enumerable)
+                desc.setEnumerable(enumerable.toBoolean(globalObject));
+            if (configurable)
+                desc.setConfigurable(configurable.toBoolean(globalObject));
+            if (value)
+                desc.setValue(value);
+            if (writable)
+                desc.setWritable(writable.toBoolean(globalObject));
+            if (get) {
+                if (!get.isUndefined() && !get.isCallable()) {
+                    throwTypeError(globalObject, scope, "Getter must be a function."_s);
+                    return false;
+                }
+                desc.setGetter(get);
             }
-            desc.setGetter(get);
-        }
-        if (set) {
-            if (!set.isUndefined() && !set.isCallable()) {
-                throwTypeError(globalObject, scope, "Setter must be a function."_s);
-                return false;
+            if (set) {
+                if (!set.isUndefined() && !set.isCallable()) {
+                    throwTypeError(globalObject, scope, "Setter must be a function."_s);
+                    return false;
+                }
+                desc.setSetter(set);
             }
-            desc.setSetter(set);
         }
-#if 0
-        enumerable = description->getDirect(vm, vm.propertyNames->enumerable);
-        RETURN_IF_EXCEPTION(scope, false);
-        if (enumerable)
-            desc.setEnumerable(enumerable.toBoolean(globalObject));
+    }
 
-        configurable = description->getDirect(vm, vm.propertyNames->configurable);
-        RETURN_IF_EXCEPTION(scope, false);
-        if (configurable)
-            desc.setConfigurable(configurable.toBoolean(globalObject));
-
-        value = description->getDirect(vm, vm.propertyNames->value);
-        RETURN_IF_EXCEPTION(scope, false);
-        if (value)
-            desc.setValue(value);
-
-        writable = description->getDirect(vm, vm.propertyNames->writable);
-        RETURN_IF_EXCEPTION(scope, false);
-        if (writable)
-            desc.setWritable(writable.toBoolean(globalObject));
-
-        get = description->getDirect(vm, vm.propertyNames->get);
-        RETURN_IF_EXCEPTION(scope, false);
-        if (get) {
-            if (!get.isUndefined() && !get.isCallable()) {
-                throwTypeError(globalObject, scope, "Getter must be a function."_s);
-                return false;
-            }
-            desc.setGetter(get);
-        }
-
-        set = description->getDirect(vm, vm.propertyNames->set);
-        RETURN_IF_EXCEPTION(scope, false);
-        if (set) {
-            if (!set.isUndefined() && !set.isCallable()) {
-                throwTypeError(globalObject, scope, "Setter must be a function."_s);
-                return false;
-            }
-            desc.setSetter(set);
-        }
-#endif
-    } else {
+    if (!canUseFastPath) {
         enumerable = description->getIfPropertyExists(globalObject, vm.propertyNames->enumerable);
         RETURN_IF_EXCEPTION(scope, false);
         if (enumerable)

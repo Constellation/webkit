@@ -330,7 +330,7 @@ JSC_DEFINE_JIT_OPERATION(operationObjectAssignObject, void, (JSGlobalObject* glo
     if (targetCanPerformFastPut) {
         Vector<RefPtr<UniquedStringImpl>, 8> properties;
         MarkedArgumentBuffer values;
-        if (!source->staticPropertiesReified()) {
+        if (!source->hasNonReifiedStaticProperties()) {
             source->reifyAllStaticProperties(globalObject);
             RETURN_IF_EXCEPTION(scope, void());
         }
@@ -396,7 +396,7 @@ JSC_DEFINE_JIT_OPERATION(operationObjectAssignUntyped, void, (JSGlobalObject* gl
     RETURN_IF_EXCEPTION(scope, void());
 
     if (targetCanPerformFastPut) {
-        if (!source->staticPropertiesReified()) {
+        if (!source->hasNonReifiedStaticProperties()) {
             source->reifyAllStaticProperties(globalObject);
             RETURN_IF_EXCEPTION(scope, void());
         }
