@@ -43,8 +43,6 @@ public:
     static constexpr unsigned StructureFlags = Base::StructureFlags & ~ImplementsDefaultHasInstance;
     static_assert(StructureFlags & ImplementsHasInstance);
 
-    static constexpr unsigned maxNumberOfCloningBoundArguments = 64;
-
     template<typename CellType, SubspaceAccess mode>
     static GCClient::IsoSubspace* subspaceFor(VM& vm)
     {
@@ -54,12 +52,6 @@ public:
     JS_EXPORT_PRIVATE static JSBoundFunction* create(VM&, JSGlobalObject*, JSObject* targetFunction, JSValue boundThis, JSImmutableButterfly* boundArgs, double length, JSString* nameMayBeNull);
     
     static bool customHasInstance(JSObject*, JSGlobalObject*, JSValue);
-
-    // If boundArgs' length is too large, we should not clone boundArgs when wrapping the bound function again.
-    bool canCloneBoundArgs() const
-    {
-        return boundArgsLength() <= JSBoundFunction::maxNumberOfCloningBoundArguments;
-    }
 
     JSObject* targetFunction() { return m_targetFunction.get(); }
     JSValue boundThis() { return m_boundThis.get(); }
@@ -82,7 +74,12 @@ public:
         return m_nameMayBeNull->tryGetValue(allocationAllowed);
     }
 
-    double length(VM&) { return m_length; }
+    double length(VM& vm)
+    {
+        if (std::isnan(m_length))
+            return lengthSlow(vm);
+        return m_length;
+    }
 
     static Structure* createStructure(VM& vm, JSGlobalObject* globalObject, JSValue prototype)
     {
@@ -100,6 +97,7 @@ private:
     JSBoundFunction(VM&, NativeExecutable*, JSGlobalObject*, Structure*, JSObject* targetFunction, JSValue boundThis, JSImmutableButterfly* boundArgs, JSString* nameMayBeNull, double length);
 
     JSString* nameSlow(VM&);
+    double lengthSlow(VM&);
 
     void finishCreation(VM&);
     DECLARE_VISIT_CHILDREN;

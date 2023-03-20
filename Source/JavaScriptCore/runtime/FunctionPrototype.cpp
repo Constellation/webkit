@@ -128,15 +128,13 @@ JSC_DEFINE_HOST_FUNCTION(functionProtoFuncBind, (JSGlobalObject* globalObject, C
             butterfly->setIndex(vm, index, callFrame->uncheckedArgument(index + 1));
     }
 
-    double length = 0;
+    double length = PNaN;
     JSString* name = nullptr;
     JSFunction* function = jsDynamicCast<JSFunction*>(target);
     if (LIKELY(function && function->canAssumeNameAndLengthAreOriginal(vm))) {
-        length = function->originalLength(vm);
-        if (length > numBoundArgs)
-            length -= numBoundArgs;
-        else
-            length = 0;
+        // Do nothing! 'length' and 'name' computation are lazily done.
+        // And this is totally OK since we know that wrapped functions have canAssumeNameAndLengthAreOriginal condition
+        // at the time of creation of JSBoundFunction.
     } else {
         bool found = target->hasOwnProperty(globalObject, vm.propertyNames->length);
         RETURN_IF_EXCEPTION(scope, { });

@@ -289,6 +289,34 @@ JSString* JSBoundFunction::nameSlow(VM& vm)
     return terminal;
 }
 
+double JSBoundFunction::lengthSlow(VM& vm)
+{
+    double length = 0;
+    unsigned numBoundArgs = boundArgsLength();
+    JSObject* cursor = m_targetFunction.get();
+    while (true) {
+        ASSERT(cursor->inherits<JSFunction>()); // If this is not JSFunction, we eagerly materialized the length already.
+        if (!cursor->inherits<JSBoundFunction>()) {
+            length = jsCast<JSFunction*>(cursor)->originalLength(vm);
+            break;
+        }
+        JSBoundFunction* boundFunction = jsCast<JSBoundFunction*>(cursor);
+        if (!std::isnan(boundFunction->m_length)) {
+            length = boundFunction->m_length;
+            break;
+        }
+        numBoundArgs += boundFunction->boundArgsLength();
+
+        cursor = boundFunction->targetFunction();
+    }
+    if (length > numBoundArgs)
+        length -= numBoundArgs;
+    else
+        length = 0;
+    m_length = length;
+    return length;
+}
+
 template<typename Visitor>
 void JSBoundFunction::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 {
