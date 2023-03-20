@@ -40,14 +40,12 @@ JSC_DEFINE_HOST_FUNCTION(boundThisNoArgsFunctionCall, (JSGlobalObject* globalObj
 {
     JSBoundFunction* boundFunction = jsCast<JSBoundFunction*>(callFrame->jsCallee());
 
-    JSImmutableButterfly* boundArgs = boundFunction->boundArgs();
-
     MarkedArgumentBuffer args;
     args.ensureCapacity(boundFunction->boundArgsLength() + callFrame->argumentCount());
-    if (boundArgs) {
-        for (unsigned i = 0; i < boundArgs->length(); ++i)
-            args.append(boundArgs->get(i));
-    }
+    boundFunction->forEachBoundArg([&](JSValue argument) -> IterationStatus {
+        args.append(argument);
+        return IterationStatus::Continue;
+    });
     for (unsigned i = 0; i < callFrame->argumentCount(); ++i)
         args.append(callFrame->uncheckedArgument(i));
     RELEASE_ASSERT(!args.hasOverflowed());
@@ -69,14 +67,12 @@ JSC_DEFINE_HOST_FUNCTION(boundFunctionCall, (JSGlobalObject* globalObject, CallF
     auto scope = DECLARE_THROW_SCOPE(vm);
     JSBoundFunction* boundFunction = jsCast<JSBoundFunction*>(callFrame->jsCallee());
 
-    JSImmutableButterfly* boundArgs = boundFunction->boundArgs();
-
     MarkedArgumentBuffer args;
     args.ensureCapacity(boundFunction->boundArgsLength() + callFrame->argumentCount());
-    if (boundArgs) {
-        for (unsigned i = 0; i < boundArgs->length(); ++i)
-            args.append(boundArgs->get(i));
-    }
+    boundFunction->forEachBoundArg([&](JSValue argument) -> IterationStatus {
+        args.append(argument);
+        return IterationStatus::Continue;
+    });
     for (unsigned i = 0; i < callFrame->argumentCount(); ++i)
         args.append(callFrame->uncheckedArgument(i));
     if (UNLIKELY(args.hasOverflowed())) {
@@ -94,13 +90,11 @@ JSC_DEFINE_HOST_FUNCTION(boundThisNoArgsFunctionConstruct, (JSGlobalObject* glob
 {
     JSBoundFunction* boundFunction = jsCast<JSBoundFunction*>(callFrame->jsCallee());
 
-    JSImmutableButterfly* boundArgs = boundFunction->boundArgs();
-
     MarkedArgumentBuffer args;
-    if (boundArgs) {
-        for (unsigned i = 0; i < boundArgs->length(); ++i)
-            args.append(boundArgs->get(i));
-    }
+    boundFunction->forEachBoundArg([&](JSValue argument) -> IterationStatus {
+        args.append(argument);
+        return IterationStatus::Continue;
+    });
     for (unsigned i = 0; i < callFrame->argumentCount(); ++i)
         args.append(callFrame->uncheckedArgument(i));
     RELEASE_ASSERT(!args.hasOverflowed());
@@ -121,13 +115,11 @@ JSC_DEFINE_HOST_FUNCTION(boundFunctionConstruct, (JSGlobalObject* globalObject, 
     auto scope = DECLARE_THROW_SCOPE(vm);
     JSBoundFunction* boundFunction = jsCast<JSBoundFunction*>(callFrame->jsCallee());
 
-    JSImmutableButterfly* boundArgs = boundFunction->boundArgs();
-
     MarkedArgumentBuffer args;
-    if (boundArgs) {
-        for (unsigned i = 0; i < boundArgs->length(); ++i)
-            args.append(boundArgs->get(i));
-    }
+    boundFunction->forEachBoundArg([&](JSValue argument) -> IterationStatus {
+        args.append(argument);
+        return IterationStatus::Continue;
+    });
     for (unsigned i = 0; i < callFrame->argumentCount(); ++i)
         args.append(callFrame->uncheckedArgument(i));
     if (UNLIKELY(args.hasOverflowed())) {
@@ -237,12 +229,13 @@ JSArray* JSBoundFunction::boundArgsCopy(JSGlobalObject* globalObject)
     auto scope = DECLARE_THROW_SCOPE(vm);
     JSArray* result = constructEmptyArray(this->globalObject(), nullptr);
     RETURN_IF_EXCEPTION(scope, nullptr);
-    if (m_boundArgs) {
-        for (unsigned i = 0; i < m_boundArgs->length(); ++i) {
-            result->push(globalObject, m_boundArgs->get(i));
-            RETURN_IF_EXCEPTION(scope, nullptr);
-        }
-    }
+    forEachBoundArg([&](JSValue argument) -> IterationStatus {
+        auto scope = DECLARE_THROW_SCOPE(vm);
+        result->push(globalObject, argument);
+        RETURN_IF_EXCEPTION(scope, IterationStatus::Done);
+        return IterationStatus::Continue;
+    });
+    RETURN_IF_EXCEPTION(scope, nullptr);
     return result;
 }
 

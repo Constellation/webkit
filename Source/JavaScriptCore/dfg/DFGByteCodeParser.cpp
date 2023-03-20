@@ -3940,8 +3940,6 @@ auto ByteCodeParser::handleIntrinsicCall(Node* callee, Operand result, CallVaria
             // to keep OSR exit correct when we exit in the middle of this stack construction. We exit to the caller side
             // when we failed to construct this frame. And this is totally OK since we are not clobbering values.
 
-            JSImmutableButterfly* boundArgs = boundFunction->boundArgs();
-
             unsigned numberOfParameters = argumentCountIncludingThis;
             numberOfParameters++; // True return PC.
             numberOfParameters += boundFunction->boundArgsLength();
@@ -3964,10 +3962,10 @@ auto ByteCodeParser::handleIntrinsicCall(Node* callee, Operand result, CallVaria
             // call the wrapped function, this is OK.
             Vector<Node*> arguments;
             arguments.append(jsConstant(boundFunction->boundThis()));
-            if (boundArgs) {
-                for (unsigned index = 0; index < boundArgs->length(); ++index)
-                    arguments.append(jsConstant(boundArgs->get(index)));
-            }
+            boundFunction->forEachBoundArg([&](JSValue argument) {
+                arguments.append(jsConstant(argument));
+                return IterationStatus::Continue;
+            });
 
             if (argumentCountIncludingThis > 1) {
                 for (int index = 1; index < argumentCountIncludingThis; ++index)

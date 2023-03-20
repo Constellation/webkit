@@ -55,7 +55,6 @@ public:
 
     JSObject* targetFunction() { return m_targetFunction.get(); }
     JSValue boundThis() { return m_boundThis.get(); }
-    JSImmutableButterfly* boundArgs() { return m_boundArgs.get(); } // DO NOT allow this array to be mutated!
     unsigned boundArgsLength() const { return m_boundArgsLength; }
     JSArray* boundArgsCopy(JSGlobalObject*);
     JSString* nameMayBeNull() { return m_nameMayBeNull.get(); }
@@ -91,6 +90,18 @@ public:
     static ptrdiff_t offsetOfBoundThis() { return OBJECT_OFFSETOF(JSBoundFunction, m_boundThis); }
     static ptrdiff_t offsetOfBoundArgs() { return OBJECT_OFFSETOF(JSBoundFunction, m_boundArgs); }
     static ptrdiff_t offsetOfBoundArgsLength() { return OBJECT_OFFSETOF(JSBoundFunction, m_boundArgsLength); }
+
+    template<typename Functor>
+    void forEachBoundArg(const Functor& func)
+    {
+        unsigned length = boundArgsLength();
+        if (length) {
+            for (unsigned index = 0; index < length; ++index) {
+                if (func(m_boundArgs->get(index)) == IterationStatus::Done)
+                    return;
+            }
+        }
+    }
 
     DECLARE_INFO;
 

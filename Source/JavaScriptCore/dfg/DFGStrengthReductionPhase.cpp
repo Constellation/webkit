@@ -1334,11 +1334,10 @@ private:
                         m_graph.m_varArgChildren.append(m_insertionSet.insertConstant(m_nodeIndex, m_node->origin, targetFunction)); // |callee|.
                         m_graph.m_varArgChildren.append(m_insertionSet.insertConstant(m_nodeIndex, m_node->origin, boundFunction->boundThis())); // |this|
 
-                        JSImmutableButterfly* boundArgs = boundFunction->boundArgs();
-                        if (boundArgs) {
-                            for (unsigned index = 0; index < boundArgs->length(); ++index)
-                                m_graph.m_varArgChildren.append(m_insertionSet.insertConstant(m_nodeIndex, m_node->origin, boundArgs->get(index)));
-                        }
+                        boundFunction->forEachBoundArg([&](JSValue argument) {
+                            m_graph.m_varArgChildren.append(m_insertionSet.insertConstant(m_nodeIndex, m_node->origin, argument));
+                            return IterationStatus::Continue;
+                        });
 
                         // First one is |callee|, second one is |this|.
                         for (unsigned index = 2; index < m_node->numChildren(); ++index)

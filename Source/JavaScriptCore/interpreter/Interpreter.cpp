@@ -1027,14 +1027,14 @@ JSValue Interpreter::executeBoundCall(VM& vm, JSBoundFunction* function, const A
 {
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    ASSERT(function->boundArgs());
+    ASSERT(function->boundArgsLength());
 
-    auto* boundArgs = function->boundArgs();
     MarkedArgumentBuffer combinedArgs;
-    combinedArgs.ensureCapacity(boundArgs->length() + args.size());
-
-    for (unsigned i = 0; i < boundArgs->length(); ++i)
-        combinedArgs.append(boundArgs->get(i));
+    combinedArgs.ensureCapacity(function->boundArgsLength() + args.size());
+    function->forEachBoundArg([&](JSValue argument) -> IterationStatus {
+        combinedArgs.append(argument);
+        return IterationStatus::Continue;
+    });
     for (unsigned i = 0; i < args.size(); ++i)
         combinedArgs.append(args.at(i));
 
