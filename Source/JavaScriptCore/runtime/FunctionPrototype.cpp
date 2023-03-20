@@ -119,34 +119,13 @@ JSC_DEFINE_HOST_FUNCTION(functionProtoFuncBind, (JSGlobalObject* globalObject, C
     JSImmutableButterfly* butterfly = nullptr;
     if (argumentCount > 1) {
         numBoundArgs = argumentCount - 1;
-        CheckedInt32 totalCount = argumentCount - 1;
-        int32_t additionalCount = 0;
-        JSImmutableButterfly* boundArgs = nullptr;
-        if (target->inherits<JSBoundFunction>()) {
-            JSBoundFunction* boundFunction = jsCast<JSBoundFunction*>(target);
-            if (boundFunction->canCloneBoundArgs()) {
-                boundArgs = boundFunction->boundArgs();
-                additionalCount = boundArgs ? boundArgs->length() : 0;
-                totalCount += additionalCount;
-                if (UNLIKELY(totalCount.hasOverflowed())) {
-                    throwOutOfMemoryError(globalObject, scope);
-                    return { };
-                }
-            }
-        }
-
-        butterfly = JSImmutableButterfly::tryCreate(vm, vm.immutableButterflyStructures[arrayIndexFromIndexingType(CopyOnWriteArrayWithContiguous) - NumberOfIndexingShapes].get(), totalCount.value());
+        butterfly = JSImmutableButterfly::tryCreate(vm, vm.immutableButterflyStructures[arrayIndexFromIndexingType(CopyOnWriteArrayWithContiguous) - NumberOfIndexingShapes].get(), numBoundArgs);
         if (UNLIKELY(!butterfly)) {
             throwOutOfMemoryError(globalObject, scope);
             return { };
         }
-        if (additionalCount) {
-            ASSERT(boundArgs);
-            for (int32_t index = 0; index < additionalCount; ++index)
-                butterfly->setIndex(vm, index, boundArgs->get(index));
-        }
         for (int32_t index = 0; index < static_cast<int32_t>(argumentCount - 1); ++index)
-            butterfly->setIndex(vm, index + additionalCount, callFrame->uncheckedArgument(index + 1));
+            butterfly->setIndex(vm, index, callFrame->uncheckedArgument(index + 1));
     }
 
     double length = 0;
@@ -179,20 +158,7 @@ JSC_DEFINE_HOST_FUNCTION(functionProtoFuncBind, (JSGlobalObject* globalObject, C
             name = jsEmptyString(vm);
     }
 
-    JSObject* flattenedTarget = target;
-
-    // Unwrap JSBoundFunction by configuring butterfly and target. The larger Butterfly is already allocated for that purpose.
-    if (target->inherits<JSBoundFunction>()) {
-        JSBoundFunction* boundFunction = jsCast<JSBoundFunction*>(target);
-        if (boundFunction->canCloneBoundArgs()) {
-            boundThis = boundFunction->boundThis();
-            flattenedTarget = boundFunction->flattenedTargetFunction();
-            if (!butterfly && boundFunction->boundArgs())
-                butterfly = boundFunction->boundArgs();
-        }
-    }
-
-    RELEASE_AND_RETURN(scope, JSValue::encode(JSBoundFunction::create(vm, globalObject, target, flattenedTarget, boundThis, butterfly, length, name)));
+    RELEASE_AND_RETURN(scope, JSValue::encode(JSBoundFunction::create(vm, globalObject, target, boundThis, butterfly, length, name)));
 }
 
 // https://github.com/claudepache/es-legacy-function-reflection/blob/master/spec.md#isallowedreceiverfunctionforcallerandargumentsfunc-expectedrealm (except step 3)
