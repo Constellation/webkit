@@ -1321,8 +1321,7 @@ private:
                 JSBoundFunction* boundFunction = jsCast<JSBoundFunction*>(function);
                 if (JSFunction* targetFunction = jsDynamicCast<JSFunction*>(boundFunction->targetFunction())) {
                     auto* targetExecutable = targetFunction->executable();
-                    JSImmutableButterfly* boundArgs = boundFunction->boundArgs();
-                    if (((boundArgs ? boundArgs->length() : 0) + m_node->numChildren()) <= Options::maximumDirectCallStackSize()) {
+                    if ((boundFunction->boundArgsLength() + m_node->numChildren()) <= Options::maximumDirectCallStackSize()) {
                         if (FunctionExecutable* functionExecutable = jsDynamicCast<FunctionExecutable*>(targetExecutable)) {
                             // We need to update m_parameterSlots before we get to the backend, but we don't
                             // want to do too much of this.

@@ -3944,7 +3944,7 @@ auto ByteCodeParser::handleIntrinsicCall(Node* callee, Operand result, CallVaria
 
             unsigned numberOfParameters = argumentCountIncludingThis;
             numberOfParameters++; // True return PC.
-            numberOfParameters += boundArgs ? boundArgs->length() : 0;
+            numberOfParameters += boundFunction->boundArgsLength();
 
             // Start with a register offset that corresponds to the last in-use register.
             int newRegisterOffset = virtualRegisterForLocal(m_inlineStackTop->m_profiledBlock->numCalleeLocals() - 1).offset();
