@@ -39,7 +39,7 @@ JSC_DECLARE_HOST_FUNCTION(hasInstanceBoundFunction);
 
 class JSBoundFunction final : public JSFunction {
 public:
-    typedef JSFunction Base;
+    using Base = JSFunction;
     static constexpr unsigned StructureFlags = Base::StructureFlags & ~ImplementsDefaultHasInstance;
     static_assert(StructureFlags & ImplementsHasInstance);
 
@@ -56,7 +56,7 @@ public:
     JSObject* targetFunction() { return m_targetFunction.get(); }
     JSValue boundThis() { return m_boundThis.get(); }
     JSImmutableButterfly* boundArgs() { return m_boundArgs.get(); } // DO NOT allow this array to be mutated!
-    unsigned boundArgsLength() const { return m_boundArgs ? m_boundArgs->length() : 0; }
+    unsigned boundArgsLength() const { return m_boundArgsLength; }
     JSArray* boundArgsCopy(JSGlobalObject*);
     JSString* nameMayBeNull() { return m_nameMayBeNull.get(); }
     JSString* name()
@@ -90,6 +90,7 @@ public:
     static ptrdiff_t offsetOfTargetFunction() { return OBJECT_OFFSETOF(JSBoundFunction, m_targetFunction); }
     static ptrdiff_t offsetOfBoundThis() { return OBJECT_OFFSETOF(JSBoundFunction, m_boundThis); }
     static ptrdiff_t offsetOfBoundArgs() { return OBJECT_OFFSETOF(JSBoundFunction, m_boundArgs); }
+    static ptrdiff_t offsetOfBoundArgsLength() { return OBJECT_OFFSETOF(JSBoundFunction, m_boundArgsLength); }
 
     DECLARE_INFO;
 
@@ -107,6 +108,7 @@ private:
     WriteBarrier<JSImmutableButterfly> m_boundArgs;
     WriteBarrier<JSString> m_nameMayBeNull;
     double m_length;
+    unsigned m_boundArgsLength { 0 };
 };
 
 JSC_DECLARE_HOST_FUNCTION(boundFunctionCall);

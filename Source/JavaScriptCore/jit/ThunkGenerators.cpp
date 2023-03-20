@@ -1371,13 +1371,10 @@ MacroAssemblerCodeRef<JITThunkPtrTag> boundFunctionCallGenerator(VM& vm)
     // That's really all there is to this. We have all the registers we need to do it.
     
     jit.loadCell(CCallHelpers::addressFor(CallFrameSlot::callee), GPRInfo::regT0);
-    jit.loadPtr(CCallHelpers::Address(GPRInfo::regT0, JSBoundFunction::offsetOfBoundArgs()), GPRInfo::regT2);
+    jit.load32(CCallHelpers::Address(GPRInfo::regT0, JSBoundFunction::offsetOfBoundArgsLength()), GPRInfo::regT2);
     jit.load32(CCallHelpers::payloadFor(CallFrameSlot::argumentCountIncludingThis), GPRInfo::regT1);
     jit.move(GPRInfo::regT1, GPRInfo::regT3);
-    auto noArgs = jit.branchTestPtr(CCallHelpers::Zero, GPRInfo::regT2);
-    jit.load32(CCallHelpers::Address(GPRInfo::regT2, JSImmutableButterfly::offsetOfPublicLength()), GPRInfo::regT2);
     jit.add32(GPRInfo::regT2, GPRInfo::regT1);
-    noArgs.link(&jit);
     jit.add32(CCallHelpers::TrustedImm32(CallFrame::headerSizeInRegisters - CallerFrameAndPC::sizeInRegisters), GPRInfo::regT1, GPRInfo::regT2);
     jit.lshift32(CCallHelpers::TrustedImm32(3), GPRInfo::regT2);
     jit.add32(CCallHelpers::TrustedImm32(stackAlignmentBytes() - 1), GPRInfo::regT2);

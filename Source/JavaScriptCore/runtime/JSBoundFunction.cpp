@@ -225,6 +225,7 @@ JSBoundFunction::JSBoundFunction(VM& vm, NativeExecutable* executable, JSGlobalO
     , m_boundArgs(vm, this, boundArgs, WriteBarrier<JSImmutableButterfly>::MayBeNull)
     , m_nameMayBeNull(vm, this, nameMayBeNull, WriteBarrier<JSString>::MayBeNull)
     , m_length(length)
+    , m_boundArgsLength(boundArgs ? boundArgs->length() : 0)
 {
     ASSERT(!m_nameMayBeNull || !m_nameMayBeNull->isRope());
     ASSERT(m_length >= 0);
