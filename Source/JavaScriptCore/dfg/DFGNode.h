@@ -3209,6 +3209,17 @@ public:
         return op() == GetMapBucketNext || op() == LoadKeyFromMapBucket || op() == LoadValueFromMapBucket;
     }
 
+    unsigned numberOfBoundArguments()
+    {
+        ASSERT(hasNumberOfBoundArguments());
+        return m_opInfo.as<unsigned>();
+    }
+
+    bool hasNumberOfBoundArguments()
+    {
+        return op() == FunctionBind;
+    }
+
     BucketOwnerType bucketOwnerType()
     {
         ASSERT(hasBucketOwnerType());

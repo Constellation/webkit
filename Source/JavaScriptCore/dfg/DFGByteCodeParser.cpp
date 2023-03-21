@@ -3868,19 +3868,27 @@ auto ByteCodeParser::handleIntrinsicCall(Node* callee, Operand result, CallVaria
         }
 
         case FunctionBindIntrinsic: {
+#if USE(JSVALUE64)
             if (m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, BadType))
                 return CallOptimizationResult::DidNothing;
 
-            if (argumentCountIncludingThis > static_cast<int>((JSBoundFunction::maxEmbeddedArgs + /* boundThis */ 1) + /* this */ 1))
+            constexpr int numChildren = static_cast<int>((JSBoundFunction::maxEmbeddedArgs + /* boundThis */ 1) + /* this */ 1);
+            if (argumentCountIncludingThis > numChildren)
                 return CallOptimizationResult::DidNothing;
 
             insertChecks();
 
-            for (int index = 0; index < argumentCountIncludingThis; ++index)
+            int index = 0;
+            for (; index < argumentCountIncludingThis; ++index)
                 addVarArgChild(get(virtualRegisterForArgumentIncludingThis(index, registerOffset)));
-            Node* resultNode = addToGraph(Node::VarArg, FunctionBind, OpInfo(0), OpInfo(0));
+            for (; index < numChildren; ++index)
+                addVarArgChild(jsConstant(jsUndefined()));
+            Node* resultNode = addToGraph(Node::VarArg, FunctionBind, OpInfo(static_cast<unsigned>(argumentCountIncludingThis >= 2 ? argumentCountIncludingThis - 2 : 0)), OpInfo(0));
             setResult(resultNode);
             return CallOptimizationResult::Inlined;
+#else
+            return CallOptimizationResult::DidNothing;
+#endif
         }
 
         case NumberConstructorIntrinsic: {

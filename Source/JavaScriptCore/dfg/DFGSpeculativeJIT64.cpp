@@ -6555,6 +6555,32 @@ void SpeculativeJIT::compileGetByValWithThis(Node* node)
     jsValueResult(resultGPR, node);
 }
 
+void SpeculativeJIT::compileFunctionBind(Node* node)
+{
+    SpeculateCellOperand target(this, m_graph.child(node, 0));
+    JSValueOperand boundThis(this, m_graph.child(node, 1));
+    JSValueOperand arg0(this, m_graph.child(node, 2));
+    JSValueOperand arg1(this, m_graph.child(node, 3));
+    JSValueOperand arg2(this, m_graph.child(node, 4));
+
+    GPRReg targetGPR = target.gpr();
+    JSValueRegs boundThisRegs = boundThis.jsValueRegs();
+    JSValueRegs arg0Regs = arg0.jsValueRegs();
+    JSValueRegs arg1Regs = arg1.jsValueRegs();
+    JSValueRegs arg2Regs = arg2.jsValueRegs();
+
+    speculateObject(m_graph.child(node, 0), targetGPR);
+
+    unsigned boundArgsLength = node->numberOfBoundArguments();
+
+    GPRFlushedCallResult result(this);
+    GPRReg resultGPR = result.gpr();
+    flushRegisters();
+    callOperation(operationFunctionBind, resultGPR, LinkableConstant::globalObject(*this, node), targetGPR, TrustedImm32(boundArgsLength), boundThisRegs, arg0Regs, arg1Regs, arg2Regs);
+    exceptionCheck();
+    cellResult(resultGPR, node);
+}
+
 #endif
 
 } } // namespace JSC::DFG

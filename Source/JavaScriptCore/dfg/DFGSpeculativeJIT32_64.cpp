@@ -3093,10 +3093,6 @@ void SpeculativeJIT::compile(Node* node)
         compileFunctionToString(node);
         break;
 
-    case FunctionBind:
-        compileFunctionBind(node);
-        break;
-
     case NewStringObject: {
         compileNewStringObject(node);
         break;
@@ -4273,6 +4269,7 @@ void SpeculativeJIT::compile(Node* node)
     case DateGetTime:
     case StringCodePointAt:
     case CallWasm:
+    case FunctionBind:
         DFG_CRASH(m_graph, node, "unexpected node in DFG backend");
         break;
     }
