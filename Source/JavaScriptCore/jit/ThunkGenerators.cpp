@@ -1426,7 +1426,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> boundFunctionCallGenerator(VM& vm)
     jit.branchTest32(CCallHelpers::NonZero, GPRInfo::regT3).linkTo(loop, &jit);
     
     done.link(&jit);
-    JumpList argsPushed;
+    CCallHelpers::JumpList argsPushed;
     argsPushed.append(jit.branchTest32(CCallHelpers::Zero, GPRInfo::regT1));
     auto smallArgs = jit.branch32(CCallHelpers::BelowOrEqual, GPRInfo::regT1, CCallHelpers::TrustedImm32(JSBoundFunction::maxEmbeddedArgs));
     {
