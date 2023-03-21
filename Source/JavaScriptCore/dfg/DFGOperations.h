@@ -37,6 +37,7 @@ namespace JSC {
 
 class DateInstance;
 class JSBigInt;
+class JSBoundFunction;
 class JSPropertyNameEnumerator;
 class JSRopeString;
 class JSWeakMap;
