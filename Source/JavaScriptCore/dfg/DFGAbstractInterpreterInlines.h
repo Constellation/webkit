@@ -2950,6 +2950,11 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     }
 
     case FunctionBind: {
+        if (m_graph.m_plan.isUnlinked()) {
+            setTypeForNode(node, SpecFunction);
+            break;
+        }
+
         JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
         ExecutableBase* executable = nullptr;
         Edge target = m_graph.child(node, 0);
@@ -2959,21 +2964,22 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         else if (target->isFunctionAllocation())
             executable = target->castOperand<FunctionExecutable*>();
 
-        if (executable && executable->inherits<FunctionExecutable>()) {
-            AbstractValue& targetValue = forNode(target);
-            auto& structureSet = targetValue.m_structure;
-            if (!(targetValue.m_type & ~SpecObject) && structureSet.isFinite() && structureSet.size() == 1) {
-                RegisteredStructure structure = structureSet.onlyStructure();
-                if (structure->typeInfo().type() == JSFunctionType && !structure->didTransition() && structure->storedPrototype() == globalObject->functionPrototype()) {
-                    m_state.setShouldTryConstantFolding(true);
-                    didFoldClobberWorld();
-                    setTypeForNode(node, SpecFunction);
-                    break;
+        if (auto* structure = globalObject->boundFunctionStructureConcurrently()) {
+            if (executable && executable->inherits<FunctionExecutable>()) {
+                AbstractValue& targetValue = forNode(target);
+                auto& structureSet = targetValue.m_structure;
+                if (!(targetValue.m_type & ~SpecObject) && structureSet.isFinite() && structureSet.size() == 1) {
+                    RegisteredStructure structure = structureSet.onlyStructure();
+                    if (structure->typeInfo().type() == JSFunctionType && !structure->didTransition() && structure->storedPrototype() == globalObject->functionPrototype() && structure->globalObject() == globalObject) {
+                        m_state.setShouldTryConstantFolding(true);
+                        didFoldClobberWorld();
+                        setForNode(node, structure);
+                        break;
+                    }
                 }
             }
         }
 
-        dataLogLn("SLOW BIND LOGGING");
         setTypeForNode(node, SpecFunction);
         break;
     }
@@ -3394,8 +3400,11 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
             m_codeBlock->globalObjectFor(node->origin.semantic)->asyncFunctionStructure());
         break;
 
-    case NewBoundFunction:
+    case NewBoundFunction: {
+        setForNode(node,
+            m_codeBlock->globalObjectFor(node->origin.semantic)->boundFunctionStructureConcurrently());
         break;
+    }
 
     case NewFunction: {
         JSGlobalObject* globalObject = m_codeBlock->globalObjectFor(node->origin.semantic);

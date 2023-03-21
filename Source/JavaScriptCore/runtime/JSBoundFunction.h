@@ -91,6 +91,8 @@ public:
     static ptrdiff_t offsetOfBoundThis() { return OBJECT_OFFSETOF(JSBoundFunction, m_boundThis); }
     static ptrdiff_t offsetOfBoundArgs() { return OBJECT_OFFSETOF(JSBoundFunction, m_boundArgs); }
     static ptrdiff_t offsetOfBoundArgsLength() { return OBJECT_OFFSETOF(JSBoundFunction, m_boundArgsLength); }
+    static ptrdiff_t offsetOfNameMayBeNull() { return OBJECT_OFFSETOF(JSBoundFunction, m_nameMayBeNull); }
+    static ptrdiff_t offsetOfLength() { return OBJECT_OFFSETOF(JSBoundFunction, m_length); }
 
     template<typename Functor>
     void forEachBoundArg(const Functor& func)
@@ -126,7 +128,7 @@ private:
     WriteBarrier<Unknown> m_boundThis;
     std::array<WriteBarrier<Unknown>, maxEmbeddedArgs> m_boundArgs { };
     WriteBarrier<JSString> m_nameMayBeNull;
-    double m_length;
+    double m_length { PNaN };
     unsigned m_boundArgsLength { 0 };
 };
 

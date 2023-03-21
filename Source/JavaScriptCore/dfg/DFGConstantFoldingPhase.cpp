@@ -955,6 +955,9 @@ private:
             }
 
             case FunctionBind: {
+                if (m_graph.m_plan.isUnlinked())
+                    break;
+
                 JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
                 ExecutableBase* executable = nullptr;
                 Edge target = m_graph.child(node, 0);
@@ -970,8 +973,9 @@ private:
                     auto& structureSet = targetValue.m_structure;
                     if (!(targetValue.m_type & ~SpecObject) && structureSet.isFinite() && structureSet.size() == 1) {
                         RegisteredStructure structure = structureSet.onlyStructure();
-                        if (structure->typeInfo().type() == JSFunctionType && !structure->didTransition() && structure->storedPrototype() == globalObject->functionPrototype()) {
-                            dataLogLn("BIND LOGGING ", canConstruct);
+                        if (structure->typeInfo().type() == JSFunctionType && !structure->didTransition() && structure->storedPrototype() == globalObject->functionPrototype() && structure->globalObject() == globalObject) {
+                            node->convertToNewBoundFunction(m_graph.m_vm.getBoundFunction(/* isJSFunction */ true, canConstruct));
+                            changed = true;
                             break;
                         }
                     }

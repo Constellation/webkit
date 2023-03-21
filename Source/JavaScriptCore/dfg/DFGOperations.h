@@ -42,6 +42,7 @@ class JSPropertyNameEnumerator;
 class JSRopeString;
 class JSWeakMap;
 class JSWeakSet;
+class NativeExecutable;
 class OptimizingCallLinkInfo;
 struct UnlinkedStringJumpTable;
 
@@ -273,6 +274,7 @@ JSC_DECLARE_JIT_OPERATION(operationInt52ToStringWithValidRadix, char*, (JSGlobal
 JSC_DECLARE_JIT_OPERATION(operationDoubleToStringWithValidRadix, char*, (JSGlobalObject*, double, int32_t));
 JSC_DECLARE_JIT_OPERATION(operationFunctionToString, JSString*, (JSGlobalObject*, JSFunction*));
 JSC_DECLARE_JIT_OPERATION(operationFunctionBind, JSBoundFunction*, (JSGlobalObject*, JSObject*, unsigned, EncodedJSValue, EncodedJSValue, EncodedJSValue, EncodedJSValue));
+JSC_DECLARE_JIT_OPERATION(operationNewBoundFunction, JSBoundFunction*, (JSGlobalObject*, JSObject*, unsigned, EncodedJSValue, EncodedJSValue, EncodedJSValue, EncodedJSValue));
 
 JSC_DECLARE_JIT_OPERATION(operationNormalizeMapKeyHeapBigInt, EncodedJSValue, (VM*, JSBigInt*));
 JSC_DECLARE_JIT_OPERATION(operationMapHash, UCPUStrictInt32, (JSGlobalObject*, EncodedJSValue input));

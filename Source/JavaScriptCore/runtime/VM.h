@@ -543,10 +543,10 @@ public:
     Strong<JSCell> m_sentinelSetBucket;
     Strong<JSCell> m_sentinelMapBucket;
 
-    Weak<NativeExecutable> m_fastBoundExecutable;
-    Weak<NativeExecutable> m_fastCanConstructBoundExecutable;
-    Weak<NativeExecutable> m_slowBoundExecutable;
-    Weak<NativeExecutable> m_slowCanConstructBoundExecutable;
+    Strong<NativeExecutable> m_fastBoundExecutable;
+    Strong<NativeExecutable> m_fastCanConstructBoundExecutable;
+    Strong<NativeExecutable> m_slowBoundExecutable;
+    Strong<NativeExecutable> m_slowCanConstructBoundExecutable;
 
     Weak<NativeExecutable> m_fastRemoteFunctionExecutable;
     Weak<NativeExecutable> m_slowRemoteFunctionExecutable;

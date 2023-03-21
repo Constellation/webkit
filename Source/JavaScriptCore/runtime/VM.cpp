@@ -372,6 +372,8 @@ VM::VM(VMType vmType, HeapType heapType, WTF::RunLoop* runLoop, bool* success)
         getCTIInternalFunctionTrampolineFor(CodeForCall);
         getCTIInternalFunctionTrampolineFor(CodeForConstruct);
         m_sharedJITStubs = makeUnique<SharedJITStubSet>();
+        getBoundFunction(true, true);
+        getBoundFunction(true, false);
     }
 #endif // ENABLE(JIT)
 
@@ -677,7 +679,7 @@ NativeExecutable* VM::getBoundFunction(bool isJSFunction, bool canConstruct)
 {
     bool slowCase = !isJSFunction;
 
-    auto getOrCreate = [&] (Weak<NativeExecutable>& slot) -> NativeExecutable* {
+    auto getOrCreate = [&](Strong<NativeExecutable>& slot) -> NativeExecutable* {
         if (auto* cached = slot.get())
             return cached;
         NativeExecutable* result = getHostFunction(
@@ -685,7 +687,7 @@ NativeExecutable* VM::getBoundFunction(bool isJSFunction, bool canConstruct)
             ImplementationVisibility::Private, // Bound function's visibility is private on the stack.
             slowCase ? NoIntrinsic : BoundFunctionCallIntrinsic,
             canConstruct ? (slowCase ? boundFunctionConstruct : boundThisNoArgsFunctionConstruct) : callHostFunctionAsConstructor, nullptr, String());
-        slot = Weak<NativeExecutable>(result);
+        slot.set(*this, result);
         return result;
     };
 

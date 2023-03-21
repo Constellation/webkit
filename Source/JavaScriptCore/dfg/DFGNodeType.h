@@ -475,7 +475,7 @@ namespace JSC { namespace DFG {
     macro(NewGeneratorFunction, NodeResultJS) \
     macro(NewAsyncGeneratorFunction, NodeResultJS) \
     macro(NewAsyncFunction, NodeResultJS) \
-    macro(NewBoundFunction, NodeResultJS) \
+    macro(NewBoundFunction, NodeResultJS | NodeHasVarArgs) \
     \
     /* Block terminals. */\
     macro(Jump, NodeMustGenerate) \

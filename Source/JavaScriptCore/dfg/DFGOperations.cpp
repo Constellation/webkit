@@ -2877,6 +2877,30 @@ JSC_DEFINE_JIT_OPERATION(operationFunctionBind, JSBoundFunction*, (JSGlobalObjec
     RELEASE_AND_RETURN(scope, JSBoundFunction::create(vm, globalObject, target, boundThis, boundArgs, length, name));
 }
 
+JSC_DEFINE_JIT_OPERATION(operationNewBoundFunction, JSBoundFunction*, (JSGlobalObject* globalObject, JSObject* target, unsigned boundArgsLength, EncodedJSValue boundThisValue, EncodedJSValue arg0Value, EncodedJSValue arg1Value, EncodedJSValue arg2Value))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    ASSERT(target->isCallable());
+
+    JSValue boundThis = JSValue::decode(boundThisValue);
+    EncodedJSValue arguments[JSBoundFunction::maxEmbeddedArgs] {
+        arg0Value,
+        arg1Value,
+        arg2Value,
+    };
+    ArgList boundArgs { };
+    if (boundArgsLength >= 1)
+        boundArgs = ArgList(arguments, boundArgsLength);
+
+    double length = PNaN;
+    JSString* name = nullptr;
+    RELEASE_AND_RETURN(scope, JSBoundFunction::create(vm, globalObject, target, boundThis, boundArgs, length, name));
+}
+
 JSC_DEFINE_JIT_OPERATION(operationSingleCharacterString, JSString*, (VM* vmPointer, int32_t character))
 {
     VM& vm = *vmPointer;
