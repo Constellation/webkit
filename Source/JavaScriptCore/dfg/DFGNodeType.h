@@ -441,6 +441,7 @@ namespace JSC { namespace DFG {
     macro(NumberToStringWithRadix, NodeResultJS | NodeMustGenerate) \
     macro(NumberToStringWithValidRadixConstant, NodeResultJS) \
     macro(FunctionToString, NodeResultJS) \
+    macro(FunctionBind, NodeResultJS | NodeMustGenerate) \
     macro(MakeRope, NodeResultJS) \
     macro(InByVal, NodeResultBoolean | NodeMustGenerate) \
     macro(InById, NodeResultBoolean | NodeMustGenerate) \

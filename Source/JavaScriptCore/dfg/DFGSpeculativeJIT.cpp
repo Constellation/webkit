@@ -11759,6 +11759,46 @@ void SpeculativeJIT::compileFunctionToString(Node* node)
     cellResult(result.gpr(), node);
 }
 
+void SpeculativeJIT::compileFunctionBind(Node* node)
+{
+#if 0
+    SpeculateCellOperand function(this, m_graph.child(node, 0));
+    GPRTemporary executable(this);
+    GPRTemporary result(this);
+    JumpList slowCases;
+
+    speculateFunction(node->child1(), function.gpr());
+
+    emitLoadStructure(vm(), function.gpr(), result.gpr());
+    loadCompactPtr(Address(result.gpr(), Structure::classInfoOffset()), result.gpr());
+    static_assert(std::is_final_v<JSBoundFunction>, "We don't handle subclasses when comparing classInfo below");
+    slowCases.append(branchPtr(Equal, result.gpr(), TrustedImmPtr(JSBoundFunction::info())));
+
+    static_assert(std::is_final_v<JSRemoteFunction>, "We don't handle subclasses when comparing classInfo below");
+    slowCases.append(branchPtr(Equal, result.gpr(), TrustedImmPtr(JSRemoteFunction::info())));
+
+    getExecutable(*this, function.gpr(), executable.gpr());
+    Jump isNativeExecutable = branch8(Equal, Address(executable.gpr(), JSCell::typeInfoTypeOffset()), TrustedImm32(NativeExecutableType));
+
+    loadPtr(Address(executable.gpr(), FunctionExecutable::offsetOfRareData()), result.gpr());
+    slowCases.append(branchTestPtr(Zero, result.gpr()));
+    loadPtr(Address(result.gpr(), FunctionExecutable::RareData::offsetOfAsString()), result.gpr());
+    Jump continuation = jump();
+
+    isNativeExecutable.link(this);
+    loadPtr(Address(executable.gpr(), NativeExecutable::offsetOfAsString()), result.gpr());
+
+    continuation.link(this);
+    slowCases.append(branchTestPtr(Zero, result.gpr()));
+
+    addSlowPathGenerator(slowPathCall(slowCases, this, operationFunctionToString, result.gpr(), LinkableConstant::globalObject(*this, node), function.gpr()));
+
+    cellResult(result.gpr(), node);
+#else
+    UNUSED_PARAM(node);
+#endif
+}
+
 void SpeculativeJIT::compileNumberToStringWithValidRadixConstant(Node* node)
 {
     compileNumberToStringWithValidRadixConstant(node, node->validRadixConstant());
