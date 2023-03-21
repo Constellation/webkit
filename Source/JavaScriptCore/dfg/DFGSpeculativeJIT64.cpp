@@ -5400,6 +5400,10 @@ void SpeculativeJIT::compile(Node* node)
         compileNewFunction(node);
         break;
 
+    case NewBoundFunction:
+        compileNewBoundFunction(node);
+        break;
+
     case SetFunctionName:
         compileSetFunctionName(node);
         break;
@@ -6579,6 +6583,10 @@ void SpeculativeJIT::compileFunctionBind(Node* node)
     callOperation(operationFunctionBind, resultGPR, LinkableConstant::globalObject(*this, node), targetGPR, TrustedImm32(boundArgsLength), boundThisRegs, arg0Regs, arg1Regs, arg2Regs);
     exceptionCheck();
     cellResult(resultGPR, node);
+}
+
+void SpeculativeJIT::compileNewBoundFunction(Node*)
+{
 }
 
 #endif

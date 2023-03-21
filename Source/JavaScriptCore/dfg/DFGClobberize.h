@@ -1859,6 +1859,11 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         write(HeapObjectCount);
         return;
 
+    case NewBoundFunction:
+        read(HeapObjectCount);
+        write(HeapObjectCount);
+        return;
+
     case RegExpExec:
     case RegExpTest:
     case RegExpTestInline:

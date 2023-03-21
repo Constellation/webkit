@@ -3021,6 +3021,7 @@ private:
         case FilterSetPrivateBrandStatus:
         case InvalidationPoint:
         case GetWebAssemblyInstanceExports:
+        case NewBoundFunction:
             break;
 #else // not ASSERT_ENABLED
         default:

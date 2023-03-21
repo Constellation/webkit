@@ -1118,6 +1118,9 @@ private:
         case NewAsyncFunction:
             compileNewFunction();
             break;
+        case NewBoundFunction:
+            compileNewBoundFunction();
+            break;
         case CreateDirectArguments:
             compileCreateDirectArguments();
             break;
@@ -7291,6 +7294,10 @@ IGNORE_CLANG_WARNINGS_END
         
         m_out.appendTo(continuation, lastNext);
         setJSValue(m_out.phi(pointerType(), fastResult, slowResult));
+    }
+
+    void compileNewBoundFunction()
+    {
     }
     
     void compileCreateDirectArguments()

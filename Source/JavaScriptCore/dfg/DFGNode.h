@@ -1917,6 +1917,7 @@ public:
         case NewGeneratorFunction:
         case NewAsyncFunction:
         case NewAsyncGeneratorFunction:
+        case NewBoundFunction:
         case CreateActivation:
         case MaterializeCreateActivation:
         case NewRegexp:

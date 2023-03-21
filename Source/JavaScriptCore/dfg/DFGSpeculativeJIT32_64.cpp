@@ -4270,6 +4270,7 @@ void SpeculativeJIT::compile(Node* node)
     case StringCodePointAt:
     case CallWasm:
     case FunctionBind:
+    case NewBoundFunction:
         DFG_CRASH(m_graph, node, "unexpected node in DFG backend");
         break;
     }

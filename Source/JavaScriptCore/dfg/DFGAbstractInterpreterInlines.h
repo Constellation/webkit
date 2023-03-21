@@ -2950,6 +2950,30 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     }
 
     case FunctionBind: {
+        JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
+        ExecutableBase* executable = nullptr;
+        Edge target = m_graph.child(node, 0);
+        JSFunction* function = target->dynamicCastConstant<JSFunction*>();
+        if (function)
+            executable = function->executable();
+        else if (target->isFunctionAllocation())
+            executable = target->castOperand<FunctionExecutable*>();
+
+        if (executable && executable->inherits<FunctionExecutable>()) {
+            AbstractValue& targetValue = forNode(target);
+            auto& structureSet = targetValue.m_structure;
+            if (!(targetValue.m_type & ~SpecObject) && structureSet.isFinite() && structureSet.size() == 1) {
+                RegisteredStructure structure = structureSet.onlyStructure();
+                if (structure->typeInfo().type() == JSFunctionType && !structure->didTransition() && structure->storedPrototype() == globalObject->functionPrototype()) {
+                    m_state.setShouldTryConstantFolding(true);
+                    didFoldClobberWorld();
+                    setTypeForNode(node, SpecFunction);
+                    break;
+                }
+            }
+        }
+
+        dataLogLn("SLOW BIND LOGGING");
         setTypeForNode(node, SpecFunction);
         break;
     }
@@ -3368,6 +3392,9 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     case NewAsyncFunction:
         setForNode(node, 
             m_codeBlock->globalObjectFor(node->origin.semantic)->asyncFunctionStructure());
+        break;
+
+    case NewBoundFunction:
         break;
 
     case NewFunction: {

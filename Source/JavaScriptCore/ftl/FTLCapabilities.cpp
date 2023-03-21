@@ -144,6 +144,7 @@ inline CapabilityLevel canCompile(Node* node)
     case NewGeneratorFunction:
     case NewAsyncFunction:
     case NewAsyncGeneratorFunction:
+    case NewBoundFunction:
     case GetClosureVar:
     case PutClosureVar:
     case GetInternalField:

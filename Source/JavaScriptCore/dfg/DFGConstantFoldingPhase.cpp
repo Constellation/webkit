@@ -954,6 +954,31 @@ private:
                 break;
             }
 
+            case FunctionBind: {
+                JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
+                ExecutableBase* executable = nullptr;
+                Edge target = m_graph.child(node, 0);
+                JSFunction* function = target->dynamicCastConstant<JSFunction*>();
+                if (function)
+                    executable = function->executable();
+                else if (target->isFunctionAllocation())
+                    executable = target->castOperand<FunctionExecutable*>();
+
+                if (executable && executable->inherits<FunctionExecutable>()) {
+                    bool canConstruct = jsCast<FunctionExecutable*>(executable)->constructAbility() != ConstructAbility::CannotConstruct;
+                    AbstractValue& targetValue = m_state.forNode(target);
+                    auto& structureSet = targetValue.m_structure;
+                    if (!(targetValue.m_type & ~SpecObject) && structureSet.isFinite() && structureSet.size() == 1) {
+                        RegisteredStructure structure = structureSet.onlyStructure();
+                        if (structure->typeInfo().type() == JSFunctionType && !structure->didTransition() && structure->storedPrototype() == globalObject->functionPrototype()) {
+                            dataLogLn("BIND LOGGING ", canConstruct);
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+
             case NumberToStringWithRadix: {
                 JSValue radixValue = m_state.forNode(node->child2()).m_value;
                 if (radixValue && radixValue.isInt32()) {

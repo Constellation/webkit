@@ -1449,6 +1449,7 @@ public:
     template <typename ClassType> void compileNewFunctionCommon(GPRReg, RegisteredStructure, GPRReg, GPRReg, GPRReg, JumpList&, size_t, FunctionExecutable*);
     void compileNewFunction(Node*);
     void compileSetFunctionName(Node*);
+    void compileNewBoundFunction(Node*);
     void compileNewRegexp(Node*);
     void compileForwardVarargs(Node*);
     void compileVarargsLength(Node*);

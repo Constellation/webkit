@@ -623,6 +623,7 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node, bool igno
     case NewGeneratorFunction:
     case NewAsyncGeneratorFunction:
     case NewAsyncFunction:
+    case NewBoundFunction:
     case Jump:
     case Branch:
     case Switch:
