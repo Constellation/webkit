@@ -2824,12 +2824,17 @@ JSC_DEFINE_JIT_OPERATION(operationFunctionToString, JSString*, (JSGlobalObject* 
     return function->toString(globalObject);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationFunctionBind, JSBoundFunction*, (JSGlobalObject* globalObject, JSFunction* function, unsigned boundArgsLength, EncodedJSValue boundThisValue, EncodedJSValue arg0Value, EncodedJSValue arg1Value, EncodedJSValue arg2Value))
+JSC_DEFINE_JIT_OPERATION(operationFunctionBind, JSBoundFunction*, (JSGlobalObject* globalObject, JSObject* target, unsigned boundArgsLength, EncodedJSValue boundThisValue, EncodedJSValue arg0Value, EncodedJSValue arg1Value, EncodedJSValue arg2Value))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
     auto scope = DECLARE_THROW_SCOPE(vm);
+
+    if (UNLIKELY(!target->isCallable())) {
+        throwTypeError(globalObject, scope, "|this| is not a function inside Function.prototype.bind"_s);
+        return { };
+    }
 
     JSValue boundThis = JSValue::decode(boundThisValue);
     EncodedJSValue arguments[JSBoundFunction::maxEmbeddedArgs] {
@@ -2843,12 +2848,12 @@ JSC_DEFINE_JIT_OPERATION(operationFunctionBind, JSBoundFunction*, (JSGlobalObjec
 
     double length = PNaN;
     JSString* name = nullptr;
-    if (LIKELY(function->canAssumeNameAndLengthAreOriginal(vm))) {
+    JSFunction* function = jsDynamicCast<JSFunction*>(target);
+    if (LIKELY(function && function->canAssumeNameAndLengthAreOriginal(vm))) {
         // Do nothing! 'length' and 'name' computation are lazily done.
         // And this is totally OK since we know that wrapped functions have canAssumeNameAndLengthAreOriginal condition
         // at the time of creation of JSBoundFunction.
     } else {
-        JSObject* target = function;
         bool found = target->hasOwnProperty(globalObject, vm.propertyNames->length);
         RETURN_IF_EXCEPTION(scope, { });
         if (found) {
@@ -2869,7 +2874,7 @@ JSC_DEFINE_JIT_OPERATION(operationFunctionBind, JSBoundFunction*, (JSGlobalObjec
             name = jsEmptyString(vm);
     }
 
-    RELEASE_AND_RETURN(scope, JSBoundFunction::create(vm, globalObject, function, boundThis, boundArgs, length, name));
+    RELEASE_AND_RETURN(scope, JSBoundFunction::create(vm, globalObject, target, boundThis, boundArgs, length, name));
 }
 
 JSC_DEFINE_JIT_OPERATION(operationSingleCharacterString, JSString*, (VM* vmPointer, int32_t character))

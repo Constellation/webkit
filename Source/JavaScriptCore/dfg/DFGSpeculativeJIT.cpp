@@ -11761,42 +11761,56 @@ void SpeculativeJIT::compileFunctionToString(Node* node)
 
 void SpeculativeJIT::compileFunctionBind(Node* node)
 {
-#if 0
-    SpeculateCellOperand function(this, m_graph.child(node, 0));
-    GPRTemporary executable(this);
-    GPRTemporary result(this);
-    JumpList slowCases;
+    SpeculateCellOperand target(this, m_graph.child(node, 0));
+    JSValueOperand boundThis(this, m_graph.child(node, 1));
 
-    speculateFunction(node->child1(), function.gpr());
+    GPRReg targetGPR = target.gpr();
+    JSValueRegs boundThisRegs = boundThis.jsValueRegs();
 
-    emitLoadStructure(vm(), function.gpr(), result.gpr());
-    loadCompactPtr(Address(result.gpr(), Structure::classInfoOffset()), result.gpr());
-    static_assert(std::is_final_v<JSBoundFunction>, "We don't handle subclasses when comparing classInfo below");
-    slowCases.append(branchPtr(Equal, result.gpr(), TrustedImmPtr(JSBoundFunction::info())));
+    speculateObject(m_graph.child(node, 0), targetGPR);
 
-    static_assert(std::is_final_v<JSRemoteFunction>, "We don't handle subclasses when comparing classInfo below");
-    slowCases.append(branchPtr(Equal, result.gpr(), TrustedImmPtr(JSRemoteFunction::info())));
+    auto invoke = [&](auto arg0, auto arg1, auto arg2) {
+        GPRFlushedCallResult result(this);
+        GPRReg resultGPR = result.gpr();
+        flushRegisters();
+        callOperation(operationFunctionBind, resultGPR, LinkableConstant::globalObject(*this, node), targetGPR, node->numChildren() - 2, boundThisRegs, arg0, arg1, arg2);
+        exceptionCheck();
+        cellResult(resultGPR, node);
+    };
 
-    getExecutable(*this, function.gpr(), executable.gpr());
-    Jump isNativeExecutable = branch8(Equal, Address(executable.gpr(), JSCell::typeInfoTypeOffset()), TrustedImm32(NativeExecutableType));
-
-    loadPtr(Address(executable.gpr(), FunctionExecutable::offsetOfRareData()), result.gpr());
-    slowCases.append(branchTestPtr(Zero, result.gpr()));
-    loadPtr(Address(result.gpr(), FunctionExecutable::RareData::offsetOfAsString()), result.gpr());
-    Jump continuation = jump();
-
-    isNativeExecutable.link(this);
-    loadPtr(Address(executable.gpr(), NativeExecutable::offsetOfAsString()), result.gpr());
-
-    continuation.link(this);
-    slowCases.append(branchTestPtr(Zero, result.gpr()));
-
-    addSlowPathGenerator(slowPathCall(slowCases, this, operationFunctionToString, result.gpr(), LinkableConstant::globalObject(*this, node), function.gpr()));
-
-    cellResult(result.gpr(), node);
-#else
-    UNUSED_PARAM(node);
-#endif
+    switch (node->numChildren()) {
+    case 2: {
+        invoke(TrustedImm64(JSValue::encode(JSValue())), TrustedImm64(JSValue::encode(JSValue())), TrustedImm64(JSValue::encode(JSValue())));
+        break;
+    }
+    case 3: {
+        JSValueOperand arg0(this, m_graph.child(node, 2));
+        JSValueRegs arg0Regs = arg0.jsValueRegs();
+        invoke(arg0Regs, TrustedImm64(JSValue::encode(JSValue())), TrustedImm64(JSValue::encode(JSValue())));
+        break;
+    }
+    case 4: {
+        JSValueOperand arg0(this, m_graph.child(node, 2));
+        JSValueOperand arg1(this, m_graph.child(node, 3));
+        JSValueRegs arg0Regs = arg0.jsValueRegs();
+        JSValueRegs arg1Regs = arg1.jsValueRegs();
+        invoke(arg0Regs, arg1Regs, TrustedImm64(JSValue::encode(JSValue())));
+        break;
+    }
+    case 5: {
+        JSValueOperand arg0(this, m_graph.child(node, 2));
+        JSValueOperand arg1(this, m_graph.child(node, 3));
+        JSValueOperand arg2(this, m_graph.child(node, 4));
+        JSValueRegs arg0Regs = arg0.jsValueRegs();
+        JSValueRegs arg1Regs = arg1.jsValueRegs();
+        JSValueRegs arg2Regs = arg2.jsValueRegs();
+        invoke(arg0Regs, arg1Regs, arg2Regs);
+        break;
+    }
+    default:
+        RELEASE_ASSERT_NOT_REACHED();
+        break;
+    }
 }
 
 void SpeculativeJIT::compileNumberToStringWithValidRadixConstant(Node* node)

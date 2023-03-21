@@ -2008,7 +2008,7 @@ private:
         }
 
         case FunctionBind: {
-            fixEdge<FunctionUse>(m_graph.child(node, 0));
+            fixEdge<ObjectUse>(m_graph.child(node, 0));
             break;
         }
 
