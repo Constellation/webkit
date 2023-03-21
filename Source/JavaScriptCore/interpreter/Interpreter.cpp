@@ -1433,12 +1433,12 @@ JSValue Interpreter::executeModuleProgram(JSModuleRecord* record, ModuleProgramE
     RefPtr<JITCode> jitCode;
 
     ProtoCallFrame protoCallFrame;
-    JSValue args[numberOfArguments] = {
-        record,
-        record->internalField(JSModuleRecord::Field::State).get(),
-        sentValue,
-        resumeMode,
-        scope,
+    EncodedJSValue args[numberOfArguments] = {
+        JSValue::encode(record),
+        JSValue::encode(record->internalField(JSModuleRecord::Field::State).get()),
+        JSValue::encode(sentValue),
+        JSValue::encode(resumeMode),
+        JSValue::encode(scope),
     };
 
     {
