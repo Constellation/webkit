@@ -2964,7 +2964,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
                             ok = false;
                             return;
                         }
-                        if (structure->getPrototypeDirect() != globalObject->functionPrototype()) {
+                        if (structure->storedPrototype() != globalObject->functionPrototype()) {
                             ok = false;
                             return;
                         }
