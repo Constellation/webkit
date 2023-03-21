@@ -184,13 +184,24 @@ inline Structure* getBoundFunctionStructure(VM& vm, JSGlobalObject* globalObject
     return result;
 }
 
-JSBoundFunction* JSBoundFunction::create(VM& vm, JSGlobalObject* globalObject, JSObject* targetFunction, JSValue boundThis, JSImmutableButterfly* boundArgs, double length, JSString* nameMayBeNull)
+JSBoundFunction* JSBoundFunction::create(VM& vm, JSGlobalObject* globalObject, JSObject* targetFunction, JSValue boundThis, ArgList args, double length, JSString* nameMayBeNull)
 {
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     if (nameMayBeNull) {
         nameMayBeNull->value(globalObject); // Resolving rope.
         RETURN_IF_EXCEPTION(scope, nullptr);
+    }
+
+    JSImmutableButterfly* boundArgs = nullptr;
+    if (!args.isEmpty()) {
+        boundArgs = JSImmutableButterfly::tryCreate(vm, vm.immutableButterflyStructures[arrayIndexFromIndexingType(CopyOnWriteArrayWithContiguous) - NumberOfIndexingShapes].get(), numBoundArgs);
+        if (UNLIKELY(!boundArgs)) {
+            throwOutOfMemoryError(globalObject, scope);
+            return nullptr;
+        }
+        for (unsigned index = 0, size = args.size(); index < size; ++index)
+            butterfly->setIndex(vm, index, args.at(index));
     }
 
     bool isJSFunction = getJSFunction(targetFunction);

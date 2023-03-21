@@ -49,7 +49,7 @@ public:
         return vm.boundFunctionSpace<mode>();
     }
 
-    JS_EXPORT_PRIVATE static JSBoundFunction* create(VM&, JSGlobalObject*, JSObject* targetFunction, JSValue boundThis, JSImmutableButterfly* boundArgs, double length, JSString* nameMayBeNull);
+    JS_EXPORT_PRIVATE static JSBoundFunction* create(VM&, JSGlobalObject*, JSObject* targetFunction, JSValue boundThis, ArgList, double length, JSString* nameMayBeNull);
     
     static bool customHasInstance(JSObject*, JSGlobalObject*, JSValue);
 

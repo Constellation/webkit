@@ -116,17 +116,9 @@ JSC_DEFINE_HOST_FUNCTION(functionProtoFuncBind, (JSGlobalObject* globalObject, C
     JSValue boundThis = callFrame->argument(0);
     unsigned argumentCount = callFrame->argumentCount();
     unsigned numBoundArgs = 0;
-    JSImmutableButterfly* butterfly = nullptr;
-    if (argumentCount > 1) {
-        numBoundArgs = argumentCount - 1;
-        butterfly = JSImmutableButterfly::tryCreate(vm, vm.immutableButterflyStructures[arrayIndexFromIndexingType(CopyOnWriteArrayWithContiguous) - NumberOfIndexingShapes].get(), numBoundArgs);
-        if (UNLIKELY(!butterfly)) {
-            throwOutOfMemoryError(globalObject, scope);
-            return { };
-        }
-        for (int32_t index = 0; index < static_cast<int32_t>(argumentCount - 1); ++index)
-            butterfly->setIndex(vm, index, callFrame->uncheckedArgument(index + 1));
-    }
+    ArgList boundArgs { };
+    if (argumentCount > 1)
+        boundArgs = ArgList(callFrame, 1);
 
     double length = PNaN;
     JSString* name = nullptr;
@@ -156,7 +148,7 @@ JSC_DEFINE_HOST_FUNCTION(functionProtoFuncBind, (JSGlobalObject* globalObject, C
             name = jsEmptyString(vm);
     }
 
-    RELEASE_AND_RETURN(scope, JSValue::encode(JSBoundFunction::create(vm, globalObject, target, boundThis, butterfly, length, name)));
+    RELEASE_AND_RETURN(scope, JSValue::encode(JSBoundFunction::create(vm, globalObject, target, boundThis, boundArgs, length, name)));
 }
 
 // https://github.com/claudepache/es-legacy-function-reflection/blob/master/spec.md#isallowedreceiverfunctionforcallerandargumentsfunc-expectedrealm (except step 3)

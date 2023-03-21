@@ -208,16 +208,19 @@ class ArgList {
     friend class Interpreter;
     friend class JIT;
 public:
-    ArgList()
-        : m_args(nullptr)
-        , m_argCount(0)
-    {
-    }
+    ArgList() = default;
 
     ArgList(CallFrame* callFrame)
         : m_args(reinterpret_cast<JSValue*>(&callFrame[CallFrame::argumentOffset(0)]))
         , m_argCount(callFrame->argumentCount())
     {
+    }
+
+    ArgList(CallFrame* callFrame, int startingFrom)
+        : m_args(reinterpret_cast<JSValue*>(&callFrame[CallFrame::argumentOffset(startingFrom)]))
+        , m_argCount(callFrame->argumentCount() - startingFrom)
+    {
+        ASSERT(callFrame->argumentCount() >= startingFrom);
     }
 
     ArgList(const MarkedArgumentBuffer& args)
@@ -241,8 +244,8 @@ public:
 private:
     JSValue* data() const { return m_args; }
 
-    JSValue* m_args;
-    int m_argCount;
+    JSValue* m_args { nullptr };
+    int m_argCount { 0 };
 };
 
 } // namespace JSC
