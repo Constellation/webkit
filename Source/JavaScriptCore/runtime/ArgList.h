@@ -229,7 +229,7 @@ public:
     {
     }
 
-    ArgList(const EncodedJSValue* args, int count)
+    ArgList(EncodedJSValue* args, int count)
         : m_args(args)
         , m_argCount(count)
     {
@@ -248,7 +248,9 @@ public:
     JS_EXPORT_PRIVATE void getSlice(int startIndex, ArgList& result) const;
 
 private:
-    const EncodedJSValue* m_args { nullptr };
+    EncodedJSValue* data() const { return m_args; }
+
+    EncodedJSValue* m_args { nullptr };
     int m_argCount { 0 };
 };
 
