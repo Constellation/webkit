@@ -2007,6 +2007,11 @@ private:
             break;
         }
 
+        case FunctionBind: {
+            fixEdge<FunctionUse>(m_graph.child(node, 0));
+            break;
+        }
+
         case SetPrivateBrand: {
             fixEdge<CellUse>(node->child1());
             fixEdge<SymbolUse>(node->child2());

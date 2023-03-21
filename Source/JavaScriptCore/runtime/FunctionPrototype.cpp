@@ -66,7 +66,7 @@ void FunctionPrototype::addFunctionProperties(VM& vm, JSGlobalObject* globalObje
 
     *applyFunction = putDirectBuiltinFunctionWithoutTransition(vm, globalObject, vm.propertyNames->builtinNames().applyPublicName(), functionPrototypeApplyCodeGenerator(vm), static_cast<unsigned>(PropertyAttribute::DontEnum));
     *callFunction = putDirectBuiltinFunctionWithoutTransition(vm, globalObject, vm.propertyNames->builtinNames().callPublicName(), functionPrototypeCallCodeGenerator(vm), static_cast<unsigned>(PropertyAttribute::DontEnum));
-    JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION(vm.propertyNames->bind, functionProtoFuncBind, static_cast<unsigned>(PropertyAttribute::DontEnum), 1, ImplementationVisibility::Public);
+    JSC_NATIVE_INTRINSIC_FUNCTION_WITHOUT_TRANSITION(vm.propertyNames->bind, functionProtoFuncBind, static_cast<unsigned>(PropertyAttribute::DontEnum), 1, ImplementationVisibility::Public, FunctionBindIntrinsic);
 
     putDirectCustomGetterSetterWithoutTransition(vm, vm.propertyNames->arguments, CustomGetterSetter::create(vm, argumentsGetter, callerAndArgumentsSetter), PropertyAttribute::DontEnum | PropertyAttribute::CustomAccessor);
     putDirectCustomGetterSetterWithoutTransition(vm, vm.propertyNames->caller, CustomGetterSetter::create(vm, callerGetter, callerAndArgumentsSetter), PropertyAttribute::DontEnum | PropertyAttribute::CustomAccessor);

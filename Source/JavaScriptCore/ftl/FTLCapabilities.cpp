@@ -222,6 +222,7 @@ inline CapabilityLevel canCompile(Node* node)
     case ToNumeric:
     case ToString:
     case FunctionToString:
+    case FunctionBind:
     case ToObject:
     case CallObjectConstructor:
     case CallStringConstructor:

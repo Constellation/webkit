@@ -1962,6 +1962,10 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
     case FunctionToString:
         def(PureValue(node));
         return;
+
+    case FunctionBind:
+        clobberTop(); // Slow path can clobber top.
+        return;
         
     case CountExecution:
     case SuperSamplerBegin:

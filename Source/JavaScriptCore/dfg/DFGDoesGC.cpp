@@ -292,6 +292,7 @@ bool doesGC(Graph& graph, Node* node)
     case CallWasm:
     case ForceOSRExit:
     case FunctionToString:
+    case FunctionBind:
     case GetById:
     case GetByIdDirect:
     case GetByIdDirectFlush:

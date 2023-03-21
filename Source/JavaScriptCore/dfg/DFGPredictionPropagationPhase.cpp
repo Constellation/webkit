@@ -973,7 +973,8 @@ private:
         case NewFunction:
         case NewGeneratorFunction:
         case NewAsyncGeneratorFunction:
-        case NewAsyncFunction: {
+        case NewAsyncFunction:
+        case FunctionBind: {
             setPrediction(SpecFunction);
             break;
         }

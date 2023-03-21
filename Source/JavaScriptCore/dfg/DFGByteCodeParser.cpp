@@ -3867,6 +3867,22 @@ auto ByteCodeParser::handleIntrinsicCall(Node* callee, Operand result, CallVaria
             return CallOptimizationResult::Inlined;
         }
 
+        case FunctionBindIntrinsic: {
+            if (m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, BadType))
+                return CallOptimizationResult::DidNothing;
+
+            if (argumentCountIncludingThis > ((JSBoundFunction::maxEmbeddedArgs + /* boundThis */ 1) + /* this */ 1))
+                return CallOptimizationResult::DidNothing;
+
+            insertChecks();
+
+            for (unsigned index = 0; index < argumentCountIncludingThis; ++index)
+                addVarArgChild(get(virtualRegisterForArgumentIncludingThis(index, registerOffset)));
+            Node* resultNode = addToGraph(Node::VarArg, FunctionBind, OpInfo(0), OpInfo(0));
+            setResult(resultNode);
+            return CallOptimizationResult::Inlined;
+        }
+
         case NumberConstructorIntrinsic: {
             insertChecks();
             if (argumentCountIncludingThis <= 1)

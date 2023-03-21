@@ -1229,6 +1229,9 @@ private:
         case FunctionToString:
             compileFunctionToString();
             break;
+        case FunctionBind:
+            compileFunctionBind();
+            break;
         case ToPrimitive:
             compileToPrimitive();
             break;

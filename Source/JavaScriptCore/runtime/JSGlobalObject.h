@@ -777,6 +777,7 @@ public:
     }
 
     Structure* boundFunctionStructure() const { return m_boundFunctionStructure.get(this); }
+    Structure* boundFunctionStructureConcurrently() const { return m_boundFunctionStructure.getConcurrently(); }
     Structure* customGetterFunctionStructure() const { return m_customGetterFunctionStructure.get(this); }
     Structure* customSetterFunctionStructure() const { return m_customSetterFunctionStructure.get(this); }
     Structure* nativeStdFunctionStructure() const { return m_nativeStdFunctionStructure.get(this); }

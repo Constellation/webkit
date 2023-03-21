@@ -706,6 +706,7 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node, bool igno
     case ArithIMul:
     case TryGetById:
     case StringLocaleCompare:
+    case FunctionBind:
         return false;
 
     case StringReplaceString:

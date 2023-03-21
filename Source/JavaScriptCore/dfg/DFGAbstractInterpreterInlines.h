@@ -2948,6 +2948,38 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         break;
     }
 
+    case FunctionBind: {
+        auto* globalObject = m_graph.globalObjectFor(node->origin.semantic);
+        if (auto* boundFunctionStructure = globalObject->boundFunctionStructureConcurrently()) {
+            auto& value = forNode(m_graph.child(node, 0));
+            if (value.m_structure.isFinite() && !value.m_structure.isEmpty()) {
+                bool ok = true;
+                value.m_structure.forEach(
+                    [&](RegisteredStructure structure) {
+                        if (structure->globalObject() != globalObject) {
+                            ok = false;
+                            return;
+                        }
+                        if (structure->typeInfo().type() != JSFunction) {
+                            ok = false;
+                            return;
+                        }
+                        if (structure->getPrototypeDirect() != globalObject->functionPrototype()) {
+                            ok = false;
+                            return;
+                        }
+                    });
+                if (ok) {
+                    setForNode(node, boundFunctionStructure);
+                    break;
+                }
+            }
+        }
+
+        setTypeForNode(node, SpecFunction);
+        break;
+    }
+
     case NumberToStringWithRadix: {
         JSValue radixValue = forNode(node->child2()).m_value;
         if (radixValue && radixValue.isInt32()) {

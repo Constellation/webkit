@@ -3092,7 +3092,11 @@ void SpeculativeJIT::compile(Node* node)
     case FunctionToString:
         compileFunctionToString(node);
         break;
-        
+
+    case FunctionBind:
+        compileFunctionBind(node);
+        break;
+
     case NewStringObject: {
         compileNewStringObject(node);
         break;
