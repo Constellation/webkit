@@ -195,7 +195,7 @@ JSBoundFunction* JSBoundFunction::create(VM& vm, JSGlobalObject* globalObject, J
 
     JSImmutableButterfly* boundArgs = nullptr;
     if (!args.isEmpty()) {
-        boundArgs = JSImmutableButterfly::tryCreate(vm, vm.immutableButterflyStructures[arrayIndexFromIndexingType(CopyOnWriteArrayWithContiguous) - NumberOfIndexingShapes].get(), numBoundArgs);
+        boundArgs = JSImmutableButterfly::tryCreate(vm, vm.immutableButterflyStructures[arrayIndexFromIndexingType(CopyOnWriteArrayWithContiguous) - NumberOfIndexingShapes].get(), args.size());
         if (UNLIKELY(!boundArgs)) {
             throwOutOfMemoryError(globalObject, scope);
             return nullptr;
