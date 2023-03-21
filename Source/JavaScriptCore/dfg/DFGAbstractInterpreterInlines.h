@@ -35,6 +35,7 @@
 #include "DFGAbstractInterpreterClobberState.h"
 #include "DOMJITGetterSetter.h"
 #include "DOMJITSignature.h"
+#include "FunctionPrototype.h"
 #include "GetByStatus.h"
 #include "GetterSetter.h"
 #include "HashMapImplInlines.h"
