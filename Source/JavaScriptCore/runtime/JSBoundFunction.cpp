@@ -193,15 +193,21 @@ JSBoundFunction* JSBoundFunction::create(VM& vm, JSGlobalObject* globalObject, J
         RETURN_IF_EXCEPTION(scope, nullptr);
     }
 
-    JSImmutableButterfly* boundArgs = nullptr;
+    JSValue boundArgs[maxEmbeddedArgs] { };
     if (!args.isEmpty()) {
-        boundArgs = JSImmutableButterfly::tryCreate(vm, vm.immutableButterflyStructures[arrayIndexFromIndexingType(CopyOnWriteArrayWithContiguous) - NumberOfIndexingShapes].get(), args.size());
-        if (UNLIKELY(!boundArgs)) {
-            throwOutOfMemoryError(globalObject, scope);
-            return nullptr;
+        if (args.size() <= maxEmbeddedArgs) {
+            for (unsigned index = 0, size = args.size(); index < size; ++index)
+                boundArgs[index] = args.at(index);
+        } else {
+            JSImmutableButterfly* butterfly = JSImmutableButterfly::tryCreate(vm, vm.immutableButterflyStructures[arrayIndexFromIndexingType(CopyOnWriteArrayWithContiguous) - NumberOfIndexingShapes].get(), args.size());
+            if (UNLIKELY(!butterfly)) {
+                throwOutOfMemoryError(globalObject, scope);
+                return nullptr;
+            }
+            for (unsigned index = 0, size = args.size(); index < size; ++index)
+                butterfly->setIndex(vm, index, args.at(index));
+            boundArgs[0] = butterfly;
         }
-        for (unsigned index = 0, size = args.size(); index < size; ++index)
-            boundArgs->setIndex(vm, index, args.at(index));
     }
 
     bool isJSFunction = getJSFunction(targetFunction);
@@ -210,7 +216,7 @@ JSBoundFunction* JSBoundFunction::create(VM& vm, JSGlobalObject* globalObject, J
     NativeExecutable* executable = vm.getBoundFunction(isJSFunction, canConstruct);
     Structure* structure = getBoundFunctionStructure(vm, globalObject, targetFunction);
     RETURN_IF_EXCEPTION(scope, nullptr);
-    JSBoundFunction* function = new (NotNull, allocateCell<JSBoundFunction>(vm)) JSBoundFunction(vm, executable, globalObject, structure, targetFunction, boundThis, boundArgs, nameMayBeNull, length);
+    JSBoundFunction* function = new (NotNull, allocateCell<JSBoundFunction>(vm)) JSBoundFunction(vm, executable, globalObject, structure, targetFunction, boundThis, args.size(), boundArgs[0], boundArgs[1], boundArgs[2], nameMayBeNull, length);
 
     function->finishCreation(vm);
     return function;
@@ -221,17 +227,17 @@ bool JSBoundFunction::customHasInstance(JSObject* object, JSGlobalObject* global
     return jsCast<JSBoundFunction*>(object)->m_targetFunction->hasInstance(globalObject, value);
 }
 
-JSBoundFunction::JSBoundFunction(VM& vm, NativeExecutable* executable, JSGlobalObject* globalObject, Structure* structure, JSObject* targetFunction, JSValue boundThis, JSImmutableButterfly* boundArgs, JSString* nameMayBeNull, double length)
+JSBoundFunction::JSBoundFunction(VM& vm, NativeExecutable* executable, JSGlobalObject* globalObject, Structure* structure, JSObject* targetFunction, JSValue boundThis, unsigned boundArgsLength, JSValue arg0, JSValue arg1, JSValue arg2, JSString* nameMayBeNull, double length)
     : Base(vm, executable, globalObject, structure)
     , m_targetFunction(vm, this, targetFunction)
     , m_boundThis(vm, this, boundThis)
-    , m_boundArgs(vm, this, boundArgs, WriteBarrier<JSImmutableButterfly>::MayBeNull)
     , m_nameMayBeNull(vm, this, nameMayBeNull, WriteBarrier<JSString>::MayBeNull)
     , m_length(length)
-    , m_boundArgsLength(boundArgs ? boundArgs->length() : 0)
+    , m_boundArgsLength(boundArgsLength)
 {
-    ASSERT(!m_nameMayBeNull || !m_nameMayBeNull->isRope());
-    ASSERT(m_length >= 0);
+    m_boundArgs[0].setWithoutWriteBarrier(arg0);
+    m_boundArgs[1].setWithoutWriteBarrier(arg1);
+    m_boundArgs[2].setWithoutWriteBarrier(arg2);
 }
 
 JSArray* JSBoundFunction::boundArgsCopy(JSGlobalObject* globalObject)
@@ -331,7 +337,7 @@ void JSBoundFunction::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 
     visitor.append(thisObject->m_targetFunction);
     visitor.append(thisObject->m_boundThis);
-    visitor.append(thisObject->m_boundArgs);
+    visitor.appendValues(thisObject->m_boundArgs.data(), thisObject->m_boundArgs.size());
     visitor.append(thisObject->m_nameMayBeNull);
 }
 

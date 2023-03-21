@@ -42,6 +42,7 @@ public:
     using Base = JSFunction;
     static constexpr unsigned StructureFlags = Base::StructureFlags & ~ImplementsDefaultHasInstance;
     static_assert(StructureFlags & ImplementsHasInstance);
+    static constexpr unsigned maxEmbeddedArgs = 3; // Keep sizeof(JSBoundFunction) <= 96.
 
     template<typename CellType, SubspaceAccess mode>
     static GCClient::IsoSubspace* subspaceFor(VM& vm)
@@ -95,18 +96,25 @@ public:
     void forEachBoundArg(const Functor& func)
     {
         unsigned length = boundArgsLength();
-        if (length) {
+        if (!length)
+            return;
+        if (length <= m_boundArgs.size()) {
             for (unsigned index = 0; index < length; ++index) {
-                if (func(m_boundArgs->get(index)) == IterationStatus::Done)
+                if (func(m_boundArgs[index].get()) == IterationStatus::Done)
                     return;
             }
+            return;
+        }
+        for (unsigned index = 0; index < length; ++index) {
+            if (func(jsCast<JSImmutableButterfly*>(m_boundArgs[0].get())->get(index)) == IterationStatus::Done)
+                return;
         }
     }
 
     DECLARE_INFO;
 
 private:
-    JSBoundFunction(VM&, NativeExecutable*, JSGlobalObject*, Structure*, JSObject* targetFunction, JSValue boundThis, JSImmutableButterfly* boundArgs, JSString* nameMayBeNull, double length);
+    JSBoundFunction(VM&, NativeExecutable*, JSGlobalObject*, Structure*, JSObject* targetFunction, JSValue boundThis, unsigned boundArgsLength, JSValue arg0, JSValue arg1, JSValue arg2, JSString* nameMayBeNull, double length);
 
     JSString* nameSlow(VM&);
     double lengthSlow(VM&);
@@ -116,7 +124,7 @@ private:
 
     WriteBarrier<JSObject> m_targetFunction;
     WriteBarrier<Unknown> m_boundThis;
-    WriteBarrier<JSImmutableButterfly> m_boundArgs;
+    std::array<WriteBarrier<Unknown>, maxEmbeddedArgs> m_boundArgs { };
     WriteBarrier<JSString> m_nameMayBeNull;
     double m_length;
     unsigned m_boundArgsLength { 0 };
