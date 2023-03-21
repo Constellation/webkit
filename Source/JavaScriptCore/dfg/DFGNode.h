@@ -3213,7 +3213,7 @@ public:
     unsigned numberOfBoundArguments()
     {
         ASSERT(hasNumberOfBoundArguments());
-        return m_opInfo.as<unsigned>();
+        return m_opInfo2.as<unsigned>();
     }
 
     bool hasNumberOfBoundArguments()
