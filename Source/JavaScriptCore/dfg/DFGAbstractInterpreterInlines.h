@@ -2952,7 +2952,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         auto* globalObject = m_graph.globalObjectFor(node->origin.semantic);
         if (auto* boundFunctionStructure = globalObject->boundFunctionStructureConcurrently()) {
             auto& value = forNode(m_graph.child(node, 0));
-            if (value.m_structure.isFinite() && !value.m_structure.isEmpty()) {
+            if (value.m_structure.isFinite() && !value.m_structure.isClear()) {
                 bool ok = true;
                 value.m_structure.forEach(
                     [&](RegisteredStructure structure) {
@@ -2960,7 +2960,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
                             ok = false;
                             return;
                         }
-                        if (structure->typeInfo().type() != JSFunction) {
+                        if (structure->typeInfo().type() != JSFunctionType) {
                             ok = false;
                             return;
                         }

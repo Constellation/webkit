@@ -2869,7 +2869,7 @@ JSC_DEFINE_JIT_OPERATION(operationFunctionBind, JSBoundFunction*, (JSGlobalObjec
             name = jsEmptyString(vm);
     }
 
-    RELEASE_AND_RETURN(scope, JSBoundFunction::create(vm, globalObject, target, boundThis, boundArgs, length, name));
+    RELEASE_AND_RETURN(scope, JSBoundFunction::create(vm, globalObject, function, boundThis, boundArgs, length, name));
 }
 
 JSC_DEFINE_JIT_OPERATION(operationSingleCharacterString, JSString*, (VM* vmPointer, int32_t character))
