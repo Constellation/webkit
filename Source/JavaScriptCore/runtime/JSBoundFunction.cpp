@@ -201,7 +201,7 @@ JSBoundFunction* JSBoundFunction::create(VM& vm, JSGlobalObject* globalObject, J
             return nullptr;
         }
         for (unsigned index = 0, size = args.size(); index < size; ++index)
-            butterfly->setIndex(vm, index, args.at(index));
+            boundArgs->setIndex(vm, index, args.at(index));
     }
 
     bool isJSFunction = getJSFunction(targetFunction);
