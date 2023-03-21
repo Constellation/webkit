@@ -220,7 +220,7 @@ public:
         : m_args(reinterpret_cast<EncodedJSValue*>(&callFrame[CallFrame::argumentOffset(startingFrom)]))
         , m_argCount(callFrame->argumentCount() - startingFrom)
     {
-        ASSERT(callFrame->argumentCount() >= startingFrom);
+        ASSERT(static_cast<int>(callFrame->argumentCount()) >= startingFrom);
     }
 
     ArgList(const MarkedArgumentBuffer& args)

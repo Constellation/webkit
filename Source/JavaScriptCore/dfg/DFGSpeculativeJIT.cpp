@@ -11762,49 +11762,60 @@ void SpeculativeJIT::compileFunctionToString(Node* node)
 void SpeculativeJIT::compileFunctionBind(Node* node)
 {
     SpeculateCellOperand target(this, m_graph.child(node, 0));
-    JSValueOperand boundThis(this, m_graph.child(node, 1));
 
     GPRReg targetGPR = target.gpr();
-    JSValueRegs boundThisRegs = boundThis.jsValueRegs();
 
     speculateObject(m_graph.child(node, 0), targetGPR);
 
-    auto invoke = [&](auto arg0, auto arg1, auto arg2) {
+    unsigned boundArgsLength = node->numChildren() >= 2 ? node->numChildren() - 2 : 0;
+    auto invoke = [&](auto boundThis, auto arg0, auto arg1, auto arg2) {
         GPRFlushedCallResult result(this);
         GPRReg resultGPR = result.gpr();
         flushRegisters();
-        callOperation(operationFunctionBind, resultGPR, LinkableConstant::globalObject(*this, node), targetGPR, node->numChildren() - 2, boundThisRegs, arg0, arg1, arg2);
+        callOperation(operationFunctionBind, resultGPR, LinkableConstant::globalObject(*this, node), targetGPR, TrustedImm32(boundArgsLength), boundThis, arg0, arg1, arg2);
         exceptionCheck();
         cellResult(resultGPR, node);
     };
 
     switch (node->numChildren()) {
+    case 1: {
+        invoke(TrustedImm64(JSValue::encode(jsUndefined())), TrustedImm64(JSValue::encode(JSValue())), TrustedImm64(JSValue::encode(JSValue())), TrustedImm64(JSValue::encode(JSValue())));
+        break;
+    }
     case 2: {
-        invoke(TrustedImm64(JSValue::encode(JSValue())), TrustedImm64(JSValue::encode(JSValue())), TrustedImm64(JSValue::encode(JSValue())));
+        JSValueOperand boundThis(this, m_graph.child(node, 1));
+        JSValueRegs boundThisRegs = boundThis.jsValueRegs();
+        invoke(boundThisRegs, TrustedImm64(JSValue::encode(JSValue())), TrustedImm64(JSValue::encode(JSValue())), TrustedImm64(JSValue::encode(JSValue())));
         break;
     }
     case 3: {
+        JSValueOperand boundThis(this, m_graph.child(node, 1));
         JSValueOperand arg0(this, m_graph.child(node, 2));
+        JSValueRegs boundThisRegs = boundThis.jsValueRegs();
         JSValueRegs arg0Regs = arg0.jsValueRegs();
-        invoke(arg0Regs, TrustedImm64(JSValue::encode(JSValue())), TrustedImm64(JSValue::encode(JSValue())));
+        invoke(boundThisRegs, arg0Regs, TrustedImm64(JSValue::encode(JSValue())), TrustedImm64(JSValue::encode(JSValue())));
         break;
     }
     case 4: {
+        JSValueOperand boundThis(this, m_graph.child(node, 1));
         JSValueOperand arg0(this, m_graph.child(node, 2));
         JSValueOperand arg1(this, m_graph.child(node, 3));
+        JSValueRegs boundThisRegs = boundThis.jsValueRegs();
         JSValueRegs arg0Regs = arg0.jsValueRegs();
         JSValueRegs arg1Regs = arg1.jsValueRegs();
-        invoke(arg0Regs, arg1Regs, TrustedImm64(JSValue::encode(JSValue())));
+        invoke(boundThisRegs, arg0Regs, arg1Regs, TrustedImm64(JSValue::encode(JSValue())));
         break;
     }
     case 5: {
+        JSValueOperand boundThis(this, m_graph.child(node, 1));
         JSValueOperand arg0(this, m_graph.child(node, 2));
         JSValueOperand arg1(this, m_graph.child(node, 3));
         JSValueOperand arg2(this, m_graph.child(node, 4));
+        JSValueRegs boundThisRegs = boundThis.jsValueRegs();
         JSValueRegs arg0Regs = arg0.jsValueRegs();
         JSValueRegs arg1Regs = arg1.jsValueRegs();
         JSValueRegs arg2Regs = arg2.jsValueRegs();
-        invoke(arg0Regs, arg1Regs, arg2Regs);
+        invoke(boundThisRegs, arg0Regs, arg1Regs, arg2Regs);
         break;
     }
     default:

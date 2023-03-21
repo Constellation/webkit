@@ -8957,21 +8957,26 @@ IGNORE_CLANG_WARNINGS_END
     void compileFunctionBind()
     {
         JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
+        unsigned boundArgsLength = m_node->numChildren() >= 2 ? m_node->numChildren() - 2 : 0;
         switch (m_node->numChildren()) {
+        case 1: {
+            setJSValue(vmCall(pointerType(), operationFunctionBind, weakPointer(globalObject), lowObject(m_graph.child(m_node, 0)), m_out.constInt32(boundArgsLength), m_out.constInt64(JSValue::encode(jsUndefined())), m_out.constInt64(JSValue::encode(JSValue())), m_out.constInt64(JSValue::encode(JSValue())), m_out.constInt64(JSValue::encode(JSValue()))));
+            break;
+        }
         case 2: {
-            setJSValue(vmCall(pointerType(), operationFunctionBind, weakPointer(globalObject), lowObject(m_graph.child(m_node, 0)), m_out.constInt32(m_node->numChildren() - 2), lowJSValue(m_graph.child(m_node, 1)), m_out.constInt64(JSValue::encode(JSValue())), m_out.constInt64(JSValue::encode(JSValue())), m_out.constInt64(JSValue::encode(JSValue()))));
+            setJSValue(vmCall(pointerType(), operationFunctionBind, weakPointer(globalObject), lowObject(m_graph.child(m_node, 0)), m_out.constInt32(boundArgsLength), lowJSValue(m_graph.child(m_node, 1)), m_out.constInt64(JSValue::encode(JSValue())), m_out.constInt64(JSValue::encode(JSValue())), m_out.constInt64(JSValue::encode(JSValue()))));
             break;
         }
         case 3: {
-            setJSValue(vmCall(pointerType(), operationFunctionBind, weakPointer(globalObject), lowObject(m_graph.child(m_node, 0)), m_out.constInt32(m_node->numChildren() - 2), lowJSValue(m_graph.child(m_node, 1)), lowJSValue(m_graph.child(m_node, 2)), m_out.constInt64(JSValue::encode(JSValue())), m_out.constInt64(JSValue::encode(JSValue()))));
+            setJSValue(vmCall(pointerType(), operationFunctionBind, weakPointer(globalObject), lowObject(m_graph.child(m_node, 0)), m_out.constInt32(boundArgsLength), lowJSValue(m_graph.child(m_node, 1)), lowJSValue(m_graph.child(m_node, 2)), m_out.constInt64(JSValue::encode(JSValue())), m_out.constInt64(JSValue::encode(JSValue()))));
             break;
         }
         case 4: {
-            setJSValue(vmCall(pointerType(), operationFunctionBind, weakPointer(globalObject), lowObject(m_graph.child(m_node, 0)), m_out.constInt32(m_node->numChildren() - 2), lowJSValue(m_graph.child(m_node, 1)), lowJSValue(m_graph.child(m_node, 2)), lowJSValue(m_graph.child(m_node, 3)), m_out.constInt64(JSValue::encode(JSValue()))));
+            setJSValue(vmCall(pointerType(), operationFunctionBind, weakPointer(globalObject), lowObject(m_graph.child(m_node, 0)), m_out.constInt32(boundArgsLength), lowJSValue(m_graph.child(m_node, 1)), lowJSValue(m_graph.child(m_node, 2)), lowJSValue(m_graph.child(m_node, 3)), m_out.constInt64(JSValue::encode(JSValue()))));
             break;
         }
         case 5: {
-            setJSValue(vmCall(pointerType(), operationFunctionBind, weakPointer(globalObject), lowObject(m_graph.child(m_node, 0)), m_out.constInt32(m_node->numChildren() - 2), lowJSValue(m_graph.child(m_node, 1)), lowJSValue(m_graph.child(m_node, 2)), lowJSValue(m_graph.child(m_node, 3)), lowJSValue(m_graph.child(m_node, 4))));
+            setJSValue(vmCall(pointerType(), operationFunctionBind, weakPointer(globalObject), lowObject(m_graph.child(m_node, 0)), m_out.constInt32(boundArgsLength), lowJSValue(m_graph.child(m_node, 1)), lowJSValue(m_graph.child(m_node, 2)), lowJSValue(m_graph.child(m_node, 3)), lowJSValue(m_graph.child(m_node, 4))));
             break;
         }
         default:
