@@ -3871,12 +3871,12 @@ auto ByteCodeParser::handleIntrinsicCall(Node* callee, Operand result, CallVaria
             if (m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, BadType))
                 return CallOptimizationResult::DidNothing;
 
-            if (argumentCountIncludingThis > ((JSBoundFunction::maxEmbeddedArgs + /* boundThis */ 1) + /* this */ 1))
+            if (argumentCountIncludingThis > static_cast<int>((JSBoundFunction::maxEmbeddedArgs + /* boundThis */ 1) + /* this */ 1))
                 return CallOptimizationResult::DidNothing;
 
             insertChecks();
 
-            for (unsigned index = 0; index < argumentCountIncludingThis; ++index)
+            for (int index = 0; index < argumentCountIncludingThis; ++index)
                 addVarArgChild(get(virtualRegisterForArgumentIncludingThis(index, registerOffset)));
             Node* resultNode = addToGraph(Node::VarArg, FunctionBind, OpInfo(0), OpInfo(0));
             setResult(resultNode);
