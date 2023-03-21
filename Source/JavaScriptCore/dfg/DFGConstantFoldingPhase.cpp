@@ -974,7 +974,7 @@ private:
                     if (!(targetValue.m_type & ~SpecObject) && structureSet.isFinite() && structureSet.size() == 1) {
                         RegisteredStructure structure = structureSet.onlyStructure();
                         if (structure->typeInfo().type() == JSFunctionType && !structure->didTransition() && structure->storedPrototype() == globalObject->functionPrototype() && structure->globalObject() == globalObject) {
-                            node->convertToNewBoundFunction(m_graph.m_vm.getBoundFunction(/* isJSFunction */ true, canConstruct));
+                            node->convertToNewBoundFunction(m_graph.freeze(m_graph.m_vm.getBoundFunction(/* isJSFunction */ true, canConstruct)));
                             changed = true;
                             break;
                         }

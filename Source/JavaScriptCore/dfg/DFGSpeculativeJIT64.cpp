@@ -6609,8 +6609,6 @@ void SpeculativeJIT::compileNewBoundFunction(Node* node)
 
     speculateObject(m_graph.child(node, 0), targetGPR);
 
-    unsigned boundArgsLength = node->numberOfBoundArguments();
-
     NativeExecutable* executable = node->castOperand<NativeExecutable*>();
 
     RegisteredStructure structure = m_graph.registerStructure(globalObject->boundFunctionStructureConcurrently());

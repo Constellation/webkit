@@ -828,7 +828,7 @@ public:
     void convertToNewArrayBuffer(FrozenValue* immutableButterfly);
     void convertToNewArrayWithSize();
 
-    void convertToNewBoundFunction(NativeExecutable*);
+    void convertToNewBoundFunction(FrozenValue*);
 
     void convertToDirectCall(FrozenValue*);
 

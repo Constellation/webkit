@@ -265,7 +265,7 @@ void Node::convertToNewArrayWithSize()
     m_opInfo = indexingType;
 }
 
-void Node::convertToNewBoundFunction(NativeExecutable* executable)
+void Node::convertToNewBoundFunction(FrozenValue* executable)
 {
     m_op = NewBoundFunction;
     m_opInfo = executable;
