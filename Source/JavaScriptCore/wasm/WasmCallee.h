@@ -47,7 +47,7 @@ class LLIntOffsetsExtractor;
 
 namespace Wasm {
 
-class Callee : public ThreadSafeRefCounted<Callee> {
+class Callee : public JSC::NativeCallee {
     WTF_MAKE_FAST_ALLOCATED;
 public:
     IndexOrName indexOrName() const { return m_indexOrName; }
