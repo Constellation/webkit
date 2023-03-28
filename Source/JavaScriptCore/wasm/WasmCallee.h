@@ -28,6 +28,7 @@
 #if ENABLE(WEBASSEMBLY)
 
 #include "JITCompilation.h"
+#include "NativeCallee.h"
 #include "RegisterAtOffsetList.h"
 #include "WasmCompilationMode.h"
 #include "WasmFormat.h"
