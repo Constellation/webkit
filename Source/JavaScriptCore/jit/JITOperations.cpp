@@ -59,6 +59,7 @@
 #include "JSRemoteFunction.h"
 #include "JSWithScope.h"
 #include "LLIntEntrypoint.h"
+#include "MegamorphicCache.h"
 #include "ObjectConstructor.h"
 #include "PropertyName.h"
 #include "RegExpObject.h"
@@ -358,14 +359,61 @@ JSC_DEFINE_JIT_OPERATION(operationGetById, EncodedJSValue, (JSGlobalObject* glob
     stubInfo->tookSlowPath = true;
     
     JSValue baseValue = JSValue::decode(base);
-    PropertySlot slot(baseValue, PropertySlot::InternalMethodType::Get);
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
-    Identifier ident = Identifier::fromUid(vm, identifier.uid());
-    JSValue result = baseValue.get(globalObject, ident, slot);
+    auto* uid = identifier.uid();
+    PropertySlot slot(baseValue, PropertySlot::InternalMethodType::Get);
+    auto& cache = vm.ensureMegamorphicCache();
 
-    LOG_IC((ICEvent::OperationGetById, baseValue.classInfoOrNull(), ident, baseValue == slot.slotBase()));
+    if (!baseValue.isObject())
+        return JSValue::encode(baseValue.get(globalObject, uid, slot));
 
-    return JSValue::encode(result);
+    JSObject* baseObject = asObject(baseValue);
+    StructureID structureID = baseObject->structureID();
+    bool matched = false;
+    auto& entry = cache.tryGet(structureID, uid, matched);
+    // static unsigned hitCount = 0;
+    // static unsigned missCount = 0;
+    // static unsigned slowCount = 0;
+    if (matched) {
+        // dataLogLn(++hitCount, ", ", missCount, ", ", slowCount);
+        if (entry.m_hops == MegamorphicCache::missHops)
+            return JSValue::encode(jsUndefined());
+
+        JSObject* cursor = baseObject;
+        for (unsigned i = 0; i < entry.m_hops; ++i)
+            cursor = jsCast<JSObject*>(cursor->getPrototypeDirect());
+        return JSValue::encode(cursor->getDirect(entry.m_offset));
+    }
+
+    JSObject* object = baseObject;
+    unsigned hops = 0;
+    while (true) {
+        Structure* structure = object->structure();
+        if (UNLIKELY(structure->typeInfo().overridesGetOwnPropertySlot() || structure->typeInfo().overridesGetPrototype())) {
+            // dataLogLn(hitCount, ", ", missCount, ", ", ++slowCount);
+            if (object->getNonIndexPropertySlot(globalObject, uid, slot))
+                return JSValue::encode(slot.getValue(globalObject, uid));
+            return JSValue::encode(jsUndefined());
+        }
+
+        if (object->getOwnNonIndexPropertySlot(vm, structure, uid, slot)) {
+            if (LIKELY(slot.isCacheableValue())) {
+                if (hops <= MegamorphicCache::maxHops && slot.cachedOffset() <= MegamorphicCache::maxOffset)
+                    entry.initAsHit(structureID, uid, cache.epoch(), slot.cachedOffset(), hops);
+            }
+            // dataLogLn(hitCount, ", ", ++missCount, ", ", slowCount);
+            return JSValue::encode(slot.getValue(globalObject, uid));
+        }
+
+        JSValue prototype = object->getPrototypeDirect();
+        if (!prototype.isObject()) {
+            entry.initAsMiss(structureID, uid, cache.epoch());
+            // dataLogLn(hitCount, ", ", ++missCount, ", ", slowCount);
+            return JSValue::encode(jsUndefined());
+        }
+        object = asObject(prototype);
+        ++hops;
+    }
 }
 
 JSC_DEFINE_JIT_OPERATION(operationGetByIdGeneric, EncodedJSValue, (JSGlobalObject* globalObject, EncodedJSValue base, uintptr_t rawCacheableIdentifier))

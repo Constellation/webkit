@@ -1940,7 +1940,7 @@ void JSObject::setPrototypeDirect(VM& vm, JSValue prototype)
 {
     ASSERT(prototype.isObject() || prototype.isNull());
     if (prototype.isObject())
-        asObject(prototype)->didBecomePrototype();
+        asObject(prototype)->didBecomePrototype(vm);
     else if (UNLIKELY(!prototype.isNull())) // Conservative hardening.
         return;
     
@@ -2226,6 +2226,10 @@ bool JSObject::deleteProperty(JSCell* cell, JSGlobalObject* globalObject, Proper
             ASSERT(!isValidOffset(structure->get(vm, propertyName, attributes)));
             if (offset != invalidOffset)
                 thisObject->locationForOffset(offset)->clear();
+            if (UNLIKELY(thisObject->mayBePrototype())) {
+                if (auto* cache = vm.megamorphicCache())
+                    cache->bumpEpoch();
+            }
         }
     } else
         slot.setConfigurableMiss();

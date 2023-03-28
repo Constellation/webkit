@@ -919,6 +919,10 @@ static InlineCacheAction tryCachePutBy(JSGlobalObject* globalObject, CodeBlock* 
                 if (!oldStructure->isObject())
                     return GiveUpOnCache;
 
+                // Right now, we disable IC for put onto prototype for NewProperty case.
+                if (oldStructure->mayBePrototype())
+                    return GiveUpOnCache;
+
                 // If the old structure is dictionary, it means that this is one-on-one between an object and a structure.
                 // If this is NewProperty operation, generating IC for this does not offer any benefit because this transition never happens again.
                 if (oldStructure->isDictionary())
