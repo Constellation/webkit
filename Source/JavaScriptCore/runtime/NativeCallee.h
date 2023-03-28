@@ -36,12 +36,12 @@ namespace JSC {
 class NativeCallee : public ThreadSafeRefCounted<NativeCallee> {
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    enum class Type : uint8_t {
+    enum class CalleeType : uint8_t {
         IC,
         Wasm,
     };
 
-    Type type() const { return m_type; }
+    CalleeType calleeType() const { return m_calleeType; }
     ImplementationVisibility implementationVisibility() const { return m_implementationVisibility; }
 
     void dump(PrintStream&) const;
@@ -49,20 +49,20 @@ public:
     JS_EXPORT_PRIVATE void operator delete(NativeCallee*, std::destroying_delete_t);
 
 protected:
-    JS_EXPORT_PRIVATE NativeCallee(Type);
+    JS_EXPORT_PRIVATE NativeCallee(CalleeType);
 
     template<typename Visitor> constexpr decltype(auto) visitDerived(Visitor&&);
     template<typename Visitor> constexpr decltype(auto) visitDerived(Visitor&&) const;
 
 private:
-    Type m_type { Type::IC };
+    CalleeType m_calleeType { CalleeType::IC };
     ImplementationVisibility m_implementationVisibility { ImplementationVisibility::Public };
 };
 
 class ICCallee final : public NativeCallee {
 public:
     ICCallee()
-        : NativeCallee(Type::IC)
+        : NativeCallee(CalleeType::IC)
     {
     }
 

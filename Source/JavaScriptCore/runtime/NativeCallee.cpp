@@ -28,18 +28,18 @@
 
 namespace JSC {
 
-NativeCallee::NativeCallee(Type type)
-    : m_type(type)
+NativeCallee::NativeCallee(CalleeType calleeType)
+    : m_calleeType(calleeType)
     , m_implementationVisibility(ImplementationVisibility::Private)
 {
 }
 
 template<typename Visitor> constexpr decltype(auto) NativeCallee::visitDerived(Visitor&& visitor)
 {
-    switch (m_type) {
-    case Type::IC:
+    switch (m_calleeType) {
+    case CalleeType::IC:
         return std::invoke(std::forward<Visitor>(visitor), static_cast<ICCallee&>(*this));
-    case Type::Wasm:
+    case CalleeType::Wasm:
         return std::invoke(std::forward<Visitor>(visitor), static_cast<Wasm::Callee&>(*this));
     }
     RELEASE_ASSERT_NOT_REACHED();
@@ -54,14 +54,14 @@ template<typename Visitor> constexpr decltype(auto) NativeCallee::visitDerived(V
 
 void NativeCallee::operator delete(NativeCallee* callee, std::destroying_delete_t)
 {
-    switch (m_type) {
-    case Type::IC: {
+    switch (m_calleeType) {
+    case CalleeType::IC: {
         auto& derived = static_cast<ICCallee&>(*callee);
         std::destroy_at(derived);
         std::decay_t<decltype(*derived)>::freeAfterDestruction(derived);
         return;
     }
-    case Type::Wasm:
+    case CalleeType::Wasm:
         auto& derived = static_cast<Wasm::Callee&>(*callee);
         delete &derived;
         return;
