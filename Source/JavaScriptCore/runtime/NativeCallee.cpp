@@ -54,7 +54,7 @@ template<typename Visitor> constexpr decltype(auto) NativeCallee::visitDerived(V
 
 void NativeCallee::operator delete(NativeCallee* callee, std::destroying_delete_t)
 {
-    switch (m_calleeType) {
+    switch (callee->m_calleeType) {
     case CalleeType::IC: {
         auto& derived = static_cast<ICCallee&>(*callee);
         std::destroy_at(derived);
