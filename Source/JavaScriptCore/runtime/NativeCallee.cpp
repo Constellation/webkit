@@ -25,6 +25,7 @@
 
 #include "config.h"
 #include "NativeCallee.h"
+#include "WasmCallee.h"
 
 namespace JSC {
 
@@ -57,8 +58,8 @@ void NativeCallee::operator delete(NativeCallee* callee, std::destroying_delete_
     switch (callee->m_calleeType) {
     case CalleeType::IC: {
         auto& derived = static_cast<ICCallee&>(*callee);
-        std::destroy_at(derived);
-        std::decay_t<decltype(*derived)>::freeAfterDestruction(derived);
+        std::destroy_at(&derived);
+        std::decay_t<decltype(derived)>::freeAfterDestruction(&derived);
         return;
     }
     case CalleeType::Wasm:
