@@ -2020,6 +2020,11 @@ void InlineCacheCompiler::generateImpl(AccessCase& accessCase)
         return;
     }
 
+    case AccessCase::LoadMegamorphic: {
+        succeed();
+        return;
+    }
+
     case AccessCase::DirectArgumentsLength:
     case AccessCase::ScopedArgumentsLength:
     case AccessCase::ModuleNamespaceLoad:
@@ -2598,6 +2603,34 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
     }
     poly.m_list.resize(dstIndex);
 
+    bool generatedFinalCode = false;
+
+    // If the resulting set of cases is so big that we would stop caching and this is InstanceOf,
+    // then we want to generate the generic InstanceOf and then stop.
+    if (cases.size() >= Options::maxAccessVariantListSize()) {
+        switch (m_stubInfo->accessType) {
+        case AccessType::InstanceOf: {
+            while (!cases.isEmpty())
+                poly.m_list.append(cases.takeLast());
+            cases.append(AccessCase::create(vm(), codeBlock, AccessCase::InstanceOfGeneric, nullptr));
+            generatedFinalCode = true;
+            break;
+        }
+        case AccessType::GetById: {
+            auto identifier = cases.last()->m_identifier;
+            while (!cases.isEmpty())
+                poly.m_list.append(cases.takeLast());
+            cases.append(AccessCase::create(vm(), codeBlock, AccessCase::LoadMegamorphic, identifier));
+            generatedFinalCode = true;
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Optimized cases: ", listDump(cases));
+
     auto allocator = makeDefaultScratchAllocator();
     m_allocator = &allocator;
     m_scratchGPR = allocator.allocateScratchGPR();
@@ -2608,20 +2641,6 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             break;
         }
     }
-
-    bool generatedFinalCode = false;
-
-    // If the resulting set of cases is so big that we would stop caching and this is InstanceOf,
-    // then we want to generate the generic InstanceOf and then stop.
-    if (cases.size() >= Options::maxAccessVariantListSize()
-        && m_stubInfo->accessType == AccessType::InstanceOf) {
-        while (!cases.isEmpty())
-            poly.m_list.append(cases.takeLast());
-        cases.append(AccessCase::create(vm(), codeBlock, AccessCase::InstanceOfGeneric, nullptr));
-        generatedFinalCode = true;
-    }
-
-    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Optimized cases: ", listDump(cases));
 
     bool doesCalls = false;
     bool doesJSCalls = false;
