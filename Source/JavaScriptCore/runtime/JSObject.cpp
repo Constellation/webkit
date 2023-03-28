@@ -1948,6 +1948,11 @@ void JSObject::setPrototypeDirect(VM& vm, JSValue prototype)
         DeferredStructureTransitionWatchpointFire deferred(vm, structure());
         Structure* newStructure = Structure::changePrototypeTransition(vm, structure(), prototype, deferred);
         setStructure(vm, newStructure);
+        // Prototype-chain gets changed for the already cached structures. Invalidate the cache.
+        if (UNLIKELY(mayBePrototype())) {
+            if (auto* cache = vm.megamorphicCache())
+                cache->bumpEpoch();
+        }
     } else
         putDirectOffset(vm, knownPolyProtoOffset, prototype);
 

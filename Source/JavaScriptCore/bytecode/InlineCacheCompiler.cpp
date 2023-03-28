@@ -1288,7 +1288,7 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
         jit.load16(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfEpoch()), scratchGPR);
         failAndIgnore.append(jit.branch32(CCallHelpers::NotEqual, scratch2GPR, scratchGPR));
 
-        jit.load8(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfEpoch()), scratch2GPR);
+        jit.load8(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfHops()), scratch2GPR);
         auto missed = jit.branch32(CCallHelpers::Equal, scratch2GPR, CCallHelpers::TrustedImm32(MegamorphicCache::missHops));
 
         jit.move(baseGPR, scratchGPR);

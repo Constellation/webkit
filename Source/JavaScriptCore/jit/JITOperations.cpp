@@ -389,7 +389,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetById, EncodedJSValue, (JSGlobalObject* glob
     unsigned hops = 0;
     while (true) {
         Structure* structure = object->structure();
-        if (UNLIKELY(structure->typeInfo().overridesGetOwnPropertySlot() || structure->typeInfo().overridesGetPrototype())) {
+        if (UNLIKELY(structure->typeInfo().overridesGetOwnPropertySlot() || structure->typeInfo().overridesGetPrototype() || !structure->hasMonoProto())) {
             // dataLogLn(hitCount, ", ", missCount, ", ", ++slowCount);
             if (object->getNonIndexPropertySlot(globalObject, uid, slot))
                 return JSValue::encode(slot.getValue(globalObject, uid));
