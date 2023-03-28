@@ -191,12 +191,12 @@ void StackVisitor::readInlinableWasmFrame(CallFrame* callFrame)
     m_frame.m_codeBlock = nullptr;
     m_frame.m_wasmDistanceFromDeepestInlineFrame = 0;
 
-    const auto& callee = *m_frame.m_callee.asWasmCallee();
+    const auto& callee = *m_frame.m_callee.asNativeCallee();
     auto csi = callFrame->callSiteIndex().bits();
 
     RELEASE_ASSERT(m_frame.m_callee.isWasm());
     if (m_frame.m_callee.isWasm())
-        m_frame.m_wasmFunctionIndexOrName = m_frame.m_callee.asWasmCallee()->indexOrName();
+        m_frame.m_wasmFunctionIndexOrName = m_frame.m_callee.asNativeCallee()->indexOrName();
 
     bool canInline = isAnyOMG(callee.compilationMode());
     if (!canInline)
@@ -300,7 +300,7 @@ std::optional<RegisterAtOffsetList> StackVisitor::Frame::calleeSaveRegistersForU
             RELEASE_ASSERT(isWebAssemblyInstance(callee().asCell()));
             return std::nullopt;
         }
-        Wasm::Callee* wasmCallee = callee().asWasmCallee();
+        Wasm::Callee* wasmCallee = callee().asNativeCallee();
         if (auto* calleeSaveRegisters = wasmCallee->calleeSaveRegisters())
             return *calleeSaveRegisters;
         return std::nullopt;
@@ -468,7 +468,7 @@ bool StackVisitor::Frame::isImplementationVisibilityPrivate() const
 
 #if ENABLE(WEBASSEMBLY)
         if (isWasmFrame())
-            return callee().asWasmCallee()->implementationVisibility();
+            return callee().asNativeCallee()->implementationVisibility();
 #endif
 
         if (callee().isCell()) {

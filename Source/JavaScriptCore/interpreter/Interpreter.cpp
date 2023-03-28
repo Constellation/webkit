@@ -605,7 +605,7 @@ public:
 #if ENABLE(WEBASSEMBLY)
         CalleeBits callee = visitor->callee();
         if (m_catchableFromWasm && callee.isWasm()) {
-            Wasm::Callee* wasmCallee = callee.asWasmCallee();
+            Wasm::Callee* wasmCallee = callee.asNativeCallee();
             if (wasmCallee->hasExceptionHandlers()) {
                 Wasm::Instance* instance = m_callFrame->wasmInstance();
                 unsigned exceptionHandlerIndex = m_callFrame->callSiteIndex().bits();

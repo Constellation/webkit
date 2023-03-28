@@ -124,7 +124,7 @@ protected:
 #if ENABLE(WEBASSEMBLY)
         if (Wasm::isSupported() && unsafeCallee.isWasm()) {
             assertIsHeld(Wasm::CalleeRegistry::singleton().getLock());
-            auto* wasmCallee = unsafeCallee.asWasmCallee();
+            auto* wasmCallee = unsafeCallee.asNativeCallee();
             if (Wasm::CalleeRegistry::singleton().isValidCallee(wasmCallee)) {
                 // At this point, Wasm::Callee would be dying (ref count is 0), but its fields are still live.
                 // And we can safely copy Wasm::IndexOrName even when any lock is held by suspended threads.

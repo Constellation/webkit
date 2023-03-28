@@ -279,7 +279,7 @@ void CallFrame::dump(PrintStream& out) const
 {
     if (this->isWasmFrame()) {
 #if ENABLE(WEBASSEMBLY)
-        Wasm::Callee* wasmCallee = callee().asWasmCallee();
+        Wasm::Callee* wasmCallee = callee().asNativeCallee();
         out.print(Wasm::makeString(wasmCallee->indexOrName()), " [", Wasm::makeString(wasmCallee->compilationMode()), "]");
         out.print("(Wasm::Instance: ", RawPointer(wasmInstance()), ")");
 #else

@@ -94,7 +94,7 @@ Expected<MacroAssemblerCodeRef<WasmEntryPtrTag>, BindingFailure> wasmToJS(VM& vm
     if constexpr (is32Bit()) {
         CCallHelpers::Address calleeSlot { GPRInfo::callFrameRegister, CallFrameSlot::callee * sizeof(Register) };
         jit.storePtr(scratchGPR, calleeSlot.withOffset(PayloadOffset));
-        jit.move(CCallHelpers::TrustedImm32(JSValue::WasmTag), scratchGPR);
+        jit.move(CCallHelpers::TrustedImm32(JSValue::NativeCalleeTag), scratchGPR);
         jit.store32(scratchGPR, calleeSlot.withOffset(TagOffset));
         jit.storePtr(GPRInfo::wasmContextInstancePointer, CCallHelpers::addressFor(CallFrameSlot::codeBlock));
     } else

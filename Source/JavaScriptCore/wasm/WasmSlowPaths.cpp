@@ -77,7 +77,7 @@ namespace JSC { namespace LLInt {
     } while (false)
 
 #define CALLEE() \
-    static_cast<Wasm::LLIntCallee*>(callFrame->callee().asWasmCallee())
+    static_cast<Wasm::LLIntCallee*>(callFrame->callee().asNativeCallee())
 
 #define READ(virtualRegister) \
     (virtualRegister.isConstant() \

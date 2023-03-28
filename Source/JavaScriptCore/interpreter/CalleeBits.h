@@ -63,7 +63,7 @@ public:
     static void* boxWasm(Wasm::Callee* callee)
     {
 #if USE(JSVALUE64)
-        CalleeBits result { static_cast<int64_t>((bitwise_cast<uintptr_t>(callee) - lowestAccessibleAddress()) | JSValue::WasmTag) };
+        CalleeBits result { static_cast<int64_t>((bitwise_cast<uintptr_t>(callee) - lowestAccessibleAddress()) | JSValue::NativeCalleeTag) };
         ASSERT(result.isWasm());
         return result.rawPtr();
 #elif USE(JSVALUE32_64)
@@ -77,9 +77,9 @@ public:
 #if !ENABLE(WEBASSEMBLY)
         return false;
 #elif USE(JSVALUE64)
-        return (reinterpret_cast<uintptr_t>(m_ptr) & JSValue::WasmMask) == JSValue::WasmTag;
+        return (reinterpret_cast<uintptr_t>(m_ptr) & JSValue::NativeCalleeMask) == JSValue::NativeCalleeTag;
 #elif USE(JSVALUE32_64)
-        return m_tag == JSValue::WasmTag;
+        return m_tag == JSValue::NativeCalleeTag;
 #endif
     }
     bool isCell() const { return !isWasm(); }
@@ -91,11 +91,11 @@ public:
     }
 
 #if ENABLE(WEBASSEMBLY)
-    Wasm::Callee* asWasmCallee() const
+    Wasm::Callee* asNativeCallee() const
     {
         ASSERT(isWasm());
 #if USE(JSVALUE64)
-        return bitwise_cast<Wasm::Callee*>((bitwise_cast<uintptr_t>(m_ptr) & ~JSValue::WasmTag) + lowestAccessibleAddress());
+        return bitwise_cast<Wasm::Callee*>((bitwise_cast<uintptr_t>(m_ptr) & ~JSValue::NativeCalleeTag) + lowestAccessibleAddress());
 #elif USE(JSVALUE32_64)
         return bitwise_cast<Wasm::Callee*>(bitwise_cast<uintptr_t>(m_ptr) + lowestAccessibleAddress());
 #endif

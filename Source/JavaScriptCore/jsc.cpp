@@ -2072,7 +2072,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCallerIsBBQOrOMGCompiled, (JSGlobalObject* glob
     StackVisitor::visit(wasmToJSFrame.callerFrame(), vm, wasmFrame);
     ASSERT(wasmFrame.callerFrame()->callee().isWasm());
 #if ENABLE(WEBASSEMBLY)
-    auto mode = wasmFrame.callerFrame()->callee().asWasmCallee()->compilationMode();
+    auto mode = wasmFrame.callerFrame()->callee().asNativeCallee()->compilationMode();
     return JSValue::encode(jsBoolean(isAnyBBQ(mode) || isAnyOMG(mode)));
 #endif
     RELEASE_ASSERT_NOT_REACHED();
