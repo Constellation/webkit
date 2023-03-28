@@ -170,9 +170,10 @@ void InlineCacheCompiler::restoreScratch()
 void InlineCacheCompiler::succeed()
 {
     restoreScratch();
-    if (m_jit->codeBlock()->useDataIC())
-        m_jit->farJump(CCallHelpers::Address(m_stubInfo->m_stubInfoGPR, StructureStubInfo::offsetOfDoneLocation()), JSInternalPtrTag);
-    else
+    if (m_jit->codeBlock()->useDataIC()) {
+        m_jit->emitFunctionEpilogue();
+        m_jit->ret();
+    } else
         m_success.append(m_jit->jump());
 }
 
@@ -2700,6 +2701,9 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
 
     CCallHelpers jit(codeBlock);
     m_jit = &jit;
+    if (codeBlock->useDataIC()) {
+        m_jit->emitFunctionPrologue();
+    }
 
     if (!canBeShared && ASSERT_ENABLED) {
         jit.addPtr(CCallHelpers::TrustedImm32(codeBlock->stackPointerOffset() * sizeof(Register)), GPRInfo::callFrameRegister, jit.scratchRegister());
