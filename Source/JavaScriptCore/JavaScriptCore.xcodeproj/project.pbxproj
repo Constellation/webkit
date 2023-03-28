@@ -1883,6 +1883,7 @@
 		E3369129296EEBFE00324FD7 /* WasmOperationsInlines.h in Headers */ = {isa = PBXBuildFile; fileRef = E3369128296EEBFE00324FD7 /* WasmOperationsInlines.h */; };
 		E337B967224324EA0093A820 /* WasmCapabilities.h in Headers */ = {isa = PBXBuildFile; fileRef = E337B966224324E50093A820 /* WasmCapabilities.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E339700523210E0B00B0AE21 /* JSInternalFieldObjectImplInlines.h in Headers */ = {isa = PBXBuildFile; fileRef = E339700423210E0A00B0AE21 /* JSInternalFieldObjectImplInlines.h */; };
+		E3399EFB29D2AB90000705E8 /* NativeCallee.h in Headers */ = {isa = PBXBuildFile; fileRef = E3399EF929D2AB8F000705E8 /* NativeCallee.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E33A94962255323000D42B06 /* RandomizingFuzzerAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = E33A94942255322900D42B06 /* RandomizingFuzzerAgent.h */; };
 		E33A94972255323300D42B06 /* FuzzerAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = E33A94922255322900D42B06 /* FuzzerAgent.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E33BBE0925BFA0410053690F /* WasmStreamingCompiler.h in Headers */ = {isa = PBXBuildFile; fileRef = E33BBE0825BFA03C0053690F /* WasmStreamingCompiler.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -5333,6 +5334,8 @@
 		E3369128296EEBFE00324FD7 /* WasmOperationsInlines.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WasmOperationsInlines.h; sourceTree = "<group>"; };
 		E337B966224324E50093A820 /* WasmCapabilities.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WasmCapabilities.h; sourceTree = "<group>"; };
 		E339700423210E0A00B0AE21 /* JSInternalFieldObjectImplInlines.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSInternalFieldObjectImplInlines.h; sourceTree = "<group>"; };
+		E3399EF829D2AB8F000705E8 /* NativeCallee.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NativeCallee.cpp; sourceTree = "<group>"; };
+		E3399EF929D2AB8F000705E8 /* NativeCallee.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NativeCallee.h; sourceTree = "<group>"; };
 		E33A94922255322900D42B06 /* FuzzerAgent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FuzzerAgent.h; sourceTree = "<group>"; };
 		E33A94932255322900D42B06 /* RandomizingFuzzerAgent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RandomizingFuzzerAgent.cpp; sourceTree = "<group>"; };
 		E33A94942255322900D42B06 /* RandomizingFuzzerAgent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RandomizingFuzzerAgent.h; sourceTree = "<group>"; };
@@ -8169,6 +8172,8 @@
 				147341D51DC02EB900AA29BA /* ModuleProgramExecutable.h */,
 				CE27A3D723759BAC0089605E /* NarrowingNumberPredictionFuzzerAgent.cpp */,
 				CE27A3D823759BAC0089605E /* NarrowingNumberPredictionFuzzerAgent.h */,
+				E3399EF829D2AB8F000705E8 /* NativeCallee.cpp */,
+				E3399EF929D2AB8F000705E8 /* NativeCallee.h */,
 				BC02E9080E1839DB000F9297 /* NativeErrorConstructor.cpp */,
 				BC02E9090E1839DB000F9297 /* NativeErrorConstructor.h */,
 				BC02E90A0E1839DB000F9297 /* NativeErrorPrototype.cpp */,
@@ -10981,6 +10986,7 @@
 				A79D3ED9C5064DD0A8466A3A /* ModuleScopeData.h in Headers */,
 				0F1FB3991E1F65FB00A9BE50 /* MutatorScheduler.h in Headers */,
 				0FA762071DB9243300B7A2FD /* MutatorState.h in Headers */,
+				E3399EFB29D2AB90000705E8 /* NativeCallee.h in Headers */,
 				BC02E9110E1839DB000F9297 /* NativeErrorConstructor.h in Headers */,
 				BC02E9130E1839DB000F9297 /* NativeErrorPrototype.h in Headers */,
 				147341D01DC02DB400AA29BA /* NativeExecutable.h in Headers */,
