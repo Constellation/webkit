@@ -1103,6 +1103,7 @@ public:
         case TryGetById:
         case GetById:
         case GetByIdFlush:
+        case GetByIdMegamorphic:
         case GetByIdWithThis:
         case GetByIdDirect:
         case GetByIdDirectFlush:
@@ -1845,6 +1846,7 @@ public:
         case ArithTrunc:
         case GetById:
         case GetByIdFlush:
+        case GetByIdMegamorphic:
         case GetByIdWithThis:
         case GetByIdDirect:
         case GetByIdDirectFlush:

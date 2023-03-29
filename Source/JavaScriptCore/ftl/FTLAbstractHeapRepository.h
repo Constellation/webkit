@@ -36,6 +36,7 @@
 #include "JSMap.h"
 #include "JSSet.h"
 #include "JSWeakMap.h"
+#include "MegamorphicCache.h"
 #include "Symbol.h"
 
 namespace JSC { namespace FTL {
@@ -131,6 +132,7 @@ namespace JSC { namespace FTL {
     macro(JSScope_next, JSScope::offsetOfNext()) \
     macro(JSSymbolTableObject_symbolTable, JSSymbolTableObject::offsetOfSymbolTable()) \
     macro(JSWebAssemblyInstance_moduleRecord, JSWebAssemblyInstance::offsetOfModuleRecord()) \
+    macro(MegamorphicCache_epoch, MegamorphicCache::offsetOfEpoch()) \
     macro(NativeExecutable_asString, NativeExecutable::offsetOfAsString()) \
     macro(RegExpObject_regExpAndFlags, RegExpObject::offsetOfRegExpAndFlags()) \
     macro(RegExpObject_lastIndex, RegExpObject::offsetOfLastIndex()) \
@@ -198,6 +200,7 @@ namespace JSC { namespace FTL {
     macro(structureTable, 0, sizeof(Structure*)) \
     macro(variables, 0, sizeof(Register)) \
     macro(HasOwnPropertyCache, 0, sizeof(HasOwnPropertyCache::Entry)) \
+    macro(MegamorphicCache, 0, sizeof(MegamorphicCache::Entry)) \
     
 #define FOR_EACH_NUMBERED_ABSTRACT_HEAP(macro) \
     macro(properties)

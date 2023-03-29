@@ -2678,10 +2678,18 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         }
         case AccessType::GetById: {
             auto identifier = cases.last()->m_identifier;
-            while (!cases.isEmpty())
-                poly.m_list.append(cases.takeLast());
-            cases.append(AccessCase::create(vm(), codeBlock, AccessCase::LoadMegamorphic, identifier));
-            generatedFinalCode = true;
+            bool allAreSimpleLoadOrMiss = true;
+            for (auto& accessCase : cases) {
+                if (accessCase->type() != AccessCase::Load && accessCase->type() != AccessCase::Miss)
+                    allAreSimpleLoadOrMiss = false;
+            }
+
+            if (allAreSimpleLoadOrMiss) {
+                while (!cases.isEmpty())
+                    poly.m_list.append(cases.takeLast());
+                cases.append(AccessCase::create(vm(), codeBlock, AccessCase::LoadMegamorphic, identifier));
+                generatedFinalCode = true;
+            }
             break;
         }
         default:

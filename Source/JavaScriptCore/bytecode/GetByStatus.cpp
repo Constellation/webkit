@@ -180,6 +180,7 @@ GetByStatus::GetByStatus(StubInfoSummary summary, StructureStubInfo* stubInfo)
         m_state = NoInformation;
         return;
     case StubInfoSummary::Simple:
+    case StubInfoSummary::Megamorphic:
     case StubInfoSummary::MakesCalls:
         RELEASE_ASSERT_NOT_REACHED();
         return;
@@ -260,6 +261,8 @@ GetByStatus GetByStatus::computeForStubInfoWithoutExitSiteFeedback(
                 status.appendVariant(GetByVariant(accessCase.identifier(), { }, invalidOffset, { }, WTFMove(callLinkStatus)));
                 return status;
             }
+            case AccessCase::LoadMegamorphic:
+                return GetByStatus(Megamorphic, /* wasSeenInJIT */ true);
             default:
                 break;
             }
@@ -279,7 +282,7 @@ GetByStatus GetByStatus::computeForStubInfoWithoutExitSiteFeedback(
                 // https://bugs.webkit.org/show_bug.cgi?id=204215
                 return GetByStatus(JSC::slowVersion(summary), stubInfo);
             }
-            
+
             Structure* structure = access.structure();
             if (!structure) {
                 // The null structure cases arise due to array.length and string.length. We have no way
@@ -482,6 +485,7 @@ bool GetByStatus::makesCalls() const
     case ProxyObject:
     case MakesCalls:
     case ObservedSlowPathAndMakesCalls:
+    case Megamorphic:
         return true;
     }
     RELEASE_ASSERT_NOT_REACHED();
@@ -511,6 +515,11 @@ void GetByStatus::merge(const GetByStatus& other)
     switch (m_state) {
     case NoInformation:
         *this = other;
+        return;
+
+    case Megamorphic:
+        if (m_state != other.m_state)
+            return mergeSlow();
         return;
         
     case Simple:
@@ -616,6 +625,9 @@ void GetByStatus::dump(PrintStream& out) const
         break;
     case Custom:
         out.print("Custom");
+        break;
+    case Megamorphic:
+        out.print("Megamorphic");
         break;
     case ModuleNamespace:
         out.print("ModuleNamespace");
