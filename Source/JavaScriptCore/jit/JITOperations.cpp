@@ -387,9 +387,10 @@ JSC_DEFINE_JIT_OPERATION(operationGetById, EncodedJSValue, (JSGlobalObject* glob
 
     JSObject* object = baseObject;
     unsigned hops = 0;
+    bool cacheable = true;
     while (true) {
         Structure* structure = object->structure();
-        if (UNLIKELY(structure->typeInfo().overridesGetOwnPropertySlot() || structure->typeInfo().overridesGetPrototype() || !structure->hasMonoProto())) {
+        if (UNLIKELY(structure->typeInfo().overridesGetOwnPropertySlot() || structure->typeInfo().overridesGetPrototype())) {
             // dataLogLn(hitCount, ", ", missCount, ", ", ++slowCount);
             if (object->getNonIndexPropertySlot(globalObject, uid, slot))
                 return JSValue::encode(slot.getValue(globalObject, uid));
@@ -397,17 +398,21 @@ JSC_DEFINE_JIT_OPERATION(operationGetById, EncodedJSValue, (JSGlobalObject* glob
         }
 
         if (object->getOwnNonIndexPropertySlot(vm, structure, uid, slot)) {
-            if (LIKELY(slot.isCacheableValue())) {
-                if (hops <= MegamorphicCache::maxHops && slot.cachedOffset() <= MegamorphicCache::maxOffset)
+            if (LIKELY(cacheable && structure->propertyAccessesAreCacheable() && slot.isCacheableValue())) {
+                if (LIKELY(hops <= MegamorphicCache::maxHops && slot.cachedOffset() <= MegamorphicCache::maxOffset))
                     entry.initAsHit(structureID, uid, cache.epoch(), slot.cachedOffset(), hops);
             }
             // dataLogLn(hitCount, ", ", ++missCount, ", ", slowCount);
             return JSValue::encode(slot.getValue(globalObject, uid));
         }
 
+        cacheable &= structure->propertyAccessesAreCacheableForAbsence();
+        cacheable &= structure->hasMonoProto();
+
         JSValue prototype = object->getPrototypeDirect();
         if (!prototype.isObject()) {
-            entry.initAsMiss(structureID, uid, cache.epoch());
+            if (LIKELY(cacheable))
+                entry.initAsMiss(structureID, uid, cache.epoch());
             // dataLogLn(hitCount, ", ", ++missCount, ", ", slowCount);
             return JSValue::encode(jsUndefined());
         }
