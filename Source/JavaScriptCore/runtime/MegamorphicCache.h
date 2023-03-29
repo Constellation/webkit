@@ -93,7 +93,7 @@ public:
 
     Entry& tryGet(StructureID structureID, UniquedStringImpl* uid, bool& matched)
     {
-        auto& entry = getImpl(structureID, uid);
+        auto& entry = get(structureID, uid);
         matched = entry.m_structureID == structureID && entry.m_uid == uid && entry.m_epoch == m_epoch;
         return entry;
     }
@@ -107,14 +107,14 @@ public:
             clearEntries();
     }
 
-private:
-    JS_EXPORT_PRIVATE void clearEntries();
-
-    ALWAYS_INLINE Entry& getImpl(StructureID structureID, UniquedStringImpl* uid)
+    ALWAYS_INLINE Entry& get(StructureID structureID, UniquedStringImpl* uid)
     {
         uint32_t index = MegamorphicCache::hash(structureID, uid) & mask;
         return m_entries[index];
     }
+
+private:
+    JS_EXPORT_PRIVATE void clearEntries();
 
     std::array<Entry, size> m_entries { };
     uint16_t m_epoch { 0 };
