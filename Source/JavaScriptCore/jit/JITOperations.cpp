@@ -368,9 +368,8 @@ JSC_DEFINE_JIT_OPERATION(operationGetById, EncodedJSValue, (JSGlobalObject* glob
         return JSValue::encode(baseValue.get(globalObject, uid, slot));
 
     JSObject* baseObject = asObject(baseValue);
-    StructureID structureID = baseObject->structureID();
     bool matched = false;
-    auto& entry = cache.tryGet(structureID, uid, matched);
+    auto& entry = cache.tryGet(baseObject->structureID(), uid, matched);
     // static unsigned hitCount = 0;
     // static unsigned missCount = 0;
     // static unsigned slowCount = 0;
@@ -397,22 +396,25 @@ JSC_DEFINE_JIT_OPERATION(operationGetById, EncodedJSValue, (JSGlobalObject* glob
             return JSValue::encode(jsUndefined());
         }
 
-        if (object->getOwnNonIndexPropertySlot(vm, structure, uid, slot)) {
+        bool hasProperty = object->getOwnNonIndexPropertySlot(vm, structure, uid, slot);
+        structure = object->structure(); // Reload it again since static-class-table can cause transition. But this transition only affects on this Structure.
+        if (hasProperty) {
             if (LIKELY(cacheable && structure->propertyAccessesAreCacheable() && slot.isCacheableValue())) {
                 if (LIKELY(hops <= MegamorphicCache::maxHops && slot.cachedOffset() <= MegamorphicCache::maxOffset))
-                    entry.initAsHit(structureID, uid, cache.epoch(), slot.cachedOffset(), hops);
+                    entry.initAsHit(baseObject->structureID(), uid, cache.epoch(), slot.cachedOffset(), hops);
             }
             // dataLogLn(hitCount, ", ", ++missCount, ", ", slowCount);
             return JSValue::encode(slot.getValue(globalObject, uid));
         }
 
+        cacheable &= structure->propertyAccessesAreCacheable();
         cacheable &= structure->propertyAccessesAreCacheableForAbsence();
         cacheable &= structure->hasMonoProto();
 
         JSValue prototype = object->getPrototypeDirect();
         if (!prototype.isObject()) {
             if (LIKELY(cacheable))
-                entry.initAsMiss(structureID, uid, cache.epoch());
+                entry.initAsMiss(baseObject->structureID(), uid, cache.epoch());
             // dataLogLn(hitCount, ", ", ++missCount, ", ", slowCount);
             return JSValue::encode(jsUndefined());
         }
