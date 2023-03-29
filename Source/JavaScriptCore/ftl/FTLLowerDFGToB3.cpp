@@ -4037,11 +4037,13 @@ private:
         LBasicBlock lastNext = m_out.appendTo(lookUpCase, lookUpLoadHeaderCase);
         LValue hops = m_out.load8ZeroExt32(m_out.baseIndex(heap, cache, index, JSValue(), MegamorphicCache::Entry::offsetOfHops()));
         results.append(m_out.anchor(m_out.constInt64(JSValue::encode(jsUndefined()))));
+        ValueFromBlock initialCell = m_out.anchor(cell);
+        ValueFromBlock initialHop = m_out.anchor(hops);
         m_out.branch(m_out.equal(hops, m_out.constInt32(MegamorphicCache::missHops)), unsure(continuation), unsure(lookUpLoadHeaderCase));
 
         m_out.appendTo(lookUpLoadHeaderCase, lookUpLoadBodyCase);
-        LValue object = m_out.phi(pointerType(), m_out.anchor(cell));
-        LValue remainingHops = m_out.phi(Int32, m_out.anchor(hops));
+        LValue object = m_out.phi(pointerType(), initialCell);
+        LValue remainingHops = m_out.phi(Int32, initialHop);
         m_out.branch(m_out.isZero32(remainingHops), unsure(lookUpLoadCase), unsure(lookUpLoadBodyCase));
 
         m_out.appendTo(lookUpLoadBodyCase, lookUpLoadCase);
