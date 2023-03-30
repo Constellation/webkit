@@ -6671,7 +6671,7 @@ void SpeculativeJIT::compileGetByIdMegamorphic(Node* node)
     loadPtr(Address(scratch3GPR, MegamorphicCache::Entry::offsetOfHolder()), scratch2GPR);
     auto missed = branchTestPtr(Zero, scratch2GPR);
     move(baseGPR, scratch1GPR);
-    auto found = branchPtr(Equal, scratch2GPR, TrustedImmPtr(JSCell::seenMultipleCalleeObjects()));
+    auto found = branchPtr(Equal, scratch2GPR, TrustedImmPtr(bitwise_cast<void*>(JSCell::seenMultipleCalleeObjects())));
     move(scratch2GPR, scratch1GPR);
 
     found.link(this);
