@@ -5023,8 +5023,6 @@ void ByteCodeParser::handleGetById(
         }
 
         if (getByStatus.isMegamorphic()) {
-            if (UNLIKELY(m_graph.compilation()))
-                m_graph.compilation()->noticeInlinedGetById();
             set(destination, addToGraph(GetByIdMegamorphic, OpInfo(identifier), OpInfo(prediction), base));
             return;
         }
