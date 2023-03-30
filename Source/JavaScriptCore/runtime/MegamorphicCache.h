@@ -57,7 +57,7 @@ public:
             m_holder = nullptr;
         }
 
-        void initAsHit(StructureID structureID, UniquedStringImpl* uid, uint16_t epoch, JSObject* holder, uint8_t offset, bool ownProperty)
+        void initAsHit(StructureID structureID, UniquedStringImpl* uid, uint16_t epoch, JSCell* holder, uint8_t offset, bool ownProperty)
         {
             m_uid = uid;
             m_structureID = structureID;
