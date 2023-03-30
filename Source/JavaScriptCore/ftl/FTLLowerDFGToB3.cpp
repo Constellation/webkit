@@ -4041,7 +4041,7 @@ private:
 
         m_out.appendTo(lookUpLoadHeaderCase, lookUpLoadBodyCase);
         ValueFromBlock ownHolder = m_out.anchor(cell);
-        m_out.branch(m_out.equal(holder, m_out.constIntPtr(JSCell::seenMultipleCalleeObjects())), unsure(lookUpLoadCase), unsure(lookUpLoadBodyCase));
+        m_out.branch(m_out.equal(holder, m_out.constIntPtr(bitwise_cast<void*>(JSCell::seenMultipleCalleeObjects()))), unsure(lookUpLoadCase), unsure(lookUpLoadBodyCase));
 
         m_out.appendTo(lookUpLoadBodyCase, lookUpLoadCase);
         ValueFromBlock storedHolder = m_out.anchor(holder);
