@@ -1288,18 +1288,11 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
         jit.load16(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfEpoch()), scratchGPR);
         failAndIgnore.append(jit.branch32(CCallHelpers::NotEqual, scratch2GPR, scratchGPR));
 
-        jit.load8(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfHops()), scratch2GPR);
-        auto missed = jit.branch32(CCallHelpers::Equal, scratch2GPR, CCallHelpers::TrustedImm32(MegamorphicCache::missHops));
-
+        jit.loadPtr(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfHolder()), scratch2GPR);
+        auto missed = jit.branchTestPtr(CCallHelpers::Zero, scratch2GPR);
         jit.move(baseGPR, scratchGPR);
-        CCallHelpers::Label loop(&jit);
-
-        auto found = jit.branchTest32(CCallHelpers::Zero, scratch2GPR);
-
-        jit.emitLoadStructure(vm, scratchGPR, scratchGPR);
-        jit.loadValue(CCallHelpers::Address(scratchGPR, Structure::prototypeOffset()), JSValueRegs { scratchGPR });
-        jit.sub32(CCallHelpers::TrustedImm32(1), scratch2GPR);
-        jit.jump().linkTo(loop, &jit);
+        auto found = jit.branchPtr(CCallHelpers::Equal, scratch2GPR, TrustedImmPtr(JSCell::seenMultipleCalleeObjects()));
+        jit.move(scratch2GPR, scratchGPR);
 
         found.link(&jit);
         jit.load16(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfOffset()), scratch2GPR);

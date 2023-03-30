@@ -147,11 +147,10 @@ private:
 #if ENABLE(JIT)
     GetByStatus(const ModuleNamespaceAccessCase&);
     GetByStatus(const ProxyObjectAccessCase&);
-    static GetByStatus computeForStubInfoWithoutExitSiteFeedback(
-        const ConcurrentJSLocker&, CodeBlock* profiledBlock, StructureStubInfo*, CallLinkStatus::ExitSiteData);
+    static GetByStatus computeForStubInfoWithoutExitSiteFeedback(const ConcurrentJSLocker&, CodeBlock* profiledBlock, StructureStubInfo*, CallLinkStatus::ExitSiteData, bool forInlined);
 #endif
     static GetByStatus computeFromLLInt(CodeBlock*, BytecodeIndex);
-    static GetByStatus computeFor(CodeBlock*, ICStatusMap&, BytecodeIndex, ExitFlag, CallLinkStatus::ExitSiteData);
+    static GetByStatus computeFor(CodeBlock*, ICStatusMap&, BytecodeIndex, ExitFlag, CallLinkStatus::ExitSiteData, bool forInlined);
 
     struct ModuleNamespaceData {
         JSModuleNamespaceObject* m_moduleNamespaceObject { nullptr };

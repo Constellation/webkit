@@ -147,15 +147,14 @@ GetByStatus GetByStatus::computeFromLLInt(CodeBlock* profiledBlock, BytecodeInde
     return result;
 }
 
-GetByStatus GetByStatus::computeFor(CodeBlock* profiledBlock, ICStatusMap& map, BytecodeIndex bytecodeIndex, ExitFlag didExit, CallLinkStatus::ExitSiteData callExitSiteData)
+GetByStatus GetByStatus::computeFor(CodeBlock* profiledBlock, ICStatusMap& map, BytecodeIndex bytecodeIndex, ExitFlag didExit, CallLinkStatus::ExitSiteData callExitSiteData, bool forInlined)
 {
     ConcurrentJSLocker locker(profiledBlock->m_lock);
 
     GetByStatus result;
 
 #if ENABLE(DFG_JIT)
-    result = computeForStubInfoWithoutExitSiteFeedback(
-        locker, profiledBlock, map.get(CodeOrigin(bytecodeIndex)).stubInfo, callExitSiteData);
+    result = computeForStubInfoWithoutExitSiteFeedback(locker, profiledBlock, map.get(CodeOrigin(bytecodeIndex)).stubInfo, callExitSiteData, forInlined);
     
     if (didExit)
         return result.slowVersion();
@@ -209,8 +208,7 @@ GetByStatus::GetByStatus(const ProxyObjectAccessCase&)
 {
 }
 
-GetByStatus GetByStatus::computeForStubInfoWithoutExitSiteFeedback(
-    const ConcurrentJSLocker& locker, CodeBlock* profiledBlock, StructureStubInfo* stubInfo, CallLinkStatus::ExitSiteData callExitSiteData)
+GetByStatus GetByStatus::computeForStubInfoWithoutExitSiteFeedback(const ConcurrentJSLocker& locker, CodeBlock* profiledBlock, StructureStubInfo* stubInfo, CallLinkStatus::ExitSiteData callExitSiteData, bool forInlined)
 {
     StubInfoSummary summary = StructureStubInfo::summary(profiledBlock->vm(), stubInfo);
     if (!isInlineable(summary))
@@ -261,8 +259,17 @@ GetByStatus GetByStatus::computeForStubInfoWithoutExitSiteFeedback(
                 status.appendVariant(GetByVariant(accessCase.identifier(), { }, invalidOffset, { }, WTFMove(callLinkStatus)));
                 return status;
             }
-            case AccessCase::LoadMegamorphic:
-                return GetByStatus(Megamorphic, /* wasSeenInJIT */ true);
+            case AccessCase::LoadMegamorphic: {
+                // Emitting LoadMegamorphic means that we give up IC optimization. So this needs careful handling.
+                // It is possible that one function can be inlined under in other function, and then it gets more limited amount of
+                // polymorphism. In this case, continue using IC is better than falling back to megamorphic case.
+                // But if the function gets compiled before, and even optimizing JIT saw the megamorphism, then this is likely that
+                // this function continues having megamorphic behavior. Let's do it only when we see this pattern.
+                // Currently, this is very conservative.
+                if (!stubInfo->codeOrigin.inlineCallFrame() && !forInlined && JITCode::isOptimizingJIT(profiledBlock->jitType()))
+                    return GetByStatus(Megamorphic, /* wasSeenInJIT */ true);
+                break;
+            }
             default:
                 break;
             }
@@ -386,6 +393,7 @@ GetByStatus GetByStatus::computeFor(
     BytecodeIndex bytecodeIndex = codeOrigin.bytecodeIndex();
     CallLinkStatus::ExitSiteData callExitSiteData = CallLinkStatus::computeExitSiteData(profiledBlock, bytecodeIndex);
     ExitFlag didExit = hasBadCacheExitSite(profiledBlock, bytecodeIndex);
+    bool forInlined = codeOrigin.inlineCallFrame();
 
     for (ICStatusContext* context : icContextStack) {
         ICStatus status = context->get(codeOrigin);
@@ -394,9 +402,7 @@ GetByStatus GetByStatus::computeFor(
             if (!context->isInlined(codeOrigin)) {
                 // Merge with baseline result, which also happens to contain exit data for both
                 // inlined and not-inlined.
-                GetByStatus baselineResult = computeFor(
-                    profiledBlock, baselineMap, bytecodeIndex, didExit,
-                    callExitSiteData);
+                GetByStatus baselineResult = computeFor(profiledBlock, baselineMap, bytecodeIndex, didExit, callExitSiteData, forInlined);
                 baselineResult.merge(result);
                 return baselineResult;
             }
@@ -409,8 +415,7 @@ GetByStatus GetByStatus::computeFor(
             GetByStatus result;
             {
                 ConcurrentJSLocker locker(context->optimizedCodeBlock->m_lock);
-                result = computeForStubInfoWithoutExitSiteFeedback(
-                    locker, context->optimizedCodeBlock, status.stubInfo, callExitSiteData);
+                result = computeForStubInfoWithoutExitSiteFeedback(locker, context->optimizedCodeBlock, status.stubInfo, callExitSiteData, forInlined);
             }
             if (result.isSet())
                 return bless(result);
@@ -420,7 +425,7 @@ GetByStatus GetByStatus::computeFor(
             return bless(*status.getStatus);
     }
     
-    return computeFor(profiledBlock, baselineMap, bytecodeIndex, didExit, callExitSiteData);
+    return computeFor(profiledBlock, baselineMap, bytecodeIndex, didExit, callExitSiteData, forInlined);
 }
 
 GetByStatus GetByStatus::computeFor(const StructureSet& set, UniquedStringImpl* uid)

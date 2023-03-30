@@ -4035,25 +4035,20 @@ private:
         m_out.branch(m_out.notZero32(cacheHit), usually(lookUpCase), rarely(slowCase));
 
         LBasicBlock lastNext = m_out.appendTo(lookUpCase, lookUpLoadHeaderCase);
-        LValue hops = m_out.load8ZeroExt32(m_out.baseIndex(heap, cache, index, JSValue(), MegamorphicCache::Entry::offsetOfHops()));
+        LValue holder = m_out.loadPtr(m_out.baseIndex(heap, cache, index, JSValue(), MegamorphicCache::Entry::offsetOfHolder()));
         results.append(m_out.anchor(m_out.constInt64(JSValue::encode(jsUndefined()))));
-        ValueFromBlock initialCell = m_out.anchor(cell);
-        ValueFromBlock initialHop = m_out.anchor(hops);
-        m_out.branch(m_out.equal(hops, m_out.constInt32(MegamorphicCache::missHops)), unsure(continuation), unsure(lookUpLoadHeaderCase));
+        m_out.branch(m_out.isNull(holder), unsure(continuation), unsure(lookUpLoadHeaderCase));
 
         m_out.appendTo(lookUpLoadHeaderCase, lookUpLoadBodyCase);
-        LValue object = m_out.phi(pointerType(), initialCell);
-        LValue remainingHops = m_out.phi(Int32, initialHop);
-        m_out.branch(m_out.isZero32(remainingHops), unsure(lookUpLoadCase), unsure(lookUpLoadBodyCase));
+        ValueFromBlock ownHolder = m_out.anchor(cell);
+        m_out.branch(m_out.equal(holder, m_out.constIntPtr(JSCell::seenMultipleCalleeObjects())), unsure(lookUpLoadCase), unsure(lookUpLoadBodyCase));
 
         m_out.appendTo(lookUpLoadBodyCase, lookUpLoadCase);
-        LValue structure = loadStructure(object);
-        LValue prototype = m_out.load64(structure, m_heaps.Structure_prototype);
-        m_out.addIncomingToPhi(object, m_out.anchor(prototype));
-        m_out.addIncomingToPhi(remainingHops, m_out.anchor(m_out.sub(remainingHops, m_out.int32One)));
-        m_out.jump(lookUpLoadHeaderCase);
+        ValueFromBlock storedHolder = m_out.anchor(holder);
+        m_out.jump(lookUpLoadCase);
 
         m_out.appendTo(lookUpLoadCase, inlineLoadCase);
+        LValue object = m_out.phi(pointerType(), ownHolder, storedHolder);
         LValue offset = m_out.load16ZeroExt32(m_out.baseIndex(heap, cache, index, JSValue(), MegamorphicCache::Entry::offsetOfOffset()));
         LValue isInline = m_out.below(offset, m_out.constInt32(firstOutOfLineOffset));
         m_out.branch(isInline, unsure(inlineLoadCase), unsure(outOfLineLoadCase));

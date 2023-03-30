@@ -380,8 +380,8 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
         structure = object->structure(); // Reload it again since static-class-table can cause transition. But this transition only affects on this Structure.
         if (hasProperty) {
             if (LIKELY(cacheable && structure->propertyAccessesAreCacheable() && slot.isCacheableValue())) {
-                if (LIKELY(hops <= MegamorphicCache::maxHops && slot.cachedOffset() <= MegamorphicCache::maxOffset))
-                    entry.initAsHit(baseObject->structureID(), uid, cache.epoch(), slot.cachedOffset(), hops);
+                if (LIKELY(slot.cachedOffset() <= MegamorphicCache::maxOffset))
+                    entry.initAsHit(baseObject->structureID(), uid, cache.epoch(), slot.slotBase(), slot.cachedOffset(), slot.slotBase() == baseObject);
             }
             return JSValue::encode(slot.getValue(globalObject, uid));
         }
@@ -428,12 +428,12 @@ JSC_DEFINE_JIT_OPERATION(operationGetById, EncodedJSValue, (JSGlobalObject* glob
     // static unsigned slowCount = 0;
     if (matched) {
         // dataLogLn(++hitCount, ", ", missCount, ", ", slowCount);
-        if (entry.m_hops == MegamorphicCache::missHops)
+        if (!entry.m_holder)
             return JSValue::encode(jsUndefined());
 
         JSObject* cursor = baseObject;
-        for (unsigned i = 0; i < entry.m_hops; ++i)
-            cursor = jsCast<JSObject*>(cursor->getPrototypeDirect());
+        if (entry.m_holder != JSCell::seenMultipleCalleeObjects())
+            cursor = jsCast<JSObject*>(entry.m_holder);
         return JSValue::encode(cursor->getDirect(entry.m_offset));
     }
 
@@ -453,8 +453,8 @@ JSC_DEFINE_JIT_OPERATION(operationGetById, EncodedJSValue, (JSGlobalObject* glob
         structure = object->structure(); // Reload it again since static-class-table can cause transition. But this transition only affects on this Structure.
         if (hasProperty) {
             if (LIKELY(cacheable && structure->propertyAccessesAreCacheable() && slot.isCacheableValue())) {
-                if (LIKELY(hops <= MegamorphicCache::maxHops && slot.cachedOffset() <= MegamorphicCache::maxOffset))
-                    entry.initAsHit(baseObject->structureID(), uid, cache.epoch(), slot.cachedOffset(), hops);
+                if (LIKELY(slot.cachedOffset() <= MegamorphicCache::maxOffset))
+                    entry.initAsHit(baseObject->structureID(), uid, cache.epoch(), slot.slotBase(), slot.cachedOffset(), slot.slotBase() == baseObject);
             }
             // dataLogLn(hitCount, ", ", ++missCount, ", ", slowCount);
             return JSValue::encode(slot.getValue(globalObject, uid));

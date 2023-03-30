@@ -6668,18 +6668,11 @@ void SpeculativeJIT::compileGetByIdMegamorphic(Node* node)
     load16(Address(scratch3GPR, MegamorphicCache::Entry::offsetOfEpoch()), scratch1GPR);
     slowCases.append(branch32(NotEqual, scratch2GPR, scratch1GPR));
 
-    load8(Address(scratch3GPR, MegamorphicCache::Entry::offsetOfHops()), scratch2GPR);
-    auto missed = branch32(Equal, scratch2GPR, TrustedImm32(MegamorphicCache::missHops));
-
+    loadPtr(Address(scratch3GPR, MegamorphicCache::Entry::offsetOfHolder()), scratch2GPR);
+    auto missed = branchTestPtr(Zero, scratch2GPR);
     move(baseGPR, scratch1GPR);
-    Label loop(this);
-
-    auto found = branchTest32(Zero, scratch2GPR);
-
-    emitLoadStructure(vm(), scratch1GPR, scratch1GPR);
-    loadValue(Address(scratch1GPR, Structure::prototypeOffset()), JSValueRegs { scratch1GPR });
-    sub32(TrustedImm32(1), scratch2GPR);
-    jump().linkTo(loop, this);
+    auto found = branchPtr(Equal, scratch2GPR, TrustedImmPtr(JSCell::seenMultipleCalleeObjects()));
+    move(scratch2GPR, scratch1GPR);
 
     found.link(this);
     load16(Address(scratch3GPR, MegamorphicCache::Entry::offsetOfOffset()), scratch2GPR);

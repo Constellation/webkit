@@ -39,8 +39,6 @@ public:
     static_assert(hasOneBitSet(size), "size should be a power of two.");
     static constexpr uint32_t mask = size - 1;
 
-    static constexpr uint8_t missHops = UINT8_MAX;
-    static constexpr unsigned maxHops = UINT8_MAX - 1;
     static constexpr PropertyOffset maxOffset = UINT16_MAX;
 
     struct Entry {
@@ -48,7 +46,7 @@ public:
         static ptrdiff_t offsetOfStructureID() { return OBJECT_OFFSETOF(Entry, m_structureID); }
         static ptrdiff_t offsetOfEpoch() { return OBJECT_OFFSETOF(Entry, m_epoch); }
         static ptrdiff_t offsetOfOffset() { return OBJECT_OFFSETOF(Entry, m_offset); }
-        static ptrdiff_t offsetOfHops() { return OBJECT_OFFSETOF(Entry, m_hops); }
+        static ptrdiff_t offsetOfHolder() { return OBJECT_OFFSETOF(Entry, m_holder); }
 
         void initAsMiss(StructureID structureID, UniquedStringImpl* uid, uint16_t epoch)
         {
@@ -56,23 +54,23 @@ public:
             m_structureID = structureID;
             m_epoch = epoch;
             m_offset = 0;
-            m_hops = missHops;
+            m_holder = nullptr;
         }
 
-        void initAsHit(StructureID structureID, UniquedStringImpl* uid, uint16_t epoch, uint16_t offset, uint8_t hops)
+        void initAsHit(StructureID structureID, UniquedStringImpl* uid, uint16_t epoch, JSObject* holder, uint8_t offset, bool ownProperty)
         {
             m_uid = uid;
             m_structureID = structureID;
             m_epoch = epoch;
             m_offset = offset;
-            m_hops = hops;
+            m_holder = (ownProperty) ? JSCell::seenMultipleCalleeObjects() : holder;
         }
 
         RefPtr<UniquedStringImpl> m_uid;
         StructureID m_structureID { } ;
         uint16_t m_epoch { 0 };
         uint16_t m_offset { 0 };
-        uint8_t m_hops { 0 };
+        JSCell* m_holder { nullptr };
     };
 
     static ptrdiff_t offsetOfEntries() { return OBJECT_OFFSETOF(MegamorphicCache, m_entries); }
