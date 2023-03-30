@@ -1291,7 +1291,7 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
         jit.loadPtr(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfHolder()), scratch2GPR);
         auto missed = jit.branchTestPtr(CCallHelpers::Zero, scratch2GPR);
         jit.move(baseGPR, scratchGPR);
-        auto found = jit.branchPtr(CCallHelpers::Equal, scratch2GPR, TrustedImmPtr(JSCell::seenMultipleCalleeObjects()));
+        auto found = jit.branchPtr(CCallHelpers::Equal, scratch2GPR, CCallHelpers::TrustedImmPtr(JSCell::seenMultipleCalleeObjects()));
         jit.move(scratch2GPR, scratchGPR);
 
         found.link(&jit);
