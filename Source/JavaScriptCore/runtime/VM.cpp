@@ -81,6 +81,7 @@
 #include "LLIntData.h"
 #include "LLIntExceptions.h"
 #include "MarkedBlockInlines.h"
+#include "MegamorphicCache.h"
 #include "MinimumReservedZoneSize.h"
 #include "ModuleProgramCodeBlock.h"
 #include "ModuleProgramExecutable.h"

@@ -919,6 +919,10 @@ static InlineCacheAction tryCachePutBy(JSGlobalObject* globalObject, CodeBlock* 
                 if (!oldStructure->isObject())
                     return GiveUpOnCache;
 
+                // Right now, we disable IC for put onto prototype for NewProperty case.
+                if (oldStructure->mayBePrototype())
+                    return GiveUpOnCache;
+
                 // If the old structure is dictionary, it means that this is one-on-one between an object and a structure.
                 // If this is NewProperty operation, generating IC for this does not offer any benefit because this transition never happens again.
                 if (oldStructure->isDictionary())
@@ -1204,6 +1208,10 @@ static InlineCacheAction tryCacheDeleteBy(JSGlobalObject* globalObject, CodeBloc
                 return RetryCacheLater;
             if (!newStructure->propertyAccessesAreCacheable() || newStructure->isDictionary())
                 return GiveUpOnCache;
+            // Right now, we disable IC for put onto prototype.
+            if (oldStructure->mayBePrototype())
+                return GiveUpOnCache;
+
             ASSERT(newOffset == slot.cachedOffset());
             ASSERT(newStructure->previousID() == oldStructure);
             ASSERT(newStructure->transitionKind() == TransitionKind::PropertyDeletion);
@@ -1213,7 +1221,9 @@ static InlineCacheAction tryCacheDeleteBy(JSGlobalObject* globalObject, CodeBloc
         } else if (slot.isNonconfigurable()) {
             if (ecmaMode.isStrict())
                 return GiveUpOnCache;
-
+            // Right now, we disable IC for put onto prototype.
+            if (oldStructure->mayBePrototype())
+                return GiveUpOnCache;
             newCase = AccessCase::create(vm, codeBlock, AccessCase::DeleteNonConfigurable, propertyName, invalidOffset, oldStructure, { }, nullptr);
         } else
             newCase = AccessCase::create(vm, codeBlock, AccessCase::DeleteMiss, propertyName, invalidOffset, oldStructure, { }, nullptr);

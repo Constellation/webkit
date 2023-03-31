@@ -49,6 +49,7 @@
 #include "JSWebAssemblyInstance.h"
 #include "LLIntThunks.h"
 #include "LinkBuffer.h"
+#include "MegamorphicCache.h"
 #include "ModuleNamespaceAccessCase.h"
 #include "ProxyObjectAccessCase.h"
 #include "ScopedArguments.h"
@@ -1258,6 +1259,62 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
         return;
     }
 
+    case AccessCase::LoadMegamorphic: {
+        ASSERT(!accessCase.viaProxy());
+        CCallHelpers::JumpList failAndIgnore;
+        unsigned hash = accessCase.m_identifier.uid()->hash();
+
+        auto allocator = makeDefaultScratchAllocator(scratchGPR);
+        GPRReg scratch2GPR = allocator.allocateScratchGPR();
+        GPRReg scratch3GPR = allocator.allocateScratchGPR();
+
+        ScratchRegisterAllocator::PreservedState preservedState = allocator.preserveReusedRegistersByPushing(jit, ScratchRegisterAllocator::ExtraStackSpace::NoExtraSpace);
+
+        jit.load32(CCallHelpers::Address(baseGPR, JSCell::structureIDOffset()), scratchGPR);
+        jit.add32(CCallHelpers::TrustedImm32(hash), scratchGPR, scratch3GPR);
+        jit.and32(CCallHelpers::TrustedImm32(MegamorphicCache::mask), scratch3GPR);
+        if (hasOneBitSet(sizeof(MegamorphicCache::Entry))) // is a power of 2
+            jit.lshift32(CCallHelpers::TrustedImm32(getLSBSet(sizeof(MegamorphicCache::Entry))), scratch3GPR);
+        else
+            jit.mul32(CCallHelpers::TrustedImm32(sizeof(MegamorphicCache::Entry)), scratch3GPR, scratch3GPR);
+        auto& cache = vm.ensureMegamorphicCache();
+        jit.move(CCallHelpers::TrustedImmPtr(&cache), scratch2GPR);
+        ASSERT(MegamorphicCache::offsetOfEntries() == 0);
+        jit.addPtr(scratch2GPR, scratch3GPR);
+        jit.load16(CCallHelpers::Address(scratch2GPR, MegamorphicCache::offsetOfEpoch()), scratch2GPR);
+
+        failAndIgnore.append(jit.branch32(CCallHelpers::NotEqual, scratchGPR, CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfStructureID())));
+        failAndIgnore.append(jit.branchPtr(CCallHelpers::NotEqual, CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfUid()), CCallHelpers::TrustedImmPtr(accessCase.m_identifier.uid())));
+        jit.load16(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfEpoch()), scratchGPR);
+        failAndIgnore.append(jit.branch32(CCallHelpers::NotEqual, scratch2GPR, scratchGPR));
+
+        jit.loadPtr(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfHolder()), scratch2GPR);
+        auto missed = jit.branchTestPtr(CCallHelpers::Zero, scratch2GPR);
+        jit.move(baseGPR, scratchGPR);
+        auto found = jit.branchPtr(CCallHelpers::Equal, scratch2GPR, CCallHelpers::TrustedImmPtr(JSCell::seenMultipleCalleeObjects()));
+        jit.move(scratch2GPR, scratchGPR);
+
+        found.link(&jit);
+        jit.load16(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfOffset()), scratch2GPR);
+        jit.loadProperty(scratchGPR, scratch2GPR, valueRegs);
+        auto done = jit.jump();
+
+        missed.link(&jit);
+        jit.moveTrustedValue(jsUndefined(), valueRegs);
+
+        done.link(&jit);
+        allocator.restoreReusedRegistersByPopping(jit, preservedState);
+        succeed();
+
+        if (allocator.didReuseRegisters()) {
+            failAndIgnore.link(&jit);
+            allocator.restoreReusedRegistersByPopping(jit, preservedState);
+            m_failAndIgnore.append(jit.jump());
+        } else
+            m_failAndIgnore.append(failAndIgnore);
+        return;
+    }
+
     default:
         emitDefaultGuard();
         break;
@@ -2027,6 +2084,7 @@ void InlineCacheCompiler::generateImpl(AccessCase& accessCase)
     case AccessCase::ProxyObjectLoad:
     case AccessCase::ProxyObjectStore:
     case AccessCase::InstanceOfGeneric:
+    case AccessCase::LoadMegamorphic:
     case AccessCase::IndexedInt32Load:
     case AccessCase::IndexedDoubleLoad:
     case AccessCase::IndexedContiguousLoad:
@@ -2598,6 +2656,42 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
     }
     poly.m_list.resize(dstIndex);
 
+    bool generatedFinalCode = false;
+
+    // If the resulting set of cases is so big that we would stop caching and this is InstanceOf,
+    // then we want to generate the generic InstanceOf and then stop.
+    if (cases.size() >= Options::maxAccessVariantListSize()) {
+        switch (m_stubInfo->accessType) {
+        case AccessType::InstanceOf: {
+            while (!cases.isEmpty())
+                poly.m_list.append(cases.takeLast());
+            cases.append(AccessCase::create(vm(), codeBlock, AccessCase::InstanceOfGeneric, nullptr));
+            generatedFinalCode = true;
+            break;
+        }
+        case AccessType::GetById: {
+            auto identifier = cases.last()->m_identifier;
+            bool allAreSimpleLoadOrMiss = true;
+            for (auto& accessCase : cases) {
+                if (accessCase->type() != AccessCase::Load && accessCase->type() != AccessCase::Miss)
+                    allAreSimpleLoadOrMiss = false;
+            }
+
+            if (allAreSimpleLoadOrMiss) {
+                while (!cases.isEmpty())
+                    poly.m_list.append(cases.takeLast());
+                cases.append(AccessCase::create(vm(), codeBlock, AccessCase::LoadMegamorphic, identifier));
+                generatedFinalCode = true;
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Optimized cases: ", listDump(cases));
+
     auto allocator = makeDefaultScratchAllocator();
     m_allocator = &allocator;
     m_scratchGPR = allocator.allocateScratchGPR();
@@ -2608,20 +2702,6 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             break;
         }
     }
-
-    bool generatedFinalCode = false;
-
-    // If the resulting set of cases is so big that we would stop caching and this is InstanceOf,
-    // then we want to generate the generic InstanceOf and then stop.
-    if (cases.size() >= Options::maxAccessVariantListSize()
-        && m_stubInfo->accessType == AccessType::InstanceOf) {
-        while (!cases.isEmpty())
-            poly.m_list.append(cases.takeLast());
-        cases.append(AccessCase::create(vm(), codeBlock, AccessCase::InstanceOfGeneric, nullptr));
-        generatedFinalCode = true;
-    }
-
-    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Optimized cases: ", listDump(cases));
 
     bool doesCalls = false;
     bool doesJSCalls = false;

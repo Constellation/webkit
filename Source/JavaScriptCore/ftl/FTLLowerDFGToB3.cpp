@@ -88,6 +88,7 @@
 #include "JSSetIterator.h"
 #include "JSWebAssemblyInstance.h"
 #include "LLIntThunks.h"
+#include "MegamorphicCache.h"
 #include "OperandsInlines.h"
 #include "PCToCodeOriginMap.h"
 #include "ProbeContext.h"
@@ -955,6 +956,9 @@ private:
         case GetById:
         case GetByIdFlush:
             compileGetById(AccessType::GetById);
+            break;
+        case GetByIdMegamorphic:
+            compileGetByIdMegamorphic();
             break;
         case GetByIdWithThis:
             compileGetByIdWithThis();
@@ -3997,6 +4001,75 @@ private:
             DFG_CRASH(m_graph, m_node, "Bad use kind");
             return;
         }
+    }
+
+    void compileGetByIdMegamorphic()
+    {
+        JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
+        LValue cell = lowCell(m_node->child1());
+
+        unsigned hash = m_node->cacheableIdentifier().uid()->hash();
+
+        LBasicBlock lookUpCase = m_out.newBlock();
+        LBasicBlock lookUpLoadHeaderCase = m_out.newBlock();
+        LBasicBlock lookUpLoadBodyCase = m_out.newBlock();
+        LBasicBlock inlineLoadCase = m_out.newBlock();
+        LBasicBlock lookUpLoadCase = m_out.newBlock();
+        LBasicBlock outOfLineLoadCase = m_out.newBlock();
+        LBasicBlock slowCase = m_out.newBlock();
+        LBasicBlock continuation = m_out.newBlock();
+
+        Vector<ValueFromBlock, 4> results;
+
+        LValue structureID = m_out.load32(cell, m_heaps.JSCell_structureID);
+        LValue index = m_out.add(m_out.constInt32(hash), structureID);
+        index = m_out.zeroExtPtr(m_out.bitAnd(index, m_out.constInt32(MegamorphicCache::mask)));
+        ASSERT(vm().megamorphicCache());
+        LValue cache = m_out.constIntPtr(vm().megamorphicCache());
+
+        IndexedAbstractHeap& heap = m_heaps.MegamorphicCache;
+        LValue sameStructureID = m_out.equal(structureID, m_out.load32(m_out.baseIndex(heap, cache, index, JSValue(), MegamorphicCache::Entry::offsetOfStructureID())));
+        LValue sameImpl = m_out.equal(m_out.constIntPtr(m_node->cacheableIdentifier().uid()), m_out.loadPtr(m_out.baseIndex(heap, cache, index, JSValue(), MegamorphicCache::Entry::offsetOfUid())));
+        LValue sameEpoch = m_out.equal(m_out.load16ZeroExt32(cache, m_heaps.MegamorphicCache_epoch), m_out.load16ZeroExt32(m_out.baseIndex(heap, cache, index, JSValue(), MegamorphicCache::Entry::offsetOfEpoch())));
+        LValue cacheHit = m_out.bitAnd(m_out.bitAnd(sameStructureID, sameImpl), sameEpoch);
+        m_out.branch(m_out.notZero32(cacheHit), usually(lookUpCase), rarely(slowCase));
+
+        LBasicBlock lastNext = m_out.appendTo(lookUpCase, lookUpLoadHeaderCase);
+        LValue holder = m_out.loadPtr(m_out.baseIndex(heap, cache, index, JSValue(), MegamorphicCache::Entry::offsetOfHolder()));
+        results.append(m_out.anchor(m_out.constInt64(JSValue::encode(jsUndefined()))));
+        m_out.branch(m_out.isNull(holder), unsure(continuation), unsure(lookUpLoadHeaderCase));
+
+        m_out.appendTo(lookUpLoadHeaderCase, lookUpLoadBodyCase);
+        ValueFromBlock ownHolder = m_out.anchor(cell);
+        m_out.branch(m_out.equal(holder, m_out.constIntPtr(bitwise_cast<void*>(JSCell::seenMultipleCalleeObjects()))), unsure(lookUpLoadCase), unsure(lookUpLoadBodyCase));
+
+        m_out.appendTo(lookUpLoadBodyCase, lookUpLoadCase);
+        ValueFromBlock storedHolder = m_out.anchor(holder);
+        m_out.jump(lookUpLoadCase);
+
+        m_out.appendTo(lookUpLoadCase, inlineLoadCase);
+        LValue object = m_out.phi(pointerType(), ownHolder, storedHolder);
+        LValue offset = m_out.load16ZeroExt32(m_out.baseIndex(heap, cache, index, JSValue(), MegamorphicCache::Entry::offsetOfOffset()));
+        LValue isInline = m_out.below(offset, m_out.constInt32(firstOutOfLineOffset));
+        m_out.branch(isInline, unsure(inlineLoadCase), unsure(outOfLineLoadCase));
+
+        m_out.appendTo(inlineLoadCase, outOfLineLoadCase);
+        results.append(m_out.anchor(m_out.load64(m_out.baseIndex(m_heaps.properties.atAnyNumber(), object, m_out.zeroExt(offset, Int64), ScaleEight, JSObject::offsetOfInlineStorage()))));
+        m_out.jump(continuation);
+
+        m_out.appendTo(outOfLineLoadCase, slowCase);
+        LValue storage = m_out.loadPtr(object, m_heaps.JSObject_butterfly);
+        LValue realOffset = m_out.signExt32To64(m_out.neg(m_out.sub(offset, m_out.constInt32(firstOutOfLineOffset))));
+        constexpr intptr_t offsetOfFirstProperty = offsetInButterfly(firstOutOfLineOffset) * static_cast<intptr_t>(sizeof(EncodedJSValue));
+        results.append(m_out.anchor(m_out.load64(m_out.baseIndex(m_heaps.properties.atAnyNumber(), storage, realOffset, ScaleEight, offsetOfFirstProperty))));
+        m_out.jump(continuation);
+
+        m_out.appendTo(slowCase, continuation);
+        results.append(m_out.anchor(vmCall(Int64, operationGetByIdMegamorphic, weakPointer(globalObject), cell, m_out.constIntPtr(m_node->cacheableIdentifier().rawBits()))));
+        m_out.jump(continuation);
+
+        m_out.appendTo(continuation, lastNext);
+        setJSValue(m_out.phi(Int64, WTFMove(results)));
     }
 
     void compileGetByIdWithThis()

@@ -36,6 +36,7 @@
 #include "DFGSlowPathGenerator.h"
 #include "DateInstance.h"
 #include "HasOwnPropertyCache.h"
+#include "MegamorphicCache.h"
 #include "SetupVarargsFrame.h"
 #include "SpillRegistersMode.h"
 #include "StructureChain.h"
@@ -4394,6 +4395,11 @@ void SpeculativeJIT::compile(Node* node)
         break;
     }
 
+    case GetByIdMegamorphic: {
+        compileGetByIdMegamorphic(node);
+        break;
+    }
+
     case GetByIdWithThis: {
         if (node->child1().useKind() == CellUse && node->child2().useKind() == CellUse) {
             SpeculateCellOperand base(this, node->child1());
@@ -6629,6 +6635,58 @@ void SpeculativeJIT::compileNewBoundFunction(Node* node)
 
     addSlowPathGenerator(slowPathCall(slowPath, this, operationNewBoundFunction, resultGPR, LinkableConstant::globalObject(*this, node), targetGPR, boundThisRegs, arg0Regs, arg1Regs, arg2Regs));
     cellResult(resultGPR, node);
+}
+
+void SpeculativeJIT::compileGetByIdMegamorphic(Node* node)
+{
+    SpeculateCellOperand base(this, node->child1());
+    GPRTemporary scratch1(this);
+    GPRTemporary scratch2(this);
+    GPRTemporary scratch3(this);
+
+    GPRReg baseGPR = base.gpr();
+    GPRReg scratch1GPR = scratch1.gpr();
+    GPRReg scratch2GPR = scratch2.gpr();
+    GPRReg scratch3GPR = scratch3.gpr();
+
+    JumpList slowCases;
+
+    unsigned hash = node->cacheableIdentifier().uid()->hash();
+    load32(Address(baseGPR, JSCell::structureIDOffset()), scratch1GPR);
+    add32(TrustedImm32(hash), scratch1GPR, scratch3GPR);
+    and32(TrustedImm32(MegamorphicCache::mask), scratch3GPR);
+    if (hasOneBitSet(sizeof(MegamorphicCache::Entry))) // is a power of 2
+        lshift32(TrustedImm32(getLSBSet(sizeof(MegamorphicCache::Entry))), scratch3GPR);
+    else
+        mul32(TrustedImm32(sizeof(MegamorphicCache::Entry)), scratch3GPR, scratch3GPR);
+    auto& cache = vm().ensureMegamorphicCache();
+    move(TrustedImmPtr(&cache), scratch2GPR);
+    ASSERT(MegamorphicCache::offsetOfEntries() == 0);
+    addPtr(scratch2GPR, scratch3GPR);
+    load16(Address(scratch2GPR, MegamorphicCache::offsetOfEpoch()), scratch2GPR);
+
+    slowCases.append(branch32(NotEqual, scratch1GPR, Address(scratch3GPR, MegamorphicCache::Entry::offsetOfStructureID())));
+    slowCases.append(branchPtr(NotEqual, Address(scratch3GPR, MegamorphicCache::Entry::offsetOfUid()), TrustedImmPtr(node->cacheableIdentifier().uid())));
+    load16(Address(scratch3GPR, MegamorphicCache::Entry::offsetOfEpoch()), scratch1GPR);
+    slowCases.append(branch32(NotEqual, scratch2GPR, scratch1GPR));
+
+    loadPtr(Address(scratch3GPR, MegamorphicCache::Entry::offsetOfHolder()), scratch2GPR);
+    auto missed = branchTestPtr(Zero, scratch2GPR);
+    move(baseGPR, scratch1GPR);
+    auto found = branchPtr(Equal, scratch2GPR, TrustedImmPtr(bitwise_cast<void*>(JSCell::seenMultipleCalleeObjects())));
+    move(scratch2GPR, scratch1GPR);
+
+    found.link(this);
+    load16(Address(scratch3GPR, MegamorphicCache::Entry::offsetOfOffset()), scratch2GPR);
+    loadProperty(scratch1GPR, scratch2GPR, JSValueRegs { scratch3GPR });
+    auto done = jump();
+
+    missed.link(this);
+    moveTrustedValue(jsUndefined(), JSValueRegs { scratch3GPR });
+
+    done.link(this);
+    addSlowPathGenerator(slowPathCall(slowCases, this, operationGetByIdMegamorphic, scratch3GPR, LinkableConstant::globalObject(*this, node), baseGPR, node->cacheableIdentifier().rawBits()));
+    jsValueResult(scratch3GPR, node);
 }
 
 #endif
