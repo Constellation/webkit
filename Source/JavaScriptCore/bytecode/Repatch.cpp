@@ -247,7 +247,8 @@ static void repatchSlowPathCall(CodeBlock* codeBlock, StructureStubInfo& stubInf
 enum InlineCacheAction {
     GiveUpOnCache,
     RetryCacheLater,
-    AttemptToCache
+    AttemptToCache,
+    PromoteToMegamorphic,
 };
 
 static InlineCacheAction actionForCell(VM& vm, JSCell* cell)
@@ -596,6 +597,8 @@ static InlineCacheAction tryCacheGetBy(JSGlobalObject* globalObject, CodeBlock* 
 
     fireWatchpointsAndClearStubIfNeeded(vm, stubInfo, codeBlock, result);
 
+    if (result.generatedMegamorphicCode())
+        return PromoteToMegamorphic;
     return result.shouldGiveUpNow() ? GiveUpOnCache : RetryCacheLater;
 }
 
@@ -603,7 +606,10 @@ void repatchGetBy(JSGlobalObject* globalObject, CodeBlock* codeBlock, JSValue ba
 {
     SuperSamplerScope superSamplerScope(false);
     
-    if (tryCacheGetBy(globalObject, codeBlock, baseValue, propertyName, slot, stubInfo, kind) == GiveUpOnCache)
+    auto result = tryCacheGetBy(globalObject, codeBlock, baseValue, propertyName, slot, stubInfo, kind);
+    if (result == PromoteToMegamorphic)
+        repatchSlowPathCall(codeBlock, stubInfo, operationGetByIdMegamorphic);
+    else if (result == GiveUpOnCache)
         repatchSlowPathCall(codeBlock, stubInfo, appropriateGetByFunction(kind));
 }
 

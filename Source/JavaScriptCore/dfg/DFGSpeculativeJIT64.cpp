@@ -6685,7 +6685,7 @@ void SpeculativeJIT::compileGetByIdMegamorphic(Node* node)
     moveTrustedValue(jsUndefined(), JSValueRegs { scratch3GPR });
 
     done.link(this);
-    addSlowPathGenerator(slowPathCall(slowCases, this, operationGetByIdMegamorphic, scratch3GPR, LinkableConstant::globalObject(*this, node), baseGPR, node->cacheableIdentifier().rawBits()));
+    addSlowPathGenerator(slowPathCall(slowCases, this, operationGetByIdMegamorphic, scratch3GPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(nullptr), baseGPR, node->cacheableIdentifier().rawBits()));
     jsValueResult(scratch3GPR, node);
 }
 

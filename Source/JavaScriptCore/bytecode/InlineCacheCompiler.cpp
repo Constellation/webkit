@@ -2656,7 +2656,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
     }
     poly.m_list.resize(dstIndex);
 
-    bool generatedFinalCode = false;
+    bool generatedMegamorphicCode = false;
 
     // If the resulting set of cases is so big that we would stop caching and this is InstanceOf,
     // then we want to generate the generic InstanceOf and then stop.
@@ -2666,7 +2666,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             while (!cases.isEmpty())
                 poly.m_list.append(cases.takeLast());
             cases.append(AccessCase::create(vm(), codeBlock, AccessCase::InstanceOfGeneric, nullptr));
-            generatedFinalCode = true;
+            generatedMegamorphicCode = true;
             break;
         }
         case AccessType::GetById: {
@@ -2681,7 +2681,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
                 while (!cases.isEmpty())
                     poly.m_list.append(cases.takeLast());
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::LoadMegamorphic, identifier));
-                generatedFinalCode = true;
+                generatedMegamorphicCode = true;
             }
             break;
         }
@@ -2770,7 +2770,9 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         poly.m_list.shrinkToFit();
 
         AccessGenerationResult::Kind resultKind;
-        if (poly.m_list.size() >= Options::maxAccessVariantListSize() || generatedFinalCode)
+        if (generatedMegamorphicCode)
+            resultKind = AccessGenerationResult::GeneratedMegamorphicCode;
+        else if (poly.m_list.size() >= Options::maxAccessVariantListSize())
             resultKind = AccessGenerationResult::GeneratedFinalCode;
         else
             resultKind = AccessGenerationResult::GeneratedNewCode;
@@ -3230,6 +3232,9 @@ void printInternal(PrintStream& out, AccessGenerationResult::Kind kind)
         return;
     case AccessGenerationResult::GeneratedFinalCode:
         out.print("GeneratedFinalCode");
+        return;
+    case AccessGenerationResult::GeneratedMegamorphicCode:
+        out.print("GeneratedMegamorphicCode");
         return;
     case AccessGenerationResult::ResetStubAndFireWatchpoints:
         out.print("ResetStubAndFireWatchpoints");

@@ -4065,7 +4065,7 @@ private:
         m_out.jump(continuation);
 
         m_out.appendTo(slowCase, continuation);
-        results.append(m_out.anchor(vmCall(Int64, operationGetByIdMegamorphic, weakPointer(globalObject), cell, m_out.constIntPtr(m_node->cacheableIdentifier().rawBits()))));
+        results.append(m_out.anchor(vmCall(Int64, operationGetByIdMegamorphic, weakPointer(globalObject), m_out.intPtrZero, cell, m_out.constIntPtr(m_node->cacheableIdentifier().rawBits()))));
         m_out.jump(continuation);
 
         m_out.appendTo(continuation, lastNext);
