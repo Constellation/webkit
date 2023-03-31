@@ -395,6 +395,10 @@ PutByStatus PutByStatus::computeFor(JSGlobalObject* globalObject, const Structur
         // we don't want to be adding properties to strings.
         if (!structure->typeInfo().isObject())
             return PutByStatus(LikelyTakesSlowPath);
+
+        // If the structure is for prototype, we should do a slow path which can invalidate MegamorphicCache.
+        if (structure->mayBePrototype())
+            return PutByStatus(LikelyTakesSlowPath);
     
         ObjectPropertyConditionSet conditionSet;
         if (!isDirect) {
@@ -406,8 +410,7 @@ PutByStatus PutByStatus::computeFor(JSGlobalObject* globalObject, const Structur
         }
     
         // We only optimize if there is already a structure that the transition is cached to.
-        Structure* transition =
-            Structure::addPropertyTransitionToExistingStructureConcurrently(structure, uid, 0, offset);
+        Structure* transition = Structure::addPropertyTransitionToExistingStructureConcurrently(structure, uid, 0, offset);
         if (!transition)
             return PutByStatus(LikelyTakesSlowPath);
         ASSERT(isValidOffset(offset));
