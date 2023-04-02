@@ -285,6 +285,7 @@ VM::VM(VMType vmType, HeapType heapType, WTF::RunLoop* runLoop, bool* success)
         sentinelMapBucket();
         sentinelSetBucket();
         emptyPropertyNameEnumerator();
+        ensureMegamorphicCache();
     }
     {
         auto* bigInt = JSBigInt::tryCreateFrom(*this, 1);

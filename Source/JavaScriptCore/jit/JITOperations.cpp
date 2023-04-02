@@ -348,56 +348,61 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdDirectOptimize, EncodedJSValue, (JSGlob
     RELEASE_AND_RETURN(scope, JSValue::encode(found ? slot.getValue(globalObject, ident) : jsUndefined()));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo*, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
 
+    if (stubInfo)
+        stubInfo->tookSlowPath = true;
+
     JSValue baseValue = JSValue::decode(base);
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
     auto* uid = identifier.uid();
     PropertySlot slot(baseValue, PropertySlot::InternalMethodType::Get);
-    auto& cache = vm.ensureMegamorphicCache();
 
-    if (!baseValue.isObject())
+    if (UNLIKELY(!baseValue.isObject()))
         return JSValue::encode(baseValue.get(globalObject, uid, slot));
 
     JSObject* baseObject = asObject(baseValue);
-    auto& entry = cache.get(baseObject->structureID(), uid);
     JSObject* object = baseObject;
-    unsigned hops = 0;
     bool cacheable = true;
     while (true) {
-        Structure* structure = object->structure();
-        if (UNLIKELY(structure->typeInfo().overridesGetOwnPropertySlot() || structure->typeInfo().overridesGetPrototype())) {
+        if (UNLIKELY(TypeInfo::overridesGetOwnPropertySlot(object->inlineTypeFlags()))) {
             if (object->getNonIndexPropertySlot(globalObject, uid, slot))
                 return JSValue::encode(slot.getValue(globalObject, uid));
             return JSValue::encode(jsUndefined());
         }
 
+        Structure* structure = object->structure();
         bool hasProperty = object->getOwnNonIndexPropertySlot(vm, structure, uid, slot);
         structure = object->structure(); // Reload it again since static-class-table can cause transition. But this transition only affects on this Structure.
+        cacheable &= structure->propertyAccessesAreCacheable();
         if (hasProperty) {
-            if (LIKELY(cacheable && structure->propertyAccessesAreCacheable() && slot.isCacheableValue())) {
-                if (LIKELY(slot.cachedOffset() <= MegamorphicCache::maxOffset))
+            if (LIKELY(cacheable && slot.isCacheableValue())) {
+                if (LIKELY(slot.cachedOffset() <= MegamorphicCache::maxOffset)) {
+                    auto& cache = *vm.megamorphicCache();
+                    auto& entry = cache.get(baseObject->structureID(), uid);
                     entry.initAsHit(baseObject->structureID(), uid, cache.epoch(), slot.slotBase(), slot.cachedOffset(), slot.slotBase() == baseObject);
+                }
             }
             return JSValue::encode(slot.getValue(globalObject, uid));
         }
 
-        cacheable &= structure->propertyAccessesAreCacheable();
         cacheable &= structure->propertyAccessesAreCacheableForAbsence();
         cacheable &= structure->hasMonoProto();
 
         JSValue prototype = object->getPrototypeDirect();
         if (!prototype.isObject()) {
-            if (LIKELY(cacheable))
+            if (LIKELY(cacheable)) {
+                auto& cache = *vm.megamorphicCache();
+                auto& entry = cache.get(baseObject->structureID(), uid);
                 entry.initAsMiss(baseObject->structureID(), uid, cache.epoch());
+            }
             return JSValue::encode(jsUndefined());
         }
         object = asObject(prototype);
-        ++hops;
     }
 }
 

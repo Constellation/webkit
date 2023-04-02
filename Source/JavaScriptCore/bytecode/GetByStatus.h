@@ -32,6 +32,7 @@
 #include "ExitFlag.h"
 #include "GetByVariant.h"
 #include "ICStatusMap.h"
+#include "JITCompilationMode.h"
 #include "ScopeOffset.h"
 #include "StubInfoSummary.h"
 
@@ -94,7 +95,7 @@ public:
     {
     }
 
-    static GetByStatus computeFor(CodeBlock* baselineBlock, ICStatusMap& baselineMap, ICStatusContextStack& dfgContextStack, CodeOrigin);
+    static GetByStatus computeFor(CodeBlock* baselineBlock, ICStatusMap& baselineMap, ICStatusContextStack& dfgContextStack, CodeOrigin, JITCompilationMode);
     static GetByStatus computeFor(const StructureSet&, UniquedStringImpl*);
 
     State state() const { return m_state; }
@@ -147,10 +148,10 @@ private:
 #if ENABLE(JIT)
     GetByStatus(const ModuleNamespaceAccessCase&);
     GetByStatus(const ProxyObjectAccessCase&);
-    static GetByStatus computeForStubInfoWithoutExitSiteFeedback(const ConcurrentJSLocker&, CodeBlock* profiledBlock, StructureStubInfo*, CallLinkStatus::ExitSiteData, CodeOrigin);
+    static GetByStatus computeForStubInfoWithoutExitSiteFeedback(const ConcurrentJSLocker&, CodeBlock* profiledBlock, StructureStubInfo*, CallLinkStatus::ExitSiteData, CodeOrigin, JITCompilationMode);
 #endif
     static GetByStatus computeFromLLInt(CodeBlock*, BytecodeIndex);
-    static GetByStatus computeFor(CodeBlock*, ICStatusMap&, BytecodeIndex, ExitFlag, CallLinkStatus::ExitSiteData, CodeOrigin);
+    static GetByStatus computeFor(CodeBlock*, ICStatusMap&, BytecodeIndex, ExitFlag, CallLinkStatus::ExitSiteData, CodeOrigin, JITCompilationMode);
 
     struct ModuleNamespaceData {
         JSModuleNamespaceObject* m_moduleNamespaceObject { nullptr };
