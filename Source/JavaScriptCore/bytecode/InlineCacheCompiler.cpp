@@ -2680,6 +2680,10 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
                     allAreSimpleLoadOrMiss = false;
             }
 
+            // Currently, we do not apply megamorphic cache for "length" property since Array#length and String#length are too common.
+            if (identifier.uid() == vm().propertyNames->length)
+                allAreSimpleLoadOrMiss = false;
+
             if (allAreSimpleLoadOrMiss) {
                 while (!cases.isEmpty())
                     poly.m_list.append(cases.takeLast());

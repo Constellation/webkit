@@ -362,12 +362,14 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
     auto* uid = identifier.uid();
     PropertySlot slot(baseValue, PropertySlot::InternalMethodType::Get);
 
+#if 0
     static uint64_t hitCount = 0;
     static uint64_t missCount = 0;
     static uint64_t slowCount = 0;
+#endif
 
-    if (UNLIKELY(!baseValue.isObject() || uid == vm.propertyNames->length)) {
-        dataLogLn(hitCount, " ", missCount, " ", ++slowCount, " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch());
+    if (UNLIKELY(!baseValue.isObject())) {
+        // dataLogLn(hitCount, " ", missCount, " ", ++slowCount, " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch());
         return JSValue::encode(baseValue.get(globalObject, uid, slot));
     }
 
@@ -376,7 +378,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
     bool cacheable = true;
     while (true) {
         if (UNLIKELY(TypeInfo::overridesGetOwnPropertySlot(object->inlineTypeFlags()) && object->type() != ArrayType && object != globalObject->arrayPrototype())) {
-            dataLogLn(hitCount, " ", missCount, " ", ++slowCount, " ", MegamorphicCache::hash(baseObject->structureID(), uid) & MegamorphicCache::mask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", baseValue, " ", JSValue(object));
+            // dataLogLn(hitCount, " ", missCount, " ", ++slowCount, " ", MegamorphicCache::hash(baseObject->structureID(), uid) & MegamorphicCache::mask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", baseValue, " ", JSValue(object));
             if (object->getNonIndexPropertySlot(globalObject, uid, slot))
                 return JSValue::encode(slot.getValue(globalObject, uid));
             return JSValue::encode(jsUndefined());
@@ -389,7 +391,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
         if (hasProperty) {
             if (LIKELY(cacheable && slot.isCacheableValue())) {
                 if (LIKELY(slot.cachedOffset() <= MegamorphicCache::maxOffset)) {
-                    dataLogLn(++hitCount, " ", missCount, " ", slowCount, " ", MegamorphicCache::hash(baseObject->structureID(), uid) & MegamorphicCache::mask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch());
+                    // dataLogLn(++hitCount, " ", missCount, " ", slowCount, " ", MegamorphicCache::hash(baseObject->structureID(), uid) & MegamorphicCache::mask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch());
                     auto& cache = *vm.megamorphicCache();
                     auto& entry = cache.get(baseObject->structureID(), uid);
                     entry.initAsHit(baseObject->structureID(), uid, cache.epoch(), slot.slotBase(), slot.cachedOffset(), slot.slotBase() == baseObject);
@@ -406,7 +408,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
             if (LIKELY(cacheable)) {
                 auto& cache = *vm.megamorphicCache();
                 auto& entry = cache.get(baseObject->structureID(), uid);
-                dataLogLn(hitCount, " ", ++missCount, " ", slowCount, " ", MegamorphicCache::hash(baseObject->structureID(), uid) & MegamorphicCache::mask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch());
+                // dataLogLn(hitCount, " ", ++missCount, " ", slowCount, " ", MegamorphicCache::hash(baseObject->structureID(), uid) & MegamorphicCache::mask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch());
                 entry.initAsMiss(baseObject->structureID(), uid, cache.epoch());
             }
             return JSValue::encode(jsUndefined());
