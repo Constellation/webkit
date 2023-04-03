@@ -1271,7 +1271,10 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
         ScratchRegisterAllocator::PreservedState preservedState = allocator.preserveReusedRegistersByPushing(jit, ScratchRegisterAllocator::ExtraStackSpace::NoExtraSpace);
 
         jit.load32(CCallHelpers::Address(baseGPR, JSCell::structureIDOffset()), scratchGPR);
-        jit.add32(CCallHelpers::TrustedImm32(hash), scratchGPR, scratch3GPR);
+        jit.urshift32(scratchGPR, CCallHelpers::TrustedImm32(MegamorphicCache::structureIDHashShift1), scratch2GPR);
+        jit.urshift32(scratchGPR, CCallHelpers::TrustedImm32(MegamorphicCache::structureIDHashShift2), scratch3GPR);
+        jit.xor32(scratch2GPR, scratch3GPR);
+        jit.add32(CCallHelpers::TrustedImm32(hash), scratch3GPR);
         jit.and32(CCallHelpers::TrustedImm32(MegamorphicCache::mask), scratch3GPR);
         if (hasOneBitSet(sizeof(MegamorphicCache::Entry))) // is a power of 2
             jit.lshift32(CCallHelpers::TrustedImm32(getLSBSet(sizeof(MegamorphicCache::Entry))), scratch3GPR);

@@ -78,13 +78,19 @@ public:
 
     MegamorphicCache() = default;
 
-    // Due to sizeof(Structure), lower several bits are always zero.
-    // sizeof(Structure) <= 128. And 128 / 16 = 8 (0b1000). So, 3 + log2(size)
-    static constexpr unsigned structureIDHashShift = 3 + 10;
+#if CPU(ADDRESS64) && !ENABLE(STRUCTURE_ID_WITH_SHIFT)
+    // Because Structure is allocated with 16-byte alignment, we should assume that StructureID's lower 4 bits are zeros.
+    static constexpr unsigned structureIDHashShift1 = 4;
+#else
+    // When using STRUCTURE_ID_WITH_SHIFT, all bits can be different. Thus we do not need to shift the first level.
+    static constexpr unsigned structureIDHashShift1 = 0;
+#endif
+    static constexpr unsigned structureIDHashShift2 = structureIDHashShift1 + 11;
 
     ALWAYS_INLINE static uint32_t hash(StructureID structureID, UniquedStringImpl* uid)
     {
-        return bitwise_cast<uint32_t>(structureID) + uid->hash();
+        uint32_t sid = bitwise_cast<uint32_t>(structureID);
+        return ((sid >> structureIDHashShift1) ^ (sid >> structureIDHashShift2)) + uid->hash();
     }
 
     JS_EXPORT_PRIVATE void age(CollectionScope);
