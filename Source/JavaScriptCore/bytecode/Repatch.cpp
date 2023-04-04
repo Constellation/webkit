@@ -613,6 +613,13 @@ void repatchGetBy(JSGlobalObject* globalObject, CodeBlock* codeBlock, JSValue ba
         repatchSlowPathCall(codeBlock, stubInfo, appropriateGetByFunction(kind));
 }
 
+// Mainly used to transition from megamorphic case to generic case.
+void repatchGetBySlowPathCall(CodeBlock* codeBlock, StructureStubInfo& stubInfo, GetByKind kind)
+{
+    resetGetBy(codeBlock, stubInfo, kind);
+    repatchSlowPathCall(codeBlock, stubInfo, appropriateGetByFunction(kind));
+    dataLogLn("GENERIC TRANSITION");
+}
 
 static InlineCacheAction tryCacheArrayGetByVal(JSGlobalObject* globalObject, CodeBlock* codeBlock, JSValue baseValue, JSValue index, StructureStubInfo& stubInfo)
 {
