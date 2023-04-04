@@ -618,7 +618,6 @@ void repatchGetBySlowPathCall(CodeBlock* codeBlock, StructureStubInfo& stubInfo,
 {
     resetGetBy(codeBlock, stubInfo, kind);
     repatchSlowPathCall(codeBlock, stubInfo, appropriateGetByFunction(kind));
-    dataLogLn("GENERIC TRANSITION");
 }
 
 static InlineCacheAction tryCacheArrayGetByVal(JSGlobalObject* globalObject, CodeBlock* codeBlock, JSValue baseValue, JSValue index, StructureStubInfo& stubInfo)
