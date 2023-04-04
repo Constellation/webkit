@@ -2678,6 +2678,8 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             for (auto& accessCase : cases) {
                 if (accessCase->type() != AccessCase::Load && accessCase->type() != AccessCase::Miss)
                     allAreSimpleLoadOrMiss = false;
+                if (accessCase->usesPolyProto())
+                    allAreSimpleLoadOrMiss = false;
             }
 
             // Currently, we do not apply megamorphic cache for "length" property since Array#length and String#length are too common.

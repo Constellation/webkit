@@ -35,7 +35,7 @@ class MegamorphicCache {
     WTF_MAKE_FAST_ALLOCATED;
     WTF_MAKE_NONCOPYABLE(MegamorphicCache);
 public:
-    static constexpr uint32_t size = 1024;
+    static constexpr uint32_t size = 2048;
     static_assert(hasOneBitSet(size), "size should be a power of two.");
     static constexpr uint32_t mask = size - 1;
 
