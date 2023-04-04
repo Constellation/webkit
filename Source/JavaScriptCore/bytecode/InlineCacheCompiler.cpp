@@ -2687,8 +2687,6 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
                 allAreSimpleLoadOrMiss = false;
 
             if (allAreSimpleLoadOrMiss) {
-                while (!cases.isEmpty())
-                    poly.m_list.append(cases.takeLast());
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::LoadMegamorphic, identifier));
                 generatedMegamorphicCode = true;
             }
