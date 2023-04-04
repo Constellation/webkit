@@ -4005,6 +4005,7 @@ private:
 
     void compileGetByIdMegamorphic()
     {
+#if 0
         JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
         LValue cell = lowCell(m_node->child1());
 
@@ -4070,6 +4071,7 @@ private:
 
         m_out.appendTo(continuation, lastNext);
         setJSValue(m_out.phi(Int64, WTFMove(results)));
+#endif
     }
 
     void compileGetByIdWithThis()

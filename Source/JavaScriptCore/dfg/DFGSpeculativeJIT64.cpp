@@ -6639,6 +6639,7 @@ void SpeculativeJIT::compileNewBoundFunction(Node* node)
 
 void SpeculativeJIT::compileGetByIdMegamorphic(Node* node)
 {
+#if 0
     SpeculateCellOperand base(this, node->child1());
     GPRTemporary scratch1(this);
     GPRTemporary scratch2(this);
@@ -6661,7 +6662,7 @@ void SpeculativeJIT::compileGetByIdMegamorphic(Node* node)
         mul32(TrustedImm32(sizeof(MegamorphicCache::Entry)), scratch3GPR, scratch3GPR);
     auto& cache = vm().ensureMegamorphicCache();
     move(TrustedImmPtr(&cache), scratch2GPR);
-    ASSERT(MegamorphicCache::offsetOfEntries() == 0);
+    ASSERT(MegamorphicCache::offsetOfPrimaryEntries() == 0);
     addPtr(scratch2GPR, scratch3GPR);
     load16(Address(scratch2GPR, MegamorphicCache::offsetOfEpoch()), scratch2GPR);
 
@@ -6687,6 +6688,9 @@ void SpeculativeJIT::compileGetByIdMegamorphic(Node* node)
     done.link(this);
     addSlowPathGenerator(slowPathCall(slowCases, this, operationGetByIdMegamorphic, scratch3GPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(nullptr), baseGPR, node->cacheableIdentifier().rawBits()));
     jsValueResult(scratch3GPR, node);
+#else
+    UNUSED_PARAM(node);
+#endif
 }
 
 #endif

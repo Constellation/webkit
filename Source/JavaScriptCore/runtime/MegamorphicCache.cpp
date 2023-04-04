@@ -34,7 +34,11 @@ void MegamorphicCache::age(CollectionScope collectionScope)
 {
     ++m_epoch;
     if (collectionScope == CollectionScope::Full || !m_epoch) {
-        for (auto& entry : m_entries) {
+        for (auto& entry : m_primaryEntries) {
+            entry.m_structureID = StructureID();
+            entry.m_uid = nullptr;
+        }
+        for (auto& entry : m_secondaryEntries) {
             entry.m_structureID = StructureID();
             entry.m_uid = nullptr;
         }
@@ -43,8 +47,16 @@ void MegamorphicCache::age(CollectionScope collectionScope)
 
 void MegamorphicCache::clearEntries()
 {
-    for (auto& entry : m_entries)
+    for (auto& entry : m_primaryEntries)
         entry.m_structureID = StructureID();
+    for (auto& entry : m_secondaryEntries)
+        entry.m_structureID = StructureID();
+}
+
+void VM::ensureMegamorphicCacheSlow()
+{
+    ASSERT(!m_megamorphicCache);
+    m_megamorphicCache = makeUnique<MegamorphicCache>();
 }
 
 } // namespace JSC

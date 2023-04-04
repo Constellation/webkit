@@ -35,9 +35,12 @@ class MegamorphicCache {
     WTF_MAKE_FAST_ALLOCATED;
     WTF_MAKE_NONCOPYABLE(MegamorphicCache);
 public:
-    static constexpr uint32_t size = 2048;
-    static_assert(hasOneBitSet(size), "size should be a power of two.");
-    static constexpr uint32_t mask = size - 1;
+    static constexpr uint32_t primarySize = 2048;
+    static constexpr uint32_t secondarySize = 512;
+    static_assert(hasOneBitSet(primarySize), "size should be a power of two.");
+    static_assert(hasOneBitSet(secondarySize), "size should be a power of two.");
+    static constexpr uint32_t primaryMask = primarySize - 1;
+    static constexpr uint32_t secondaryMask = secondarySize - 1;
 
     static constexpr PropertyOffset maxOffset = UINT16_MAX;
 
@@ -73,7 +76,8 @@ public:
         JSCell* m_holder { nullptr };
     };
 
-    static ptrdiff_t offsetOfEntries() { return OBJECT_OFFSETOF(MegamorphicCache, m_entries); }
+    static ptrdiff_t offsetOfPrimaryEntries() { return OBJECT_OFFSETOF(MegamorphicCache, m_primaryEntries); }
+    static ptrdiff_t offsetOfSecondaryEntries() { return OBJECT_OFFSETOF(MegamorphicCache, m_secondaryEntries); }
     static ptrdiff_t offsetOfEpoch() { return OBJECT_OFFSETOF(MegamorphicCache, m_epoch); }
 
     MegamorphicCache() = default;
@@ -87,19 +91,34 @@ public:
 #endif
     static constexpr unsigned structureIDHashShift2 = structureIDHashShift1 + 11;
 
-    ALWAYS_INLINE static uint32_t hash(StructureID structureID, UniquedStringImpl* uid)
+    ALWAYS_INLINE static uint32_t primaryHash(StructureID structureID, UniquedStringImpl* uid)
     {
         uint32_t sid = bitwise_cast<uint32_t>(structureID);
         return ((sid >> structureIDHashShift1) ^ (sid >> structureIDHashShift2)) + uid->hash();
     }
 
+    ALWAYS_INLINE static uint32_t secondaryHash(StructureID structureID, UniquedStringImpl* uid)
+    {
+        uint32_t sid = bitwise_cast<uint32_t>(structureID);
+        return sid + uid->hash();
+    }
+
     JS_EXPORT_PRIVATE void age(CollectionScope);
 
-    Entry& tryGet(StructureID structureID, UniquedStringImpl* uid, bool& matched)
+    void initAsMiss(StructureID structureID, UniquedStringImpl* uid)
     {
-        auto& entry = get(structureID, uid);
-        matched = entry.m_structureID == structureID && entry.m_uid == uid && entry.m_epoch == m_epoch;
-        return entry;
+        auto& primaryEntry = primaryGet(structureID, uid);
+        auto& secondaryEntry = secondaryGet(structureID, uid);
+        secondaryEntry = WTFMove(primaryEntry);
+        primaryEntry.initAsMiss(structureID, uid, m_epoch);
+    }
+
+    void initAsHit(StructureID structureID, UniquedStringImpl* uid, JSCell* holder, uint8_t offset, bool ownProperty)
+    {
+        auto& primaryEntry = primaryGet(structureID, uid);
+        auto& secondaryEntry = secondaryGet(structureID, uid);
+        secondaryEntry = WTFMove(primaryEntry);
+        primaryEntry.initAsHit(structureID, uid, m_epoch, holder, offset, ownProperty);
     }
 
     uint16_t epoch() const { return m_epoch; }
@@ -111,23 +130,30 @@ public:
             clearEntries();
     }
 
-    ALWAYS_INLINE Entry& get(StructureID structureID, UniquedStringImpl* uid)
+private:
+    ALWAYS_INLINE Entry& primaryGet(StructureID structureID, UniquedStringImpl* uid)
     {
-        uint32_t index = MegamorphicCache::hash(structureID, uid) & mask;
-        return m_entries[index];
+        uint32_t index = MegamorphicCache::primaryHash(structureID, uid) & primaryMask;
+        return m_primaryEntries[index];
     }
 
-private:
+    ALWAYS_INLINE Entry& secondaryGet(StructureID structureID, UniquedStringImpl* uid)
+    {
+        uint32_t index = MegamorphicCache::secondaryHash(structureID, uid) & secondaryMask;
+        return m_secondaryEntries[index];
+    }
+
     JS_EXPORT_PRIVATE void clearEntries();
 
-    std::array<Entry, size> m_entries { };
+    std::array<Entry, primarySize> m_primaryEntries { };
+    std::array<Entry, secondarySize> m_secondaryEntries { };
     uint16_t m_epoch { 0 };
 };
 
 ALWAYS_INLINE MegamorphicCache& VM::ensureMegamorphicCache()
 {
     if (UNLIKELY(!m_megamorphicCache))
-        m_megamorphicCache = makeUnique<MegamorphicCache>();
+        ensureMegamorphicCacheSlow();
     return *m_megamorphicCache;
 }
 
