@@ -413,7 +413,6 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
         JSValue prototype = object->getPrototypeDirect();
         if (!prototype.isObject()) {
             if (LIKELY(cacheable)) {
-                auto& entry = cache.get(baseObject->structureID(), uid);
                 dataLogLn(hitCount, " ", ++missCount, " ", slowCount, " ", MegamorphicCache::primaryHash(baseObject->structureID(), uid) & MegamorphicCache::primaryMask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0));
                 vm.megamorphicCache()->initAsMiss(baseObject->structureID(), uid);
             } else {
