@@ -122,6 +122,7 @@ class JSPromise;
 class JSPropertyNameEnumerator;
 class JITSizeStatistics;
 class JITThunks;
+class MegamorphicCache;
 class NativeExecutable;
 class Debugger;
 class DeferredWorkTimer;
@@ -815,7 +816,12 @@ public:
 
     std::unique_ptr<HasOwnPropertyCache> m_hasOwnPropertyCache;
     ALWAYS_INLINE HasOwnPropertyCache* hasOwnPropertyCache() { return m_hasOwnPropertyCache.get(); }
-    HasOwnPropertyCache* ensureHasOwnPropertyCache();
+    HasOwnPropertyCache& ensureHasOwnPropertyCache();
+
+    std::unique_ptr<MegamorphicCache> m_megamorphicCache;
+    ALWAYS_INLINE MegamorphicCache* megamorphicCache() { return m_megamorphicCache.get(); }
+    MegamorphicCache& ensureMegamorphicCache();
+    JS_EXPORT_PRIVATE void ensureMegamorphicCacheSlow();
 
 #if ENABLE(REGEXP_TRACING)
     ListHashSet<RegExp*> m_rtTraceList;

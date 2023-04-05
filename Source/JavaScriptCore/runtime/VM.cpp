@@ -81,6 +81,7 @@
 #include "LLIntData.h"
 #include "LLIntExceptions.h"
 #include "MarkedBlockInlines.h"
+#include "MegamorphicCache.h"
 #include "MinimumReservedZoneSize.h"
 #include "ModuleProgramCodeBlock.h"
 #include "ModuleProgramExecutable.h"
@@ -284,6 +285,7 @@ VM::VM(VMType vmType, HeapType heapType, WTF::RunLoop* runLoop, bool* success)
         sentinelMapBucket();
         sentinelSetBucket();
         emptyPropertyNameEnumerator();
+        ensureMegamorphicCache();
     }
     {
         auto* bigInt = JSBigInt::tryCreateFrom(*this, 1);

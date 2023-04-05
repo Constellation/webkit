@@ -927,6 +927,7 @@ private:
         case StringReplaceString:
         case GetById:
         case GetByIdFlush:
+        case GetByIdMegamorphic:
         case GetByIdWithThis:
         case GetByIdDirect:
         case GetByIdDirectFlush:

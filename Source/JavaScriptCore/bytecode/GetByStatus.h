@@ -32,6 +32,7 @@
 #include "ExitFlag.h"
 #include "GetByVariant.h"
 #include "ICStatusMap.h"
+#include "JITCompilationMode.h"
 #include "ScopeOffset.h"
 #include "StubInfoSummary.h"
 
@@ -58,6 +59,8 @@ public:
         Simple,
         // It's cached for a custom accessor with a possible structure chain.
         Custom,
+        // It ends up Megamorphic state.
+        Megamorphic,
         // It's cached for an access to a module namespace object's binding.
         ModuleNamespace,
         // It's cached for an access to a proxy object's binding.
@@ -69,7 +72,7 @@ public:
         // It will likely take the slow path and will make calls.
         MakesCalls,
         // It known to take paths that make calls. We also observed that the slow path was taken on StructureStubInfo.
-        ObservedSlowPathAndMakesCalls ,
+        ObservedSlowPathAndMakesCalls,
     };
 
     GetByStatus()
@@ -92,7 +95,7 @@ public:
     {
     }
 
-    static GetByStatus computeFor(CodeBlock* baselineBlock, ICStatusMap& baselineMap, ICStatusContextStack& dfgContextStack, CodeOrigin);
+    static GetByStatus computeFor(CodeBlock* baselineBlock, ICStatusMap& baselineMap, ICStatusContextStack& dfgContextStack, CodeOrigin, JITCompilationMode);
     static GetByStatus computeFor(const StructureSet&, UniquedStringImpl*);
 
     State state() const { return m_state; }
@@ -101,6 +104,7 @@ public:
     explicit operator bool() const { return isSet(); }
     bool isSimple() const { return m_state == Simple; }
     bool isCustom() const { return m_state == Custom; }
+    bool isMegamorphic() const { return m_state == Megamorphic; }
     bool isModuleNamespace() const { return m_state == ModuleNamespace; }
     bool isProxyObject() const { return m_state == ProxyObject; }
 
@@ -109,7 +113,10 @@ public:
     const GetByVariant& at(size_t index) const { return m_variants[index]; }
     const GetByVariant& operator[](size_t index) const { return at(index); }
 
-    bool takesSlowPath() const { return m_state == LikelyTakesSlowPath || m_state == ObservedTakesSlowPath || m_state == MakesCalls || m_state == ObservedSlowPathAndMakesCalls || m_state == Custom || m_state == ModuleNamespace; }
+    bool takesSlowPath() const
+    {
+        return m_state == LikelyTakesSlowPath || m_state == ObservedTakesSlowPath || m_state == MakesCalls || m_state == ObservedSlowPathAndMakesCalls || m_state == Custom || m_state == ModuleNamespace || m_state == Megamorphic;
+    }
     bool observedStructureStubInfoSlowPath() const { return m_state == ObservedTakesSlowPath || m_state == ObservedSlowPathAndMakesCalls; }
     bool makesCalls() const;
     
@@ -141,11 +148,10 @@ private:
 #if ENABLE(JIT)
     GetByStatus(const ModuleNamespaceAccessCase&);
     GetByStatus(const ProxyObjectAccessCase&);
-    static GetByStatus computeForStubInfoWithoutExitSiteFeedback(
-        const ConcurrentJSLocker&, CodeBlock* profiledBlock, StructureStubInfo*, CallLinkStatus::ExitSiteData);
+    static GetByStatus computeForStubInfoWithoutExitSiteFeedback(const ConcurrentJSLocker&, CodeBlock* profiledBlock, StructureStubInfo*, CallLinkStatus::ExitSiteData, CodeOrigin, JITCompilationMode);
 #endif
     static GetByStatus computeFromLLInt(CodeBlock*, BytecodeIndex);
-    static GetByStatus computeFor(CodeBlock*, ICStatusMap&, BytecodeIndex, ExitFlag, CallLinkStatus::ExitSiteData);
+    static GetByStatus computeFor(CodeBlock*, ICStatusMap&, BytecodeIndex, ExitFlag, CallLinkStatus::ExitSiteData, CodeOrigin, JITCompilationMode);
 
     struct ModuleNamespaceData {
         JSModuleNamespaceObject* m_moduleNamespaceObject { nullptr };

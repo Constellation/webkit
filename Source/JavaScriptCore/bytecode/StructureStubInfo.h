@@ -204,12 +204,27 @@ public:
     // Not ByVal and ById case: e.g. instanceof, by-index etc.
     ALWAYS_INLINE bool considerCachingGeneric(VM& vm, CodeBlock* codeBlock, Structure* structure)
     {
-        return considerCaching(vm, codeBlock, structure, CacheableIdentifier());
+        // We never cache non-cells.
+        if (!structure) {
+            sawNonCell = true;
+            return false;
+        }
+        return considerCachingImpl(vm, codeBlock, structure, CacheableIdentifier());
     }
 
     ALWAYS_INLINE bool considerCachingBy(VM& vm, CodeBlock* codeBlock, Structure* structure, CacheableIdentifier impl)
     {
-        return considerCaching(vm, codeBlock, structure, impl);
+        // We never cache non-cells.
+        if (!structure) {
+            sawNonCell = true;
+            return false;
+        }
+        return considerCachingImpl(vm, codeBlock, structure, impl);
+    }
+
+    ALWAYS_INLINE bool considerCachingMegamorphic(VM& vm)
+    {
+        return considerCachingImpl(vm, nullptr, nullptr, CacheableIdentifier());
     }
 
     Structure* inlineAccessBaseStructure() const
@@ -217,15 +232,10 @@ public:
         return m_inlineAccessBaseStructureID.get();
     }
 private:
-    ALWAYS_INLINE bool considerCaching(VM& vm, CodeBlock* codeBlock, Structure* structure, CacheableIdentifier impl)
+    ALWAYS_INLINE bool considerCachingImpl(VM& vm, CodeBlock* codeBlock, Structure* structure, CacheableIdentifier impl)
     {
         DisallowGC disallowGC;
 
-        // We never cache non-cells.
-        if (!structure) {
-            sawNonCell = true;
-            return false;
-        }
         
         // This method is called from the Optimize variants of IC slow paths. The first part of this
         // method tries to determine if the Optimize variant should really behave like the
@@ -268,6 +278,9 @@ private:
             }
             
             bufferingCountdown--;
+
+            if (!structure)
+                return true;
             
             // Now protect the IC buffering. We want to proceed only if this is a structure that
             // we don't already have a case buffered for. Note that if this returns true but the

@@ -3300,6 +3300,11 @@ void SpeculativeJIT::compile(Node* node)
         break;
     }
 
+    case GetByIdMegamorphic: {
+        compileGetByIdMegamorphic(node);
+        break;
+    }
+
     case GetByIdWithThis: {
         if (node->child1().useKind() == CellUse && node->child2().useKind() == CellUse) {
             SpeculateCellOperand base(this, node->child1());

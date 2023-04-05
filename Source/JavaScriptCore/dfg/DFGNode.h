@@ -615,7 +615,7 @@ public:
     
     void convertToGetByOffset(StorageAccessData& data, Edge storage, Edge base)
     {
-        ASSERT(m_op == GetById || m_op == GetByIdFlush || m_op == GetByIdDirect || m_op == GetByIdDirectFlush || m_op == GetPrivateNameById || m_op == MultiGetByOffset);
+        ASSERT(m_op == GetById || m_op == GetByIdFlush || m_op == GetByIdDirect || m_op == GetByIdDirectFlush || m_op == GetPrivateNameById || m_op == MultiGetByOffset || m_op == GetByIdMegamorphic);
         m_opInfo = &data;
         children.setChild1(storage);
         children.setChild2(base);
@@ -625,7 +625,7 @@ public:
     
     void convertToMultiGetByOffset(MultiGetByOffsetData* data)
     {
-        RELEASE_ASSERT(m_op == GetById || m_op == GetByIdFlush || m_op == GetByIdDirect || m_op == GetByIdDirectFlush || m_op == GetPrivateNameById);
+        RELEASE_ASSERT(m_op == GetById || m_op == GetByIdFlush || m_op == GetByIdDirect || m_op == GetByIdDirectFlush || m_op == GetPrivateNameById || m_op == GetByIdMegamorphic);
         m_opInfo = data;
         child1().setUseKind(CellUse);
         m_op = MultiGetByOffset;
@@ -1103,6 +1103,7 @@ public:
         case TryGetById:
         case GetById:
         case GetByIdFlush:
+        case GetByIdMegamorphic:
         case GetByIdWithThis:
         case GetByIdDirect:
         case GetByIdDirectFlush:
@@ -1845,6 +1846,7 @@ public:
         case ArithTrunc:
         case GetById:
         case GetByIdFlush:
+        case GetByIdMegamorphic:
         case GetByIdWithThis:
         case GetByIdDirect:
         case GetByIdDirectFlush:

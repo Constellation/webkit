@@ -5021,6 +5021,11 @@ void ByteCodeParser::handleGetById(
                 return;
             }
         }
+
+        if (getByStatus.isMegamorphic()) {
+            set(destination, addToGraph(GetByIdMegamorphic, OpInfo(identifier), OpInfo(prediction), base));
+            return;
+        }
     }
 
     // Special path for custom accessors since custom's offset does not have any meanings.
@@ -5805,7 +5810,7 @@ void ByteCodeParser::parseGetById(const JSInstruction* currentInstruction)
     GetByStatus getByStatus = GetByStatus::computeFor(
         m_inlineStackTop->m_profiledBlock,
         m_inlineStackTop->m_baselineMap, m_icContextStack,
-        currentCodeOrigin());
+        currentCodeOrigin(), m_graph.m_plan.mode());
 
     handleGetById(bytecode.m_dst, prediction, base, CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_inlineStackTop->m_profiledBlock, uid), identifierNumber, getByStatus, type, nextOpcodeIndex());
 }
@@ -6770,7 +6775,7 @@ void ByteCodeParser::parseBlock(unsigned limit)
             Node* base = get(bytecode.m_base);
             Node* property = get(bytecode.m_property);
             bool shouldCompileAsGetById = false;
-            GetByStatus getByStatus = GetByStatus::computeFor(m_inlineStackTop->m_profiledBlock, m_inlineStackTop->m_baselineMap, m_icContextStack, currentCodeOrigin());
+            GetByStatus getByStatus = GetByStatus::computeFor(m_inlineStackTop->m_profiledBlock, m_inlineStackTop->m_baselineMap, m_icContextStack, currentCodeOrigin(), m_graph.m_plan.mode());
             unsigned identifierNumber = 0;
 
             CacheableIdentifier identifier;
@@ -7130,7 +7135,7 @@ void ByteCodeParser::parseBlock(unsigned limit)
             Node* property = get(bytecode.m_property);
             bool compileSingleIdentifier = false;
 
-            GetByStatus getByStatus = GetByStatus::computeFor(m_inlineStackTop->m_profiledBlock, m_inlineStackTop->m_baselineMap, m_icContextStack, currentCodeOrigin());
+            GetByStatus getByStatus = GetByStatus::computeFor(m_inlineStackTop->m_profiledBlock, m_inlineStackTop->m_baselineMap, m_icContextStack, currentCodeOrigin(), m_graph.m_plan.mode());
 
             CacheableIdentifier identifier;
             unsigned identifierNumber = 0;
@@ -7857,7 +7862,7 @@ void ByteCodeParser::parseBlock(unsigned limit)
                     GetByStatus getByStatus = GetByStatus::computeFor(
                         m_inlineStackTop->m_profiledBlock,
                         m_inlineStackTop->m_baselineMap, m_icContextStack,
-                        currentCodeOrigin());
+                        currentCodeOrigin(), m_graph.m_plan.mode());
 
 
                     handleGetById(bytecode.m_next, prediction, base, CacheableIdentifier::createFromImmortalIdentifier(nextImpl), identifierNumber, getByStatus, type, nextOpcodeIndex());
@@ -8077,7 +8082,7 @@ void ByteCodeParser::parseBlock(unsigned limit)
                     GetByStatus getByStatus = GetByStatus::computeFor(
                         m_inlineStackTop->m_profiledBlock,
                         m_inlineStackTop->m_baselineMap, m_icContextStack,
-                        currentCodeOrigin());
+                        currentCodeOrigin(), m_graph.m_plan.mode());
 
                     handleGetById(bytecode.m_done, prediction, base, CacheableIdentifier::createFromImmortalIdentifier(doneImpl), identifierNumber, getByStatus, type, nextCheckpoint());
                     // Set a value for m_value so we don't exit on it differing from what we expected.
@@ -8104,7 +8109,7 @@ void ByteCodeParser::parseBlock(unsigned limit)
                     GetByStatus getByStatus = GetByStatus::computeFor(
                         m_inlineStackTop->m_profiledBlock,
                         m_inlineStackTop->m_baselineMap, m_icContextStack,
-                        currentCodeOrigin());
+                        currentCodeOrigin(), m_graph.m_plan.mode());
 
                     handleGetById(bytecode.m_value, valuePredicition, base, CacheableIdentifier::createFromImmortalIdentifier(valueImpl), identifierNumber, getByStatus, type, nextOpcodeIndex());
 
