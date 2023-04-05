@@ -33,24 +33,27 @@ DEFINE_ALLOCATOR_WITH_HEAP_IDENTIFIER(MegamorphicCache);
 void MegamorphicCache::age(CollectionScope collectionScope)
 {
     ++m_epoch;
-    if (collectionScope == CollectionScope::Full || !m_epoch) {
+    if (collectionScope == CollectionScope::Full || m_epoch == invalidEpoch) {
         for (auto& entry : m_primaryEntries) {
-            entry.m_structureID = StructureID();
             entry.m_uid = nullptr;
+            entry.m_epoch = invalidEpoch;
         }
         for (auto& entry : m_secondaryEntries) {
-            entry.m_structureID = StructureID();
             entry.m_uid = nullptr;
+            entry.m_epoch = invalidEpoch;
         }
+        if (m_epoch == invalidEpoch)
+            m_epoch = 1;
     }
 }
 
 void MegamorphicCache::clearEntries()
 {
     for (auto& entry : m_primaryEntries)
-        entry.m_structureID = StructureID();
+        entry.m_epoch = invalidEpoch;
     for (auto& entry : m_secondaryEntries)
-        entry.m_structureID = StructureID();
+        entry.m_epoch = invalidEpoch;
+    m_epoch = 1;
 }
 
 void VM::ensureMegamorphicCacheSlow()

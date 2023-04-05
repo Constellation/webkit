@@ -42,6 +42,7 @@ public:
     static constexpr uint32_t primaryMask = primarySize - 1;
     static constexpr uint32_t secondaryMask = secondarySize - 1;
 
+    static constexpr uint16_t invalidEpoch = 0;
     static constexpr PropertyOffset maxOffset = UINT16_MAX;
 
     struct Entry {
@@ -71,7 +72,7 @@ public:
 
         RefPtr<UniquedStringImpl> m_uid;
         StructureID m_structureID { } ;
-        uint16_t m_epoch { 0 };
+        uint16_t m_epoch { invalidEpoch };
         uint16_t m_offset { 0 };
         JSCell* m_holder { nullptr };
     };
@@ -91,6 +92,8 @@ public:
 #endif
     static constexpr unsigned structureIDHashShift2 = structureIDHashShift1 + 11;
 
+    static constexpr unsigned structureIDHashShift3 = 9 + 4;
+
     ALWAYS_INLINE static uint32_t primaryHash(StructureID structureID, UniquedStringImpl* uid)
     {
         uint32_t sid = bitwise_cast<uint32_t>(structureID);
@@ -99,26 +102,32 @@ public:
 
     ALWAYS_INLINE static uint32_t secondaryHash(StructureID structureID, UniquedStringImpl* uid)
     {
-        uint32_t sid = bitwise_cast<uint32_t>(structureID);
-        return sid + uid->hash();
+        uint32_t key = bitwise_cast<uint32_t>(structureID) + static_cast<uint32_t>(bitwise_cast<uintptr_t>(uid));
+        return key + (key >> structureIDHashShift3);
     }
 
     JS_EXPORT_PRIVATE void age(CollectionScope);
 
     void initAsMiss(StructureID structureID, UniquedStringImpl* uid)
     {
-        auto& primaryEntry = primaryGet(structureID, uid);
-        auto& secondaryEntry = secondaryGet(structureID, uid);
-        secondaryEntry = WTFMove(primaryEntry);
-        primaryEntry.initAsMiss(structureID, uid, m_epoch);
+        uint32_t primaryIndex = MegamorphicCache::primaryHash(structureID, uid) & primaryMask;
+        auto& entry = m_primaryEntries[primaryIndex];
+        if (entry.m_epoch == m_epoch) {
+            uint32_t secondaryIndex = MegamorphicCache::secondaryHash(entry.m_structureID, entry.m_uid.get()) & secondaryMask;
+            m_secondaryEntries[secondaryIndex] = WTFMove(entry);
+        }
+        m_primaryEntries[primaryIndex].initAsMiss(structureID, uid, m_epoch);
     }
 
     void initAsHit(StructureID structureID, UniquedStringImpl* uid, JSCell* holder, uint8_t offset, bool ownProperty)
     {
-        auto& primaryEntry = primaryGet(structureID, uid);
-        auto& secondaryEntry = secondaryGet(structureID, uid);
-        secondaryEntry = WTFMove(primaryEntry);
-        primaryEntry.initAsHit(structureID, uid, m_epoch, holder, offset, ownProperty);
+        uint32_t primaryIndex = MegamorphicCache::primaryHash(structureID, uid) & primaryMask;
+        auto& entry = m_primaryEntries[primaryIndex];
+        if (entry.m_epoch == m_epoch) {
+            uint32_t secondaryIndex = MegamorphicCache::secondaryHash(entry.m_structureID, entry.m_uid.get()) & secondaryMask;
+            m_secondaryEntries[secondaryIndex] = WTFMove(entry);
+        }
+        m_primaryEntries[primaryIndex].initAsHit(structureID, uid, m_epoch, holder, offset, ownProperty);
     }
 
     uint16_t epoch() const { return m_epoch; }
@@ -126,28 +135,16 @@ public:
     void bumpEpoch()
     {
         ++m_epoch;
-        if (UNLIKELY(!m_epoch))
+        if (UNLIKELY(m_epoch == invalidEpoch))
             clearEntries();
     }
 
 private:
-    ALWAYS_INLINE Entry& primaryGet(StructureID structureID, UniquedStringImpl* uid)
-    {
-        uint32_t index = MegamorphicCache::primaryHash(structureID, uid) & primaryMask;
-        return m_primaryEntries[index];
-    }
-
-    ALWAYS_INLINE Entry& secondaryGet(StructureID structureID, UniquedStringImpl* uid)
-    {
-        uint32_t index = MegamorphicCache::secondaryHash(structureID, uid) & secondaryMask;
-        return m_secondaryEntries[index];
-    }
-
     JS_EXPORT_PRIVATE void clearEntries();
 
     std::array<Entry, primarySize> m_primaryEntries { };
     std::array<Entry, secondarySize> m_secondaryEntries { };
-    uint16_t m_epoch { 0 };
+    uint16_t m_epoch { 1 };
 };
 
 ALWAYS_INLINE MegamorphicCache& VM::ensureMegamorphicCache()
