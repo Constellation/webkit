@@ -369,7 +369,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
 #endif
 
     if (UNLIKELY(!baseValue.isObject())) {
-        // dataLogLn(hitCount, " ", missCount, " ", ++slowCount, " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0));
+        // dataLogLn("[", hitCount, "/", missCount, "/", ++slowCount, "] ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0));
         if (stubInfo && stubInfo->considerCachingMegamorphic(vm))
             repatchGetBySlowPathCall(callFrame->codeBlock(), *stubInfo, GetByKind::ById);
         // dataLogLn((stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0));
@@ -381,7 +381,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
     bool cacheable = true;
     while (true) {
         if (UNLIKELY(TypeInfo::overridesGetOwnPropertySlot(object->inlineTypeFlags()) && object->type() != ArrayType && object->type() != JSFunctionType && object != globalObject->arrayPrototype())) {
-            // dataLogLn(hitCount, " ", missCount, " ", ++slowCount, " ", MegamorphicCache::primaryHash(baseObject->structureID(), uid) & MegamorphicCache::primaryMask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0), " ", baseValue, " ", JSValue(object));
+            // dataLogLn("[", hitCount, "/", missCount, "/", ++slowCount, "] ", MegamorphicCache::primaryHash(baseObject->structureID(), uid) & MegamorphicCache::primaryMask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0), " ", baseValue, " ", JSValue(object));
             if (stubInfo && stubInfo->considerCachingMegamorphic(vm))
                 repatchGetBySlowPathCall(callFrame->codeBlock(), *stubInfo, GetByKind::ById);
             // dataLogLn((stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0));
@@ -396,10 +396,10 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
         cacheable &= structure->propertyAccessesAreCacheable();
         if (hasProperty) {
             if (LIKELY(cacheable && slot.isCacheableValue() && slot.cachedOffset() <= MegamorphicCache::maxOffset)) {
-                // dataLogLn(++hitCount, " ", missCount, " ", slowCount, " ", MegamorphicCache::primaryHash(baseObject->structureID(), uid) & MegamorphicCache::primaryMask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0));
+                // dataLogLn("[", ++hitCount, "/", missCount, "/", slowCount, "] ", MegamorphicCache::primaryHash(baseObject->structureID(), uid) & MegamorphicCache::primaryMask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0), " ", baseValue);
                 vm.megamorphicCache()->initAsHit(baseObject->structureID(), uid, slot.slotBase(), slot.cachedOffset(), slot.slotBase() == baseObject);
             } else {
-                // dataLogLn(hitCount, " ", missCount, " ", ++slowCount, " ", MegamorphicCache::primaryHash(baseObject->structureID(), uid) & MegamorphicCache::primaryMask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0), " ", baseValue, " ", JSValue(object));
+                // dataLogLn("[", hitCount, "/", missCount, "/", ++slowCount, "] ", MegamorphicCache::primaryHash(baseObject->structureID(), uid) & MegamorphicCache::primaryMask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0), " ", baseValue, " ", JSValue(object));
                 if (stubInfo && stubInfo->considerCachingMegamorphic(vm))
                     repatchGetBySlowPathCall(callFrame->codeBlock(), *stubInfo, GetByKind::ById);
                 // dataLogLn((stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0));
@@ -413,10 +413,10 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
         JSValue prototype = object->getPrototypeDirect();
         if (!prototype.isObject()) {
             if (LIKELY(cacheable)) {
-                // dataLogLn(hitCount, " ", ++missCount, " ", slowCount, " ", MegamorphicCache::primaryHash(baseObject->structureID(), uid) & MegamorphicCache::primaryMask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0));
+                // dataLogLn("[", hitCount, "/", ++missCount, "/", slowCount, "] ", MegamorphicCache::primaryHash(baseObject->structureID(), uid) & MegamorphicCache::primaryMask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0));
                 vm.megamorphicCache()->initAsMiss(baseObject->structureID(), uid);
             } else {
-                // dataLogLn(hitCount, " ", missCount, " ", ++slowCount, " ", MegamorphicCache::primaryHash(baseObject->structureID(), uid) & MegamorphicCache::primaryMask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0), " ", baseValue, " ", JSValue(object));
+                // dataLogLn("[", hitCount, "/", missCount, "/", ++slowCount, "] ", MegamorphicCache::primaryHash(baseObject->structureID(), uid) & MegamorphicCache::primaryMask, " ", baseObject->structureID().bits(), " ", uid, " ", uid->hash(), " ", vm.megamorphicCache()->epoch(), " ", (stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0), " ", baseValue, " ", JSValue(object));
                 if (stubInfo && stubInfo->considerCachingMegamorphic(vm))
                     repatchGetBySlowPathCall(callFrame->codeBlock(), *stubInfo, GetByKind::ById);
                 // dataLogLn((stubInfo ? stubInfo->bufferingCountdown : 0), " ", (stubInfo ? stubInfo->countdown : 0));
