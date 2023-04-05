@@ -820,8 +820,14 @@ public:
 
     std::unique_ptr<MegamorphicCache> m_megamorphicCache;
     ALWAYS_INLINE MegamorphicCache* megamorphicCache() { return m_megamorphicCache.get(); }
-    MegamorphicCache& ensureMegamorphicCache();
     JS_EXPORT_PRIVATE void ensureMegamorphicCacheSlow();
+    MegamorphicCache& ensureMegamorphicCache()
+    {
+        if (UNLIKELY(!m_megamorphicCache))
+            ensureMegamorphicCacheSlow();
+        return *m_megamorphicCache;
+    }
+    JS_EXPORT_PRIVATE void invalidateStructureChainIntegrity();
 
 #if ENABLE(REGEXP_TRACING)
     ListHashSet<RegExp*> m_rtTraceList;

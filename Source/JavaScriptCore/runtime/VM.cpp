@@ -1584,4 +1584,16 @@ void MicrotaskQueue::visitAggregateImpl(Visitor& visitor)
 }
 DEFINE_VISIT_AGGREGATE(MicrotaskQueue);
 
+void VM::ensureMegamorphicCacheSlow()
+{
+    ASSERT(!m_megamorphicCache);
+    m_megamorphicCache = makeUnique<MegamorphicCache>();
+}
+
+void VM::invalidateStructureChainIntegrity()
+{
+    if (m_megamorphicCache)
+        m_megamorphicCache->bumpEpoch();
+}
+
 } // namespace JSC

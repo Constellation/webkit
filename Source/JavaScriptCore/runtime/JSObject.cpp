@@ -1949,10 +1949,8 @@ void JSObject::setPrototypeDirect(VM& vm, JSValue prototype)
         Structure* newStructure = Structure::changePrototypeTransition(vm, structure(), prototype, deferred);
         setStructure(vm, newStructure);
         // Prototype-chain gets changed for the already cached structures. Invalidate the cache.
-        if (UNLIKELY(mayBePrototype())) {
-            if (auto* cache = vm.megamorphicCache())
-                cache->bumpEpoch();
-        }
+        if (UNLIKELY(mayBePrototype()))
+            vm.invalidateStructureChainIntegrity();
     } else
         putDirectOffset(vm, knownPolyProtoOffset, prototype);
 
@@ -2231,10 +2229,8 @@ bool JSObject::deleteProperty(JSCell* cell, JSGlobalObject* globalObject, Proper
             ASSERT(!isValidOffset(structure->get(vm, propertyName, attributes)));
             if (offset != invalidOffset)
                 thisObject->locationForOffset(offset)->clear();
-            if (UNLIKELY(thisObject->mayBePrototype())) {
-                if (auto* cache = vm.megamorphicCache())
-                    cache->bumpEpoch();
-            }
+            if (UNLIKELY(thisObject->mayBePrototype()))
+                vm.invalidateStructureChainIntegrity();
         }
     } else
         slot.setConfigurableMiss();

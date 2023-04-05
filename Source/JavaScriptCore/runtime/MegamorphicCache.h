@@ -147,11 +147,4 @@ private:
     uint16_t m_epoch { 1 };
 };
 
-ALWAYS_INLINE MegamorphicCache& VM::ensureMegamorphicCache()
-{
-    if (UNLIKELY(!m_megamorphicCache))
-        ensureMegamorphicCacheSlow();
-    return *m_megamorphicCache;
-}
-
 } // namespace JSC

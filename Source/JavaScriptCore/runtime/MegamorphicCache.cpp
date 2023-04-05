@@ -56,10 +56,4 @@ void MegamorphicCache::clearEntries()
     m_epoch = 1;
 }
 
-void VM::ensureMegamorphicCacheSlow()
-{
-    ASSERT(!m_megamorphicCache);
-    m_megamorphicCache = makeUnique<MegamorphicCache>();
-}
-
 } // namespace JSC

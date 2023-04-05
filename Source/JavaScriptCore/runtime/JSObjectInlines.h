@@ -273,10 +273,8 @@ ALWAYS_INLINE PropertyOffset JSObject::prepareToPutDirectWithoutTransition(VM& v
             ASSERT(!getDirect(offset) || !JSValue::encode(getDirect(offset)));
             result = offset;
         });
-    if (UNLIKELY(mayBePrototype())) {
-        if (auto* cache = vm.megamorphicCache())
-            cache->bumpEpoch();
-    }
+    if (UNLIKELY(mayBePrototype()))
+        vm.invalidateStructureChainIntegrity();
     return result;
 }
 
@@ -374,10 +372,8 @@ ALWAYS_INLINE ASCIILiteral JSObject::putDirectInternal(VM& vm, PropertyName prop
             if (mode == PutModeDefineOwnProperty && (attributes != currentAttributes || (attributes & PropertyAttribute::AccessorOrCustomAccessorOrValue))) {
                 DeferredStructureTransitionWatchpointFire deferred(vm, structure);
                 setStructure(vm, Structure::attributeChangeTransition(vm, structure, propertyName, attributes, &deferred));
-                if (UNLIKELY(mayBePrototype())) {
-                    if (auto* cache = vm.megamorphicCache())
-                        cache->bumpEpoch();
-                }
+                if (UNLIKELY(mayBePrototype()))
+                    vm.invalidateStructureChainIntegrity();
             } else {
                 ASSERT(!(currentAttributes & PropertyAttribute::AccessorOrCustomAccessorOrValue));
                 slot.setExistingProperty(this, offset);
@@ -419,10 +415,8 @@ ALWAYS_INLINE ASCIILiteral JSObject::putDirectInternal(VM& vm, PropertyName prop
         putDirectOffset(vm, offset, value);
         setStructure(vm, newStructure);
         slot.setNewProperty(this, offset);
-        if (UNLIKELY(mayBePrototype())) {
-            if (auto* cache = vm.megamorphicCache())
-                cache->bumpEpoch();
-        }
+        if (UNLIKELY(mayBePrototype()))
+            vm.invalidateStructureChainIntegrity();
         return { };
     }
 
@@ -442,10 +436,8 @@ ALWAYS_INLINE ASCIILiteral JSObject::putDirectInternal(VM& vm, PropertyName prop
             // This allows adaptive watchpoints to observe if the new structure is the one we want.
             DeferredStructureTransitionWatchpointFire deferredWatchpointFire(vm, structure);
             setStructure(vm, Structure::attributeChangeTransition(vm, structure, propertyName, attributes, &deferredWatchpointFire));
-            if (UNLIKELY(mayBePrototype())) {
-                if (auto* cache = vm.megamorphicCache())
-                    cache->bumpEpoch();
-            }
+            if (UNLIKELY(mayBePrototype()))
+                vm.invalidateStructureChainIntegrity();
         } else {
             ASSERT(!(currentAttributes & PropertyAttribute::AccessorOrCustomAccessorOrValue));
             slot.setExistingProperty(this, offset);
@@ -480,10 +472,8 @@ ALWAYS_INLINE ASCIILiteral JSObject::putDirectInternal(VM& vm, PropertyName prop
     slot.setNewProperty(this, offset);
     if (attributes & PropertyAttribute::ReadOnly)
         newStructure->setContainsReadOnlyProperties();
-    if (UNLIKELY(mayBePrototype())) {
-        if (auto* cache = vm.megamorphicCache())
-            cache->bumpEpoch();
-    }
+    if (UNLIKELY(mayBePrototype()))
+        vm.invalidateStructureChainIntegrity();
     return { };
 }
 
