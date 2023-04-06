@@ -185,6 +185,8 @@ public:
 #endif
     static_assert(JSCell::atomSize >= MarkedBlock::atomSize);
 
+    static constexpr int s_maxTransitionLength = 64;
+
     enum PolyProtoTag { PolyProto };
     static Structure* create(VM&, JSGlobalObject*, JSValue prototype, const TypeInfo&, const ClassInfo*, IndexingType = NonArray, unsigned inlineCapacity = 0);
     static Structure* create(PolyProtoTag, VM&, JSGlobalObject*, JSObject* prototype, const TypeInfo&, const ClassInfo*, IndexingType = NonArray, unsigned inlineCapacity = 0);
@@ -822,6 +824,15 @@ public:
     static_assert(s_bitWidthOfTransitionPropertyAttributes <= sizeof(TransitionPropertyAttributes) * 8);
     static_assert(s_bitWidthOfTransitionKind <= sizeof(TransitionKind) * 8);
 
+    int transitionCountEstimate() const
+    {
+        // Since the number of transitions is often the same as the last offset (except if there are deletes)
+        // we keep the size of Structure down by not storing both.
+        return numberOfSlotsForMaxOffset(maxOffset(), m_inlineCapacity);
+    }
+
+    void finalizeUnconditionally(VM&, CollectionScope);
+
 protected:
     Structure(VM&, Structure*);
 
@@ -908,13 +919,6 @@ private:
             m_previousOrRareData.clear();
     }
 
-    int transitionCountEstimate() const
-    {
-        // Since the number of transitions is often the same as the last offset (except if there are deletes)
-        // we keep the size of Structure down by not storing both.
-        return numberOfSlotsForMaxOffset(maxOffset(), m_inlineCapacity);
-    }
-
     ALWAYS_INLINE bool transitionCountHasOverflowed() const
     {
         int transitionCount = 0;
@@ -947,7 +951,6 @@ private:
 
     void clearCachedPrototypeChain();
 
-    static constexpr int s_maxTransitionLength = 64;
     static constexpr int s_maxTransitionLengthForNonEvalPutById = 512;
 
     // These need to be properly aligned at the beginning of the 'Structure'

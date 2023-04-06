@@ -40,6 +40,7 @@
 #include "PropertyDescriptor.h"
 #include "PropertyNameArray.h"
 #include "ProxyObject.h"
+#include "SuperSampler.h"
 #include "TypeError.h"
 #include "VMInlines.h"
 #include "VMTrapsInlines.h"
@@ -4076,6 +4077,71 @@ TransitionKind JSObject::suggestedArrayStorageTransition() const
         return TransitionKind::AllocateSlowPutArrayStorage;
     
     return TransitionKind::AllocateArrayStorage;
+}
+
+void JSObject::putOwnDataPropertyBatching(VM& vm, const Vector<RefPtr<UniquedStringImpl>, 8>& properties, MarkedArgumentBuffer& values)
+{
+    Structure* structure = this->structure();
+    if (structure->isDictionary() || (structure->transitionCountEstimate() + properties.size()) > Structure::s_maxTransitionLength || !structure->canPerformFastPropertyEnumeration() || (structure->transitionWatchpointSet().isBeingWatched() && structure->transitionWatchpointSet().isStillValid())) {
+        for (size_t i = 0; i < properties.size(); ++i) {
+            PutPropertySlot putPropertySlot(this, true);
+            putOwnDataProperty(vm, properties[i].get(), values.at(i), putPropertySlot);
+        }
+        return;
+    }
+
+    Vector<PropertyOffset, 8> offsets;
+    offsets.reserveInitialCapacity(properties.size());
+    Structure* originalStructure = structure;
+
+    size_t i = 0;
+    for (; i < properties.size(); ++i) {
+        PropertyName propertyName(properties[i].get());
+
+        PropertyOffset offset;
+        if (Structure* newStructure = Structure::addPropertyTransitionToExistingStructure(structure, propertyName, 0, offset)) {
+            structure = newStructure;
+            offsets.uncheckedAppend(offset);
+            if (structure->transitionWatchpointSet().isBeingWatched() && structure->transitionWatchpointSet().isStillValid())
+                break;
+            continue;
+        }
+
+        unsigned currentAttributes;
+        offset = structure->get(vm, propertyName, currentAttributes);
+        if (offset != invalidOffset) {
+            structure->didReplaceProperty(offset);
+            offsets.uncheckedAppend(offset);
+            if (structure->transitionWatchpointSet().isBeingWatched() && structure->transitionWatchpointSet().isStillValid())
+                break;
+            continue;
+        }
+
+        Structure* newStructure = Structure::addNewPropertyTransition(vm, structure, propertyName, 0, offset, PutPropertySlot::UnknownContext, nullptr);
+
+        validateOffset(offset);
+        ASSERT(newStructure->isValidOffset(offset));
+
+        structure = newStructure;
+        offsets.uncheckedAppend(offset);
+    }
+
+    Butterfly* newButterfly = butterfly();
+    if (originalStructure->outOfLineCapacity() != structure->outOfLineCapacity()) {
+        ASSERT(structure != originalStructure);
+        newButterfly = allocateMoreOutOfLineStorage(vm, originalStructure->outOfLineCapacity(), structure->outOfLineCapacity());
+        nukeStructureAndSetButterfly(vm, originalStructure->structureID(), newButterfly);
+    }
+
+    for (unsigned index = 0; index < offsets.size(); ++index)
+        putDirectOffset(vm, offsets[index], values.at(index));
+    setStructure(vm, structure);
+
+
+    for (; i < properties.size(); ++i) {
+        PutPropertySlot putPropertySlot(this, true);
+        putOwnDataProperty(vm, properties[i].get(), values.at(i), putPropertySlot);
+    }
 }
 
 } // namespace JSC

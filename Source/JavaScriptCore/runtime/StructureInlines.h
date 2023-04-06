@@ -35,6 +35,7 @@
 #include "Structure.h"
 #include "StructureChain.h"
 #include "StructureRareDataInlines.h"
+#include "SuperSampler.h"
 #include "Watchpoint.h"
 #include <wtf/CompactRefPtr.h>
 #include <wtf/Threading.h>
@@ -712,10 +713,16 @@ inline Structure* Structure::addPropertyTransitionToExistingStructureImpl(Struct
     if (structure->hasBeenDictionary())
         return nullptr;
 
-    if (Structure* existingTransition = structure->m_transitionTable.get(uid, attributes, TransitionKind::PropertyAddition)) {
-        validateOffset(existingTransition->transitionOffset(), existingTransition->inlineCapacity());
-        offset = existingTransition->transitionOffset();
-        return existingTransition;
+    Structure* existingTransition = nullptr;
+    {
+        {
+            existingTransition = structure->m_transitionTable.get(uid, attributes, TransitionKind::PropertyAddition);
+        }
+        if (existingTransition) {
+            validateOffset(existingTransition->transitionOffset(), existingTransition->inlineCapacity());
+            offset = existingTransition->transitionOffset();
+            return existingTransition;
+        }
     }
 
     return nullptr;
@@ -733,23 +740,33 @@ ALWAYS_INLINE Structure* Structure::addPropertyTransitionToExistingStructureConc
     return addPropertyTransitionToExistingStructureImpl(structure, uid, attributes, offset);
 }
 
-inline Structure* StructureTransitionTable::singleTransition() const
+inline Structure* StructureTransitionTable::trySingleTransition() const
 {
-    ASSERT(isUsingSingleSlot());
-    if (WeakImpl* impl = this->weakImpl()) {
-        if (impl->state() == WeakImpl::Live)
-            return jsCast<Structure*>(impl->jsValue().asCell());
-    }
+    uintptr_t pointer = m_data;
+    if (pointer & UsingSingleSlotFlag)
+        return bitwise_cast<Structure*>(pointer & ~UsingSingleSlotFlag);
     return nullptr;
 }
 
 inline Structure* StructureTransitionTable::get(UniquedStringImpl* rep, unsigned attributes, TransitionKind transitionKind) const
 {
     if (isUsingSingleSlot()) {
-        Structure* transition = singleTransition();
-        return (transition && transition->m_transitionPropertyName == rep && transition->transitionPropertyAttributes() == attributes && transition->transitionKind() == transitionKind) ? transition : nullptr;
+        if (auto* transition = trySingleTransition()) {
+            if (transition->m_transitionPropertyName == rep && transition->transitionPropertyAttributes() == attributes && transition->transitionKind() == transitionKind)
+                return transition;
+        }
+        return nullptr;
     }
     return map()->get(StructureTransitionTable::Hash::Key(rep, attributes, transitionKind));
+}
+
+inline void StructureTransitionTable::finalizeUnconditionally(VM& vm, CollectionScope)
+{
+    if (isUsingSingleSlot()) {
+        auto* transition = trySingleTransition();
+        if (transition && !vm.heap.isMarked(transition))
+            m_data = UsingSingleSlotFlag;
+    }
 }
 
 inline void Structure::clearCachedPrototypeChain()
