@@ -63,7 +63,7 @@ ALWAYS_INLINE bool objectAssignFast(VM& vm, JSObject* target, JSObject* source, 
     if (!canUseFastPath)
         return false;
 
-    target->putOwnDataPropertyBatching(vm, properties, values);
+    target->putOwnDataPropertyBatching(vm, properties.data(), values.data(), properties.size());
     return true;
 }
 

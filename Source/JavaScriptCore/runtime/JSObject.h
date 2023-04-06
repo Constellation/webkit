@@ -817,7 +817,7 @@ public:
     bool putOwnDataProperty(VM&, PropertyName, JSValue, PutPropertySlot&);
     bool putOwnDataPropertyMayBeIndex(JSGlobalObject*, PropertyName, JSValue, PutPropertySlot&);
 
-    void putOwnDataPropertyBatching(VM&, const Vector<RefPtr<UniquedStringImpl>, 8>&, MarkedArgumentBuffer&);
+    void putOwnDataPropertyBatching(VM&, const RefPtr<UniquedStringImpl>*, const EncodedJSValue*, unsigned size);
 private:
     void validatePutOwnDataProperty(VM&, PropertyName, JSValue);
 public:

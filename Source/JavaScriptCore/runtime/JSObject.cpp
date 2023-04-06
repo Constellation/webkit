@@ -4079,23 +4079,23 @@ TransitionKind JSObject::suggestedArrayStorageTransition() const
     return TransitionKind::AllocateArrayStorage;
 }
 
-void JSObject::putOwnDataPropertyBatching(VM& vm, const Vector<RefPtr<UniquedStringImpl>, 8>& properties, MarkedArgumentBuffer& values)
+void JSObject::putOwnDataPropertyBatching(VM& vm, const RefPtr<UniquedStringImpl>* properties, const EncodedJSValue* values, unsigned size)
 {
     Structure* structure = this->structure();
-    if (structure->isDictionary() || (structure->transitionCountEstimate() + properties.size()) > Structure::s_maxTransitionLength || !structure->canPerformFastPropertyEnumeration() || (structure->transitionWatchpointSet().isBeingWatched() && structure->transitionWatchpointSet().isStillValid())) {
-        for (size_t i = 0; i < properties.size(); ++i) {
+    if (structure->isDictionary() || (structure->transitionCountEstimate() + size) > Structure::s_maxTransitionLength || !structure->canPerformFastPropertyEnumeration() || (structure->transitionWatchpointSet().isBeingWatched() && structure->transitionWatchpointSet().isStillValid())) {
+        for (size_t i = 0; i < size; ++i) {
             PutPropertySlot putPropertySlot(this, true);
-            putOwnDataProperty(vm, properties[i].get(), values.at(i), putPropertySlot);
+            putOwnDataProperty(vm, properties[i].get(), JSValue::decode(values[i]), putPropertySlot);
         }
         return;
     }
 
-    Vector<PropertyOffset, 8> offsets;
-    offsets.reserveInitialCapacity(properties.size());
+    Vector<PropertyOffset, 16> offsets;
+    offsets.reserveInitialCapacity(size);
     Structure* originalStructure = structure;
 
     size_t i = 0;
-    for (; i < properties.size(); ++i) {
+    for (; i < size; ++i) {
         PropertyName propertyName(properties[i].get());
 
         PropertyOffset offset;
@@ -4134,13 +4134,12 @@ void JSObject::putOwnDataPropertyBatching(VM& vm, const Vector<RefPtr<UniquedStr
     }
 
     for (unsigned index = 0; index < offsets.size(); ++index)
-        putDirectOffset(vm, offsets[index], values.at(index));
+        putDirectOffset(vm, offsets[index], JSValue::decode(values[index]));
     setStructure(vm, structure);
 
-
-    for (; i < properties.size(); ++i) {
+    for (; i < size; ++i) {
         PutPropertySlot putPropertySlot(this, true);
-        putOwnDataProperty(vm, properties[i].get(), values.at(i), putPropertySlot);
+        putOwnDataProperty(vm, properties[i].get(), JSValue::decode(values[i]), putPropertySlot);
     }
 }
 
