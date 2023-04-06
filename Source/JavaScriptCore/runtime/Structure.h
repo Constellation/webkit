@@ -822,6 +822,8 @@ public:
     static_assert(s_bitWidthOfTransitionPropertyAttributes <= sizeof(TransitionPropertyAttributes) * 8);
     static_assert(s_bitWidthOfTransitionKind <= sizeof(TransitionKind) * 8);
 
+    void finalizeUnconditionally(VM&, CollectionScope);
+
 protected:
     Structure(VM&, Structure*);
 
