@@ -384,9 +384,18 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
         structure = object->structure(); // Reload it again since static-class-table can cause transition. But this transition only affects on this Structure.
         cacheable &= structure->propertyAccessesAreCacheable();
         if (hasProperty) {
-            if (LIKELY(cacheable && slot.isCacheableValue() && slot.cachedOffset() <= MegamorphicCache::maxOffset))
-                vm.megamorphicCache()->initAsHit(baseObject->structureID(), uid, slot.slotBase(), slot.cachedOffset(), slot.slotBase() == baseObject);
-            else {
+            if (LIKELY(cacheable && slot.isCacheableValue() && slot.cachedOffset() <= MegamorphicCache::maxOffset)) {
+                if (slot.slotBase() == baseObject || !baseObject->structure()->isDictionary())
+                    vm.megamorphicCache()->initAsHit(baseObject->structureID(), uid, slot.slotBase(), slot.cachedOffset(), slot.slotBase() == baseObject);
+                else {
+                    if (LIKELY(!baseObject->structure()->hasBeenFlattenedBefore()))
+                        baseObject->structure()->flattenDictionaryStructure(vm, baseObject);
+                    else {
+                        if (stubInfo->considerRepatchingCacheMegamorphic(vm))
+                            repatchGetBySlowPathCall(callFrame->codeBlock(), *stubInfo, GetByKind::ById);
+                    }
+                }
+            } else {
                 if (stubInfo->considerRepatchingCacheMegamorphic(vm))
                     repatchGetBySlowPathCall(callFrame->codeBlock(), *stubInfo, GetByKind::ById);
             }
@@ -398,12 +407,19 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalO
 
         JSValue prototype = object->getPrototypeDirect();
         if (!prototype.isObject()) {
-            if (LIKELY(cacheable))
-                vm.megamorphicCache()->initAsMiss(baseObject->structureID(), uid);
-            else {
-                if (stubInfo->considerRepatchingCacheMegamorphic(vm))
-                    repatchGetBySlowPathCall(callFrame->codeBlock(), *stubInfo, GetByKind::ById);
+            if (LIKELY(cacheable)) {
+                if (LIKELY(!baseObject->structure()->isDictionary())) {
+                    vm.megamorphicCache()->initAsMiss(baseObject->structureID(), uid);
+                    return JSValue::encode(jsUndefined());
+                }
+
+                if (LIKELY(!baseObject->structure()->hasBeenFlattenedBefore())) {
+                    baseObject->structure()->flattenDictionaryStructure(vm, baseObject);
+                    return JSValue::encode(jsUndefined());
+                }
             }
+            if (stubInfo->considerRepatchingCacheMegamorphic(vm))
+                repatchGetBySlowPathCall(callFrame->codeBlock(), *stubInfo, GetByKind::ById);
             return JSValue::encode(jsUndefined());
         }
         object = asObject(prototype);

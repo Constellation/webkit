@@ -61,7 +61,7 @@ public:
             m_holder = nullptr;
         }
 
-        void initAsHit(StructureID structureID, UniquedStringImpl* uid, uint16_t epoch, JSCell* holder, uint8_t offset, bool ownProperty)
+        void initAsHit(StructureID structureID, UniquedStringImpl* uid, uint16_t epoch, JSCell* holder, uint16_t offset, bool ownProperty)
         {
             m_uid = uid;
             m_structureID = structureID;
@@ -119,7 +119,7 @@ public:
         m_primaryEntries[primaryIndex].initAsMiss(structureID, uid, m_epoch);
     }
 
-    void initAsHit(StructureID structureID, UniquedStringImpl* uid, JSCell* holder, uint8_t offset, bool ownProperty)
+    void initAsHit(StructureID structureID, UniquedStringImpl* uid, JSCell* holder, uint16_t offset, bool ownProperty)
     {
         uint32_t primaryIndex = MegamorphicCache::primaryHash(structureID, uid) & primaryMask;
         auto& entry = m_primaryEntries[primaryIndex];
