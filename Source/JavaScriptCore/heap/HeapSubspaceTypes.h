@@ -77,7 +77,7 @@
 #include "JSNativeStdFunction.h"
 #include "JSPromise.h"
 #include "JSPropertyNameEnumerator.h"
-#include "JSProxy.h"
+#include "JSGlobalProxy.h"
 #include "JSScriptFetchParameters.h"
 #include "JSScriptFetcher.h"
 #include "JSSet.h"

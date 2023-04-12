@@ -1,6 +1,7 @@
 // This should not crash.
 
-let o = $vm.createProxy({});
+let global = $vm.createGlobalObject();
+let o = $vm.createProxy(global);
 o.__proto__ = o;
 
 try {

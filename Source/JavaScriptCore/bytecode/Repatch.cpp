@@ -412,10 +412,10 @@ static InlineCacheAction tryCacheGetBy(JSGlobalObject* globalObject, CodeBlock* 
             Structure* structure = baseCell->structure();
 
             bool loadTargetFromProxy = false;
-            if (baseCell->type() == PureForwardingProxyType) {
+            if (baseCell->type() == GlobalProxyType) {
                 if (isPrivate)
                     return GiveUpOnCache;
-                baseValue = jsCast<JSProxy*>(baseCell)->target();
+                baseValue = jsCast<JSGlobalProxy*>(baseCell)->target();
                 baseCell = baseValue.asCell();
                 structure = baseCell->structure();
                 loadTargetFromProxy = true;
@@ -877,12 +877,12 @@ static InlineCacheAction tryCachePutBy(JSGlobalObject* globalObject, CodeBlock* 
         }
         
         bool isProxy = false;
-        if (baseCell->type() == PureForwardingProxyType) {
-            baseCell = jsCast<JSProxy*>(baseCell)->target();
+        if (baseCell->type() == GlobalProxyType) {
+            baseCell = jsCast<JSGlobalProxy*>(baseCell)->target();
             baseValue = baseCell;
             isProxy = true;
 
-            // We currently only cache Replace and JS/Custom Setters on JSProxy. We don't
+            // We currently only cache Replace and JS/Custom Setters on JSGlobalProxy. We don't
             // cache transitions because global objects will never share the same structure
             // in our current implementation.
             bool isCacheableProxy = (slot.isCacheablePut() && slot.type() == PutPropertySlot::ExistingProperty)

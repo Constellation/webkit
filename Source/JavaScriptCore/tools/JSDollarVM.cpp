@@ -2978,12 +2978,11 @@ JSC_DEFINE_HOST_FUNCTION(functionCreateProxy, (JSGlobalObject* globalObject, Cal
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    JSValue target = callFrame->argument(0);
-    if (!target.isObject())
+    JSGlobalObject* target = jsDynamicCast<JSGlobalObject*>(callFrame->argument(0));
+    if (UNLIKELY(!target))
         return JSValue::encode(jsUndefined());
-    JSObject* jsTarget = asObject(target.asCell());
-    Structure* structure = JSProxy::createStructure(vm, globalObject, jsTarget->getPrototypeDirect());
-    JSProxy* proxy = JSProxy::create(vm, structure, jsTarget);
+    Structure* structure = JSGlobalProxy::createStructure(vm, target, target->getPrototypeDirect());
+    JSGlobalProxy* proxy = JSGlobalProxy::create(vm, structure);
     return JSValue::encode(proxy);
 }
 

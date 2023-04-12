@@ -2295,8 +2295,8 @@ void JSGlobalObject::resetPrototype(VM& vm, JSValue prototype)
         return;
     setPrototypeDirect(vm, prototype);
     fixupPrototypeChainWithObjectPrototype(vm);
-    // Whenever we change the prototype of the global object, we need to create a new JSProxy with the correct prototype.
-    setGlobalThis(vm, JSProxy::create(vm, JSProxy::createStructure(vm, this, prototype), this));
+    // Whenever we change the prototype of the global object, we need to create a new JSGlobalProxy with the correct prototype.
+    setGlobalThis(vm, JSGlobalProxy::create(vm, JSGlobalProxy::createStructure(vm, this, prototype)));
 }
 
 template<typename Visitor>
@@ -3009,7 +3009,7 @@ void JSGlobalObject::finishCreation(VM& vm)
     structure()->setGlobalObject(vm, this);
     m_runtimeFlags = m_globalObjectMethodTable->javaScriptRuntimeFlags(this);
     init(vm);
-    setGlobalThis(vm, JSProxy::create(vm, JSProxy::createStructure(vm, this, getPrototypeDirect()), this));
+    setGlobalThis(vm, JSGlobalProxy::create(vm, JSGlobalProxy::createStructure(vm, this, getPrototypeDirect())));
     ASSERT(type() == GlobalObjectType);
 }
 

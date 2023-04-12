@@ -46,7 +46,7 @@
 #include "JSFunctionInlines.h"
 #include "JSGlobalObjectInlines.h"
 #include "JSObjectInlines.h"
-#include "JSProxy.h"
+#include "JSGlobalProxy.h"
 #include "JSString.h"
 #include "Operations.h"
 #include "SlotVisitorInlines.h"

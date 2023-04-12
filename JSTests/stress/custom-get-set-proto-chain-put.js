@@ -18,7 +18,9 @@ function shouldThrow(func, expectedError) {
         throw new Error("Didn't throw!");
 }
 
+const global = $vm.createGlobalObject();
 const customTestGetterSetter = $vm.createCustomTestGetterSetter();
+Object.setPrototypeOf(global, customTestGetterSetter);
 Object.setPrototypeOf(customTestGetterSetter, {
     set customValue(_v) { throw new Error("Should be unreachable!"); },
     set customValueGlobalObject(_v) { throw new Error("Should be unreachable!"); },
@@ -38,7 +40,7 @@ function getObjects() {
         Object.create(customTestGetterSetter),
         Object.create(Object.create(customTestGetterSetter)),
         Object.create(new Proxy(customTestGetterSetter, {})),
-        Object.create($vm.createProxy(customTestGetterSetter)),
+        Object.create($vm.createProxy(global)),
     ];
 }
 
