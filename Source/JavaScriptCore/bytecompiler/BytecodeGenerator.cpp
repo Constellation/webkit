@@ -2794,7 +2794,7 @@ RegisterID* BytecodeGenerator::emitPutByVal(RegisterID* base, RegisterID* proper
         // FIXME: We should have a better bytecode rewriter that can resize chunks.
         OpEnumeratorPutByVal::emit<OpcodeSize::Wide32>(this, base, context.mode(), property, context.propertyOffset(), context.enumerator(), value, ecmaMode());
         context.addPutInst(m_lastInstruction.offset(), property->index());
-        return;
+        return value;
     }
 
     OpPutByVal::emit(this, base, property, value, ecmaMode());
@@ -5422,11 +5422,29 @@ void ForInContext::finalize(BytecodeGenerator& generator, UnlinkedCodeBlockGener
     for (const auto& instTuple : m_getInsts)
         rewriteOp<OpEnumeratorGetByVal, OpGetByVal>(generator, instTuple);
 
-    for (const auto& instTuple : m_putInsts)
-        rewriteOp<OpEnumeratorPutByVal, OpPutByVal>(generator, instTuple);
-
     for (const auto& instTuple : m_inInsts)
         rewriteOp<OpEnumeratorInByVal, OpInByVal>(generator, instTuple);
+
+    for (const auto& instTuple : m_putInsts) {
+        unsigned instIndex = std::get<0>(instTuple);
+        int propertyRegIndex = std::get<1>(instTuple);
+        auto instruction = generator.m_writer.ref(instIndex);
+        auto end = instIndex + instruction->size();
+        ASSERT(instruction->isWide32());
+
+        generator.m_writer.seek(instIndex);
+
+        auto bytecode = instruction->as<OpEnumeratorPutByVal>();
+
+        generator.disablePeepholeOptimization();
+
+        static_assert(sizeof(OpPutByVal) <= sizeof(OpEnumeratorPutByVal));
+        NewOpType::emit(&generator, bytecode.m_base, VirtualRegister(propertyRegIndex), bytecode.m_value, bytecode.m_ecmaMode);
+
+        // 4. nop out the remaining bytes
+        while (generator.m_writer.position() < end)
+            OpNop::emit<OpcodeSize::Narrow>(&generator);
+    }
 
     for (const auto& hasOwnPropertyTuple : m_hasOwnPropertyJumpInsts) {
         static_assert(sizeof(OpJmp) <= sizeof(OpJneqPtr));
