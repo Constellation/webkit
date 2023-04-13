@@ -2793,7 +2793,7 @@ RegisterID* BytecodeGenerator::emitPutByVal(RegisterID* base, RegisterID* proper
 
         // FIXME: We should have a better bytecode rewriter that can resize chunks.
         OpEnumeratorPutByVal::emit<OpcodeSize::Wide32>(this, base, context.mode(), property, context.propertyOffset(), context.enumerator(), value, ecmaMode());
-        context.addGetInst(m_lastInstruction.offset(), property->index());
+        context.addPutInst(m_lastInstruction.offset(), property->index());
         return;
     }
 

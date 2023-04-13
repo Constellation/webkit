@@ -226,9 +226,9 @@ inline void opEnumeratorPutByVal(JSGlobalObject* globalObject, JSValue baseValue
             arrayProfile->observeStructureID(baseValue.asCell()->structureID());
         JSString* string = asString(propertyNameValue);
         auto propertyName = string->toIdentifier(globalObject);
-        RETURN_IF_EXCEPTION(scope, { });
+        RETURN_IF_EXCEPTION(scope, void());
         scope.release();
-        PutPropertySlot slot(baseValue, m_ecmaMode.isStrict());
+        PutPropertySlot slot(baseValue, ecmaMode.isStrict());
         baseValue.put(globalObject, propertyName, value, slot);
         return;
     }
