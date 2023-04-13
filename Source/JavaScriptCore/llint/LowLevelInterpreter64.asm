@@ -3473,6 +3473,7 @@ llintOpWithMetadata(op_enumerator_put_by_val, OpEnumeratorPutByVal, macro (size,
     loadConstantOrVariableCell(size, t1, t0, .putSlowPath)
 
     loadVariable(get, m_enumerator, t1)
+    # FIXME: Need replace invalidation.
     loadi JSPropertyNameEnumerator::m_cachedStructureID[t1], t2
     bineq t2, JSCell::m_structureID[t0], .putSlowPath
 
