@@ -2786,6 +2786,17 @@ RegisterID* BytecodeGenerator::emitGetPrototypeOf(RegisterID* dst, RegisterID* v
 
 RegisterID* BytecodeGenerator::emitPutByVal(RegisterID* base, RegisterID* property, RegisterID* value)
 {
+    for (size_t i = m_forInContextStack.size(); i--; ) {
+        ForInContext& context = m_forInContextStack[i].get();
+        if (context.local() != property)
+            continue;
+
+        // FIXME: We should have a better bytecode rewriter that can resize chunks.
+        OpEnumeratorPutByVal::emit<OpcodeSize::Wide32>(this, base, context.mode(), property, context.propertyOffset(), context.enumerator(), value, ecmaMode());
+        context.addGetInst(m_lastInstruction.offset(), property->index());
+        return;
+    }
+
     OpPutByVal::emit(this, base, property, value, ecmaMode());
     return value;
 }
@@ -5410,6 +5421,9 @@ void ForInContext::finalize(BytecodeGenerator& generator, UnlinkedCodeBlockGener
 
     for (const auto& instTuple : m_getInsts)
         rewriteOp<OpEnumeratorGetByVal, OpGetByVal>(generator, instTuple);
+
+    for (const auto& instTuple : m_putInsts)
+        rewriteOp<OpEnumeratorPutByVal, OpPutByVal>(generator, instTuple);
 
     for (const auto& instTuple : m_inInsts)
         rewriteOp<OpEnumeratorInByVal, OpInByVal>(generator, instTuple);
