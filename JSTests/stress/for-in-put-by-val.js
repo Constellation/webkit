@@ -15,8 +15,10 @@ function test() {
         h: 49,
     };
 
-    for (var i in object)
-        object[i] = object[i] + 20;
+    for (var i in object) {
+        var value = object[i] + 20;
+        object[i] = value;
+    }
     return object;
 }
 noInline(test);
