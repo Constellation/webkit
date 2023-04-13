@@ -2546,7 +2546,7 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     // If index is less than the enumerator's cached inline storage, then it's an inline access
     Jump outOfLineAccess = branch32(AboveOrEqual, profileGPR, Address(scratch1, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
     signExtend32ToPtr(profileGPR, profileGPR);
-    load64(BaseIndex(baseGPR, profileGPR, TimesEight, JSObject::offsetOfInlineStorage()), valueGPR);
+    store64(valueGPR, BaseIndex(baseGPR, profileGPR, TimesEight, JSObject::offsetOfInlineStorage()));
     doneCases.append(jump());
 
     // Otherwise it's out of line
@@ -2556,7 +2556,7 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     neg32(profileGPR);
     signExtend32ToPtr(profileGPR, profileGPR);
     constexpr intptr_t offsetOfFirstProperty = offsetInButterfly(firstOutOfLineOffset) * static_cast<intptr_t>(sizeof(EncodedJSValue));
-    load64(BaseIndex(stubInfoGPR, profileGPR, TimesEight, offsetOfFirstProperty), valueGPR);
+    store64(valueGPR, BaseIndex(stubInfoGPR, profileGPR, TimesEight, offsetOfFirstProperty));
     doneCases.append(jump());
 
     structureMismatch.link(this);
