@@ -3476,24 +3476,26 @@ llintOpWithMetadata(op_enumerator_put_by_val, OpEnumeratorPutByVal, macro (size,
     loadi JSPropertyNameEnumerator::m_cachedStructureID[t1], t2
     bineq t2, JSCell::m_structureID[t0], .putSlowPath
 
+    get(m_value, t2)
+    loadConstantOrVariable(size, t2, t3)
     loadVariable(get, m_index, t2)
     loadi JSPropertyNameEnumerator::m_cachedInlineCapacity[t1], t1
     biaeq t2, t1, .outOfLine
 
     zxi2q t2, t2
-    loadq sizeof JSObject[t0, t2, 8], t2
+    storeq t3, sizeof JSObject[t0, t2, 8]
     jmp .done
 
 .outOfLine:
-    loadp JSObject::m_butterfly[t0], t0
     subi t1, t2
+    loadp JSObject::m_butterfly[t0], t1
     negi t2
     sxi2q t2, t2
-    loadq constexpr ((offsetInButterfly(firstOutOfLineOffset)) * sizeof(EncodedJSValue))[t0, t2, 8], t2
+    storeq t3, constexpr ((offsetInButterfly(firstOutOfLineOffset)) * sizeof(EncodedJSValue))[t1, t2, 8]
 
 .done:
-    valueProfile(OpEnumeratorPutByVal, m_profile, t5, t2)
-    return(t2)
+    writeBarrierOnCellAndValueWithReload(t0, t3, macro() end)
+    dispatch()
 
 .putSlowPath:
     callSlowPath(_slow_path_enumerator_put_by_val)
