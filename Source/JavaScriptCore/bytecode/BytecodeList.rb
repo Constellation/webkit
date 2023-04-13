@@ -496,21 +496,6 @@ op :enumerator_get_by_val,
         enumeratorMetadata: EnumeratorMetadata,
     }
 
-op :enumerator_put_by_val,
-    args: {
-        base: VirtualRegister,
-        mode: VirtualRegister,
-        propertyName: VirtualRegister,
-        index: VirtualRegister,
-        enumerator: VirtualRegister,
-        value: VirtualRegister,
-        ecmaMode: ECMAMode,
-    },
-    metadata: {
-        arrayProfile: ArrayProfile,
-        enumeratorMetadata: EnumeratorMetadata,
-    }
-
 op :get_by_id_direct,
     args: {
         dst: VirtualRegister,
@@ -801,6 +786,21 @@ op :enumerator_has_own_property,
         propertyName: VirtualRegister,
         index: VirtualRegister,
         enumerator: VirtualRegister,
+    },
+    metadata: {
+        arrayProfile: ArrayProfile,
+        enumeratorMetadata: EnumeratorMetadata,
+    }
+
+op :enumerator_put_by_val,
+    args: {
+        base: VirtualRegister,
+        mode: VirtualRegister,
+        propertyName: VirtualRegister,
+        index: VirtualRegister,
+        enumerator: VirtualRegister,
+        value: VirtualRegister,
+        ecmaMode: ECMAMode,
     },
     metadata: {
         arrayProfile: ArrayProfile,

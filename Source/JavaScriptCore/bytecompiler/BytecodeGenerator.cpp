@@ -5439,7 +5439,7 @@ void ForInContext::finalize(BytecodeGenerator& generator, UnlinkedCodeBlockGener
         generator.disablePeepholeOptimization();
 
         static_assert(sizeof(OpPutByVal) <= sizeof(OpEnumeratorPutByVal));
-        NewOpType::emit(&generator, bytecode.m_base, VirtualRegister(propertyRegIndex), bytecode.m_value, bytecode.m_ecmaMode);
+        OpPutByVal::emit(&generator, bytecode.m_base, VirtualRegister(propertyRegIndex), bytecode.m_value, bytecode.m_ecmaMode);
 
         // 4. nop out the remaining bytes
         while (generator.m_writer.position() < end)
