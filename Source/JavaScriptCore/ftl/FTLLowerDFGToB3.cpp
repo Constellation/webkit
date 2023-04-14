@@ -14515,7 +14515,6 @@ IGNORE_CLANG_WARNINGS_END
         Edge baseEdge = m_graph.varArgChild(m_node, 0);
         Edge propertyNameEdge = m_graph.varArgChild(m_node, 1);
         Edge valueEdge = m_graph.varArgChild(m_node, 2);
-        Edge storageEdge = m_graph.varArgChild(m_node, 3);
         Edge indexEdge = m_graph.varArgChild(m_node, 4);
 
         LValue base = DFG::isCell(baseEdge.useKind()) ? lowCell(baseEdge, ManualOperandSpeculation) : lowJSValue(baseEdge);
