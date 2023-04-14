@@ -92,6 +92,8 @@ private:
         }
             
         case EnumeratorPutByVal:
+            break;
+
         case PutByVal:
         case PutByValDirect: {
             Edge base = m_graph.varArgChild(m_node, 0);

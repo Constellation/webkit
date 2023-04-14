@@ -9045,8 +9045,7 @@ void ByteCodeParser::parseBlock(unsigned limit)
         case op_enumerator_put_by_val: {
             auto bytecode = currentInstruction->as<OpEnumeratorPutByVal>();
             auto& metadata = bytecode.metadata(codeBlock);
-            ArrayMode arrayMode = getArrayMode(metadata.m_arrayProfile, Array::Read);
-            SpeculatedType speculation = getPredictionWithoutOSRExit();
+            ArrayMode arrayMode = getArrayMode(metadata.m_arrayProfile, Array::Write);
 
             Node* base = get(bytecode.m_base);
             Node* propertyName = get(bytecode.m_propertyName);
@@ -9067,8 +9066,6 @@ void ByteCodeParser::parseBlock(unsigned limit)
                 addToGraph(ExitOK);
 
                 addToGraph(CheckIsConstant, OpInfo(m_graph.freezeStrong(jsNumber(0))), badMode);
-
-                ArrayMode arrayMode = getArrayMode(bytecode.metadata(codeBlock).m_arrayProfile, Array::Write);
 
                 addVarArgChild(base);
                 addVarArgChild(index); // Use index so we'll use the normal indexed optimizations.

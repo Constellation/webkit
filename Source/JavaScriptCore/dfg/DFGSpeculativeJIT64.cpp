@@ -6641,92 +6641,108 @@ void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
     Edge baseEdge = m_graph.varArgChild(node, 0);
     auto generate = [&] (JSValueRegs baseRegs) {
         JumpList doneCases;
-        JSValueRegsTemporary result;
-        JSValueRegs resultRegs;
-        GPRReg indexGPR;
-        GPRReg enumeratorGPR;
         JumpList recoverGenericCase;
 
-        compilePutByVal(node, scopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat)>([&] (DataFormat) {
-            Edge storageEdge = m_graph.varArgChild(node, 3);
-            StorageOperand storage;
-            if (storageEdge)
-                storage.emplace(this, storageEdge);
-            SpeculateStrictInt32Operand index(this, m_graph.varArgChild(node, 4));
-            SpeculateStrictInt32Operand mode(this, m_graph.varArgChild(node, 5));
-            SpeculateCellOperand enumerator(this, m_graph.varArgChild(node, 6));
-            GPRTemporary scratch(this);
+        JSValueOperand property(this, m_graph.varArgChild(node, 1));
+        JSValueOperand value(this, m_graph.varArgChild(node, 2));
+        SpeculateStrictInt32Operand index(this, m_graph.varArgChild(node, 4));
+        SpeculateStrictInt32Operand mode(this, m_graph.varArgChild(node, 5));
+        SpeculateCellOperand enumerator(this, m_graph.varArgChild(node, 6));
+        GPRTemporary scratch(this);
+        GPRTemporary storageTemporary(this);
 
-            GPRReg modeGPR = mode.gpr();
-            indexGPR = index.gpr();
-            enumeratorGPR = enumerator.gpr();
-            GPRReg scratchGPR = scratch.gpr();
+        JSVaueRegs valueRegs = value.regs();
+        JSVaueRegs propertyRegs = property.regs();
+        GPRReg modeGPR = mode.gpr();
+        GPRReg indexGPR = index.gpr();
+        GPRReg enumeratorGPR = enumerator.gpr();
+        GPRReg scratchGPR = scratch.gpr();
+        GPRReg storageGPR = storageTemporary.gpr();
 
-            bool haveStorage = !!storageEdge;
-            GPRTemporary storageTemporary;
-            GPRReg storageGPR;
-            if (!haveStorage) {
-                storageTemporary = GPRTemporary(this, Reuse, enumerator);
-                storageGPR = storageTemporary.gpr();
-            } else
-                storageGPR = storage.gpr();
+        ECMAMode ecmaMode = node->ecmaMode();
 
-            result = JSValueRegsTemporary(this);
-            valueRegs = result.regs();
+        JumpList notFastNamedCases;
+        // FIXME: Maybe we should have a better way to represent IndexedMode+OwnStructureMode?
+        bool indexedAndOwnStructureMode = m_graph.varArgChild(node, 1).node() == m_graph.varArgChild(node, 4).node();
+        JumpList& genericOrRecoverCase = indexedAndOwnStructureMode ? recoverGenericCase : notFastNamedCases;
 
-            JumpList notFastNamedCases;
-            // FIXME: Maybe we should have a better way to represent IndexedMode+OwnStructureMode?
-            bool indexedAndOwnStructureMode = m_graph.varArgChild(node, 1).node() == m_graph.varArgChild(node, 4).node();
-            JumpList& genericOrRecoverCase = indexedAndOwnStructureMode ? recoverGenericCase : notFastNamedCases;
+        // FIXME: We shouldn't generate this code if we know base is not an object.
+        notFastNamedCases.append(branchTest32(NonZero, modeGPR, TrustedImm32(JSPropertyNameEnumerator::IndexedMode | JSPropertyNameEnumerator::GenericMode)));
+        {
+            if (!m_state.forNode(baseEdge).isType(SpecCell))
+                genericOrRecoverCase.append(branchIfNotCell(baseRegs));
 
-            // FIXME: We shouldn't generate this code if we know base is not an object.
-            notFastNamedCases.append(branchTest32(NonZero, modeGPR, TrustedImm32(JSPropertyNameEnumerator::IndexedMode | JSPropertyNameEnumerator::GenericMode)));
-            {
-                if (!m_state.forNode(baseEdge).isType(SpecCell))
-                    genericOrRecoverCase.append(branchIfNotCell(baseRegs));
+            // Check the structure
+            // FIXME: If we know there's only one structure for base we can just embed it here.
+            load32(Address(baseRegs.payloadGPR(), JSCell::structureIDOffset()), scratchGPR);
 
-                // Check the structure
-                // FIXME: If we know there's only one structure for base we can just embed it here.
-                load32(Address(baseRegs.payloadGPR(), JSCell::structureIDOffset()), scratchGPR);
+            auto badStructure = branch32(
+                NotEqual,
+                scratchGPR,
+                Address(
+                    enumeratorGPR, JSPropertyNameEnumerator::cachedStructureIDOffset()));
+            genericOrRecoverCase.append(badStructure);
 
-                auto badStructure = branch32(
-                    NotEqual,
-                    scratchGPR,
-                    Address(
-                        enumeratorGPR, JSPropertyNameEnumerator::cachedStructureIDOffset()));
-                genericOrRecoverCase.append(badStructure);
+            // Compute the offset
+            // If index is less than the enumerator's cached inline storage, then it's an inline access
+            Jump outOfLineAccess = branch32(AboveOrEqual,
+                indexGPR, Address(enumeratorGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
 
-                // Compute the offset
-                // If index is less than the enumerator's cached inline storage, then it's an inline access
-                Jump outOfLineAccess = branch32(AboveOrEqual,
-                    indexGPR, Address(enumeratorGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
+            storeValue(valueRegs, BaseIndex(baseRegs.payloadGPR(), indexGPR, TimesEight, JSObject::offsetOfInlineStorage()));
 
-                storeValue(valueRegs, BaseIndex(baseRegs.payloadGPR(), indexGPR, TimesEight, JSObject::offsetOfInlineStorage()));
+            doneCases.append(jump());
 
-                doneCases.append(jump());
+            // Otherwise it's out of line
+            outOfLineAccess.link(this);
+            move(indexGPR, scratchGPR);
+            sub32(Address(enumeratorGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), scratchGPR);
+            neg32(scratchGPR);
+            signExtend32ToPtr(scratchGPR, scratchGPR);
+            loadPtr(Address(baseRegs.payloadGPR(), JSObject::butterflyOffset()), storageGPR);
+            constexpr intptr_t offsetOfFirstProperty = offsetInButterfly(firstOutOfLineOffset) * static_cast<intptr_t>(sizeof(EncodedJSValue));
+            storeValue(valueRegs, BaseIndex(storageGPR, scratchGPR, TimesEight, offsetOfFirstProperty));
+            doneCases.append(jump());
+        }
 
-                // Otherwise it's out of line
-                outOfLineAccess.link(this);
-                move(indexGPR, scratchGPR);
-                sub32(Address(enumeratorGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), scratchGPR);
-                neg32(scratchGPR);
-                signExtend32ToPtr(scratchGPR, scratchGPR);
-                if (!haveStorage)
-                    loadPtr(Address(baseRegs.payloadGPR(), JSObject::butterflyOffset()), storageGPR);
-                constexpr intptr_t offsetOfFirstProperty = offsetInButterfly(firstOutOfLineOffset) * static_cast<intptr_t>(sizeof(EncodedJSValue));
-                storeValue(valueRegs, BaseIndex(storageGPR, scratchGPR, TimesEight, offsetOfFirstProperty));
-                doneCases.append(jump());
+        notFastNamedCases.link(this);
+        {
+            CodeOrigin codeOrigin = node->origin.semantic;
+            CallSiteIndex callSite = recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
+            RegisterSetBuilder usedRegisters = this->usedRegisters();
+
+            auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
+            JITPutByValGenerator gen(
+                codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, AccessType::PutByVal, usedRegisters,
+                baseRegs, propertyRegs, valueRegs, InvalidGPRReg, scratchGPR, PutKind::NotDirect, ecmaMode, PrivateFieldPutKind::none());
+
+            JumpList slowCases;
+
+            std::unique_ptr<SlowPathGenerator> slowPath;
+            auto operation = isDirect ? (ecmaMode.isStrict() ? operationDirectPutByValStrictOptimize : operationDirectPutByValNonStrictOptimize) : (ecmaMode.isStrict() ? operationPutByValStrictOptimize : operationPutByValNonStrictOptimize);
+            if (m_graph.m_plan.isUnlinked()) {
+                gen.generateDFGDataICFastPath(*this, stubInfoConstant.index(), scratchGPR);
+                gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
+                ASSERT(!gen.stubInfo());
+                slowPath = slowPathICCall(
+                    slowCases, this, stubInfoConstant, scratchGPR, Address(scratchGPR, StructureStubInfo::offsetOfSlowOperation()), operation,
+                    NoResult, LinkableConstant::globalObject(*this, node), baseRegs, propertyRegs, valueRegs, scratchGPR, nullptr);
+            } else {
+                gen.generateFastPath(*this);
+                slowCases.append(gen.slowPathJump());
+                slowPath = slowPathCall(
+                    slowCases, this, operation,
+                    NoResult, LinkableConstant::globalObject(*this, node), baseRegs, propertyRegs, valueRegs, TrustedImmPtr(gen.stubInfo()), nullptr);
             }
 
-            notFastNamedCases.link(this);
-            return std::tuple { valueRegs, DataFormatJS, CanUseFlush::No };
-        }));
+            addPutByVal(gen, slowPath.get());
+            addSlowPathGenerator(WTFMove(slowPath));
+        }
 
         if (!recoverGenericCase.empty()) {
             if (baseRegs.tagGPR() == InvalidGPRReg)
-                addSlowPathGenerator(slowPathCall(recoverGenericCase, this, operationEnumeratorRecoverNameAndPutByVal, LinkableConstant::globalObject(*this, node), CellValue(baseRegs.payloadGPR()), valueRegs, indexGPR, enumeratorGPR));
+                addSlowPathGenerator(slowPathCall(recoverGenericCase, this, operationEnumeratorRecoverNameAndPutByVal, LinkableConstant::globalObject(*this, node), CellValue(baseRegs.payloadGPR()), valueRegs, TrustedImm32(ecmaMode.isStrict()), indexGPR, enumeratorGPR));
             else
-                addSlowPathGenerator(slowPathCall(recoverGenericCase, this, operationEnumeratorRecoverNameAndPutByVal, LinkableConstant::globalObject(*this, node), baseRegs, valueRegs, indexGPR, enumeratorGPR));
+                addSlowPathGenerator(slowPathCall(recoverGenericCase, this, operationEnumeratorRecoverNameAndPutByVal, LinkableConstant::globalObject(*this, node), baseRegs, valueRegs, TrustedImm32(ecmaMode.isStrict()), indexGPR, enumeratorGPR));
         }
 
         doneCases.link(this);
@@ -6741,6 +6757,7 @@ void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
         JSValueOperand base(this, baseEdge);
         generate(base.regs());
     }
+    noResult(node);
 }
 
 #endif
