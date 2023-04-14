@@ -6636,6 +6636,10 @@ void SpeculativeJIT::compileNewBoundFunction(Node* node)
     cellResult(resultGPR, node);
 }
 
+void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
+{
+}
+
 #endif
 
 } } // namespace JSC::DFG
