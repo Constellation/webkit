@@ -1588,6 +1588,9 @@ private:
         case EnumeratorHasOwnProperty:
             compileEnumeratorHasOwnProperty();
             break;
+        case EnumeratorPutByVal:
+            compileEnumeratorPutByVal();
+            break;
         case CheckStructureImmediate:
             compileCheckStructureImmediate();
             break;
@@ -14505,6 +14508,10 @@ IGNORE_CLANG_WARNINGS_END
     void compileEnumeratorHasOwnProperty()
     {
         compileEnumeratorHasProperty(operationEnumeratorHasOwnProperty);
+    }
+
+    void compileEnumeratorPutByVal()
+    {
     }
     
     void compileCheckStructureImmediate()

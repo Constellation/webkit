@@ -5625,6 +5625,11 @@ void SpeculativeJIT::compile(Node* node)
         break;
     }
 
+    case EnumeratorPutByVal: {
+        compileEnumeratorPutByVal(node);
+        break;
+    }
+
     case ProfileType: {
         compileProfileType(node);
         break;
