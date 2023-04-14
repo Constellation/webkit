@@ -6651,8 +6651,8 @@ void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
         GPRTemporary scratch(this);
         GPRTemporary storageTemporary(this);
 
-        JSVaueRegs valueRegs = value.regs();
-        JSVaueRegs propertyRegs = property.regs();
+        JSValueRegs valueRegs = value.regs();
+        JSValueRegs propertyRegs = property.regs();
         GPRReg modeGPR = mode.gpr();
         GPRReg indexGPR = index.gpr();
         GPRReg enumeratorGPR = enumerator.gpr();
@@ -6718,7 +6718,7 @@ void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
             JumpList slowCases;
 
             std::unique_ptr<SlowPathGenerator> slowPath;
-            auto operation = isDirect ? (ecmaMode.isStrict() ? operationDirectPutByValStrictOptimize : operationDirectPutByValNonStrictOptimize) : (ecmaMode.isStrict() ? operationPutByValStrictOptimize : operationPutByValNonStrictOptimize);
+            auto operation = ecmaMode.isStrict() ? operationPutByValStrictOptimize : operationPutByValNonStrictOptimize;
             if (m_graph.m_plan.isUnlinked()) {
                 gen.generateDFGDataICFastPath(*this, stubInfoConstant.index(), scratchGPR);
                 gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
@@ -6740,9 +6740,9 @@ void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
 
         if (!recoverGenericCase.empty()) {
             if (baseRegs.tagGPR() == InvalidGPRReg)
-                addSlowPathGenerator(slowPathCall(recoverGenericCase, this, operationEnumeratorRecoverNameAndPutByVal, LinkableConstant::globalObject(*this, node), CellValue(baseRegs.payloadGPR()), valueRegs, TrustedImm32(ecmaMode.isStrict()), indexGPR, enumeratorGPR));
+                addSlowPathGenerator(slowPathCall(recoverGenericCase, this, operationEnumeratorRecoverNameAndPutByVal, NoResult, LinkableConstant::globalObject(*this, node), CellValue(baseRegs.payloadGPR()), valueRegs, TrustedImm32(ecmaMode.isStrict()), indexGPR, enumeratorGPR));
             else
-                addSlowPathGenerator(slowPathCall(recoverGenericCase, this, operationEnumeratorRecoverNameAndPutByVal, LinkableConstant::globalObject(*this, node), baseRegs, valueRegs, TrustedImm32(ecmaMode.isStrict()), indexGPR, enumeratorGPR));
+                addSlowPathGenerator(slowPathCall(recoverGenericCase, this, operationEnumeratorRecoverNameAndPutByVal, NoResult, LinkableConstant::globalObject(*this, node), baseRegs, valueRegs, TrustedImm32(ecmaMode.isStrict()), indexGPR, enumeratorGPR));
         }
 
         doneCases.link(this);
