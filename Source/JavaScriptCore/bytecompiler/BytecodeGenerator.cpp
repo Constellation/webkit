@@ -2790,7 +2790,7 @@ RegisterID* BytecodeGenerator::emitPutByVal(RegisterID* base, RegisterID* proper
         ForInContext& context = m_forInContextStack[i].get();
         if (context.local() != property)
             continue;
-        return emitEnumeratorPutByVal(base, property, value);
+        return emitEnumeratorPutByVal(context, base, property, value);
     }
 
     OpPutByVal::emit(this, base, property, value, ecmaMode());
@@ -2809,7 +2809,7 @@ RegisterID* BytecodeGenerator::emitPutByValWithECMAMode(RegisterID* base, Regist
     return value;
 }
 
-RegisterID* BytecodeGenerator::emitEnumeratorPutByVal(RegisterID* base, RegisterID* property, RegisterID* value)
+RegisterID* BytecodeGenerator::emitEnumeratorPutByVal(ForInContext& context, RegisterID* base, RegisterID* property, RegisterID* value)
 {
     // FIXME: We should have a better bytecode rewriter that can resize chunks.
     OpEnumeratorPutByVal::emit<OpcodeSize::Wide32>(this, base, context.mode(), property, context.propertyOffset(), context.enumerator(), value, ecmaMode());

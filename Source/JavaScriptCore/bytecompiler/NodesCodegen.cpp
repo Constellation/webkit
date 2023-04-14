@@ -3857,7 +3857,7 @@ RegisterID* AssignBracketNode::emitBytecode(BytecodeGenerator& generator, Regist
             generator.emitPutByVal(base.get(), thisValue.get(), property.get(), forwardResult);
         } else {
             if (context)
-                generator.emitEnumeratorPutByVal(base.get(), property.get(), forwardResult);
+                generator.emitEnumeratorPutByVal(*context, base.get(), property.get(), forwardResult);
             else
                 generator.emitPutByVal(base.get(), property.get(), forwardResult);
         }
