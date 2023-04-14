@@ -2459,7 +2459,7 @@ JSC_DEFINE_JIT_OPERATION(operationEnumeratorRecoverNameAndPutByVal, void, (JSGlo
     JSString* string = enumerator->propertyNameAtIndex(index);
     PropertyName propertyName = string->toIdentifier(globalObject);
     // This should only really return for TerminationException since we know string is backed by a UUID.
-    RETURN_IF_EXCEPTION(scope, { });
+    RETURN_IF_EXCEPTION(scope, void());
     JSValue base = JSValue::decode(baseValue);
     JSValue value = JSValue::decode(valueValue);
 
