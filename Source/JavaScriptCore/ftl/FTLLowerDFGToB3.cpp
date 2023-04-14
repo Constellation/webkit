@@ -14525,8 +14525,8 @@ IGNORE_CLANG_WARNINGS_END
         LValue value = lowJSValue(valueEdge);
 
         LValue index = lowInt32(indexEdge);
-        LValue mode = lowInt32(m_graph.varArgChild(m_node, 4));
-        LValue enumerator = lowCell(m_graph.varArgChild(m_node, 5));
+        LValue mode = lowInt32(m_graph.varArgChild(m_node, 5));
+        LValue enumerator = lowCell(m_graph.varArgChild(m_node, 6));
 
         LBasicBlock checkIsCellBlock = m_out.newBlock();
         LBasicBlock checkStructureBlock = m_out.newBlock();
