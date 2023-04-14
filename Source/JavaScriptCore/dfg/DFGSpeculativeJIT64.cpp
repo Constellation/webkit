@@ -6638,6 +6638,109 @@ void SpeculativeJIT::compileNewBoundFunction(Node* node)
 
 void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
 {
+    Edge baseEdge = m_graph.varArgChild(node, 0);
+    auto generate = [&] (JSValueRegs baseRegs) {
+        JumpList doneCases;
+        JSValueRegsTemporary result;
+        JSValueRegs resultRegs;
+        GPRReg indexGPR;
+        GPRReg enumeratorGPR;
+        JumpList recoverGenericCase;
+
+        compilePutByVal(node, scopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat)>([&] (DataFormat) {
+            Edge storageEdge = m_graph.varArgChild(node, 3);
+            StorageOperand storage;
+            if (storageEdge)
+                storage.emplace(this, storageEdge);
+            SpeculateStrictInt32Operand index(this, m_graph.varArgChild(node, 4));
+            SpeculateStrictInt32Operand mode(this, m_graph.varArgChild(node, 5));
+            SpeculateCellOperand enumerator(this, m_graph.varArgChild(node, 6));
+            GPRTemporary scratch(this);
+
+            GPRReg modeGPR = mode.gpr();
+            indexGPR = index.gpr();
+            enumeratorGPR = enumerator.gpr();
+            GPRReg scratchGPR = scratch.gpr();
+
+            bool haveStorage = !!storageEdge;
+            GPRTemporary storageTemporary;
+            GPRReg storageGPR;
+            if (!haveStorage) {
+                storageTemporary = GPRTemporary(this, Reuse, enumerator);
+                storageGPR = storageTemporary.gpr();
+            } else
+                storageGPR = storage.gpr();
+
+            result = JSValueRegsTemporary(this);
+            valueRegs = result.regs();
+
+            JumpList notFastNamedCases;
+            // FIXME: Maybe we should have a better way to represent IndexedMode+OwnStructureMode?
+            bool indexedAndOwnStructureMode = m_graph.varArgChild(node, 1).node() == m_graph.varArgChild(node, 4).node();
+            JumpList& genericOrRecoverCase = indexedAndOwnStructureMode ? recoverGenericCase : notFastNamedCases;
+
+            // FIXME: We shouldn't generate this code if we know base is not an object.
+            notFastNamedCases.append(branchTest32(NonZero, modeGPR, TrustedImm32(JSPropertyNameEnumerator::IndexedMode | JSPropertyNameEnumerator::GenericMode)));
+            {
+                if (!m_state.forNode(baseEdge).isType(SpecCell))
+                    genericOrRecoverCase.append(branchIfNotCell(baseRegs));
+
+                // Check the structure
+                // FIXME: If we know there's only one structure for base we can just embed it here.
+                load32(Address(baseRegs.payloadGPR(), JSCell::structureIDOffset()), scratchGPR);
+
+                auto badStructure = branch32(
+                    NotEqual,
+                    scratchGPR,
+                    Address(
+                        enumeratorGPR, JSPropertyNameEnumerator::cachedStructureIDOffset()));
+                genericOrRecoverCase.append(badStructure);
+
+                // Compute the offset
+                // If index is less than the enumerator's cached inline storage, then it's an inline access
+                Jump outOfLineAccess = branch32(AboveOrEqual,
+                    indexGPR, Address(enumeratorGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
+
+                storeValue(valueRegs, BaseIndex(baseRegs.payloadGPR(), indexGPR, TimesEight, JSObject::offsetOfInlineStorage()));
+
+                doneCases.append(jump());
+
+                // Otherwise it's out of line
+                outOfLineAccess.link(this);
+                move(indexGPR, scratchGPR);
+                sub32(Address(enumeratorGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), scratchGPR);
+                neg32(scratchGPR);
+                signExtend32ToPtr(scratchGPR, scratchGPR);
+                if (!haveStorage)
+                    loadPtr(Address(baseRegs.payloadGPR(), JSObject::butterflyOffset()), storageGPR);
+                constexpr intptr_t offsetOfFirstProperty = offsetInButterfly(firstOutOfLineOffset) * static_cast<intptr_t>(sizeof(EncodedJSValue));
+                storeValue(valueRegs, BaseIndex(storageGPR, scratchGPR, TimesEight, offsetOfFirstProperty));
+                doneCases.append(jump());
+            }
+
+            notFastNamedCases.link(this);
+            return std::tuple { valueRegs, DataFormatJS, CanUseFlush::No };
+        }));
+
+        if (!recoverGenericCase.empty()) {
+            if (baseRegs.tagGPR() == InvalidGPRReg)
+                addSlowPathGenerator(slowPathCall(recoverGenericCase, this, operationEnumeratorRecoverNameAndPutByVal, LinkableConstant::globalObject(*this, node), CellValue(baseRegs.payloadGPR()), valueRegs, indexGPR, enumeratorGPR));
+            else
+                addSlowPathGenerator(slowPathCall(recoverGenericCase, this, operationEnumeratorRecoverNameAndPutByVal, LinkableConstant::globalObject(*this, node), baseRegs, valueRegs, indexGPR, enumeratorGPR));
+        }
+
+        doneCases.link(this);
+    };
+
+    if (isCell(baseEdge.useKind())) {
+        // Use manual operand speculation since Fixup may have picked a UseKind more restrictive than CellUse.
+        SpeculateCellOperand base(this, baseEdge, ManualOperandSpeculation);
+        speculate(node, baseEdge);
+        generate(JSValueRegs::payloadOnly(base.gpr()));
+    } else {
+        JSValueOperand base(this, baseEdge);
+        generate(base.regs());
+    }
 }
 
 #endif
