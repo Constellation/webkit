@@ -1196,6 +1196,7 @@ private:
         }
 
         case EnumeratorPutByVal: {
+            fixEdge<CellUse>(m_graph.varArgChild(node, 0));
             fixEdge<KnownInt32Use>(m_graph.varArgChild(node, 4));
             fixEdge<KnownInt32Use>(m_graph.varArgChild(node, 5));
             fixEdge<KnownCellUse>(m_graph.varArgChild(node, 6));
