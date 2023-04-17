@@ -14563,8 +14563,8 @@ IGNORE_CLANG_WARNINGS_END
         m_out.branch(hasEnumeratorStructure, usually(checkReplacementSensitiveStructure), rarely(genericOrRecover));
 
         m_out.appendTo(checkReplacementSensitiveStructure);
-        LValue structure = decodeNonNullStructure(structureID);
-        LValue hasReplacementSensitiveStructure = m_out.testNonZero32(m_out.constInt32(Structure::s_mayBePrototypeBits | Structure::s_didWatchReplacementBits), m_out.load32(structureID, m_heaps.Structure_bitField));
+        LValue structureValue = decodeNonNullStructure(structureID);
+        LValue hasReplacementSensitiveStructure = m_out.testNonZero32(m_out.constInt32(Structure::s_mayBePrototypeBits | Structure::s_didWatchReplacementBits), m_out.load32(structureValue, m_heaps.Structure_bitField));
         m_out.branch(hasReplacementSensitiveStructure, rarely(genericOrRecover), usually(checkInlineOrOutOfLineBlock));
 
         m_out.appendTo(checkInlineOrOutOfLineBlock);
