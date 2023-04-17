@@ -6676,12 +6676,9 @@ void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
             // FIXME: If we know there's only one structure for base we can just embed it here.
             load32(Address(baseRegs.payloadGPR(), JSCell::structureIDOffset()), scratchGPR);
 
-            auto badStructure = branch32(
-                NotEqual,
-                scratchGPR,
-                Address(
-                    enumeratorGPR, JSPropertyNameEnumerator::cachedStructureIDOffset()));
-            genericOrRecoverCase.append(badStructure);
+            genericOrRecoverCase.append(branch32(NotEqual, scratchGPR, Address(enumeratorGPR, JSPropertyNameEnumerator::cachedStructureIDOffset())));
+            emitNonNullDecodeZeroExtendedStructureID(scratchGPR, scratchGPR);
+            genericOrRecoverCase.append(branchTest32(NonZero, TrustedImm32(Structure::s_mayBePrototypeBits | Structure::s_didWatchReplacementBits), Address(scratchGPR, Structure::bitFieldOffset())));
 
             // Compute the offset
             // If index is less than the enumerator's cached inline storage, then it's an inline access

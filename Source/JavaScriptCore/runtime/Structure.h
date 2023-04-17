@@ -340,6 +340,11 @@ public:
     {
         return typeInfo().hasStaticPropertyTable() && !staticPropertiesReified();
     }
+
+    bool canReplaceWithoutCallback() const
+    {
+        return !mayBePrototype() && !didWatchReplacement();
+    }
     
     // Type accessors.
     TypeInfo typeInfo() const { return m_blob.typeInfo(m_outOfLineTypeFlags); }
@@ -698,6 +703,11 @@ public:
         return OBJECT_OFFSETOF(Structure, m_previousOrRareData);
     }
 
+    static ptrdiff_t bitFieldOffset()
+    {
+        return OBJECT_OFFSETOF(Structure, m_bitField);
+    }
+
     static Structure* createStructure(VM&);
         
     bool transitionWatchpointSetHasBeenInvalidated() const
@@ -807,6 +817,7 @@ public:
 #define DEFINE_BITFIELD(type, lowerName, upperName, width, offset) \
     static constexpr uint32_t s_##lowerName##Shift = offset;\
     static constexpr uint32_t s_##lowerName##Mask = ((1 << (width - 1)) | ((1 << (width - 1)) - 1));\
+    static constexpr uint32_t s_##lowerName##Bits = s_##lowerName##Mask << s_##lowerName##Shift;\
     static constexpr uint32_t s_bitWidthOf##upperName = width;\
     type lowerName() const { return static_cast<type>((m_bitField >> offset) & s_##lowerName##Mask); }\
     void set##upperName(type newValue) \

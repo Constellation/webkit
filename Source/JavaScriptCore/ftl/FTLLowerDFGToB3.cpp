@@ -14530,6 +14530,7 @@ IGNORE_CLANG_WARNINGS_END
 
         LBasicBlock checkIsCellBlock = m_out.newBlock();
         LBasicBlock checkStructureBlock = m_out.newBlock();
+        LBasicBlock checkReplacementSensitiveStructure = m_out.newBlock();
         LBasicBlock checkInlineOrOutOfLineBlock = m_out.newBlock();
         LBasicBlock inlineLoadBlock = m_out.newBlock();
         LBasicBlock outOfLineLoadBlock = m_out.newBlock();
@@ -14559,8 +14560,12 @@ IGNORE_CLANG_WARNINGS_END
             structureID = m_out.load32(base, m_heaps.JSCell_structureID);
 
         LValue hasEnumeratorStructure = m_out.equal(structureID, m_out.load32(enumerator, m_heaps.JSPropertyNameEnumerator_cachedStructureID));
+        m_out.branch(hasEnumeratorStructure, usually(checkReplacementSensitiveStructure), rarely(genericOrRecover));
 
-        m_out.branch(hasEnumeratorStructure, usually(checkInlineOrOutOfLineBlock), rarely(genericOrRecover));
+        m_out.appendTo(checkReplacementSensitiveStructure);
+        LValue structure = decodeNonNullStructure(structureID);
+        LValue hasReplacementSensitiveStructure = m_out.testNonZero32(m_out.constInt32(Structure::s_mayBePrototypeBits | Structure::s_didWatchReplacementBits), m_out.load32(structureID, m_heaps.Structure_bitField));
+        m_out.branch(hasReplacementSensitiveStructure, rarely(genericOrRecover), usually(checkInlineOrOutOfLineBlock));
 
         m_out.appendTo(checkInlineOrOutOfLineBlock);
         LValue inlineCapacity = nullptr;

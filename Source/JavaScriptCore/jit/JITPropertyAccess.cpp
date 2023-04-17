@@ -2537,9 +2537,12 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     Jump isNotOwnStructureMode = branchTest32(NonZero, stubInfoGPR, TrustedImm32(JSPropertyNameEnumerator::IndexedMode | JSPropertyNameEnumerator::GenericMode));
 
     // Check the structure
+    JumpList structureMismatch;
     emitGetVirtualRegister(enumerator, scratch1);
     load32(Address(baseGPR, JSCell::structureIDOffset()), profileGPR);
-    Jump structureMismatch = branch32(NotEqual, profileGPR, Address(scratch1, JSPropertyNameEnumerator::cachedStructureIDOffset()));
+    structureMismatch.append(branch32(NotEqual, profileGPR, Address(scratch1, JSPropertyNameEnumerator::cachedStructureIDOffset())));
+    emitNonNullDecodeZeroExtendedStructureID(profileGPR, profileGPR);
+    structureMismatch.append(branchTest32(NonZero, TrustedImm32(Structure::s_mayBePrototypeBits | Structure::s_didWatchReplacementBits), Address(profileGPR, Structure::bitFieldOffset())));
 
     // Compute the offset.
     emitGetVirtualRegister(index, profileGPR);
