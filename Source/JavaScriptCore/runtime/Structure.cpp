@@ -989,6 +989,7 @@ WatchpointSet* Structure::ensurePropertyReplacementWatchpointSet(VM& vm, Propert
     if (!isValidOffset(offset))
         return nullptr;
     
+    setDidWatchReplacement(true);
     if (!hasRareData())
         allocateRareData(vm);
     ConcurrentJSLocker locker(m_lock);
