@@ -341,11 +341,6 @@ public:
         return typeInfo().hasStaticPropertyTable() && !staticPropertiesReified();
     }
 
-    bool canReplaceWithoutCallback() const
-    {
-        return !mayBePrototype() && !didWatchReplacement();
-    }
-    
     // Type accessors.
     TypeInfo typeInfo() const { return m_blob.typeInfo(m_outOfLineTypeFlags); }
     bool isObject() const { return typeInfo().isObject(); }
