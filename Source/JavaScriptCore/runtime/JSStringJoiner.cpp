@@ -46,7 +46,7 @@ static inline void appendStringToData(CharacterType*& data, StringView string)
 }
 
 template<typename CharacterType>
-static inline String joinStrings(const Vector<StringViewWithUnderlyingString>& strings, StringView separator, unsigned joinedLength)
+static inline String joinStrings(const Vector<JSStringJoiner::Entry>& strings, StringView separator, unsigned joinedLength)
 {
     ASSERT(joinedLength);
 
@@ -55,27 +55,27 @@ static inline String joinStrings(const Vector<StringViewWithUnderlyingString>& s
     if (UNLIKELY(result.isNull()))
         return result;
 
-    appendStringToData(data, strings[0].view);
+    appendStringToData(data, strings[0].view.view);
 
     unsigned size = strings.size();
 
     switch (separator.length()) {
     case 0:
         for (unsigned i = 1; i < size; ++i)
-            appendStringToData(data, strings[i].view);
+            appendStringToData(data, strings[i].view.view);
         break;
     case 1: {
         CharacterType separatorCharacter = separator[0];
         for (unsigned i = 1; i < size; ++i) {
             *data++ = separatorCharacter;
-            appendStringToData(data, strings[i].view);
+            appendStringToData(data, strings[i].view.view);
         }
         break;
     }
     default:
         for (unsigned i = 1; i < size; ++i) {
             appendStringToData(data, separator);
-            appendStringToData(data, strings[i].view);
+            appendStringToData(data, strings[i].view.view);
         }
     }
     ASSERT(data == result.characters<CharacterType>() + joinedLength);

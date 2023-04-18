@@ -33,6 +33,11 @@ namespace JSC {
 
 class JSStringJoiner {
 public:
+    struct Entry {
+        NO_UNIQUE_ADDRESS StringViewWithUnderlyingString m_view;
+        NO_UNIQUE_ADDRESS uint16_t m_count { 0 };
+    };
+
     JSStringJoiner(JSGlobalObject*, StringView separator, size_t stringCount);
     ~JSStringJoiner();
 
@@ -51,7 +56,7 @@ private:
     JSValue joinSlow(JSGlobalObject*);
 
     StringView m_separator;
-    Vector<StringViewWithUnderlyingString> m_strings;
+    Vector<Entry> m_strings;
     CheckedUint32 m_accumulatedStringsLength;
     bool m_isAll8Bit { true };
 };
@@ -69,7 +74,7 @@ inline JSStringJoiner::JSStringJoiner(JSGlobalObject* globalObject, StringView s
 inline JSValue JSStringJoiner::join(JSGlobalObject* globalObject)
 {
     if (m_strings.size() == 1)
-        return jsString(globalObject->vm(), m_strings[0].toString());
+        return jsString(globalObject->vm(), m_strings[0].view.toString());
     return joinSlow(globalObject);
 }
 
@@ -77,19 +82,19 @@ ALWAYS_INLINE void JSStringJoiner::append(StringViewWithUnderlyingString&& strin
 {
     m_accumulatedStringsLength += string.view.length();
     m_isAll8Bit = m_isAll8Bit && string.view.is8Bit();
-    m_strings.uncheckedAppend(WTFMove(string));
+    m_strings.uncheckedAppend({ WTFMove(string), 0 });
 }
 
 ALWAYS_INLINE void JSStringJoiner::append8Bit(const String& string)
 {
     ASSERT(string.is8Bit());
     m_accumulatedStringsLength += string.length();
-    m_strings.uncheckedAppend({ string, string });
+    m_strings.uncheckedAppend({ { string, string }, 0 });
 }
 
 ALWAYS_INLINE void JSStringJoiner::appendEmptyString()
 {
-    m_strings.uncheckedAppend({ { }, { } });
+    m_strings.uncheckedAppend({ { { }, { } }, 0 });
 }
 
 ALWAYS_INLINE bool JSStringJoiner::appendWithoutSideEffects(JSGlobalObject* globalObject, JSValue value)
