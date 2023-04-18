@@ -281,8 +281,13 @@ namespace WTF {
 
 struct StringViewWithUnderlyingString {
     WTF_MAKE_STRUCT_FAST_ALLOCATED;
-    StringView view;
+    StringViewWithUnderlyingString(StringView&& view, String&& string)
+        : underlyingString(WTFMove(string))
+        , view(WTFMove(view))
+    { }
+
     String underlyingString;
+    StringView view;
 
     String toString() const;
 };
