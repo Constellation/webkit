@@ -50,7 +50,7 @@ public:
     JSValue join(JSGlobalObject*);
 
 private:
-    void append(StringViewWithUnderlyingString&&);
+    void append(JSString*, StringViewWithUnderlyingString&&);
     void append8Bit(const String&);
     unsigned joinedLength(JSGlobalObject*) const;
     JSValue joinSlow(JSGlobalObject*);
@@ -78,7 +78,7 @@ inline JSValue JSStringJoiner::join(JSGlobalObject* globalObject)
     return joinSlow(globalObject);
 }
 
-ALWAYS_INLINE void JSStringJoiner::append(StringViewWithUnderlyingString&& string)
+ALWAYS_INLINE void JSStringJoiner::append(JSString*, StringViewWithUnderlyingString&& string)
 {
     m_accumulatedStringsLength += string.view.length();
     m_isAll8Bit = m_isAll8Bit && string.view.is8Bit();
@@ -114,7 +114,7 @@ ALWAYS_INLINE bool JSStringJoiner::appendWithoutSideEffects(JSGlobalObject* glob
         if (!value.asCell()->isString())
             return false;
         jsString = asString(value);
-        append(jsString->viewWithUnderlyingString(globalObject));
+        append(jsString, jsString->viewWithUnderlyingString(globalObject));
         return true;
     }
 
@@ -157,7 +157,7 @@ ALWAYS_INLINE void JSStringJoiner::append(JSGlobalObject* globalObject, JSValue 
     if (!success) {
         JSString* jsString = value.toString(globalObject);
         RETURN_IF_EXCEPTION(scope, void());
-        RELEASE_AND_RETURN(scope, append(jsString->viewWithUnderlyingString(globalObject)));
+        RELEASE_AND_RETURN(scope, append(jsString, jsString->viewWithUnderlyingString(globalObject)));
     }
 }
 

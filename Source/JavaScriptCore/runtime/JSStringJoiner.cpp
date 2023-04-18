@@ -58,6 +58,7 @@ static inline String joinStrings(const Vector<JSStringJoiner::Entry>& strings, S
     appendStringToData(data, strings[0].m_view.view);
 
     unsigned size = strings.size();
+    dataLogLn("SIZE: ", size);
 
     switch (separator.length()) {
     case 0:
