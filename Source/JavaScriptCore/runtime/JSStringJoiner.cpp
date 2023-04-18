@@ -61,7 +61,7 @@ static inline String joinStrings(const JSStringJoiner::Entries& strings, StringV
             const auto& entry = strings[i];
             unsigned count = entry.m_additional;
             do {
-                appendStringToData(data, strings[i].m_view.view);
+                appendStringToData(data, entry.m_view.view);
             } while (count--);
         }
         break;
@@ -116,12 +116,11 @@ inline unsigned JSStringJoiner::joinedLength(JSGlobalObject* globalObject) const
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    unsigned numberOfStrings = m_strings.size();
-    if (!numberOfStrings)
+    if (!m_stringsCount)
         return 0;
 
     CheckedInt32 separatorLength = m_separator.length();
-    CheckedInt32 totalSeparatorsLength = separatorLength * (numberOfStrings - 1);
+    CheckedInt32 totalSeparatorsLength = separatorLength * (m_stringsCount - 1);
     CheckedInt32 totalLength = totalSeparatorsLength + m_accumulatedStringsLength;
     if (totalLength.hasOverflowed()) {
         throwOutOfMemoryError(globalObject, scope);

@@ -63,6 +63,7 @@ private:
     StringView m_separator;
     Entries m_strings;
     CheckedUint32 m_accumulatedStringsLength;
+    CheckedUint32 m_stringsCount;
     bool m_isAll8Bit { true };
     JSString* m_lastString { nullptr };
 };
@@ -83,13 +84,14 @@ inline void JSStringJoiner::reserveCapacity(JSGlobalObject* globalObject, unsign
 
 inline JSValue JSStringJoiner::join(JSGlobalObject* globalObject)
 {
-    if (m_strings.size() == 1 && !m_strings[0].m_additional)
+    if (m_stringsCount == 1)
         return jsString(globalObject->vm(), m_strings[0].m_view.toString());
     return joinSlow(globalObject);
 }
 
 ALWAYS_INLINE void JSStringJoiner::append(JSString* jsString, StringViewWithUnderlyingString&& string)
 {
+    ++m_stringsCount;
     if (m_lastString == jsString) {
         auto& entry = m_strings.last();
         if (LIKELY(entry.m_additional < UINT16_MAX)) {
@@ -107,6 +109,7 @@ ALWAYS_INLINE void JSStringJoiner::append(JSString* jsString, StringViewWithUnde
 ALWAYS_INLINE void JSStringJoiner::append8Bit(const String& string)
 {
     ASSERT(string.is8Bit());
+    ++m_stringsCount;
     m_accumulatedStringsLength += string.length();
     m_strings.append({ { string, string }, 0 });
     m_lastString = nullptr;
@@ -114,6 +117,7 @@ ALWAYS_INLINE void JSStringJoiner::append8Bit(const String& string)
 
 ALWAYS_INLINE void JSStringJoiner::appendEmptyString()
 {
+    ++m_stringsCount;
     m_strings.append({ { { }, { } }, 0 });
     m_lastString = nullptr;
 }
