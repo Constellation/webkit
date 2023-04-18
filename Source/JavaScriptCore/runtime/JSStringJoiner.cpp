@@ -87,7 +87,7 @@ static inline String joinStrings(const JSStringJoiner::Entries& strings, StringV
         }
         break;
     }
-    default:
+    default: {
         {
             const auto& entry = strings[0];
             unsigned count = entry.m_additional;
@@ -105,6 +105,8 @@ static inline String joinStrings(const JSStringJoiner::Entries& strings, StringV
                 appendStringToData(data, entry.m_view.view);
             } while (count--);
         }
+        break;
+    }
     }
     ASSERT(data == result.characters<CharacterType>() + joinedLength);
 
