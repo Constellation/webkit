@@ -752,10 +752,16 @@ inline Structure* StructureTransitionTable::get(UniquedStringImpl* rep, unsigned
 
 inline void StructureTransitionTable::finalizeUnconditionally(VM& vm, CollectionScope)
 {
-    if (auto* transition = trySingleTransition()) {
-        if (!vm.heap.isMarked(transition))
-            m_data = UsingSingleSlotFlag;
+    if (isUsingSingleSlot()) {
+        if (auto* transition = trySingleTransition()) {
+            if (!vm.heap.isMarked(transition))
+                m_data = UsingSingleSlotFlag;
+        }
+        return;
     }
+    map()->removeIf([&](auto& entry) {
+        return !vm.heap.isMarked(entry.value);
+    });
 }
 
 inline void Structure::clearCachedPrototypeChain()

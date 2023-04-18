@@ -74,13 +74,28 @@ void StructureTransitionTable::add(VM& vm, JSCell* owner, Structure* structure)
 
         // This handles the second transition being added
         // (or the first transition being despecified!)
-        setMap(new TransitionMap(vm));
+        setMap(new TransitionMap);
         add(vm, owner, existingTransition);
     }
 
     // Add the structure to the map.
     map()->set(StructureTransitionTable::Hash::Key(structure->m_transitionPropertyName.get(), structure->transitionPropertyAttributes(), structure->transitionKind()), structure);
+    vm.writeBarrier(owner, structure);
 }
+
+template<typename Visitor>
+void StructureTransitionTable::visitAggregateImpl(Visitor& visitor)
+{
+    if (isUsingSingleSlot()) {
+        if (auto* transition = trySingleTransition())
+            visitor.appendUnbarriered(transition);
+        return;
+    }
+    for (auto& entry : *map())
+        visitor.appendUnbarriered(entry.value);
+}
+
+DEFINE_VISIT_AGGREGATE(StructureTransitionTable);
 
 void Structure::dumpStatistics()
 {
@@ -1269,10 +1284,9 @@ void Structure::visitChildrenImpl(JSCell* cell, Visitor& visitor)
         BrandedStructure::visitAdditionalChildren(cell, visitor);
 
     // Mark only in non Full collection. In full collection, we handle it as a weak-link.
-    if (!(visitor.heap()->collectionScope() == CollectionScope::Full)) {
-        if (auto* transition = thisObject->m_transitionTable.trySingleTransition())
-            visitor.appendUnbarriered(transition);
-    }
+    // Keep in mind that thisObject->m_lock is held.
+    if (!(visitor.heap()->collectionScope() == CollectionScope::Full))
+        thisObject->m_transitionTable.visitAggregate(visitor);
 }
 
 DEFINE_VISIT_CHILDREN(Structure);

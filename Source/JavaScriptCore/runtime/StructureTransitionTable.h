@@ -26,8 +26,8 @@
 #pragma once
 
 #include "IndexingType.h"
-#include "WeakGCMap.h"
 #include <wtf/HashFunctions.h>
+#include <wtf/HashMap.h>
 #include <wtf/text/UniquedStringImpl.h>
 
 namespace JSC {
@@ -236,7 +236,9 @@ class StructureTransitionTable {
     };
 #endif
 
-    typedef WeakGCMap<Hash::Key, Structure, Hash, Hash::KeyTraits> TransitionMap;
+    using TransitionMap = HashMap<Hash::Key, Structure*, Hash, Hash::KeyTraits>;
+
+    DECLARE_VISIT_AGGREGATE;
 
 public:
     StructureTransitionTable() = default;
@@ -258,8 +260,6 @@ public:
     void finalizeUnconditionally(VM&, CollectionScope);
 
 private:
-    friend class SingleSlotTransitionWeakOwner;
-
     bool isUsingSingleSlot() const
     {
         return m_data & UsingSingleSlotFlag;
