@@ -32,14 +32,19 @@
 namespace JSC {
 
 class JSStringJoiner {
+    WTF_FORBID_HEAP_ALLOCATION;
 public:
+
     struct Entry {
         NO_UNIQUE_ADDRESS StringViewWithUnderlyingString m_view;
-        NO_UNIQUE_ADDRESS uint16_t m_count { 0 };
+        NO_UNIQUE_ADDRESS uint16_t m_additional { 0 };
     };
+    using Entries = Vector<Entry, 16>;
 
-    JSStringJoiner(JSGlobalObject*, StringView separator, size_t stringCount);
+    JSStringJoiner(StringView separator);
     ~JSStringJoiner();
+
+    void reserveCapacity(JSGlobalObject*, unsigned);
 
     void append(JSGlobalObject*, JSValue);
     void appendNumber(VM&, int32_t);
@@ -56,45 +61,61 @@ private:
     JSValue joinSlow(JSGlobalObject*);
 
     StringView m_separator;
-    Vector<Entry> m_strings;
+    Entries m_strings;
     CheckedUint32 m_accumulatedStringsLength;
     bool m_isAll8Bit { true };
+    JSString* m_lastString { nullptr };
 };
 
-inline JSStringJoiner::JSStringJoiner(JSGlobalObject* globalObject, StringView separator, size_t stringCount)
+inline JSStringJoiner::JSStringJoiner(StringView separator)
     : m_separator(separator)
     , m_isAll8Bit(m_separator.is8Bit())
 {
+}
+
+inline void JSStringJoiner::reserveCapacity(JSGlobalObject* globalObject, unsigned count)
+{
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
-    if (UNLIKELY(!m_strings.tryReserveCapacity(stringCount)))
+    if (UNLIKELY(!m_strings.tryReserveCapacity(count)))
         throwOutOfMemoryError(globalObject, scope);
 }
 
 inline JSValue JSStringJoiner::join(JSGlobalObject* globalObject)
 {
-    if (m_strings.size() == 1)
+    if (m_strings.size() == 1 && !m_strings[0].m_additional)
         return jsString(globalObject->vm(), m_strings[0].m_view.toString());
     return joinSlow(globalObject);
 }
 
-ALWAYS_INLINE void JSStringJoiner::append(JSString*, StringViewWithUnderlyingString&& string)
+ALWAYS_INLINE void JSStringJoiner::append(JSString* jsString, StringViewWithUnderlyingString&& string)
 {
+    if (m_lastString == jsString) {
+        auto& entry = m_strings.last();
+        if (LIKELY(entry.m_additional < UINT16_MAX)) {
+            ++entry.m_additional;
+            m_accumulatedStringsLength += entry.m_view.view.length();
+            return;
+        }
+    }
     m_accumulatedStringsLength += string.view.length();
     m_isAll8Bit = m_isAll8Bit && string.view.is8Bit();
-    m_strings.uncheckedAppend({ WTFMove(string), 0 });
+    m_strings.append({ WTFMove(string), 0 });
+    m_lastString = jsString;
 }
 
 ALWAYS_INLINE void JSStringJoiner::append8Bit(const String& string)
 {
     ASSERT(string.is8Bit());
     m_accumulatedStringsLength += string.length();
-    m_strings.uncheckedAppend({ { string, string }, 0 });
+    m_strings.append({ { string, string }, 0 });
+    m_lastString = nullptr;
 }
 
 ALWAYS_INLINE void JSStringJoiner::appendEmptyString()
 {
-    m_strings.uncheckedAppend({ { { }, { } }, 0 });
+    m_strings.append({ { { }, { } }, 0 });
+    m_lastString = nullptr;
 }
 
 ALWAYS_INLINE bool JSStringJoiner::appendWithoutSideEffects(JSGlobalObject* globalObject, JSValue value)

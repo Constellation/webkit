@@ -30,9 +30,7 @@
 
 namespace JSC {
 
-JSStringJoiner::~JSStringJoiner()
-{
-}
+JSStringJoiner::~JSStringJoiner() = default;
 
 template<typename CharacterType>
 static inline void appendStringToData(CharacterType*& data, StringView string)
@@ -46,7 +44,7 @@ static inline void appendStringToData(CharacterType*& data, StringView string)
 }
 
 template<typename CharacterType>
-static inline String joinStrings(const Vector<JSStringJoiner::Entry>& strings, StringView separator, unsigned joinedLength)
+static inline String joinStrings(const JSStringJoiner::Entries& strings, StringView separator, unsigned joinedLength)
 {
     ASSERT(joinedLength);
 
@@ -55,28 +53,57 @@ static inline String joinStrings(const Vector<JSStringJoiner::Entry>& strings, S
     if (UNLIKELY(result.isNull()))
         return result;
 
-    appendStringToData(data, strings[0].m_view.view);
-
     unsigned size = strings.size();
-    dataLogLn("SIZE: ", size);
 
     switch (separator.length()) {
-    case 0:
-        for (unsigned i = 1; i < size; ++i)
-            appendStringToData(data, strings[i].m_view.view);
+    case 0: {
+        for (unsigned i = 0; i < size; ++i) {
+            const auto& entry = strings[i];
+            unsigned count = entry.m_additional;
+            do {
+                appendStringToData(data, strings[i].m_view.view);
+            } while (count--);
+        }
         break;
+    }
     case 1: {
         CharacterType separatorCharacter = separator[0];
+        {
+            const auto& entry = strings[0];
+            unsigned count = entry.m_additional;
+            appendStringToData(data, entry.m_view.view);
+            while (count--) {
+                *data++ = separatorCharacter;
+                appendStringToData(data, entry.m_view.view);
+            }
+        }
         for (unsigned i = 1; i < size; ++i) {
-            *data++ = separatorCharacter;
-            appendStringToData(data, strings[i].m_view.view);
+            const auto& entry = strings[i];
+            unsigned count = entry.m_additional;
+            do {
+                *data++ = separatorCharacter;
+                appendStringToData(data, entry.m_view.view);
+            } while (count--);
         }
         break;
     }
     default:
+        {
+            const auto& entry = strings[0];
+            unsigned count = entry.m_additional;
+            appendStringToData(data, entry.m_view.view);
+            while (count--) {
+                appendStringToData(data, separator);
+                appendStringToData(data, entry.m_view.view);
+            }
+        }
         for (unsigned i = 1; i < size; ++i) {
-            appendStringToData(data, separator);
-            appendStringToData(data, strings[i].m_view.view);
+            const auto& entry = strings[i];
+            unsigned count = entry.m_additional;
+            do {
+                appendStringToData(data, separator);
+                appendStringToData(data, entry.m_view.view);
+            } while (count--);
         }
     }
     ASSERT(data == result.characters<CharacterType>() + joinedLength);
