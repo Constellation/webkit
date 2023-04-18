@@ -55,27 +55,27 @@ static inline String joinStrings(const Vector<JSStringJoiner::Entry>& strings, S
     if (UNLIKELY(result.isNull()))
         return result;
 
-    appendStringToData(data, strings[0].view.view);
+    appendStringToData(data, strings[0].m_view.view);
 
     unsigned size = strings.size();
 
     switch (separator.length()) {
     case 0:
         for (unsigned i = 1; i < size; ++i)
-            appendStringToData(data, strings[i].view.view);
+            appendStringToData(data, strings[i].m_view.view);
         break;
     case 1: {
         CharacterType separatorCharacter = separator[0];
         for (unsigned i = 1; i < size; ++i) {
             *data++ = separatorCharacter;
-            appendStringToData(data, strings[i].view.view);
+            appendStringToData(data, strings[i].m_view.view);
         }
         break;
     }
     default:
         for (unsigned i = 1; i < size; ++i) {
             appendStringToData(data, separator);
-            appendStringToData(data, strings[i].view.view);
+            appendStringToData(data, strings[i].m_view.view);
         }
     }
     ASSERT(data == result.characters<CharacterType>() + joinedLength);
