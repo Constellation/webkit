@@ -722,6 +722,8 @@ public:
     JS_EXPORT_PRIVATE double toNumber(JSGlobalObject*) const;
     JS_EXPORT_PRIVATE JSString* toString(JSGlobalObject*) const;
 
+    JSValue toPrimitivePreferString(JSGlobalObject*) const;
+
     // This get function only looks at the property map.
     JSValue getDirect(VM& vm, PropertyName propertyName) const
     {
