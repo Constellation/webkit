@@ -52,12 +52,20 @@ ParallelHelperClient::~ParallelHelperClient()
     }
 }
 
-void ParallelHelperClient::setTask(RefPtr<SharedTask<void ()>>&& task)
+void ParallelHelperClient::startTaskAll(RefPtr<SharedTask<void ()>>&& task)
 {
     Locker locker { *m_pool->m_lock };
     RELEASE_ASSERT(!m_task);
     m_task = WTFMove(task);
-    m_pool->didMakeWorkAvailable(locker);
+    m_pool->didMakeWorkAvailableAll(locker);
+}
+
+void ParallelHelperClient::startTaskOne(RefPtr<SharedTask<void ()>>&& task)
+{
+    Locker locker { *m_pool->m_lock };
+    RELEASE_ASSERT(!m_task);
+    m_task = WTFMove(task);
+    m_pool->didMakeWorkAvailableOne(locker);
 }
 
 void ParallelHelperClient::finish()
@@ -81,7 +89,7 @@ void ParallelHelperClient::doSomeHelping()
 
 void ParallelHelperClient::runTaskInParallel(RefPtr<SharedTask<void ()>>&& task)
 {
-    setTask(WTFMove(task));
+    startTaskAll(WTFMove(task));
     doSomeHelping();
     finish();
 }
@@ -149,7 +157,7 @@ void ParallelHelperPool::ensureThreads(unsigned numThreads)
         return;
     m_numThreads = numThreads;
     if (getClientWithTask())
-        didMakeWorkAvailable(locker);
+        didMakeWorkAvailableAll(locker);
 }
 
 void ParallelHelperPool::doSomeHelping()
@@ -209,11 +217,18 @@ private:
     RefPtr<SharedTask<void ()>> m_task;
 };
 
-void ParallelHelperPool::didMakeWorkAvailable(const AbstractLocker& locker)
+void ParallelHelperPool::didMakeWorkAvailableAll(const AbstractLocker& locker)
 {
     while (m_numThreads > m_threads.size())
         m_threads.append(adoptRef(new Thread(locker, *this)));
     m_workAvailableCondition->notifyAll(locker);
+}
+
+void ParallelHelperPool::didMakeWorkAvailableOne(const AbstractLocker& locker)
+{
+    while (m_numThreads > m_threads.size())
+        m_threads.append(adoptRef(new Thread(locker, *this)));
+    m_workAvailableCondition->notifyOne(locker);
 }
 
 bool ParallelHelperPool::hasClientWithTask()

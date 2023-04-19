@@ -80,7 +80,8 @@ private:
     class Thread;
     friend class Thread;
 
-    void didMakeWorkAvailable(const AbstractLocker&) WTF_REQUIRES_LOCK(m_lock);
+    void didMakeWorkAvailableAll(const AbstractLocker&) WTF_REQUIRES_LOCK(m_lock);
+    void didMakeWorkAvailableOne(const AbstractLocker&) WTF_REQUIRES_LOCK(m_lock);
 
     bool hasClientWithTask() WTF_REQUIRES_LOCK(m_lock);
     ParallelHelperClient* getClientWithTask() WTF_REQUIRES_LOCK(m_lock);
@@ -99,8 +100,8 @@ private:
 };
 
 // A client is a placeholder for a parallel algorithm. A parallel algorithm will have a task that
-// can be run concurrently. Whenever a client has a task set (you have called setTask() or
-// setFunction()), threads in the pool may run that task. If a task returns on any thread, the
+// can be run concurrently. Whenever a client has a task set (you have called startTaskAll() or
+// startTaskOne()), threads in the pool may run that task. If a task returns on any thread, the
 // client will assume that the task is done and will clear the task. If the task is cleared (the
 // task runs to completion on any thread or you call finish()), any threads in the pool already
 // running the last set task(s) will continue to run them. You can wait for all of them to finish
@@ -168,26 +169,21 @@ public:
     WTF_EXPORT_PRIVATE ParallelHelperClient(RefPtr<ParallelHelperPool>&&);
     WTF_EXPORT_PRIVATE ~ParallelHelperClient();
 
-    WTF_EXPORT_PRIVATE void setTask(RefPtr<SharedTask<void ()>>&&);
-
-    template<typename Functor>
-    void setFunction(const Functor& functor)
-    {
-        setTask(createSharedTask<void ()>(functor));
-    }
+    WTF_EXPORT_PRIVATE void startTaskAll(RefPtr<SharedTask<void ()>>&&);
+    WTF_EXPORT_PRIVATE void startTaskOne(RefPtr<SharedTask<void ()>>&&);
 
     WTF_EXPORT_PRIVATE void finish();
 
     WTF_EXPORT_PRIVATE void doSomeHelping();
 
     // Equivalent to:
-    // client->setTask(task);
+    // client->startTaskAll(task);
     // client->doSomeHelping();
     // client->finish();
     WTF_EXPORT_PRIVATE void runTaskInParallel(RefPtr<SharedTask<void ()>>&&);
 
     // Equivalent to:
-    // client->setFunction(functor);
+    // client->startTaskAll(functor);
     // client->doSomeHelping();
     // client->finish();
     template<typename Functor>
