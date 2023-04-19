@@ -1637,8 +1637,7 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         removeDeadCompilerWorklistEntries();
     }
 
-    for (auto& task : tasks)
-        task->run(*this);
+    m_helperClient.doSomeHelping();
 
     notifyIncrementalSweeper();
     
