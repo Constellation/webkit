@@ -695,11 +695,6 @@ void Heap::finalizeUnconditionalFinalizers()
     }
 
     finalizeMarkedUnconditionalFinalizers<SymbolTable>(symbolTableSpace, collectionScope);
-
-    forEachCodeBlockSpace(
-        [&] (auto& space) {
-            this->finalizeMarkedUnconditionalFinalizers<CodeBlock>(space.set, collectionScope);
-        });
     if (collectionScope == CollectionScope::Full) {
         finalizeMarkedUnconditionalFinalizers<Structure>(structureSpace, collectionScope);
         finalizeMarkedUnconditionalFinalizers<BrandedStructure>(brandedStructureSpace, collectionScope);
@@ -1390,8 +1385,7 @@ NEVER_INLINE bool Heap::runBeginPhase(GCConductor conn)
 
     m_parallelMarkersShouldExit = false;
 
-    m_helperClient.setFunction(
-        [this] () {
+    m_helperClient.startTaskAll(createSharedTask<void()>([this]() {
             SlotVisitor* visitor;
             {
                 Locker locker { m_parallelSlotVisitorLock };
@@ -1410,7 +1404,7 @@ NEVER_INLINE bool Heap::runBeginPhase(GCConductor conn)
                 Locker locker { m_parallelSlotVisitorLock };
                 m_availableParallelSlotVisitors.append(visitor);
             }
-        });
+        }));
 
     SlotVisitor& visitor = *m_collectorSlotVisitor;
 
@@ -1599,7 +1593,15 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         m_verifier->gatherLiveCells(HeapVerifier::Phase::AfterMarking);
         m_verifier->verify(HeapVerifier::Phase::AfterMarking);
     }
-        
+
+    CollectionScope collectionScope = this->collectionScope().value_or(CollectionScope::Full);
+    m_helperClient.startTaskOne(createSharedTask<void()>([this, collectionScope]() {
+            forEachCodeBlockSpace(
+                [&](auto& space) {
+                    this->finalizeMarkedUnconditionalFinalizers<CodeBlock>(space.set, collectionScope);
+                });
+        }));
+
     {
         auto* previous = Thread::current().setCurrentAtomStringTable(nullptr);
         auto scopeExit = makeScopeExit([&] {
@@ -1633,6 +1635,7 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         m_verifier->verify(HeapVerifier::Phase::AfterGC);
     }
 
+    m_helperClient.finish();
     didFinishCollection();
     
     if (m_currentRequest.didFinishEndPhase)
