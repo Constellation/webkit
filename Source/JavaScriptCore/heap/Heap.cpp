@@ -1611,14 +1611,14 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
     forEachCodeBlockSpace(
         [&](auto& space) {
             RefPtr<SharedTask<void(Heap&)>> task = space.space.template forEachMarkedCellInParallel<Heap>(callCodeBlockUpdate);
-            tasks.append(task);
+            tasks.append(WTFMove(task));
         });
     {
         auto callReap = [](auto&, WeakBlock* block) {
             block->reap();
         };
         RefPtr<SharedTask<void(Heap&)>> task = m_objectSpace.forEachWeakInParallel<Heap>(callReap);
-        tasks.append(task);
+        tasks.append(WTFMove(task));
     }
 
     m_helperClient.startTaskAll(createSharedTask<void()>([this, &tasks]() {
@@ -1648,7 +1648,10 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         [&] (CodeBlock* codeBlock) {
             writeBarrier(codeBlock);
         });
-        
+
+    m_helperClient.doSomeHelping();
+    m_helperClient.finish();
+
     m_objectSpace.prepareForAllocation();
     updateAllocationLimits();
 
@@ -1657,8 +1660,6 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         m_verifier->verify(HeapVerifier::Phase::AfterGC);
     }
 
-    m_helperClient.doSomeHelping();
-    m_helperClient.finish();
     m_codeBlocks->clearCurrentlyExecuting();
     didFinishCollection();
     
