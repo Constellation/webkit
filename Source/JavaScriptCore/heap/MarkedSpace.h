@@ -105,10 +105,8 @@ public:
     
     void prepareForAllocation();
 
-    void reapWeakSets();
-
-    template<typename Visitor>
-    Ref<SharedTask<void(Visitor&)>> forEachWeakInParallel();
+    template<typename Visitor, typename Func>
+    Ref<SharedTask<void(Visitor&)>> forEachWeakInParallel(const Func&);
 
     MarkedBlockSet& blocks() { return m_blocks; }
 

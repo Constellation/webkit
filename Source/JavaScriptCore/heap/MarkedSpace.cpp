@@ -273,18 +273,6 @@ void MarkedSpace::enablePreciseAllocationTracking()
         m_preciseAllocationSet->add(allocation->cell());
 }
 
-void MarkedSpace::reapWeakSets()
-{
-    auto visit = [&] (WeakSet* weakSet) {
-        weakSet->reap();
-    };
-    
-    m_newActiveWeakSets.forEach(visit);
-    
-    if (heap().collectionScope() == CollectionScope::Full)
-        m_activeWeakSets.forEach(visit);
-}
-
 void MarkedSpace::stopAllocating()
 {
     ASSERT(!isIterating());

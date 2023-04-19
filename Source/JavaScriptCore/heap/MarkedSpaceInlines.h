@@ -76,16 +76,17 @@ template<typename Functor> inline void MarkedSpace::forEachDeadCell(HeapIteratio
     }
 }
 
-template<typename Visitor>
-inline Ref<SharedTask<void(Visitor&)>> MarkedSpace::forEachWeakInParallel()
+template<typename Visitor, typename Func>
+inline Ref<SharedTask<void(Visitor&)>> MarkedSpace::forEachWeakInParallel(const Func& func)
 {
     constexpr unsigned batchSize = 16;
     class Task final : public SharedTask<void(Visitor&)> {
     public:
-        Task(MarkedSpace& markedSpace)
+        Task(MarkedSpace& markedSpace, const Func& func)
             : m_markedSpace(markedSpace)
             , m_newActiveCursor(markedSpace.m_newActiveWeakSets.begin())
             , m_activeCursor(markedSpace.heap().collectionScope() == CollectionScope::Full ? markedSpace.m_activeWeakSets.begin() : markedSpace.m_activeWeakSets.end())
+            , m_func(func)
         {
         }
 
@@ -127,7 +128,7 @@ inline Ref<SharedTask<void(Visitor&)>> MarkedSpace::forEachWeakInParallel()
                 if (results.isEmpty())
                     return;
                 for (WeakBlock* block : results)
-                    block->visit(visitor);
+                    m_func(visitor, block);
                 results.clear();
             }
         }
@@ -137,10 +138,11 @@ inline Ref<SharedTask<void(Visitor&)>> MarkedSpace::forEachWeakInParallel()
         WeakBlock* m_current { nullptr };
         SentinelLinkedList<WeakSet, BasicRawSentinelNode<WeakSet>>::iterator m_newActiveCursor;
         SentinelLinkedList<WeakSet, BasicRawSentinelNode<WeakSet>>::iterator m_activeCursor;
+        Func m_func;
         Lock m_lock;
     };
 
-    return adoptRef(*new Task(*this));
+    return adoptRef(*new Task(*this, func));
 }
 
 } // namespace JSC

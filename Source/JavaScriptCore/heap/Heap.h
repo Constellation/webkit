@@ -684,7 +684,6 @@ private:
     void updateObjectCounts();
     void endMarking();
 
-    void reapWeakHandles();
     void pruneStaleEntriesFromWeakGCHashTables();
     void sweepArrayBuffers();
     void snapshotUnswept();

@@ -1605,14 +1605,26 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
     auto callCodeBlockUpdate = [](auto&, HeapCell* heapCell, HeapCell::Kind) {
         auto* codeBlock = static_cast<CodeBlock*>(heapCell);
         if (JITCode::isBaselineCode(codeBlock->jitType()))
-            codeBlock->updateAllPredictionsInGCEndPhase();
+            codeBlock->updateAllPredictions();
     };
 
     forEachCodeBlockSpace(
         [&](auto& space) {
-            RefPtr<SharedTask<void(Heap&)>> task = space.set.template forEachMarkedCellInParallel<Heap>(callCodeBlockUpdate);
+            RefPtr<SharedTask<void(Heap&)>> task = space.space.template forEachMarkedCellInParallel<Heap>(callCodeBlockUpdate);
             tasks.append(task);
         });
+    {
+        auto callReap = [](auto&, WeakBlock* block) {
+            block->reap();
+        };
+        RefPtr<SharedTask<void(Heap&)>> task = m_objectSpace.forEachWeakInParallel<Heap>(callReap);
+        tasks.append(task);
+    }
+
+    m_helperClient.startTaskAll(createSharedTask<void()>([this, &tasks]() {
+            for (auto& task : tasks)
+                task->run(*this);
+        }));
 
     {
         auto* previous = Thread::current().setCurrentAtomStringTable(nullptr);
@@ -1623,21 +1635,12 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         if (vm().typeProfiler())
             vm().typeProfiler()->invalidateTypeSetCache(vm());
 
-        reapWeakHandles();
         pruneStaleEntriesFromWeakGCHashTables();
         sweepArrayBuffers();
         snapshotUnswept();
-
-        m_helperClient.startTaskAll(createSharedTask<void()>([this, &tasks]() {
-                for (auto& task : tasks)
-                    task->run(*this);
-            }));
-
         finalizeUnconditionalFinalizers(); // We rely on these unconditional finalizers running before clearCurrentlyExecuting since CodeBlock's finalizer relies on querying currently executing.
         removeDeadCompilerWorklistEntries();
     }
-
-    m_helperClient.doSomeHelping();
 
     notifyIncrementalSweeper();
     
@@ -1654,6 +1657,7 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         m_verifier->verify(HeapVerifier::Phase::AfterGC);
     }
 
+    m_helperClient.doSomeHelping();
     m_helperClient.finish();
     m_codeBlocks->clearCurrentlyExecuting();
     didFinishCollection();
@@ -2305,11 +2309,6 @@ void Heap::prepareForMarking()
     m_objectSpace.prepareForMarking();
 }
 
-void Heap::reapWeakHandles()
-{
-    m_objectSpace.reapWeakSets();
-}
-
 void Heap::pruneStaleEntriesFromWeakGCHashTables()
 {
     if (!m_collectionScope || m_collectionScope.value() != CollectionScope::Full)
@@ -2940,7 +2939,10 @@ void Heap::addCoreConstraints()
         "Ws", "Weak Sets",
         MAKE_MARKING_CONSTRAINT_EXECUTOR_PAIR(([this] (auto& visitor) {
             SetRootMarkReasonScope rootScope(visitor, RootMarkReason::WeakSets);
-            RefPtr<SharedTask<void(decltype(visitor)&)>> task = m_objectSpace.forEachWeakInParallel<decltype(visitor)>();
+            auto callVisit = [](auto& visitor2, WeakBlock* block) {
+                block->visit(visitor2);
+            };
+            RefPtr<SharedTask<void(decltype(visitor)&)>> task = m_objectSpace.forEachWeakInParallel<decltype(visitor)>(callVisit);
             visitor.addParallelConstraintTask(WTFMove(task));
         })),
         ConstraintVolatility::GreyedByMarking,

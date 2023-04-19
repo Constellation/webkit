@@ -1620,13 +1620,6 @@ void CodeBlock::finalizeJITInlineCaches()
 
 void CodeBlock::finalizeUnconditionally(VM& vm, CollectionScope)
 {
-    UNUSED_PARAM(vm);
-
-    // CodeBlock::finalizeUnconditionally is called for all live CodeBlocks.
-    // We do not need to call updateAllPredictions for DFG / FTL since the same thing happens in LLInt / Baseline CodeBlock for them.
-    if (JITCode::isBaselineCode(jitType()))
-        updateAllArrayAllocationProfilePredictions();
-
     if (JITCode::couldBeInterpreted(jitType())) {
         finalizeLLIntInlineCaches();
         // If the CodeBlock is DFG or FTL, CallLinkInfo in metadata is not related.
@@ -2944,16 +2937,6 @@ void CodeBlock::updateAllPredictions()
 {
     updateAllNonLazyValueProfilePredictions(ConcurrentJSLocker(valueProfileLock()));
     updateAllArrayAllocationProfilePredictions();
-    {
-        ConcurrentJSLocker locker(m_lock);
-        updateAllLazyValueProfilePredictions(locker);
-        updateAllArrayProfilePredictions(locker);
-    }
-}
-
-void CodeBlock::updateAllPredictionsInGCEndPhase()
-{
-    updateAllNonLazyValueProfilePredictions(ConcurrentJSLocker(valueProfileLock()));
     {
         ConcurrentJSLocker locker(m_lock);
         updateAllLazyValueProfilePredictions(locker);
