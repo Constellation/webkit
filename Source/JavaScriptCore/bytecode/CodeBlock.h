@@ -724,6 +724,7 @@ public:
     void updateAllArrayProfilePredictions(const ConcurrentJSLocker&);
     void updateAllArrayAllocationProfilePredictions();
     void updateAllPredictions();
+    void updateAllPredictionsInGCEndPhase();
 
     unsigned frameRegisterCount();
     int stackPointerOffset();

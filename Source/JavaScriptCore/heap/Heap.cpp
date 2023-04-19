@@ -695,6 +695,12 @@ void Heap::finalizeUnconditionalFinalizers()
     }
 
     finalizeMarkedUnconditionalFinalizers<SymbolTable>(symbolTableSpace, collectionScope);
+
+    forEachCodeBlockSpace(
+        [&] (auto& space) {
+            this->finalizeMarkedUnconditionalFinalizers<CodeBlock>(space.set, collectionScope);
+        });
+
     if (collectionScope == CollectionScope::Full) {
         finalizeMarkedUnconditionalFinalizers<Structure>(structureSpace, collectionScope);
         finalizeMarkedUnconditionalFinalizers<BrandedStructure>(brandedStructureSpace, collectionScope);
@@ -1594,13 +1600,19 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         m_verifier->verify(HeapVerifier::Phase::AfterMarking);
     }
 
-    CollectionScope collectionScope = this->collectionScope().value_or(CollectionScope::Full);
-    m_helperClient.startTaskOne(createSharedTask<void()>([this, collectionScope]() {
-            forEachCodeBlockSpace(
-                [&](auto& space) {
-                    this->finalizeMarkedUnconditionalFinalizers<CodeBlock>(space.set, collectionScope);
-                });
-        }));
+    Vector<RefPtr<SharedTask<void(Heap&)>>, 8> tasks;
+
+    auto callCodeBlockUpdate = [](auto&, HeapCell* heapCell, HeapCell::Kind) {
+        auto* codeBlock = static_cast<CodeBlock*>(heapCell);
+        if (JITCode::isBaselineCode(codeBlock->jitType()))
+            codeBlock->updateAllPredictionsInGCEndPhase();
+    };
+
+    forEachCodeBlockSpace(
+        [&](auto& space) {
+            RefPtr<SharedTask<void(Heap&)>> task = space.set.template forEachMarkedCellInParallel<Heap>(callCodeBlockUpdate);
+            tasks.append(task);
+        });
 
     {
         auto* previous = Thread::current().setCurrentAtomStringTable(nullptr);
@@ -1615,9 +1627,18 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         pruneStaleEntriesFromWeakGCHashTables();
         sweepArrayBuffers();
         snapshotUnswept();
+
+        m_helperClient.startTaskAll(createSharedTask<void()>([this, &tasks]() {
+                for (auto& task : tasks)
+                    task->run(*this);
+            }));
+
         finalizeUnconditionalFinalizers(); // We rely on these unconditional finalizers running before clearCurrentlyExecuting since CodeBlock's finalizer relies on querying currently executing.
         removeDeadCompilerWorklistEntries();
     }
+
+    for (auto& task : tasks)
+        task->run(*this);
 
     notifyIncrementalSweeper();
     
@@ -1625,7 +1646,6 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         [&] (CodeBlock* codeBlock) {
             writeBarrier(codeBlock);
         });
-    m_codeBlocks->clearCurrentlyExecuting();
         
     m_objectSpace.prepareForAllocation();
     updateAllocationLimits();
@@ -1636,6 +1656,7 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
     }
 
     m_helperClient.finish();
+    m_codeBlocks->clearCurrentlyExecuting();
     didFinishCollection();
     
     if (m_currentRequest.didFinishEndPhase)

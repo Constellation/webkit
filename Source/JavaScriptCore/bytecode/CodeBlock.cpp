@@ -1625,7 +1625,7 @@ void CodeBlock::finalizeUnconditionally(VM& vm, CollectionScope)
     // CodeBlock::finalizeUnconditionally is called for all live CodeBlocks.
     // We do not need to call updateAllPredictions for DFG / FTL since the same thing happens in LLInt / Baseline CodeBlock for them.
     if (JITCode::isBaselineCode(jitType()))
-        updateAllPredictions();
+        updateAllArrayAllocationProfilePredictions();
 
     if (JITCode::couldBeInterpreted(jitType())) {
         finalizeLLIntInlineCaches();
@@ -2944,6 +2944,16 @@ void CodeBlock::updateAllPredictions()
 {
     updateAllNonLazyValueProfilePredictions(ConcurrentJSLocker(valueProfileLock()));
     updateAllArrayAllocationProfilePredictions();
+    {
+        ConcurrentJSLocker locker(m_lock);
+        updateAllLazyValueProfilePredictions(locker);
+        updateAllArrayProfilePredictions(locker);
+    }
+}
+
+void CodeBlock::updateAllPredictionsInGCEndPhase()
+{
+    updateAllNonLazyValueProfilePredictions(ConcurrentJSLocker(valueProfileLock()));
     {
         ConcurrentJSLocker locker(m_lock);
         updateAllLazyValueProfilePredictions(locker);
