@@ -5021,6 +5021,12 @@ void ByteCodeParser::handleGetById(
                 return;
             }
         }
+        if (type == AccessType::GetById) {
+            if (getByStatus.isMegamorphic()) {
+                set(destination, addToGraph(GetByIdMegamorphic, OpInfo(identifier), OpInfo(prediction), base));
+                return;
+            }
+        }
     }
 
     // Special path for custom accessors since custom's offset does not have any meanings.

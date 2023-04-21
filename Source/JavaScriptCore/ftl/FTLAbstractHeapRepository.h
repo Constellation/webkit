@@ -31,6 +31,7 @@
 #include "DFGArrayMode.h"
 #include "FTLAbstractHeap.h"
 #include "HasOwnPropertyCache.h"
+#include "MegamorphicCache.h"
 #include "IndexingType.h"
 #include "JSGlobalObject.h"
 #include "JSMap.h"
@@ -131,6 +132,12 @@ namespace JSC { namespace FTL {
     macro(JSScope_next, JSScope::offsetOfNext()) \
     macro(JSSymbolTableObject_symbolTable, JSSymbolTableObject::offsetOfSymbolTable()) \
     macro(JSWebAssemblyInstance_moduleRecord, JSWebAssemblyInstance::offsetOfModuleRecord()) \
+    macro(MegamorphicCache_epoch, MegamorphicCache::offsetOfEpoch()) \
+    macro(MegamorphicCache_Entry_epoch, MegamorphicCache::Entry::offsetOfEpoch()) \
+    macro(MegamorphicCache_Entry_holder, MegamorphicCache::Entry::offsetOfHolder()) \
+    macro(MegamorphicCache_Entry_offset, MegamorphicCache::Entry::offsetOfOffset()) \
+    macro(MegamorphicCache_Entry_structureID, MegamorphicCache::Entry::offsetOfStructureID()) \
+    macro(MegamorphicCache_Entry_uid, MegamorphicCache::Entry::offsetOfUid()) \
     macro(NativeExecutable_asString, NativeExecutable::offsetOfAsString()) \
     macro(RegExpObject_regExpAndFlags, RegExpObject::offsetOfRegExpAndFlags()) \
     macro(RegExpObject_lastIndex, RegExpObject::offsetOfLastIndex()) \
@@ -199,6 +206,7 @@ namespace JSC { namespace FTL {
     macro(structureTable, 0, sizeof(Structure*)) \
     macro(variables, 0, sizeof(Register)) \
     macro(HasOwnPropertyCache, 0, sizeof(HasOwnPropertyCache::Entry)) \
+    macro(MegamorphicCache, 0, sizeof(MegamorphicCache::Entry)) \
     
 #define FOR_EACH_NUMBERED_ABSTRACT_HEAP(macro) \
     macro(properties)
