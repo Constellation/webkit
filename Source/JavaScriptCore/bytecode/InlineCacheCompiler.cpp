@@ -1281,10 +1281,10 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
         jit.xor32(scratch2GPR, scratch3GPR);
         jit.add32(CCallHelpers::TrustedImm32(hash), scratch3GPR);
         jit.and32(CCallHelpers::TrustedImm32(MegamorphicCache::primaryMask), scratch3GPR);
-        if constexpr (hasOneBitSet(sizeof(MegamorphicCache::Entry))) // is a power of 2
-            jit.lshift32(CCallHelpers::TrustedImm32(getLSBSet(sizeof(MegamorphicCache::Entry))), scratch3GPR);
+        if constexpr (hasOneBitSet(sizeof(MegamorphicCache::LoadEntry))) // is a power of 2
+            jit.lshift32(CCallHelpers::TrustedImm32(getLSBSet(sizeof(MegamorphicCache::LoadEntry))), scratch3GPR);
         else
-            jit.mul32(CCallHelpers::TrustedImm32(sizeof(MegamorphicCache::Entry)), scratch3GPR, scratch3GPR);
+            jit.mul32(CCallHelpers::TrustedImm32(sizeof(MegamorphicCache::LoadEntry)), scratch3GPR, scratch3GPR);
         auto& cache = vm.ensureMegamorphicCache();
         jit.move(CCallHelpers::TrustedImmPtr(&cache), scratch2GPR);
         ASSERT(!MegamorphicCache::offsetOfPrimaryEntries());
@@ -1292,17 +1292,17 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
 
         jit.load16(CCallHelpers::Address(scratch2GPR, MegamorphicCache::offsetOfEpoch()), scratch4GPR);
 
-        jit.load16(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfEpoch()), scratch2GPR);
+        jit.load16(CCallHelpers::Address(scratch3GPR, MegamorphicCache::LoadEntry::offsetOfEpoch()), scratch2GPR);
         primaryFail.append(jit.branch32(CCallHelpers::NotEqual, scratch4GPR, scratch2GPR));
-        primaryFail.append(jit.branch32(CCallHelpers::NotEqual, scratchGPR, CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfStructureID())));
-        primaryFail.append(jit.branchPtr(CCallHelpers::NotEqual, CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfUid()), CCallHelpers::TrustedImmPtr(accessCase.m_identifier.uid())));
+        primaryFail.append(jit.branch32(CCallHelpers::NotEqual, scratchGPR, CCallHelpers::Address(scratch3GPR, MegamorphicCache::LoadEntry::offsetOfStructureID())));
+        primaryFail.append(jit.branchPtr(CCallHelpers::NotEqual, CCallHelpers::Address(scratch3GPR, MegamorphicCache::LoadEntry::offsetOfUid()), CCallHelpers::TrustedImmPtr(accessCase.m_identifier.uid())));
 
         // Cache hit!
         CCallHelpers::Label cacheHit = jit.label();
-        jit.loadPtr(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfHolder()), scratch2GPR);
+        jit.loadPtr(CCallHelpers::Address(scratch3GPR, MegamorphicCache::LoadEntry::offsetOfHolder()), scratch2GPR);
         auto missed = jit.branchTestPtr(CCallHelpers::Zero, scratch2GPR);
         jit.moveConditionally64(CCallHelpers::Equal, scratch2GPR, CCallHelpers::TrustedImm32(bitwise_cast<uintptr_t>(JSCell::seenMultipleCalleeObjects())), baseGPR, scratch2GPR, scratchGPR);
-        jit.load16(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfOffset()), scratch2GPR);
+        jit.load16(CCallHelpers::Address(scratch3GPR, MegamorphicCache::LoadEntry::offsetOfOffset()), scratch2GPR);
         jit.loadProperty(scratchGPR, scratch2GPR, valueRegs);
         auto done = jit.jump();
 
@@ -1319,16 +1319,16 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
         jit.urshift32(scratch2GPR, CCallHelpers::TrustedImm32(MegamorphicCache::structureIDHashShift3), scratch3GPR);
         jit.add32(scratch2GPR, scratch3GPR);
         jit.and32(CCallHelpers::TrustedImm32(MegamorphicCache::secondaryMask), scratch3GPR);
-        if constexpr (hasOneBitSet(sizeof(MegamorphicCache::Entry))) // is a power of 2
-            jit.lshift32(CCallHelpers::TrustedImm32(getLSBSet(sizeof(MegamorphicCache::Entry))), scratch3GPR);
+        if constexpr (hasOneBitSet(sizeof(MegamorphicCache::LoadEntry))) // is a power of 2
+            jit.lshift32(CCallHelpers::TrustedImm32(getLSBSet(sizeof(MegamorphicCache::LoadEntry))), scratch3GPR);
         else
-            jit.mul32(CCallHelpers::TrustedImm32(sizeof(MegamorphicCache::Entry)), scratch3GPR, scratch3GPR);
+            jit.mul32(CCallHelpers::TrustedImm32(sizeof(MegamorphicCache::LoadEntry)), scratch3GPR, scratch3GPR);
         jit.addPtr(CCallHelpers::TrustedImmPtr(bitwise_cast<uint8_t*>(&cache) + MegamorphicCache::offsetOfSecondaryEntries()), scratch3GPR);
 
-        jit.load16(CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfEpoch()), scratch2GPR);
+        jit.load16(CCallHelpers::Address(scratch3GPR, MegamorphicCache::LoadEntry::offsetOfEpoch()), scratch2GPR);
         failAndRepatch.append(jit.branch32(CCallHelpers::NotEqual, scratch4GPR, scratch2GPR));
-        failAndRepatch.append(jit.branch32(CCallHelpers::NotEqual, scratchGPR, CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfStructureID())));
-        failAndRepatch.append(jit.branchPtr(CCallHelpers::NotEqual, CCallHelpers::Address(scratch3GPR, MegamorphicCache::Entry::offsetOfUid()), CCallHelpers::TrustedImmPtr(accessCase.m_identifier.uid())));
+        failAndRepatch.append(jit.branch32(CCallHelpers::NotEqual, scratchGPR, CCallHelpers::Address(scratch3GPR, MegamorphicCache::LoadEntry::offsetOfStructureID())));
+        failAndRepatch.append(jit.branchPtr(CCallHelpers::NotEqual, CCallHelpers::Address(scratch3GPR, MegamorphicCache::LoadEntry::offsetOfUid()), CCallHelpers::TrustedImmPtr(accessCase.m_identifier.uid())));
         jit.jump().linkTo(cacheHit, &jit);
 
         if (allocator.didReuseRegisters()) {

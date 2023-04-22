@@ -37,20 +37,24 @@ class MegamorphicCache {
 public:
     static constexpr uint32_t primarySize = 2048;
     static constexpr uint32_t secondarySize = 512;
-    static_assert(hasOneBitSet(primarySize), "size should be a power of two.");
-    static_assert(hasOneBitSet(secondarySize), "size should be a power of two.");
     static constexpr uint32_t primaryMask = primarySize - 1;
     static constexpr uint32_t secondaryMask = secondarySize - 1;
+    static_assert(hasOneBitSet(primarySize), "size should be a power of two.");
+    static_assert(hasOneBitSet(secondarySize), "size should be a power of two.");
+
+    static constexpr uint32_t storeCacheSize = 256;
+    static constexpr uint32_t storeCacheMask = storeCacheSize - 1;
+    static_assert(hasOneBitSet(storeCacheSize), "size should be a power of two.");
 
     static constexpr uint16_t invalidEpoch = 0;
     static constexpr PropertyOffset maxOffset = UINT16_MAX;
 
-    struct Entry {
-        static ptrdiff_t offsetOfUid() { return OBJECT_OFFSETOF(Entry, m_uid); }
-        static ptrdiff_t offsetOfStructureID() { return OBJECT_OFFSETOF(Entry, m_structureID); }
-        static ptrdiff_t offsetOfEpoch() { return OBJECT_OFFSETOF(Entry, m_epoch); }
-        static ptrdiff_t offsetOfOffset() { return OBJECT_OFFSETOF(Entry, m_offset); }
-        static ptrdiff_t offsetOfHolder() { return OBJECT_OFFSETOF(Entry, m_holder); }
+    struct LoadEntry {
+        static ptrdiff_t offsetOfUid() { return OBJECT_OFFSETOF(LoadEntry, m_uid); }
+        static ptrdiff_t offsetOfStructureID() { return OBJECT_OFFSETOF(LoadEntry, m_structureID); }
+        static ptrdiff_t offsetOfEpoch() { return OBJECT_OFFSETOF(LoadEntry, m_epoch); }
+        static ptrdiff_t offsetOfOffset() { return OBJECT_OFFSETOF(LoadEntry, m_offset); }
+        static ptrdiff_t offsetOfHolder() { return OBJECT_OFFSETOF(LoadEntry, m_holder); }
 
         void initAsMiss(StructureID structureID, UniquedStringImpl* uid, uint16_t epoch)
         {
@@ -77,8 +81,23 @@ public:
         JSCell* m_holder { nullptr };
     };
 
+    struct StoreEntry {
+        static ptrdiff_t offsetOfUid() { return OBJECT_OFFSETOF(StoreEntry, m_uid); }
+        static ptrdiff_t offsetOfStructureID() { return OBJECT_OFFSETOF(StoreEntry, m_structureID); }
+        static ptrdiff_t offsetOfTransitionID() { return OBJECT_OFFSETOF(StoreEntry, m_transitionID); }
+        static ptrdiff_t offsetOfEpoch() { return OBJECT_OFFSETOF(StoreEntry, m_epoch); }
+        static ptrdiff_t offsetOfOffset() { return OBJECT_OFFSETOF(StoreEntry, m_offset); }
+
+        RefPtr<UniquedStringImpl> m_uid;
+        StructureID m_structureID { };
+        StructureID m_transitionID { };
+        uint16_t m_epoch { invalidEpoch };
+        uint16_t m_offset { 0 };
+    };
+
     static ptrdiff_t offsetOfPrimaryEntries() { return OBJECT_OFFSETOF(MegamorphicCache, m_primaryEntries); }
     static ptrdiff_t offsetOfSecondaryEntries() { return OBJECT_OFFSETOF(MegamorphicCache, m_secondaryEntries); }
+    static ptrdiff_t offsetOfStoreEntries() { return OBJECT_OFFSETOF(MegamorphicCache, m_storeEntries); }
     static ptrdiff_t offsetOfEpoch() { return OBJECT_OFFSETOF(MegamorphicCache, m_epoch); }
 
     MegamorphicCache() = default;
@@ -94,6 +113,8 @@ public:
 
     static constexpr unsigned structureIDHashShift3 = structureIDHashShift1 + 9;
 
+    static constexpr unsigned structureIDHashShift4 = structureIDHashShift1 + 8;
+
     ALWAYS_INLINE static uint32_t primaryHash(StructureID structureID, UniquedStringImpl* uid)
     {
         uint32_t sid = bitwise_cast<uint32_t>(structureID);
@@ -104,6 +125,12 @@ public:
     {
         uint32_t key = bitwise_cast<uint32_t>(structureID) + static_cast<uint32_t>(bitwise_cast<uintptr_t>(uid));
         return key + (key >> structureIDHashShift3);
+    }
+
+    ALWAYS_INLINE static uint32_t storeHash(StructureID structureID, UniquedStringImpl* uid)
+    {
+        uint32_t sid = bitwise_cast<uint32_t>(structureID);
+        return ((sid >> structureIDHashShift1) ^ (sid >> structureIDHashShift4)) + uid->hash();
     }
 
     JS_EXPORT_PRIVATE void age(CollectionScope);
@@ -142,8 +169,9 @@ public:
 private:
     JS_EXPORT_PRIVATE void clearEntries();
 
-    std::array<Entry, primarySize> m_primaryEntries { };
-    std::array<Entry, secondarySize> m_secondaryEntries { };
+    std::array<LoadEntry, primarySize> m_primaryEntries { };
+    std::array<LoadEntry, secondarySize> m_secondaryEntries { };
+    std::array<StoreEntry, storeCacheSize> m_storeEntries { };
     uint16_t m_epoch { 1 };
 };
 
