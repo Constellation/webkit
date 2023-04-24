@@ -607,9 +607,12 @@ void repatchGetBy(JSGlobalObject* globalObject, CodeBlock* codeBlock, JSValue ba
     SuperSamplerScope superSamplerScope(false);
     
     auto result = tryCacheGetBy(globalObject, codeBlock, baseValue, propertyName, slot, stubInfo, kind);
-    if (result == PromoteToMegamorphic)
-        repatchSlowPathCall(codeBlock, stubInfo, operationGetByIdMegamorphic);
-    else if (result == GiveUpOnCache)
+    if (result == PromoteToMegamorphic) {
+        if (kind == GetByKind::ById)
+            repatchSlowPathCall(codeBlock, stubInfo, operationGetByIdMegamorphic);
+        else
+            repatchSlowPathCall(codeBlock, stubInfo, operationGetByValMegamorphic);
+    } else if (result == GiveUpOnCache)
         repatchSlowPathCall(codeBlock, stubInfo, appropriateGetByFunction(kind));
 }
 

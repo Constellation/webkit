@@ -846,6 +846,8 @@ JSC_DEFINE_JIT_OPERATION(operationGetByValObjectString, EncodedJSValue, (JSGloba
     auto propertyName = asString(string)->toIdentifier(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
 
+    // static unsigned count = 0;
+    // dataLogLn("SLOW-DFG ", ++count, " ", propertyName.impl());
     RELEASE_AND_RETURN(scope, JSValue::encode(getByValObject(globalObject, vm, asObject(base), propertyName)));
 }
 
