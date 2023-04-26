@@ -774,6 +774,8 @@ ALWAYS_INLINE bool Structure::canPerformFastPropertyEnumeration() const
         return false;
     // FIXME: Indexed properties can be handled.
     // https://bugs.webkit.org/show_bug.cgi?id=185358
+
+    // Keep in sync with DFG's ObjectAssign implementation.
     if (hasIndexedProperties(indexingType()))
         return false;
     if (hasAnyKindOfGetterSetterProperties())

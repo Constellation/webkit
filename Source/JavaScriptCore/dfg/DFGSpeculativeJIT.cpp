@@ -15242,16 +15242,31 @@ void SpeculativeJIT::compileObjectAssign(Node* node)
     switch (node->child2().useKind()) {
     case ObjectUse: {
         SpeculateCellOperand source(this, node->child2());
+        GPRTemporary scratch1(this);
 
         GPRReg targetGPR = target.gpr();
         GPRReg sourceGPR = source.gpr();
+        GPRReg scratch1GPR = scratch1.gpr();
 
         speculateObject(node->child2(), sourceGPR);
 
         flushRegisters();
+
+        JumpList doneCases;
+        JumpList genericCases;
+
+        genericCases.append(branchIfNotType(sourceGPR, FinalObjectType));
+        genericCases.append(branchTest8(NonZero, Address(sourceGPR, JSObject::indexingTypeAndMiscOffset()), CCallHelpers::TrustedImm32(IndexingShapeMask)));
+        emitLoadStructure(vm(), sourceGPR, scratch1GPR);
+        constexpr unsigned structureFlags = Structure::s_hasAnyKindOfGetterSetterPropertiesBits | Structure::s_hasReadOnlyOrGetterSetterPropertiesExcludingProtoBits | Structure::s_dictionaryKindBits | Structure::s_hasUnderscoreProtoPropertyExcludingOriginalProtoBits;
+        genericCases.append(branchTest32(NonZero, Address(scratch1GPR, Structure::bitFieldOffset()), CCallHelpers::TrustedImm32(structureFlags)));
+        doneCases.append(branchTest32(Zero, Address(scratch1GPR, Structure::propertyHashOffset())));
+
+        genericCases.link(this);
         callOperation(operationObjectAssignObject, LinkableConstant::globalObject(*this, node), targetGPR, sourceGPR);
         exceptionCheck();
 
+        doneCases.link(this);
         noResult(node);
         return;
     }
