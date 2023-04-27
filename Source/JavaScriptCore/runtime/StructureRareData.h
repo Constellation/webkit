@@ -72,7 +72,7 @@ public:
         return &vm.structureRareDataSpace();
     }
 
-    static StructureRareData* create(VM&, Structure*);
+    static StructureRareData* create(VM&, StructureChain*);
 
     static constexpr bool needsDestruction = true;
     static void destroy(JSCell*);
@@ -80,13 +80,6 @@ public:
     DECLARE_VISIT_CHILDREN;
 
     static Structure* createStructure(VM&, JSGlobalObject*, JSValue prototype);
-
-    Structure* previousID() const
-    {
-        return m_previous.get();
-    }
-    void setPreviousID(VM&, Structure*);
-    void clearPreviousID();
 
     JSValue cachedSpecialProperty(CachedSpecialPropertyKey) const;
     void cacheSpecialProperty(JSGlobalObject*, VM&, Structure* baseStructure, JSValue, CachedSpecialPropertyKey, const PropertySlot&);
@@ -105,6 +98,13 @@ public:
     const Box<InlineWatchpointSet>& sharedPolyProtoWatchpoint() const { return m_polyProtoWatchpoint; }
     void setSharedPolyProtoWatchpoint(Box<InlineWatchpointSet>&& sharedPolyProtoWatchpoint) { m_polyProtoWatchpoint = WTFMove(sharedPolyProtoWatchpoint); }
     bool hasSharedPolyProtoWatchpoint() const { return static_cast<bool>(m_polyProtoWatchpoint); }
+
+    StructureChain* cachedPrototypeChain() const { return m_cachedPrototypeChain.get(); }
+    void setCachedPrototypeChain(VM&, StructureChain*);
+    void clearCachedPrototypeChain()
+    {
+        m_cachedPrototypeChain.clear();
+    }
 
     static JSImmutableButterfly* cachedPropertyNamesSentinel() { return bitwise_cast<JSImmutableButterfly*>(static_cast<uintptr_t>(1)); }
 
@@ -136,7 +136,7 @@ private:
     friend class CachedSpecialPropertyAdaptiveStructureWatchpoint;
     friend class CachedSpecialPropertyAdaptiveInferredPropertyValueWatchpoint;
 
-    StructureRareData(VM&, Structure*);
+    StructureRareData(VM&, StructureChain*);
 
     void clearCachedSpecialProperty(CachedSpecialPropertyKey);
     void cacheSpecialPropertySlow(JSGlobalObject*, VM&, Structure* baseStructure, JSValue, CachedSpecialPropertyKey, const PropertySlot&);
@@ -163,7 +163,7 @@ private:
     std::unique_ptr<SpecialPropertyCache> m_specialPropertyCache;
     Box<InlineWatchpointSet> m_polyProtoWatchpoint;
 
-    WriteBarrierStructureID m_previous;
+    mutable WriteBarrier<StructureChain> m_cachedPrototypeChain;
     PropertyOffset m_maxOffset;
     PropertyOffset m_transitionOffset;
 };

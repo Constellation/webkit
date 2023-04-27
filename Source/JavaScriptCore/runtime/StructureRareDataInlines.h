@@ -70,16 +70,6 @@ private:
     PackedCellPtr<StructureRareData> m_structureRareData;
 };
 
-inline void StructureRareData::setPreviousID(VM& vm, Structure* structure)
-{
-    m_previous.set(vm, this, structure);
-}
-
-inline void StructureRareData::clearPreviousID()
-{
-    m_previous.clear();
-}
-
 inline JSValue StructureRareData::cachedSpecialProperty(CachedSpecialPropertyKey key) const
 {
     auto* cache = m_specialPropertyCache.get();
@@ -212,6 +202,11 @@ inline void StructureRareData::clearCachedPropertyNameEnumerator()
 {
     m_cachedPropertyNameEnumeratorAndFlag = 0;
     m_cachedPropertyNameEnumeratorWatchpoints = FixedVector<StructureChainInvalidationWatchpoint>();
+}
+
+inline void StructureRareData::setCachedPrototypeChain(VM& vm, StructureChain* structureChain)
+{
+    m_cachedPrototypeChain.setMayBeNull(vm, this, structureChain);
 }
 
 } // namespace JSC

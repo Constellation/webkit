@@ -355,12 +355,15 @@ inline StructureChain* Structure::prototypeChain(VM& vm, JSGlobalObject* globalO
 {
     ASSERT(base->structure() == this);
     // We cache our prototype chain so our clients can share it.
-    if (!isValid(globalObject, m_cachedPrototypeChain.get(), base)) {
+    auto* chain = cachedPrototypeChain();
+    if (!isValid(globalObject, chain, base)) {
         JSValue prototype = prototypeForLookup(globalObject, base);
         const_cast<Structure*>(this)->clearCachedPrototypeChain();
-        m_cachedPrototypeChain.set(vm, this, StructureChain::create(vm, prototype.isNull() ? nullptr : asObject(prototype)));
+        auto* newChain = StructureChain::create(vm, prototype.isNull() ? nullptr : asObject(prototype));
+        const_cast<Structure*>(this)->setCachedPrototypeChain(vm, newChain);
+        return newChain;
     }
-    return m_cachedPrototypeChain.get();
+    return chain;
 }
 
 inline bool Structure::isValid(JSGlobalObject* globalObject, StructureChain* cachedPrototypeChain, JSObject* base) const
@@ -630,12 +633,12 @@ ALWAYS_INLINE void Structure::setPropertyTable(VM& vm, PropertyTable* table)
     m_propertyTableUnsafe.setMayBeNull(vm, this, table);
 }
 
-ALWAYS_INLINE void Structure::setPreviousID(VM& vm, Structure* structure)
+ALWAYS_INLINE void Structure::setCachedPrototypeChain(VM& vm, StructureChain* structureChain)
 {
     if (hasRareData())
-        rareData()->setPreviousID(vm, structure);
+        rareData()->setCachedPrototypeChain(vm, structureChain);
     else
-        m_previousOrRareData.set(vm, this, structure);
+        m_cachedPrototypeChainOrRareData.setMayBeNull(vm, this, structureChain);
 }
 
 ALWAYS_INLINE bool Structure::shouldConvertToPolyProto(const Structure* a, const Structure* b)
@@ -760,10 +763,13 @@ inline void StructureTransitionTable::finalizeUnconditionally(VM& vm, Collection
 
 inline void Structure::clearCachedPrototypeChain()
 {
-    m_cachedPrototypeChain.clear();
-    if (!hasRareData())
+    if (!hasRareData()) {
+        m_cachedPrototypeChainOrRareData.clear();
         return;
-    rareData()->clearCachedPropertyNameEnumerator();
+    }
+    auto* rareData = this->rareData();
+    rareData->clearCachedPrototypeChain();
+    rareData->clearCachedPropertyNameEnumerator();
 }
 
 ALWAYS_INLINE bool Structure::canPerformFastPropertyEnumeration() const

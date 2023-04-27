@@ -3368,9 +3368,9 @@ llintOpWithReturn(op_get_property_enumerator, OpGetPropertyEnumerator, macro (si
     bia t1, ArrayWithUndecided, .slowPath
 
     loadStructureWithScratch(t0, t1, t2)
-    loadp Structure::m_previousOrRareData[t1], t1
+    loadp Structure::m_cachedPrototypeChainOrRareData[t1], t1
     btpz t1, .slowPath
-    bbeq JSCell::m_type[t1], StructureType, .slowPath
+    bbneq JSCell::m_type[t1], StructureRareDataType, .slowPath
 
     loadp StructureRareData::m_cachedPropertyNameEnumeratorAndFlag[t1], t1
     btpz t1, .slowPath

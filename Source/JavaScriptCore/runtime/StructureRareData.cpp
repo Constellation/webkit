@@ -44,12 +44,12 @@ const ClassInfo StructureRareData::s_info = { "StructureRareData"_s, nullptr, nu
 
 Structure* StructureRareData::createStructure(VM& vm, JSGlobalObject* globalObject, JSValue prototype)
 {
-    return Structure::create(vm, globalObject, prototype, TypeInfo(CellType, StructureFlags), info());
+    return Structure::create(vm, globalObject, prototype, TypeInfo(StructureRareDataType, StructureFlags), info());
 }
 
-StructureRareData* StructureRareData::create(VM& vm, Structure* previous)
+StructureRareData* StructureRareData::create(VM& vm, StructureChain* structureChain)
 {
-    StructureRareData* rareData = new (NotNull, allocateCell<StructureRareData>(vm)) StructureRareData(vm, previous);
+    StructureRareData* rareData = new (NotNull, allocateCell<StructureRareData>(vm)) StructureRareData(vm, structureChain);
     rareData->finishCreation(vm);
     return rareData;
 }
@@ -59,9 +59,9 @@ void StructureRareData::destroy(JSCell* cell)
     static_cast<StructureRareData*>(cell)->StructureRareData::~StructureRareData();
 }
 
-StructureRareData::StructureRareData(VM& vm, Structure* previous)
+StructureRareData::StructureRareData(VM& vm, StructureChain* structureChain)
     : JSCell(vm, vm.structureRareDataStructure.get())
-    , m_previous(previous, WriteBarrierEarlyInit)
+    , m_cachedPrototypeChain(structureChain, WriteBarrierEarlyInit)
     , m_maxOffset(invalidOffset)
     , m_transitionOffset(invalidOffset)
 {
@@ -74,7 +74,7 @@ void StructureRareData::visitChildrenImpl(JSCell* cell, Visitor& visitor)
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
     Base::visitChildren(thisObject, visitor);
-    visitor.append(thisObject->m_previous);
+    visitor.append(thisObject->m_cachedPrototypeChain);
     if (thisObject->m_specialPropertyCache) {
         for (unsigned index = 0; index < numberOfCachedSpecialPropertyKeys; ++index)
             visitor.appendUnbarriered(thisObject->cachedSpecialProperty(static_cast<CachedSpecialPropertyKey>(index)));

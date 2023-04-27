@@ -126,6 +126,8 @@ using JSResizableOrGrowableSharedBigUint64Array = JSGenericResizableOrGrowableSh
     macro(JSStringIterator, JSType::JSStringIteratorType, JSType::JSStringIteratorType) \
     macro(JSString, JSType::StringType, JSType::StringType) \
     macro(JSBigInt, JSType::HeapBigIntType, JSType::HeapBigIntType) \
+    macro(Structure, JSType::StructureType, JSType::StructureType) \
+    macro(StructureRareData, JSType::StructureRareDataType, JSType::StructureRareDataType) \
     macro(Symbol, JSType::SymbolType, JSType::SymbolType) \
     macro(JSObject, FirstObjectType, LastObjectType) \
     macro(JSFinalObject, JSType::FinalObjectType, JSType::FinalObjectType) \
