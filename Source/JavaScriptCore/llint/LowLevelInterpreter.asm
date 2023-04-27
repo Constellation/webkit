@@ -578,6 +578,7 @@ const ArrayWithUndecided       = constexpr ArrayWithUndecided
 
 # Type constants.
 const StructureType = constexpr StructureType
+const StructureRareDataType = constexpr StructureRareDataType
 const StringType = constexpr StringType
 const SymbolType = constexpr SymbolType
 const ObjectType = constexpr ObjectType

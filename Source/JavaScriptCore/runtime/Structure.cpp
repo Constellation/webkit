@@ -267,6 +267,7 @@ Structure::Structure(VM& vm, Structure* previous)
     , m_inlineCapacity(previous->m_inlineCapacity)
     , m_bitField(0)
     , m_propertyHash(previous->m_propertyHash)
+    , m_previous(previous, WriteBarrierEarlyInit)
     , m_seenProperties(previous->m_seenProperties)
     , m_prototype(previous->m_prototype.get(), WriteBarrierEarlyInit)
     , m_classInfo(previous->m_classInfo)
@@ -295,7 +296,6 @@ Structure::Structure(VM& vm, Structure* previous)
     m_outOfLineTypeFlags = typeInfo.outOfLineTypeFlags();
 
     ASSERT(!previous->typeInfo().structureIsImmortal());
-    setPreviousID(vm, previous);
 
     // Do not fire watchpoint inside Structure constructor since watchpoint can involve further heap allocations.
     // We fire watchpoint separately in Structure::finishCreation.
@@ -503,7 +503,7 @@ Structure* Structure::addNewPropertyTransition(VM& vm, Structure* structure, Pro
     
     Structure* transition = Structure::create(vm, structure, deferred);
 
-    transition->m_cachedPrototypeChain.setMayBeNull(vm, transition, structure->m_cachedPrototypeChain.get());
+    transition->setCachedPrototypeChain(vm, structure->cachedPrototypeChain());
     
     // While we are adding the property, rematerializing the property table is super weird: we already
     // have a m_transitionPropertyName and transitionPropertyAttributes but the m_transitionOffset is still wrong. If the
@@ -608,7 +608,7 @@ Structure* Structure::removeNewPropertyTransition(VM& vm, Structure* structure, 
     }
 
     Structure* transition = Structure::create(vm, structure, deferred);
-    transition->m_cachedPrototypeChain.setMayBeNull(vm, transition, structure->m_cachedPrototypeChain.get());
+    transition->setCachedPrototypeChain(vm, structure->cachedPrototypeChain());
 
     // While we are deleting the property, we need to make sure the table is not cleared.
     {
@@ -703,7 +703,7 @@ Structure* Structure::attributeChangeTransition(VM& vm, Structure* structure, Pr
     // Even if the current structure is dictionary, we should perform transition since this changes attributes of existing properties to keep
     // structure still cacheable.
     Structure* transition = Structure::create(vm, structure, deferred);
-    transition->m_cachedPrototypeChain.setMayBeNull(vm, transition, structure->m_cachedPrototypeChain.get());
+    transition->setCachedPrototypeChain(vm, structure->cachedPrototypeChain());
 
     {
         ConcurrentJSLocker locker(transition->m_lock);
@@ -961,7 +961,7 @@ void Structure::pin(const AbstractLocker&, VM& vm, PropertyTable* table)
 {
     setIsPinnedPropertyTable(true);
     setPropertyTable(vm, table);
-    clearPreviousID();
+    m_previous.clear();
     m_transitionPropertyName = nullptr;
 }
 
@@ -975,9 +975,9 @@ void Structure::pinForCaching(const AbstractLocker&, VM& vm, PropertyTable* tabl
 void Structure::allocateRareData(VM& vm)
 {
     ASSERT(!hasRareData());
-    StructureRareData* rareData = StructureRareData::create(vm, previousID());
+    StructureRareData* rareData = StructureRareData::create(vm, cachedPrototypeChain());
     WTF::storeStoreFence();
-    m_previousOrRareData.set(vm, this, rareData);
+    m_cachedPrototypeChainOrRareData.set(vm, this, rareData);
     ASSERT(hasRareData());
 }
 
@@ -1242,19 +1242,22 @@ void Structure::visitChildrenImpl(JSCell* cell, Visitor& visitor)
     ConcurrentJSLocker locker(thisObject->m_lock);
     
     visitor.append(thisObject->m_globalObject);
+    visitor.append(thisObject->m_previous);
     if (!thisObject->isObject()) {
-        // We do not need to clear JSPropertyNameEnumerator since it is never cached for non-object Structure.
-        // We do not have code clearing JSPropertyNameEnumerator since this function can be called concurrently.
-        thisObject->m_cachedPrototypeChain.clear();
-#if ASSERT_ENABLED
-        if (auto* rareData = thisObject->tryRareData())
+        // Why do we need to clear cachedPrototypeChain of non Object Structure? The reason is that we are caching this chain for non Object,
+        // it means (typically) it is JSString Structure, to accelerate property access of String.prototype. But keeping this forever means
+        // that this structure will leak JSGlobalObject since String.prototype retains JSGlobalObject, and JSString's Structure is alive
+        // forever (it is the same for all JSGlobalObject). This clearing is a workaround for this leak.
+        if (auto* rareData = thisObject->tryRareData()) {
+            rareData->clearCachedPrototypeChain();
+            // We do not need to clear JSPropertyNameEnumerator since it is never cached for non-object Structure.
+            // We do not have code clearing JSPropertyNameEnumerator since this function can be called concurrently.
             ASSERT(!rareData->cachedPropertyNameEnumerator());
-#endif
-    } else {
+        } else
+            thisObject->m_cachedPrototypeChainOrRareData.clear();
+    } else
         visitor.append(thisObject->m_prototype);
-        visitor.append(thisObject->m_cachedPrototypeChain);
-    }
-    visitor.append(thisObject->m_previousOrRareData);
+    visitor.append(thisObject->m_cachedPrototypeChainOrRareData);
 
     if (thisObject->isPinnedPropertyTable() || thisObject->protectPropertyTableWhileTransitioning()) {
         // NOTE: This can interleave in pin(), in which case it may see a null property table.
@@ -1429,7 +1432,7 @@ void Structure::setCachedPropertyNameEnumerator(VM& vm, JSPropertyNameEnumerator
     ASSERT(!isDictionary());
     if (!hasRareData())
         allocateRareData(vm);
-    ASSERT(chain == m_cachedPrototypeChain.get());
+    ASSERT(chain == cachedPrototypeChain());
     rareData()->setCachedPropertyNameEnumerator(vm, this, enumerator, chain);
 }
 
@@ -1452,7 +1455,7 @@ bool Structure::canCachePropertyNameEnumerator(VM&) const
     if (!this->canCacheOwnPropertyNames())
         return false;
 
-    StructureChain* structureChain = m_cachedPrototypeChain.get();
+    StructureChain* structureChain = cachedPrototypeChain();
     ASSERT(structureChain);
     StructureID* currentStructureID = structureChain->head();
     while (true) {
@@ -1521,7 +1524,7 @@ Structure* Structure::setBrandTransition(VM& vm, Structure* structure, Symbol* b
     Structure* transition = BrandedStructure::create(vm, structure, &brand->uid(), deferred);
     transition->setTransitionKind(TransitionKind::SetBrand);
 
-    transition->m_cachedPrototypeChain.setMayBeNull(vm, transition, structure->m_cachedPrototypeChain.get());
+    transition->setCachedPrototypeChain(vm, structure->cachedPrototypeChain());
     transition->m_blob.setIndexingModeIncludingHistory(structure->indexingModeIncludingHistory());
     transition->m_transitionPropertyName = &brand->uid();
     transition->setTransitionPropertyAttributes(0);

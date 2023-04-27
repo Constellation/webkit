@@ -2277,9 +2277,9 @@ void JIT::emit_op_get_property_enumerator(const JSInstruction* currentInstructio
     genericCases.append(branch32(Above, regT1, TrustedImm32(ArrayWithUndecided)));
 
     emitLoadStructure(vm(), regT0, regT1);
-    loadPtr(Address(regT1, Structure::previousOrRareDataOffset()), regT1);
+    loadPtr(Address(regT1, Structure::cachedPrototypeChainOrRareDataOffset()), regT1);
     genericCases.append(branchTestPtr(Zero, regT1));
-    genericCases.append(branchIfStructure(regT1));
+    genericCases.append(branchIfNotType(regT1, StructureRareDataType));
     loadPtr(Address(regT1, StructureRareData::offsetOfCachedPropertyNameEnumeratorAndFlag()), regT1);
 
     genericCases.append(branchTestPtr(Zero, regT1));

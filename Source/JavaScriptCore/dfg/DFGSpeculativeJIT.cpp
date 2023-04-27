@@ -14860,9 +14860,9 @@ void SpeculativeJIT::compileGetPropertyEnumerator(Node* node)
                 move(TrustedImmPtr(onlyStructure), scratch1GPR);
             else
                 emitLoadStructure(vm(), baseRegs.payloadGPR(), scratch1GPR);
-            loadPtr(Address(scratch1GPR, Structure::previousOrRareDataOffset()), scratch1GPR);
+            loadPtr(Address(scratch1GPR, Structure::cachedPrototypeChainOrRareDataOffset()), scratch1GPR);
             slowCases.append(branchTestPtr(Zero, scratch1GPR));
-            slowCases.append(branchIfStructure(scratch1GPR));
+            slowCases.append(branchIfNotType(scratch1GPR, StructureRareDataType));
             loadPtr(Address(scratch1GPR, StructureRareData::offsetOfCachedPropertyNameEnumeratorAndFlag()), scratch1GPR);
         }
 
@@ -15170,10 +15170,10 @@ void SpeculativeJIT::compileOwnPropertyKeysVariant(Node* node)
 
             JumpList slowCases;
             emitLoadStructure(vm(), objectGPR, structureGPR);
-            loadPtr(Address(structureGPR, Structure::previousOrRareDataOffset()), scratchGPR);
+            loadPtr(Address(structureGPR, Structure::cachedPrototypeChainOrRareDataOffset()), scratchGPR);
 
             slowCases.append(branchTestPtr(Zero, scratchGPR));
-            slowCases.append(branchIfStructure(scratchGPR));
+            slowCases.append(branchIfNotType(scratchGPR, StructureRareDataType));
 
             loadPtr(Address(scratchGPR, StructureRareData::offsetOfCachedPropertyNames(node->cachedPropertyNamesKind())), scratchGPR);
 
@@ -15355,10 +15355,10 @@ void SpeculativeJIT::compileObjectToString(Node* node)
 
         JumpList slowCases;
         emitLoadStructure(vm(), argumentGPR, resultGPR);
-        loadPtr(Address(resultGPR, Structure::previousOrRareDataOffset()), resultGPR);
+        loadPtr(Address(resultGPR, Structure::cachedPrototypeChainOrRareDataOffset()), resultGPR);
 
         slowCases.append(branchTestPtr(Zero, resultGPR));
-        slowCases.append(branchIfStructure(resultGPR));
+        slowCases.append(branchIfNotType(resultGPR, StructureRareDataType));
 
         loadPtr(Address(resultGPR, StructureRareData::offsetOfSpecialPropertyCache()), resultGPR);
         slowCases.append(branchTestPtr(Zero, resultGPR));

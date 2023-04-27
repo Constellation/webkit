@@ -410,18 +410,18 @@ public:
     
     bool hasRareData() const
     {
-        return isRareData(m_previousOrRareData.get());
+        return isRareData(m_cachedPrototypeChainOrRareData.get());
     }
 
     StructureRareData* rareData()
     {
         ASSERT(hasRareData());
-        return static_cast<StructureRareData*>(m_previousOrRareData.get());
+        return static_cast<StructureRareData*>(m_cachedPrototypeChainOrRareData.get());
     }
 
     StructureRareData* tryRareData()
     {
-        JSCell* value = m_previousOrRareData.get();
+        JSCell* value = m_cachedPrototypeChainOrRareData.get();
         WTF::dependentLoadLoadFence();
         if (isRareData(value))
             return static_cast<StructureRareData*>(value);
@@ -431,12 +431,12 @@ public:
     const StructureRareData* rareData() const
     {
         ASSERT(hasRareData());
-        return static_cast<const StructureRareData*>(m_previousOrRareData.get());
+        return static_cast<const StructureRareData*>(m_cachedPrototypeChainOrRareData.get());
     }
 
     const StructureRareData* rareDataConcurrently() const
     {
-        JSCell* cell = m_previousOrRareData.get();
+        JSCell* cell = m_cachedPrototypeChainOrRareData.get();
         if (isRareData(cell))
             return static_cast<StructureRareData*>(cell);
         return nullptr;
@@ -452,12 +452,7 @@ public:
     Structure* previousID() const
     {
         ASSERT(structure()->classInfoForCells() == info());
-        // This is so written because it's used concurrently. We only load from m_previousOrRareData
-        // once, and this load is guaranteed atomic.
-        JSCell* cell = m_previousOrRareData.get();
-        if (isRareData(cell))
-            return static_cast<StructureRareData*>(cell)->previousID();
-        return static_cast<Structure*>(cell);
+        return m_previous.get();
     }
     bool transitivelyTransitionedFrom(Structure* structureToFind);
 
@@ -694,9 +689,9 @@ public:
         return OBJECT_OFFSETOF(Structure, m_inlineCapacity);
     }
 
-    static ptrdiff_t previousOrRareDataOffset()
+    static ptrdiff_t cachedPrototypeChainOrRareDataOffset()
     {
-        return OBJECT_OFFSETOF(Structure, m_previousOrRareData);
+        return OBJECT_OFFSETOF(Structure, m_cachedPrototypeChainOrRareData);
     }
 
     static ptrdiff_t bitFieldOffset()
@@ -909,7 +904,7 @@ private:
     {
         if (PropertyTable* result = m_propertyTableUnsafe.get())
             return result;
-        if (!previousID())
+        if (!m_previous)
             return nullptr;
         return materializePropertyTable(vm);
     }
@@ -935,15 +930,17 @@ private:
     PropertyTable* takePropertyTableOrCloneIfPinned(VM&);
     PropertyTable* copyPropertyTableForPinning(VM&);
 
-    void setPreviousID(VM&, Structure*);
-
-    void clearPreviousID()
+    StructureChain* cachedPrototypeChain() const
     {
-        if (hasRareData())
-            rareData()->clearPreviousID();
-        else
-            m_previousOrRareData.clear();
+        // This is so written because it's used concurrently. We only load from m_cachedPrototypeChainOrRareData
+        // once, and this load is guaranteed atomic.
+        JSCell* cell = m_cachedPrototypeChainOrRareData.get();
+        if (isRareData(cell))
+            return static_cast<StructureRareData*>(cell)->cachedPrototypeChain();
+        return bitwise_cast<StructureChain*>(cell);
     }
+    void setCachedPrototypeChain(VM&, StructureChain*);
+    void clearCachedPrototypeChain();
 
     ALWAYS_INLINE bool transitionCountHasOverflowed() const
     {
@@ -964,7 +961,7 @@ private:
     
     static bool isRareData(JSCell* cell)
     {
-        return cell && cell->type() != StructureType;
+        return cell && cell->type() == StructureRareDataType;
     }
 
     template<typename DetailsFunc>
@@ -974,8 +971,6 @@ private:
     JS_EXPORT_PRIVATE void allocateRareData(VM&);
     
     void startWatchingInternalProperties(VM&);
-
-    void clearCachedPrototypeChain();
 
     // These need to be properly aligned at the beginning of the 'Structure'
     // part of the object.
@@ -992,14 +987,13 @@ private:
     uint16_t m_maxOffset;
 
     uint32_t m_propertyHash;
+    WriteBarrierStructureID m_previous;
     TinyBloomFilter<CompactPtr<UniquedStringImpl>::StorageType> m_seenProperties;
 
 
     WriteBarrier<JSGlobalObject> m_globalObject;
     WriteBarrier<Unknown> m_prototype;
-    mutable WriteBarrier<StructureChain> m_cachedPrototypeChain;
-
-    WriteBarrier<JSCell> m_previousOrRareData;
+    WriteBarrier<JSCell> m_cachedPrototypeChainOrRareData;
 
     CompactRefPtr<UniquedStringImpl> m_transitionPropertyName;
 

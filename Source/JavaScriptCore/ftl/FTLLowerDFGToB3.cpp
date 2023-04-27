@@ -7708,17 +7708,17 @@ IGNORE_CLANG_WARNINGS_END
 
                 LValue object = lowObject(m_node->child1());
                 LValue structure = loadStructure(object);
-                LValue previousOrRareData = m_out.loadPtr(structure, m_heaps.Structure_previousOrRareData);
-                m_out.branch(m_out.notNull(previousOrRareData), unsure(notNullCase), unsure(slowCase));
+                LValue cachedPrototypeChainOrRareData = m_out.loadPtr(structure, m_heaps.Structure_cachedPrototypeChainOrRareData);
+                m_out.branch(m_out.notNull(cachedPrototypeChainOrRareData), unsure(notNullCase), unsure(slowCase));
 
                 LBasicBlock lastNext = m_out.appendTo(notNullCase, rareDataCase);
                 m_out.branch(
-                    isCellWithType(previousOrRareData, StructureType, std::nullopt),
-                    unsure(slowCase), unsure(rareDataCase));
+                    isCellWithType(cachedPrototypeChainOrRareData, StructureRareDataType, std::nullopt),
+                    unsure(rareDataCase), unsure(slowCase));
 
                 m_out.appendTo(rareDataCase, useCacheCase);
                 ASSERT(bitwise_cast<uintptr_t>(StructureRareData::cachedPropertyNamesSentinel()) == 1);
-                LValue cached = m_out.loadPtr(previousOrRareData, abstractHeapForOwnPropertyKeysCache(op));
+                LValue cached = m_out.loadPtr(cachedPrototypeChainOrRareData, abstractHeapForOwnPropertyKeysCache(op));
                 m_out.branch(m_out.belowOrEqual(cached, m_out.constIntPtr(bitwise_cast<void*>(StructureRareData::cachedPropertyNamesSentinel()))), unsure(slowCase), unsure(useCacheCase));
 
                 m_out.appendTo(useCacheCase, slowButArrayBufferCase);
@@ -7772,16 +7772,16 @@ IGNORE_CLANG_WARNINGS_END
 
             LValue object = lowObject(m_node->child1());
             LValue structure = loadStructure(object);
-            LValue previousOrRareData = m_out.loadPtr(structure, m_heaps.Structure_previousOrRareData);
-            m_out.branch(m_out.notNull(previousOrRareData), unsure(notNullCase), unsure(slowCase));
+            LValue cachedPrototypeChainOrRareData = m_out.loadPtr(structure, m_heaps.Structure_cachedPrototypeChainOrRareData);
+            m_out.branch(m_out.notNull(cachedPrototypeChainOrRareData), unsure(notNullCase), unsure(slowCase));
 
             LBasicBlock lastNext = m_out.appendTo(notNullCase, rareDataCase);
             m_out.branch(
-                isCellWithType(previousOrRareData, StructureType, std::nullopt),
-                unsure(slowCase), unsure(rareDataCase));
+                isCellWithType(cachedPrototypeChainOrRareData, StructureRareDataType, std::nullopt),
+                unsure(rareDataCase), unsure(slowCase));
 
             m_out.appendTo(rareDataCase, useCacheCase);
-            LValue cache = m_out.loadPtr(previousOrRareData, m_heaps.StructureRareData_specialPropertyCache);
+            LValue cache = m_out.loadPtr(cachedPrototypeChainOrRareData, m_heaps.StructureRareData_specialPropertyCache);
             m_out.branch(m_out.isNull(cache), unsure(slowCase), unsure(useCacheCase));
 
             m_out.appendTo(useCacheCase, slowCase);
@@ -14325,29 +14325,29 @@ IGNORE_CLANG_WARNINGS_END
             LBasicBlock lastNextCandidate = m_out.appendTo(checkExistingCase, notNullCase);
             if (!lastNext)
                 lastNext = lastNextCandidate;
-            LValue previousOrRareData = nullptr;
+            LValue cachedPrototypeChainOrRareData = nullptr;
             if (rareData)
-                previousOrRareData = weakPointer(rareData);
+                cachedPrototypeChainOrRareData = weakPointer(rareData);
             else {
                 LValue structure = nullptr;
                 if (onlyStructure)
                     structure = weakStructure(onlyStructure);
                 else
                     structure = loadStructure(base);
-                previousOrRareData = m_out.loadPtr(structure, m_heaps.Structure_previousOrRareData);
+                cachedPrototypeChainOrRareData = m_out.loadPtr(structure, m_heaps.Structure_cachedPrototypeChainOrRareData);
             }
-            m_out.branch(m_out.notNull(previousOrRareData), unsure(notNullCase), unsure(genericCase));
+            m_out.branch(m_out.notNull(cachedPrototypeChainOrRareData), unsure(notNullCase), unsure(genericCase));
 
             m_out.appendTo(notNullCase, rareDataCase);
             LValue isRareData = nullptr;
             if (rareData)
                 isRareData = m_out.booleanTrue;
             else
-                isRareData = m_out.logicalNot(isCellWithType(previousOrRareData, StructureType, std::nullopt));
+                isRareData = isCellWithType(cachedPrototypeChainOrRareData, StructureRareDataType, std::nullopt);
             m_out.branch(isRareData, unsure(rareDataCase), unsure(genericCase));
 
             m_out.appendTo(rareDataCase, validationCase);
-            LValue cachedAndFlag = m_out.loadPtr(previousOrRareData, m_heaps.StructureRareData_cachedPropertyNameEnumeratorAndFlag);
+            LValue cachedAndFlag = m_out.loadPtr(cachedPrototypeChainOrRareData, m_heaps.StructureRareData_cachedPropertyNameEnumeratorAndFlag);
             m_out.branch(m_out.notNull(cachedAndFlag), unsure(validationCase), unsure(genericCase));
 
             m_out.appendTo(validationCase, genericCase);
