@@ -38,8 +38,10 @@
 #include "DFGPhase.h"
 #include "GetByStatus.h"
 #include "JSCInlines.h"
+#include "NumberPrototype.h"
 #include "PutByStatus.h"
 #include "StructureCache.h"
+#include <wtf/text/StringBuilder.h>
 
 namespace JSC { namespace DFG {
 
@@ -1009,11 +1011,39 @@ private:
                             node->setOpAndDefaultFlags(ToString);
                             node->clearFlags(NodeMustGenerate);
                             node->child2() = Edge();
-                        } else
-                            node->convertToNumberToStringWithValidRadixConstant(radix);
+                        } else {
+                            JSValue number = m_state.forNode(node->child1()).m_value;
+                            if (number && number.isNumber()) {
+                                m_insertionSet.insertCheck(indexInBlock, node->origin, node->child1());
+                                if (number.isInt32() && number.asInt32() < radix) {
+                                    int32_t value = number.asInt32();
+                                    m_graph.convertToConstant(node, m_graph.freeze(m_graph.m_vm.smallStrings.singleCharacterString(radixDigits[value])));
+                                } else
+                                    node->convertToLazyJSConstant(m_graph, LazyJSValue::newString(m_graph, toStringWithRadix(number.asNumber(), radix)));
+                            } else
+                                node->convertToNumberToStringWithValidRadixConstant(radix);
+                        }
                         changed = true;
                         break;
                     }
+                }
+                break;
+            }
+
+            case NumberToStringWithValidRadixConstant: {
+                int32_t radix = node->validRadixConstant();
+                JSValue number = m_state.forNode(node->child1()).m_value;
+                if (number && number.isNumber()) {
+                    m_insertionSet.insertCheck(indexInBlock, node->origin, node->child1());
+                    if (number.isInt32() && number.asInt32() < radix) {
+                        int32_t value = number.asInt32();
+                        m_graph.convertToConstant(node, m_graph.freeze(m_graph.m_vm.smallStrings.singleCharacterString(radixDigits[value])));
+                        changed = true;
+                        break;
+                    }
+                    node->convertToLazyJSConstant(m_graph, LazyJSValue::newString(m_graph, toStringWithRadix(number.asNumber(), radix)));
+                    changed = true;
+                    break;
                 }
                 break;
             }
@@ -1059,11 +1089,15 @@ private:
                     if (!edge)
                         break;
                     JSValue childConstant = m_state.forNode(edge).value();
-                    if (!childConstant)
-                        continue;
-                    if (!childConstant.isString())
-                        continue;
-                    if (asString(childConstant)->length())
+                    if (childConstant) {
+                        if (!childConstant.isString())
+                            continue;
+                        if (asString(childConstant)->length())
+                            continue;
+                    } else if (auto string = edge->tryGetString(m_graph); !!string) {
+                        if (string.length())
+                            continue;
+                    } else
                         continue;
 
                     // Don't allow the MakeRope to have zero children.
@@ -1078,6 +1112,50 @@ private:
                     ASSERT(!node->child3());
                     node->convertToIdentity();
                     changed = true;
+                } else {
+                    bool allConstants = true;
+                    StringBuilder builder;
+                    for (unsigned i = 0; i < AdjacencyList::Size; ++i) {
+                        Edge& edge = node->children.child(i);
+                        if (!edge)
+                            break;
+                        JSValue childConstant = m_state.forNode(edge).value();
+                        if (childConstant && childConstant.isString() && asString(childConstant)->tryGetValueImpl()) {
+                        } else if (auto string = edge->tryGetString(m_graph); !!string) {
+                        } else {
+                            allConstants = false;
+                            break;
+                        }
+                    }
+
+                    if (allConstants) {
+                        for (unsigned i = 0; i < AdjacencyList::Size; ++i) {
+                            Edge& edge = node->children.child(i);
+                            if (!edge)
+                                break;
+                            JSValue childConstant = m_state.forNode(edge).value();
+                            if (childConstant && childConstant.isString() && asString(childConstant)->tryGetValueImpl())
+                                builder.append(StringView(asString(childConstant)->tryGetValueImpl()));
+                            else if (auto string = edge->tryGetString(m_graph); !!string)
+                                builder.append(WTFMove(string));
+                        }
+
+                        changed = true;
+                        String value = builder.toString();
+                        if (value.isEmpty()) {
+                            m_graph.convertToConstant(node, vm().smallStrings.emptyString());
+                            break;
+                        }
+                        if (value.length() == 1) {
+                            UChar character = value.characterAt(0);
+                            if (character <= maxSingleCharacterString) {
+                                m_graph.convertToConstant(node, vm().smallStrings.singleCharacterString(character));
+                                break;
+                            }
+                        }
+                        node->convertToLazyJSConstant(m_graph, LazyJSValue::newString(m_graph, WTFMove(value)));
+                        break;
+                    }
                 }
                 break;
             }

@@ -382,7 +382,7 @@ private:
                 StringBuilder builder;
                 builder.append(leftString);
                 builder.append(rightString);
-                convertToLazyJSValue(m_node, LazyJSValue::newString(m_graph, builder.toString()));
+                convertToString(m_node, builder.toString());
                 m_changed = true;
                 break;
             }
@@ -414,7 +414,7 @@ private:
             if (!!extraString)
                 builder.append(extraString);
 
-            convertToLazyJSValue(m_node, LazyJSValue::newString(m_graph, builder.toString()));
+            convertToString(m_node, builder.toString());
             m_changed = true;
             break;
         }
@@ -436,7 +436,7 @@ private:
                             result = String::number(value.asNumber());
 
                         if (!result.isNull()) {
-                            convertToLazyJSValue(m_node, LazyJSValue::newString(m_graph, result));
+                            convertToString(m_node, WTFMove(result));
                             m_changed = true;
                         }
                     }
@@ -456,7 +456,7 @@ private:
                 JSValue value = child1->constant()->value();
                 if (value && value.isNumber()) {
                     String result = toStringWithRadix(value.asNumber(), m_node->validRadixConstant());
-                    convertToLazyJSValue(m_node, LazyJSValue::newString(m_graph, result));
+                    convertToString(m_node, WTFMove(result));
                     m_changed = true;
                 }
             }
@@ -1011,7 +1011,7 @@ private:
                 m_node->convertToIdentityOn(stringNode);
             else {
                 builder.appendSubstring(string, lastIndex);
-                m_node->convertToLazyJSConstant(m_graph, LazyJSValue::newString(m_graph, builder.toString()));
+                convertToString(m_node, builder.toString());
             }
 
             m_node->origin = origin;
@@ -1062,7 +1062,7 @@ private:
 
             m_changed = true;
             m_insertionSet.insertNode(m_nodeIndex, SpecNone, Check, m_node->origin, m_node->children.justChecks());
-            m_node->convertToLazyJSConstant(m_graph, LazyJSValue::newString(m_graph, WTFMove(result)));
+            convertToString(m_node, WTFMove(result));
             break;
         }
 
@@ -1083,7 +1083,7 @@ private:
                     // Regardless of whatever the string is, it generates empty string (Even if both are negative index).
                     m_changed = true;
                     m_insertionSet.insertNode(m_nodeIndex, SpecNone, Check, m_node->origin, m_node->children.justChecks());
-                    m_node->convertToLazyJSConstant(m_graph, LazyJSValue::newString(m_graph, emptyString()));
+                    m_graph.convertToConstant(m_node, vm().smallStrings.emptyString());
                     break;
                 }
             }
@@ -1106,7 +1106,7 @@ private:
                 m_node->convertToIdentityOn(stringNode);
                 break;
             }
-            m_node->convertToLazyJSConstant(m_graph, LazyJSValue::newString(m_graph, string.substring(start, end - start)));
+            convertToString(m_node, string.substring(start, end - start));
             break;
         }
 
@@ -1406,7 +1406,23 @@ private:
         m_insertionSet.insertCheck(m_graph, m_nodeIndex, node);
         node->convertToLazyJSConstant(m_graph, value);
     }
-    
+
+    void convertToString(Node* node, String&& value)
+    {
+        if (value.isEmpty()) {
+            m_graph.convertToConstant(m_node, vm().smallStrings.emptyString());
+            return;
+        }
+        if (value.length() == 1) {
+            UChar character = value.characterAt(0);
+            if (character <= maxSingleCharacterString) {
+                m_graph.convertToConstant(m_node, vm().smallStrings.singleCharacterString(character));
+                return;
+            }
+        }
+        convertToLazyJSValue(node, LazyJSValue::newString(m_graph, WTFMove(value)));
+    }
+
     void handleCommutativity()
     {
         // It's definitely not sound to swap the lhs and rhs when we may be performing effectful

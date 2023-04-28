@@ -50,6 +50,7 @@
 #include "JSWebAssemblyInstance.h"
 #include "MathCommon.h"
 #include "NumberConstructor.h"
+#include "ParseInt.h"
 #include "PutByStatus.h"
 #include "RegExpObject.h"
 #include "RegExpPrototype.h"
@@ -893,22 +894,29 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     }
 
     case MakeRope: {
+        bool allConstants = true;
         unsigned numberOfRemovedChildren = 0;
         for (unsigned i = 0; i < AdjacencyList::Size; ++i) {
             Edge& edge = node->children.child(i);
             if (!edge)
                 break;
             JSValue childConstant = m_state.forNode(edge).value();
-            if (!childConstant)
-                continue;
-            if (!childConstant.isString())
-                continue;
-            if (asString(childConstant)->length())
-                continue;
-            ++numberOfRemovedChildren;
+            if (childConstant) {
+                if (!childConstant.isString()) {
+                    allConstants = false;
+                    continue;
+                }
+                if (asString(childConstant)->length())
+                    continue;
+                ++numberOfRemovedChildren;
+            } else if (auto string = edge->tryGetString(m_graph); !!string) {
+                if (!string.length())
+                    ++numberOfRemovedChildren;
+            } else
+                allConstants = false;
         }
 
-        if (numberOfRemovedChildren)
+        if (numberOfRemovedChildren || allConstants)
             m_state.setShouldTryConstantFolding(true);
         setForNode(node, m_vm.stringStructure.get());
         break;
@@ -3028,6 +3036,16 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     }
 
     case NumberToStringWithValidRadixConstant: {
+        JSValue number = forNode(node->child1()).m_value;
+        if (number && number.isNumber()) {
+            int32_t radix = node->validRadixConstant();
+            if (node->child1().useKind() == Int32Use && number.isInt32() && number.asInt32() < radix) {
+                int32_t value = number.asInt32();
+                setConstant(node, *m_graph.freeze(m_vm.smallStrings.singleCharacterString(radixDigits[value])));
+                break;
+            }
+            m_state.setShouldTryConstantFolding(true);
+        }
         setForNode(node, m_graph.m_vm.stringStructure.get());
         break;
     }

@@ -277,8 +277,12 @@ void JSValue::dumpInContextAssumingStructure(
         if (structure->classInfoForCells()->isSubClassOf(JSString::info())) {
             JSString* string = asString(asCell());
             out.print("String");
-            if (string->isRope())
+            if (string->isRope()) {
+                auto* rope = static_cast<JSRopeString*>(string);
                 out.print(" (rope)");
+                if (rope->isSubstring())
+                    out.print(" (substring)");
+            }
             const StringImpl* impl = string->tryGetValueImpl();
             if (impl) {
                 if (impl->isAtom())
