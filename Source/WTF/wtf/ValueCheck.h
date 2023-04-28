@@ -45,6 +45,26 @@ template<typename P> struct ValueCheck<P*> {
         ValueCheck<P>::checkConsistency(*p);
     }
 };
+
+template<> struct ValueCheck<void*> {
+    typedef void* TraitType;
+    static void checkConsistency(const void* p)
+    {
+        if (!p)
+            return;
+        ASSERT(fastMallocSize(p));
+    }
+};
+
+template<> struct ValueCheck<const void*> {
+    typedef void* TraitType;
+    static void checkConsistency(const void* p)
+    {
+        if (!p)
+            return;
+        ASSERT(fastMallocSize(p));
+    }
+};
 #endif // ASSERT_ENABLED
 
 }

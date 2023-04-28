@@ -899,7 +899,7 @@ public:
 
     void reverse();
 
-    void checkConsistency();
+    void checkConsistency() const;
 
     template<typename ResultVector, typename MapFunction>
     auto map(MapFunction&&) const -> std::enable_if_t<std::is_invocable_v<MapFunction, const T&>, ResultVector>;
@@ -1716,7 +1716,7 @@ inline MallocPtr<T, Malloc> Vector<T, inlineCapacity, OverflowHandler, minCapaci
 }
 
 template<typename T, size_t inlineCapacity, typename OverflowHandler, size_t minCapacity, typename Malloc>
-inline void Vector<T, inlineCapacity, OverflowHandler, minCapacity, Malloc>::checkConsistency()
+inline void Vector<T, inlineCapacity, OverflowHandler, minCapacity, Malloc>::checkConsistency() const
 {
 #if ASSERT_ENABLED
     for (size_t i = 0; i < size(); ++i)

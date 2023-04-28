@@ -284,6 +284,7 @@ set(WTF_PUBLIC_HEADERS
     StringHashDumpContext.h
     StringPrintStream.h
     SuspendableWorkQueue.h
+    SwissTable.h
     SynchronizedFixedQueue.h
     SystemFree.h
     SystemMalloc.h

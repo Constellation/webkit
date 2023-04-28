@@ -25,6 +25,7 @@
 #include <wtf/CompactPtr.h>
 #include <wtf/HashSet.h>
 #include <wtf/Packed.h>
+#include <wtf/SwissTable.h>
 #include <wtf/text/StringHash.h>
 #include <wtf/text/StringImpl.h>
 
@@ -38,7 +39,7 @@ public:
     // If CompactPtr is 32bit, it is more efficient than PackedPtr (6 bytes).
     // We select underlying implementation based on CompactPtr's efficacy.
     using StringEntry = std::conditional_t<CompactPtrTraits<StringImpl>::is32Bit, CompactPtr<StringImpl>, PackedPtr<StringImpl>>;
-    using StringTableImpl = HashSet<StringEntry>;
+    using StringTableImpl = SwissSet<StringEntry>;
 
     WTF_EXPORT_PRIVATE ~AtomStringTable();
 

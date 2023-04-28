@@ -115,6 +115,9 @@
     || defined(_M_X64)
 #define WTF_CPU_X86_64 1
 #define WTF_CPU_X86_SSE2 1
+#if defined(__SSE3__)
+#define WTF_CPU_X86_SSE3 1
+#endif
 #define WTF_CPU_KNOWN 1
 #endif
 
