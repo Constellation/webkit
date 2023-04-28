@@ -1048,6 +1048,46 @@ private:
                 break;
             }
 
+            case ToString:
+            case CallStringConstructor: {
+                switch (node->child1().useKind()) {
+                case Int32Use:
+                case Int52RepUse:
+                case DoubleRepUse: {
+                    JSValue number = m_state.forNode(node->child1()).value();
+                    if (number && number.isNumber()) {
+                        changed = true;
+                        m_insertionSet.insertCheck(indexInBlock, node->origin, node->child1());
+                        String value = toStringWithRadix(number.asNumber(), 10);
+                        if (value.isEmpty()) {
+                            m_graph.convertToConstant(node, vm().smallStrings.emptyString());
+                            break;
+                        }
+                        if (value.length() == 1) {
+                            UChar character = value.characterAt(0);
+                            if (character <= maxSingleCharacterString) {
+                                m_graph.convertToConstant(node, vm().smallStrings.singleCharacterString(character));
+                                break;
+                            }
+                        }
+                        node->convertToLazyJSConstant(m_graph, LazyJSValue::newString(m_graph, WTFMove(value)));
+                        break;
+                    }
+                    break;
+                }
+                case StringObjectUse:
+                case StringOrStringObjectUse:
+                case NotCellUse:
+                case CellUse:
+                case UntypedUse:
+                    break;
+                default:
+                    RELEASE_ASSERT_NOT_REACHED();
+                    break;
+                }
+                break;
+            }
+
             case Check: {
                 alreadyHandled = true;
                 m_interpreter.execute(indexInBlock);

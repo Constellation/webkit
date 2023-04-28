@@ -2961,11 +2961,16 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     case ToString:
     case CallStringConstructor: {
         switch (node->child1().useKind()) {
-        case StringObjectUse:
-        case StringOrStringObjectUse:
         case Int32Use:
         case Int52RepUse:
-        case DoubleRepUse:
+        case DoubleRepUse: {
+            JSValue value = m_state.forNode(node->child1()).value();
+            if (value && value.isNumber())
+                m_state.setShouldTryConstantFolding(true);
+            break;
+        }
+        case StringObjectUse:
+        case StringOrStringObjectUse:
         case NotCellUse:
             break;
         case CellUse:
