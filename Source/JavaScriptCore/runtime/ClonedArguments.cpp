@@ -184,6 +184,7 @@ bool ClonedArguments::getOwnPropertySlot(JSObject* object, JSGlobalObject* globa
                 slot.setGetterSlot(thisObject, PropertyAttribute::DontDelete | PropertyAttribute::DontEnum | PropertyAttribute::Accessor, thisObject->globalObject()->throwTypeErrorArgumentsCalleeGetterSetter());
                 return true;
             }
+            // This happens when ClonedArguments is created for non strict functions via `func.arguments` access.
             slot.setValue(thisObject, 0, thisObject->m_callee.get());
             return true;
         }
