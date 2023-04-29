@@ -1688,6 +1688,9 @@ private:
         case StringSubstring:
             compileStringSubstring();
             break;
+        case StringSplitFast:
+            compileStringSplitFast();
+            break;
         case ToLowerCase:
             compileToLowerCase();
             break;
@@ -16490,6 +16493,24 @@ IGNORE_CLANG_WARNINGS_END
             setJSValue(vmCall(pointerType(), operationStringSubstring, weakPointer(globalObject), lowString(m_node->child1()), lowInt32(m_node->child2())));
     }
 
+    void compileStringSplitFast()
+    {
+        JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
+        if (m_node->child1().useKind() == StringUse && m_node->child2().useKind() == StringUse) {
+            JSValue limitConstant = m_state.forNode(m_node->child3()).m_value;
+            if (limitConstant && limitConstant.isUndefined()) {
+                String separatorString = m_node->child2()->tryGetString(m_graph);
+                if (!!separatorString && separatorString.length() == 1) {
+                    UChar character = separatorString.characterAt(0);
+                    setJSValue(vmCall(pointerType(), operationStringSplitFastOneCharacter, weakPointer(globalObject), lowString(m_node->child1()), m_out.constInt32(character)));
+                    return;
+                }
+            }
+            setJSValue(vmCall(pointerType(), operationStringSplitFast, weakPointer(globalObject), lowString(m_node->child1()), lowString(m_node->child2()), lowJSValue(m_node->child3())));
+            return;
+        }
+        setJSValue(vmCall(pointerType(), operationStringSplitFastGeneric, weakPointer(globalObject), lowJSValue(m_node->child1()), lowJSValue(m_node->child2()), lowJSValue(m_node->child3())));
+    }
 
     void compileToLowerCase()
     {

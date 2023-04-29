@@ -2109,6 +2109,10 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         def(PureValue(node));
         return;
 
+    case StringSplitFast:
+        clobberTop();
+        return;
+
     case ToLowerCase:
         def(PureValue(node));
         return;

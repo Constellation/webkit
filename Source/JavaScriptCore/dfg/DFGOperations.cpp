@@ -2774,6 +2774,46 @@ JSC_DEFINE_JIT_OPERATION(operationStringLocaleCompare, UCPUStrictInt32, (JSGloba
     RELEASE_AND_RETURN(scope, toUCPUStrictInt32(collator->compareStrings(globalObject, string, that)));
 }
 
+JSC_DEFINE_JIT_OPERATION(operationStringSplitFast, JSArray*, (JSGlobalObject* globalObject, JSString* string, JSString* separatorString, EncodedJSValue encodedLimit))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    JSValue limitValue = JSValue::decode(encodedLimit);
+    unsigned limit = limitValue.isUndefined() ? 0xFFFFFFFFu : limitValue.toUInt32(globalObject);
+    RETURN_IF_EXCEPTION(scope, { });
+
+    String separator = separatorString->value(globalObject);
+    RETURN_IF_EXCEPTION(scope, { });
+
+    RELEASE_AND_RETURN(scope, stringSplitFast(globalObject, string, WTFMove(separator), limit));
+}
+
+JSC_DEFINE_JIT_OPERATION(operationStringSplitFastOneCharacter, JSArray*, (JSGlobalObject* globalObject, JSString* string, uint32_t character))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    return stringSplitFastOneCharacter(globalObject, string, character);
+}
+
+JSC_DEFINE_JIT_OPERATION(operationStringSplitFastGeneric, JSArray*, (JSGlobalObject* globalObject, EncodedJSValue encodedString, EncodedJSValue encodedSeparator, EncodedJSValue encodedLimit))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    JSValue stringValue = JSValue::decode(encodedString);
+    JSValue separatorValue = JSValue::decode(encodedSeparator);
+    JSValue limitValue = JSValue::decode(encodedLimit);
+
+    return stringSplitFast(globalObject, stringValue, separatorValue, limitValue);
+}
+
 JSC_DEFINE_JIT_OPERATION(operationInt32ToString, char*, (JSGlobalObject* globalObject, int32_t value, int32_t radix))
 {
     VM& vm = globalObject->vm();

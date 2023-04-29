@@ -410,6 +410,7 @@ bool doesGC(Graph& graph, Node* node)
     case StringReplaceString:
     case StringSlice:
     case StringSubstring:
+    case StringSplitFast:
     case StringValueOf:
     case CreateRest:
     case ToLowerCase:

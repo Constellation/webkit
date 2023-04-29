@@ -2213,6 +2213,60 @@ void SpeculativeJIT::compileStringSubstring(Node* node)
     cellResult(resultGPR, node);
 }
 
+void SpeculativeJIT::compileStringSplitFast(Node* node)
+{
+    if (node->child1().useKind() == StringUse && node->child2().useKind() == StringUse) {
+        SpeculateCellOperand string(this, node->child1());
+        SpeculateCellOperand separator(this, node->child2());
+        JSValueOperand limit(this, node->child3());
+
+        GPRReg stringGPR = string.gpr();
+        GPRReg separatorGPR = separator.gpr();
+        JSValueRegs limitRegs = limit.jsValueRegs();
+
+        speculateString(node->child1(), stringGPR);
+        speculateString(node->child2(), separatorGPR);
+
+        JSValue limitConstant = m_state.forNode(node->child3()).m_value;
+        if (limitConstant && limitConstant.isUndefined()) {
+            String separatorString = node->child2()->tryGetString(m_graph);
+            if (!!separatorString && separatorString.length() == 1) {
+                UChar character = separatorString.characterAt(0);
+                flushRegisters();
+                GPRFlushedCallResult result(this);
+                GPRReg resultGPR = result.gpr();
+                callOperation(operationStringSplitFastOneCharacter, resultGPR, LinkableConstant::globalObject(*this, node), stringGPR, TrustedImm32(character));
+                exceptionCheck();
+                cellResult(resultGPR, node);
+                return;
+            }
+        }
+
+        flushRegisters();
+        GPRFlushedCallResult result(this);
+        GPRReg resultGPR = result.gpr();
+        callOperation(operationStringSplitFast, resultGPR, LinkableConstant::globalObject(*this, node), stringGPR, separatorGPR, limitRegs);
+        exceptionCheck();
+        cellResult(resultGPR, node);
+        return;
+    }
+
+    JSValueOperand string(this, node->child1());
+    JSValueOperand separator(this, node->child2());
+    JSValueOperand limit(this, node->child3());
+
+    JSValueRegs stringRegs = string.jsValueRegs();
+    JSValueRegs separatorRegs = separator.jsValueRegs();
+    JSValueRegs limitRegs = limit.jsValueRegs();
+
+    flushRegisters();
+    GPRFlushedCallResult result(this);
+    GPRReg resultGPR = result.gpr();
+    callOperation(operationStringSplitFastGeneric, resultGPR, LinkableConstant::globalObject(*this, node), stringRegs, separatorRegs, limitRegs);
+    exceptionCheck();
+    cellResult(resultGPR, node);
+}
+
 void SpeculativeJIT::compileToLowerCase(Node* node)
 {
     ASSERT(node->op() == ToLowerCase);

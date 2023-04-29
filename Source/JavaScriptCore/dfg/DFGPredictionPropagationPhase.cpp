@@ -1203,7 +1203,8 @@ private:
         case ObjectKeys:
         case ObjectGetOwnPropertyNames:
         case ObjectGetOwnPropertySymbols:
-        case ReflectOwnKeys: {
+        case ReflectOwnKeys:
+        case StringSplitFast: {
             setPrediction(SpecArray);
             break;
         }

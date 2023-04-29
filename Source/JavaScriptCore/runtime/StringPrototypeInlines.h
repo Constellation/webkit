@@ -325,4 +325,286 @@ inline JSString* replaceUsingStringSearch(VM& vm, JSGlobalObject* globalObject, 
     RELEASE_AND_RETURN(scope, jsSpliceSubstringsWithSeparators(globalObject, jsString, string, sourceRanges.data(), sourceRanges.size(), replacements.data(), replacements.size()));
 }
 
+// Return true in case of early return (resultLength got to limitLength).
+template<typename CharacterType>
+static ALWAYS_INLINE JSArray* splitStringByOneCharacterImpl(JSGlobalObject* globalObject, JSString* inputString, const String& input, StringImpl* string, UChar separatorCharacter, unsigned limitLength)
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    // 12. Let q = p.
+    const CharacterType* characters = string->characters<CharacterType>();
+    // 13. Repeat, while q != s
+    //   a. Call SplitMatch(S, q, R) and let z be its MatchResult result.
+    //   b. If z is failure, then let q = q+1.
+    //   c. Else, z is not failure
+    size_t length = string->length();
+    size_t position = 0;
+    size_t matchPosition = WTF::find(characters, length, separatorCharacter, position);
+    if (matchPosition == notFound) {
+        // 15. Let T be a String value equal to the substring of S consisting of the characters at positions p (inclusive)
+        //     through s (exclusive).
+        // 16. Call CreateDataProperty(A, ToString(lengthA), T).
+        JSArray* result = nullptr;
+        {
+            ObjectInitializationScope initializationScope(vm);
+            if (LIKELY(result = JSArray::tryCreateUninitializedRestricted(initializationScope, nullptr, globalObject->arrayStructureForIndexingTypeDuringAllocation(ArrayWithContiguous), 1)))
+                result->initializeIndex(initializationScope, 0, inputString);
+        }
+        if (UNLIKELY(!result)) {
+            throwOutOfMemoryError(globalObject, scope);
+            return { };
+        }
+        return result;
+    }
+
+    auto* result = JSArray::tryCreate(vm, globalObject->arrayStructureForIndexingTypeDuringAllocation(ArrayWithContiguous), 0);
+    if (UNLIKELY(!result)) {
+        throwOutOfMemoryError(globalObject, scope);
+        return { };
+    }
+
+    unsigned resultLength = 0;
+    do {
+        // 1. Let T be a String value equal to the substring of S consisting of the characters at positions p (inclusive)
+        //    through q (exclusive).
+        // 2. Call the [[DefineOwnProperty]] internal method of A with arguments ToString(lengthA),
+        //    Property Descriptor {[[Value]]: T, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
+        auto* substring = jsSubstring(globalObject, inputString, input, position, matchPosition - position);
+        RETURN_IF_EXCEPTION(scope, { });
+        result->putDirectIndex(globalObject, resultLength, substring);
+        RETURN_IF_EXCEPTION(scope, { });
+        // 3. Increment lengthA by 1.
+        // 4. If lengthA == lim, return A.
+        if (++resultLength == limitLength)
+            return result;
+
+        // 5. Let p = e.
+        // 8. Let q = p.
+        position = matchPosition + 1;
+        matchPosition = WTF::find(characters, length, separatorCharacter, position);
+    } while (matchPosition != notFound);
+
+    auto* substring = jsSubstring(globalObject, inputString, input, position, length - position);
+    RETURN_IF_EXCEPTION(scope, { });
+    scope.release();
+    result->putDirectIndex(globalObject, resultLength++, substring);
+    return result;
+}
+
+ALWAYS_INLINE JSArray* stringSplitFastOneCharacter(JSGlobalObject* globalObject, JSString* inputString, UChar separatorCharacter)
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    String input = inputString->value(globalObject);
+    RETURN_IF_EXCEPTION(scope, { });
+    ASSERT(!input.isNull());
+
+    if (input.isEmpty()) {
+        // a. Let z be SplitMatch(S, 0, R) where S is input, R is separator.
+        // b. If z is not false, return A.
+        // c. Call CreateDataProperty(A, "0", S).
+        // d. Return A.
+        JSArray* result = nullptr;
+        {
+            ObjectInitializationScope initializationScope(vm);
+            if (LIKELY(result = JSArray::tryCreateUninitializedRestricted(initializationScope, nullptr, globalObject->arrayStructureForIndexingTypeDuringAllocation(ArrayWithContiguous), 1)))
+                result->initializeIndex(initializationScope, 0, inputString);
+        }
+        if (UNLIKELY(!result)) {
+            throwOutOfMemoryError(globalObject, scope);
+            return { };
+        }
+        return result;
+    }
+
+    StringImpl* stringImpl = input.impl();
+    if (stringImpl->is8Bit())
+        RELEASE_AND_RETURN(scope, splitStringByOneCharacterImpl<LChar>(globalObject, inputString, input, stringImpl, separatorCharacter, UINT_MAX));
+    RELEASE_AND_RETURN(scope, splitStringByOneCharacterImpl<UChar>(globalObject, inputString, input, stringImpl, separatorCharacter, UINT_MAX));
+}
+
+ALWAYS_INLINE JSArray* stringSplitFast(JSGlobalObject* globalObject, JSString* inputString, String separator, unsigned limit)
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    String input = inputString->value(globalObject);
+    RETURN_IF_EXCEPTION(scope, { });
+    ASSERT(!input.isNull());
+
+    // 4. Let A be a new array created as if by the expression new Array()
+    //    where Array is the standard built-in constructor with that name.
+    // 5. Let lengthA be 0.
+
+    // 6. If limit is undefined, let lim = 2^32-1; else let lim = ToUint32(limit).
+
+    // 8. Let p = 0.
+
+    // 9. If separator is a RegExp object (its [[Class]] is "RegExp"), let R = separator;
+    //    otherwise let R = ToString(separator).
+
+    // 10. If lim == 0, return A.
+    if (!limit)
+        return constructEmptyArray(globalObject, nullptr);
+
+    // 11. If separator is undefined, then
+
+    // 12. If s == 0, then
+    if (input.isEmpty()) {
+        // a. Let z be SplitMatch(S, 0, R) where S is input, R is separator.
+        // b. If z is not false, return A.
+        // c. Call CreateDataProperty(A, "0", S).
+        // d. Return A.
+        if (!separator.isEmpty()) {
+            JSArray* result = nullptr;
+            {
+                ObjectInitializationScope initializationScope(vm);
+                if (LIKELY(result = JSArray::tryCreateUninitializedRestricted(initializationScope, nullptr, globalObject->arrayStructureForIndexingTypeDuringAllocation(ArrayWithContiguous), 1)))
+                    result->initializeIndex(initializationScope, 0, inputString);
+            }
+            if (UNLIKELY(!result)) {
+                throwOutOfMemoryError(globalObject, scope);
+                return { };
+            }
+            return result;
+        }
+        return constructEmptyArray(globalObject, nullptr);
+    }
+
+    // Optimized case for splitting on the empty string.
+    if (separator.isEmpty()) {
+        limit = std::min(limit, input.length());
+        // Zero limt/input length handled in steps 9/11 respectively, above.
+        ASSERT(limit);
+
+        auto* result = JSArray::tryCreate(vm, globalObject->arrayStructureForIndexingTypeDuringAllocation(ArrayWithContiguous), 0);
+        if (UNLIKELY(!result)) {
+            throwOutOfMemoryError(globalObject, scope);
+            return { };
+        }
+
+        size_t position = 0;
+        do {
+            result->putDirectIndex(globalObject, position, jsSingleCharacterString(vm, input[position]));
+            RETURN_IF_EXCEPTION(scope, { });
+        } while (++position < limit);
+
+        return result;
+    }
+
+    // 3 cases:
+    // -separator length == 1, 8 bits
+    // -separator length == 1, 16 bits
+    // -separator length > 1
+    StringImpl* stringImpl = input.impl();
+    StringImpl* separatorImpl = separator.impl();
+
+    if (separatorImpl->length() == 1) {
+        UChar separatorCharacter;
+        if (separatorImpl->is8Bit())
+            separatorCharacter = separatorImpl->characters8()[0];
+        else
+            separatorCharacter = separatorImpl->characters16()[0];
+
+        if (stringImpl->is8Bit())
+            RELEASE_AND_RETURN(scope, splitStringByOneCharacterImpl<LChar>(globalObject, inputString, input, stringImpl, separatorCharacter, limit));
+        RELEASE_AND_RETURN(scope, splitStringByOneCharacterImpl<UChar>(globalObject, inputString, input, stringImpl, separatorCharacter, limit));
+    }
+
+    auto* result = JSArray::tryCreate(vm, globalObject->arrayStructureForIndexingTypeDuringAllocation(ArrayWithContiguous), 0);
+    if (UNLIKELY(!result)) {
+        throwOutOfMemoryError(globalObject, scope);
+        return { };
+    }
+
+    // 13. Let q = p.
+    size_t matchPosition;
+    size_t position = 0;
+    unsigned resultLength = 0;
+    // 14. Repeat, while q != s
+    //   a. let e be SplitMatch(S, q, R).
+    //   b. If e is failure, then let q = q+1.
+    //   c. Else, e is an integer index <= s.
+    while ((matchPosition = stringImpl->find(separatorImpl, position)) != notFound) {
+        // 1. Let T be a String value equal to the substring of S consisting of the characters at positions p (inclusive)
+        //    through q (exclusive).
+        // 2. Call CreateDataProperty(A, ToString(lengthA), T).
+        auto* substring = jsSubstring(globalObject, inputString, input, position, matchPosition - position);
+        RETURN_IF_EXCEPTION(scope, { });
+        result->putDirectIndex(globalObject, resultLength, substring);
+        RETURN_IF_EXCEPTION(scope, { });
+        // 3. Increment lengthA by 1.
+        // 4. If lengthA == lim, return A.
+        if (++resultLength == limit)
+            return result;
+
+        // 5. Let p = e.
+        // 6. Let q = p.
+        position = matchPosition + separator.length();
+    }
+
+    // 15. Let T be a String value equal to the substring of S consisting of the characters at positions p (inclusive)
+    //     through s (exclusive).
+    // 16. Call CreateDataProperty(A, ToString(lengthA), T).
+    auto* substring = jsSubstring(globalObject, inputString, input, position, input.length() - position);
+    RETURN_IF_EXCEPTION(scope, { });
+    scope.release();
+    result->putDirectIndex(globalObject, resultLength++, substring);
+
+    // 17. Return A.
+    return result;
+}
+
+inline JSArray* stringSplitFast(JSGlobalObject* globalObject, JSValue thisValue, JSValue separatorValue, JSValue limitValue)
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+    ASSERT(checkObjectCoercible(thisValue));
+
+    // 3. Let S be the result of calling ToString, giving it the this value as its argument.
+    // 7. Let s be the number of characters in S.
+    JSString* inputString = thisValue.toString(globalObject);
+    RETURN_IF_EXCEPTION(scope, { });
+
+    // 4. Let A be a new array created as if by the expression new Array()
+    //    where Array is the standard built-in constructor with that name.
+    // 5. Let lengthA be 0.
+
+    // 6. If limit is undefined, let lim = 2^32-1; else let lim = ToUint32(limit).
+    unsigned limit = limitValue.isUndefined() ? 0xFFFFFFFFu : limitValue.toUInt32(globalObject);
+    RETURN_IF_EXCEPTION(scope, { });
+
+    // 8. Let p = 0.
+
+    // 9. If separator is a RegExp object (its [[Class]] is "RegExp"), let R = separator;
+    //    otherwise let R = ToString(separator).
+    String separator = separatorValue.toWTFString(globalObject);
+    RETURN_IF_EXCEPTION(scope, { });
+
+    // 10. If lim == 0, return A.
+    if (!limit)
+        return constructEmptyArray(globalObject, nullptr);
+
+    // 11. If separator is undefined, then
+    if (separatorValue.isUndefined()) {
+        // a. Call the [[DefineOwnProperty]] internal method of A with arguments "0",
+        scope.release();
+        JSArray* result = nullptr;
+        {
+            ObjectInitializationScope initializationScope(vm);
+            if (LIKELY(result = JSArray::tryCreateUninitializedRestricted(initializationScope, nullptr, globalObject->arrayStructureForIndexingTypeDuringAllocation(ArrayWithContiguous), 1)))
+                result->initializeIndex(initializationScope, 0, inputString);
+        }
+        if (UNLIKELY(!result)) {
+            throwOutOfMemoryError(globalObject, scope);
+            return { };
+        }
+        return result;
+    }
+
+    RELEASE_AND_RETURN(scope, stringSplitFast(globalObject, inputString, WTFMove(separator), limit));
+}
+
 } // namespace JSC

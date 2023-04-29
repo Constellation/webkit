@@ -2633,6 +2633,11 @@ void SpeculativeJIT::compile(Node* node)
         break;
     }
 
+    case StringSplitFast: {
+        compileStringSplitFast(node);
+        break;
+    }
+
     case ToLowerCase: {
         compileToLowerCase(node);
         break;

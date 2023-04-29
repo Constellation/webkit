@@ -2770,6 +2770,14 @@ private:
             break;
         }
 
+        case StringSplitFast: {
+            if (node->child1()->shouldSpeculateString() && node->child2()->shouldSpeculateString()) {
+                fixEdge<StringUse>(node->child1());
+                fixEdge<StringUse>(node->child2());
+            }
+            break;
+        }
+
         case ToLowerCase: {
             // We currently only support StringUse since that will ensure that
             // ToLowerCase is a pure operation. If we decide to update this with
