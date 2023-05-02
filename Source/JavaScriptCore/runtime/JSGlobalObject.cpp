@@ -65,6 +65,7 @@
 #include "DirectArguments.h"
 #include "ErrorConstructor.h"
 #include "ErrorPrototype.h"
+#include "ExternallyAccessedArguments.h"
 #include "FinalizationRegistryConstructor.h"
 #include "FinalizationRegistryPrototype.h"
 #include "FunctionConstructor.h"
@@ -921,6 +922,7 @@ void JSGlobalObject::init(VM& vm)
     m_directArgumentsStructure.set(vm, this, DirectArguments::createStructure(vm, this, m_objectPrototype.get()));
     m_scopedArgumentsStructure.set(vm, this, ScopedArguments::createStructure(vm, this, m_objectPrototype.get()));
     m_clonedArgumentsStructure.set(vm, this, ClonedArguments::createStructure(vm, this, m_objectPrototype.get()));
+    m_externallyAccessedArgumentsStructure.set(vm, this, ExternallyAccessedArguments::createStructure(vm, this, m_objectPrototype.get()));
     m_callbackConstructorStructure.initLater(
         [] (const Initializer<Structure>& init) {
             init.set(JSCallbackConstructor::createStructure(init.vm, init.owner, init.owner->m_objectPrototype.get()));
@@ -2150,6 +2152,8 @@ void JSGlobalObject::fireWatchpointAndMakeAllArrayStructuresSlowPut(VM& vm)
     m_regExpMatchesIndicesArrayStructure.set(vm, this, slowPutStructure);
     slowPutStructure = ClonedArguments::createSlowPutStructure(vm, this, m_objectPrototype.get());
     m_clonedArgumentsStructure.set(vm, this, slowPutStructure);
+    slowPutStructure = ExternallyAccessedArguments::createSlowPutStructure(vm, this, m_objectPrototype.get());
+    m_externallyAccessedArgumentsStructure.set(vm, this, slowPutStructure);
 
     // Make sure that all allocations or indexed storage transitions that are inlining
     // the assumption that it's safe to transition to a non-SlowPut array storage don't
@@ -2396,6 +2400,7 @@ void JSGlobalObject::visitChildrenImpl(JSCell* cell, Visitor& visitor)
     visitor.append(thisObject->m_directArgumentsStructure);
     visitor.append(thisObject->m_scopedArgumentsStructure);
     visitor.append(thisObject->m_clonedArgumentsStructure);
+    visitor.append(thisObject->m_externallyAccessedArgumentsStructure);
     visitor.append(thisObject->m_objectStructureForObjectConstructor);
     for (unsigned i = 0; i < NumberOfArrayIndexingModes; ++i)
         visitor.append(thisObject->m_originalArrayStructureForIndexingShape[i]);

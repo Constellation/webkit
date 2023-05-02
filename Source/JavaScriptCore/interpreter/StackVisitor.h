@@ -45,6 +45,7 @@ class CodeOrigin;
 class JSCell;
 class JSFunction;
 class ClonedArguments;
+class ExternallyAccessedArguments;
 class Register;
 class RegisterAtOffsetList;
 
@@ -101,7 +102,7 @@ public:
         std::optional<RegisterAtOffsetList> calleeSaveRegistersForUnwinding();
 #endif
 
-        ClonedArguments* createArguments(VM&);
+        JSObject* createArguments(VM&);
         CallFrame* callFrame() const { return m_callFrame; }
 
         JS_EXPORT_PRIVATE bool isImplementationVisibilityPrivate() const;

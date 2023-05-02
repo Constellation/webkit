@@ -815,6 +815,7 @@ runtime/ExceptionFuzz.cpp
 runtime/ExceptionHelpers.cpp
 runtime/ExceptionScope.cpp
 runtime/ExecutableBase.cpp
+runtime/ExternallyAccessedArguments.cpp
 runtime/FileBasedFuzzerAgent.cpp
 runtime/FileBasedFuzzerAgentBase.cpp
 runtime/FinalizationRegistryConstructor.cpp

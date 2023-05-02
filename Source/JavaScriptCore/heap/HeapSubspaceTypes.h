@@ -36,6 +36,7 @@
 #include "ClonedArguments.h"
 #include "DateInstance.h"
 #include "DebuggerScope.h"
+#include "ExternallyAccessedArguments.h"
 #include "GetterSetter.h"
 #include "IntlCollator.h"
 #include "IntlDateTimeFormat.h"

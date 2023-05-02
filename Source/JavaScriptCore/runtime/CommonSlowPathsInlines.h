@@ -29,6 +29,7 @@
 #include "ClonedArguments.h"
 #include "CommonSlowPaths.h"
 #include "DirectArguments.h"
+#include "ExternallyAccessedArguments.h"
 #include "ScopedArguments.h"
 
 namespace JSC {
@@ -175,6 +176,12 @@ ALWAYS_INLINE JSImmutableButterfly* trySpreadFast(JSGlobalObject* globalObject, 
         auto* arguments = jsCast<ClonedArguments*>(iterable);
         if (LIKELY(arguments->isIteratorProtocolFastAndNonObservable()))
             return JSImmutableButterfly::createFromClonedArguments(globalObject, arguments);
+        return nullptr;
+    }
+    case ExternallyAccessedArgumentsType: {
+        auto* arguments = jsCast<ExternallyAccessedArguments*>(iterable);
+        if (LIKELY(arguments->isIteratorProtocolFastAndNonObservable()))
+            return JSImmutableButterfly::createFromExternallyAccessedArguments(globalObject, arguments);
         return nullptr;
     }
     case DirectArgumentsType: {

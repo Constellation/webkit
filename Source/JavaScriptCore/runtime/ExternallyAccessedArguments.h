@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Apple Inc. All rights reserved.
+ * Copyright (C) 2015-2023 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -20,7 +20,7 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #pragma once
@@ -38,9 +38,9 @@ namespace JSC {
 // the object claim to be "Arguments" from a toString standpoint, and to avoid materializing the
 // caller/callee/@@iterator properties unless someone asks for them.
 
-static constexpr PropertyOffset clonedArgumentsLengthPropertyOffset = firstOutOfLineOffset;
+static constexpr PropertyOffset externallyAccessedArgumentsLengthPropertyOffset = firstOutOfLineOffset;
 
-class ClonedArguments final : public JSNonFinalObject {
+class ExternallyAccessedArguments final : public JSNonFinalObject {
 public:
     using Base = JSNonFinalObject;
     static constexpr unsigned StructureFlags = Base::StructureFlags | OverridesGetOwnPropertySlot | OverridesGetOwnSpecialPropertyNames | OverridesPut;
@@ -49,7 +49,7 @@ public:
     static GCClient::IsoSubspace* subspaceFor(VM& vm)
     {
         static_assert(!CellType::needsDestruction);
-        return &vm.clonedArgumentsSpace();
+        return vm.externallyAccessedArgumentsSpace<mode>();
     }
 
     uint64_t length(JSGlobalObject* globalObject) const
@@ -59,7 +59,7 @@ public:
 
         JSValue lengthValue;
         if (LIKELY(!structure()->didTransition())) {
-            lengthValue = getDirect(clonedArgumentsLengthPropertyOffset);
+            lengthValue = getDirect(externallyAccessedArgumentsLengthPropertyOffset);
             if (LIKELY(lengthValue.isInt32()))
                 return std::max(lengthValue.asInt32(), 0);
         } else {
@@ -72,24 +72,17 @@ public:
     void copyToArguments(JSGlobalObject*, JSValue* firstElementDest, unsigned offset, unsigned length);
 
     JS_EXPORT_PRIVATE bool isIteratorProtocolFastAndNonObservable();
-    
+
 private:
-    ClonedArguments(VM&, Structure*, Butterfly*);
+    ExternallyAccessedArguments(VM&, Structure*, Butterfly*);
 
 public:
-    static ClonedArguments* createEmpty(VM&, Structure*, unsigned length, Butterfly*);
-    static ClonedArguments* createWithInlineFrame(JSGlobalObject*, CallFrame* targetFrame, InlineCallFrame*);
-    static ClonedArguments* createWithMachineFrame(JSGlobalObject*, CallFrame* targetFrame);
-    static ClonedArguments* createByCopyingFrom(JSGlobalObject*, Structure*, Register* argumentsStart, unsigned length, Butterfly*);
-    
+    static ExternallyAccessedArguments* createEmpty(VM&, Structure*, JSFunction* callee, unsigned length);
+    static ExternallyAccessedArguments* createWithInlineFrame(JSGlobalObject*, CallFrame* targetFrame, InlineCallFrame*, ArgumentsMode);
+    static ExternallyAccessedArguments* createWithMachineFrame(JSGlobalObject*, CallFrame* targetFrame, ArgumentsMode);
+
     static Structure* createStructure(VM&, JSGlobalObject*, JSValue prototype);
     static Structure* createSlowPutStructure(VM&, JSGlobalObject*, JSValue prototype);
-
-    static size_t allocationSize(Checked<size_t> inlineCapacity)
-    {
-        ASSERT_UNUSED(inlineCapacity, !inlineCapacity);
-        return sizeof(ClonedArguments);
-    }
 
     DECLARE_VISIT_CHILDREN;
 
@@ -103,10 +96,12 @@ private:
     static bool put(JSCell*, JSGlobalObject*, PropertyName, JSValue, PutPropertySlot&);
     static bool deleteProperty(JSCell*, JSGlobalObject*, PropertyName, DeletePropertySlot&);
     static bool defineOwnProperty(JSObject*, JSGlobalObject*, PropertyName, const PropertyDescriptor&, bool shouldThrow);
-    
-    bool specialsMaterialized() const { return perCellBit(); }
+
+    bool specialsMaterialized() const { return !m_callee; }
     void materializeSpecials(JSGlobalObject*);
     void materializeSpecialsIfNecessary(JSGlobalObject*);
+
+    WriteBarrier<JSFunction> m_callee; // Set to nullptr when we materialize all of our special properties.
 };
 
 } // namespace JSC

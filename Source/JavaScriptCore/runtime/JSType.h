@@ -67,9 +67,11 @@ enum JSType : uint8_t {
     NumberObjectType,
     ErrorInstanceType,
     GlobalProxyType,
+
     DirectArgumentsType,
     ScopedArgumentsType,
     ClonedArgumentsType,
+    ExternallyAccessedArgumentsType,
 
     // Start JSArray types.
     ArrayType,

@@ -205,6 +205,9 @@ unsigned sizeOfVarargs(JSGlobalObject* globalObject, JSValue arguments, uint32_t
     case ClonedArgumentsType:
         length = jsCast<ClonedArguments*>(cell)->length(globalObject);
         break;
+    case ExternallyAccessedArgumentsType:
+        length = jsCast<ExternallyAccessedArguments*>(cell)->length(globalObject);
+        break;
     case JSImmutableButterflyType:
         length = jsCast<JSImmutableButterfly*>(cell)->length();
         break;
@@ -281,6 +284,10 @@ void loadVarargs(JSGlobalObject* globalObject, JSValue* firstElementDest, JSValu
     case ClonedArgumentsType:
         scope.release();
         jsCast<ClonedArguments*>(cell)->copyToArguments(globalObject, firstElementDest, offset, length);
+        return;
+    case ExternallyAccessedArgumentsType:
+        scope.release();
+        jsCast<ExternallyAccessedArguments*>(cell)->copyToArguments(globalObject, firstElementDest, offset, length);
         return;
     case JSImmutableButterflyType:
         scope.release();

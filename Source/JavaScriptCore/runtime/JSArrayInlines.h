@@ -24,6 +24,7 @@
 #include "ClonedArguments.h"
 #include "DirectArguments.h"
 #include "Error.h"
+#include "ExternallyAccessedArguments.h"
 #include "JSArray.h"
 #include "JSCellInlines.h"
 #include "ScopedArguments.h"
@@ -124,6 +125,8 @@ ALWAYS_INLINE uint64_t toLength(JSGlobalObject* globalObject, JSObject* object)
         RELEASE_AND_RETURN(scope, jsCast<ScopedArguments*>(object)->length(globalObject));
     case ClonedArgumentsType:
         RELEASE_AND_RETURN(scope, jsCast<ClonedArguments*>(object)->length(globalObject));
+    case ExternallyAccessedArgumentsType:
+        RELEASE_AND_RETURN(scope, jsCast<ExternallyAccessedArguments*>(object)->length(globalObject));
     default:
         break;
     }

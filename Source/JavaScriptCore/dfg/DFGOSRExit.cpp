@@ -94,37 +94,34 @@ void OSRExit::emitRestoreArguments(CCallHelpers& jit, VM& vm, const Operands<Val
         else
             stackOffset = 0;
 
-        if (!inlineCallFrame || inlineCallFrame->isClosureCall) {
-            jit.loadPtr(
-                AssemblyHelpers::addressFor(VirtualRegister(stackOffset + CallFrameSlot::callee)),
-                GPRInfo::regT0);
-        } else {
-            jit.move(
-                AssemblyHelpers::TrustedImmPtr(inlineCallFrame->calleeRecovery.constant().asCell()),
-                GPRInfo::regT0);
-        }
-
-        if (!inlineCallFrame || inlineCallFrame->isVarargs()) {
-            jit.load32(
-                AssemblyHelpers::payloadFor(VirtualRegister(stackOffset + CallFrameSlot::argumentCountIncludingThis)),
-                GPRInfo::regT1);
-        } else {
-            jit.move(
-                AssemblyHelpers::TrustedImm32(inlineCallFrame->argumentCountIncludingThis),
-                GPRInfo::regT1);
-        }
-
-        static_assert(std::is_same<decltype(operationCreateDirectArgumentsDuringExit), decltype(operationCreateClonedArgumentsDuringExit)>::value, "We assume these functions have the same signature below.");
-        jit.setupArguments<decltype(operationCreateDirectArgumentsDuringExit)>(
-            AssemblyHelpers::TrustedImmPtr(&vm), AssemblyHelpers::TrustedImmPtr(inlineCallFrame), GPRInfo::regT0, GPRInfo::regT1);
-        jit.prepareCallOperation(vm);
         switch (recovery.technique()) {
-        case DirectArgumentsThatWereNotCreated:
+        case DirectArgumentsThatWereNotCreated: {
+            if (!inlineCallFrame || inlineCallFrame->isClosureCall)
+                jit.loadPtr(AssemblyHelpers::addressFor(VirtualRegister(stackOffset + CallFrameSlot::callee)), GPRInfo::argumentGPR2);
+            else
+                jit.move(AssemblyHelpers::TrustedImmPtr(inlineCallFrame->calleeRecovery.constant().asCell()), GPRInfo::argumentGPR2);
+
+            if (!inlineCallFrame || inlineCallFrame->isVarargs())
+                jit.load32(AssemblyHelpers::payloadFor(VirtualRegister(stackOffset + CallFrameSlot::argumentCountIncludingThis)), GPRInfo::argumentGPR3);
+            else
+                jit.move(AssemblyHelpers::TrustedImm32(inlineCallFrame->argumentCountIncludingThis), GPRInfo::argumentGPR3);
+
+            jit.setupArguments<decltype(operationCreateDirectArgumentsDuringExit)>(AssemblyHelpers::TrustedImmPtr(&vm), AssemblyHelpers::TrustedImmPtr(inlineCallFrame), GPRInfo::argumentGPR2, GPRInfo::argumentGPR3);
+            jit.prepareCallOperation(vm);
             jit.move(AssemblyHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationCreateDirectArgumentsDuringExit)), GPRInfo::nonArgGPR0);
             break;
-        case ClonedArgumentsThatWereNotCreated:
+        }
+        case ClonedArgumentsThatWereNotCreated: {
+            if (!inlineCallFrame || inlineCallFrame->isVarargs())
+                jit.load32(AssemblyHelpers::payloadFor(VirtualRegister(stackOffset + CallFrameSlot::argumentCountIncludingThis)), GPRInfo::argumentGPR2);
+            else
+                jit.move(AssemblyHelpers::TrustedImm32(inlineCallFrame->argumentCountIncludingThis), GPRInfo::argumentGPR2);
+
+            jit.setupArguments<decltype(operationCreateClonedArgumentsDuringExit)>(AssemblyHelpers::TrustedImmPtr(&vm), AssemblyHelpers::TrustedImmPtr(inlineCallFrame), GPRInfo::argumentGPR2);
+            jit.prepareCallOperation(vm);
             jit.move(AssemblyHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationCreateClonedArgumentsDuringExit)), GPRInfo::nonArgGPR0);
             break;
+        }
         default:
             RELEASE_ASSERT_NOT_REACHED();
             break;

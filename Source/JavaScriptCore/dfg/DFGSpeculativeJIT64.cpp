@@ -6863,8 +6863,6 @@ void SpeculativeJIT::compileCreateClonedArguments(Node* node)
 
         emitAllocateJSObject<ClonedArguments>(resultGPR, TrustedImmPtr(m_graph.registerStructure(globalObject->clonedArgumentsStructure())), storageGPR, scratchGPR, scratch2GPR, slowCases);
 
-        emitGetCallee(node->origin.semantic, scratchGPR);
-        storePtr(scratchGPR, Address(resultGPR, ClonedArguments::offsetOfCallee()));
         boxInt32(sizeGPR, JSValueRegs { scratchGPR });
         storeValue(JSValueRegs { scratchGPR }, Address(storageGPR, offsetRelativeToBase(clonedArgumentsLengthPropertyOffset)));
 
@@ -6886,8 +6884,7 @@ void SpeculativeJIT::compileCreateClonedArguments(Node* node)
             slowCases.link(this);
             silentSpill(savePlans);
 
-            setupArgument(5, [&] (GPRReg destGPR) { move(storageGPR, destGPR); });
-            setupArgument(4, [&] (GPRReg destGPR) { emitGetCallee(node->origin.semantic, destGPR); });
+            setupArgument(4, [&] (GPRReg destGPR) { move(storageGPR, destGPR); });
             setupArgument(3, [&] (GPRReg destGPR) { emitGetLength(node->origin.semantic, destGPR); });
             setupArgument(2, [&] (GPRReg destGPR) { emitGetArgumentStart(node->origin.semantic, destGPR); });
             setupArgument(
@@ -6919,9 +6916,8 @@ void SpeculativeJIT::compileCreateClonedArguments(Node* node)
     // We set up the arguments ourselves, because we have the whole register file and we can
     // set them up directly into the argument registers.
 
-    // Arguments: 0:JSGlobalObject*, 1:structure, 2:start, 3:length, 4:callee, 5:butterfly
-    setupArgument(5, [&] (GPRReg destGPR) { move(TrustedImm32(0), destGPR); });
-    setupArgument(4, [&] (GPRReg destGPR) { emitGetCallee(node->origin.semantic, destGPR); });
+    // Arguments: 0:JSGlobalObject*, 1:structure, 2:start, 3:length, 5:butterfly
+    setupArgument(4, [&] (GPRReg destGPR) { move(TrustedImm32(0), destGPR); });
     setupArgument(3, [&] (GPRReg destGPR) { emitGetLength(node->origin.semantic, destGPR); });
     setupArgument(2, [&] (GPRReg destGPR) { emitGetArgumentStart(node->origin.semantic, destGPR); });
     setupArgument(

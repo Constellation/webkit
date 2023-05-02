@@ -29,6 +29,7 @@
 #include "ClonedArguments.h"
 #include "DebuggerPrimitives.h"
 #include "ExecutableBaseInlines.h"
+#include "ExternallyAccessedArguments.h"
 #include "InlineCallFrame.h"
 #include "JSCInlines.h"
 #include "RegisterAtOffsetList.h"
@@ -412,27 +413,26 @@ SourceID StackVisitor::Frame::sourceID()
     return noSourceID;
 }
 
-ClonedArguments* StackVisitor::Frame::createArguments(VM& vm)
+JSObject* StackVisitor::Frame::createArguments(VM& vm)
 {
     ASSERT(m_callFrame);
     CallFrame* physicalFrame = m_callFrame;
     // FIXME: Revisit JSGlobalObject.
     // https://bugs.webkit.org/show_bug.cgi?id=203204
     JSGlobalObject* globalObject = physicalFrame->lexicalGlobalObject(vm);
-    ClonedArguments* arguments;
     ArgumentsMode mode;
     if (Options::useFunctionDotArguments())
         mode = ArgumentsMode::Cloned;
     else
         mode = ArgumentsMode::FakeValues;
+
 #if ENABLE(DFG_JIT)
     if (isInlinedDFGFrame()) {
         ASSERT(m_inlineDFGCallFrame);
-        arguments = ClonedArguments::createWithInlineFrame(globalObject, physicalFrame, m_inlineDFGCallFrame, mode);
-    } else 
+        return ExternallyAccessedArguments::createWithInlineFrame(globalObject, physicalFrame, m_inlineDFGCallFrame, mode);
+    }
 #endif
-        arguments = ClonedArguments::createWithMachineFrame(globalObject, physicalFrame, mode);
-    return arguments;
+    return ExternallyAccessedArguments::createWithMachineFrame(globalObject, physicalFrame, mode);
 }
 
 bool StackVisitor::Frame::hasLineAndColumnInfo() const

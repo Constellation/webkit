@@ -322,7 +322,7 @@ void LocalOSRAvailabilityCalculator::executeNode(Node* node)
             m_availability.m_heap.set(PromotedHeapLocation(ArgumentCountPLoc, node), argumentCount);
         }
         
-        if (inlineCallFrame->isClosureCall) {
+        if (node->op() == PhantomDirectArguments && inlineCallFrame->isClosureCall) {
             Availability callee = m_availability.m_locals.operand(
                 VirtualRegister(inlineCallFrame->stackOffset + CallFrameSlot::callee));
             m_availability.m_heap.set(PromotedHeapLocation(ArgumentsCalleePLoc, node), callee);

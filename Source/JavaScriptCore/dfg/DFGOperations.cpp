@@ -2082,12 +2082,12 @@ JSC_DEFINE_JIT_OPERATION(operationCreateScopedArguments, JSCell*, (JSGlobalObjec
     return ScopedArguments::createByCopyingFrom(vm, structure, argumentStart, length, callee, table, scope);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationCreateClonedArguments, JSCell*, (JSGlobalObject* globalObject, Structure* structure, Register* argumentStart, uint32_t length, JSFunction* callee, Butterfly* butterfly))
+JSC_DEFINE_JIT_OPERATION(operationCreateClonedArguments, JSCell*, (JSGlobalObject* globalObject, Structure* structure, Register* argumentStart, uint32_t length, Butterfly* butterfly))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    return ClonedArguments::createByCopyingFrom(globalObject, structure, argumentStart, length, callee, butterfly);
+    return ClonedArguments::createByCopyingFrom(globalObject, structure, argumentStart, length, butterfly);
 }
 
 JSC_DEFINE_JIT_OPERATION(operationCreateDirectArgumentsDuringExit, JSCell*, (VM* vmPointer, InlineCallFrame* inlineCallFrame, JSFunction* callee, uint32_t argumentCount))
@@ -2120,7 +2120,7 @@ JSC_DEFINE_JIT_OPERATION(operationCreateDirectArgumentsDuringExit, JSCell*, (VM*
     return result;
 }
 
-JSC_DEFINE_JIT_OPERATION(operationCreateClonedArgumentsDuringExit, JSCell*, (VM* vmPointer, InlineCallFrame* inlineCallFrame, JSFunction* callee, uint32_t argumentCount))
+JSC_DEFINE_JIT_OPERATION(operationCreateClonedArgumentsDuringExit, JSCell*, (VM* vmPointer, InlineCallFrame* inlineCallFrame, uint32_t argumentCount))
 {
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
@@ -2136,7 +2136,7 @@ JSC_DEFINE_JIT_OPERATION(operationCreateClonedArgumentsDuringExit, JSCell*, (VM*
     
     unsigned length = argumentCount - 1;
     JSGlobalObject* globalObject = codeBlock->globalObject();
-    ClonedArguments* result = ClonedArguments::createEmpty(vm, globalObject->clonedArgumentsStructure(), callee, length, nullptr);
+    ClonedArguments* result = ClonedArguments::createEmpty(vm, globalObject->clonedArgumentsStructure(), length, nullptr);
     
     Register* arguments =
         callFrame->registers() + (inlineCallFrame ? inlineCallFrame->stackOffset : 0) +

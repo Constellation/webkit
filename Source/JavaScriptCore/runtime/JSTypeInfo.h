@@ -115,9 +115,7 @@ public:
 
     static bool isArgumentsType(JSType type)
     {
-        return type == DirectArgumentsType
-            || type == ScopedArgumentsType
-            || type == ClonedArgumentsType;
+        return type >= DirectArgumentsType && type <= ExternallyAccessedArgumentsType;
     }
 
     static ptrdiff_t flagsOffset()

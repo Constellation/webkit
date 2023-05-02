@@ -208,6 +208,7 @@ class Heap;
     v(dataViewSpace, cellHeapCellType, JSDataView) \
     v(debuggerScopeSpace, cellHeapCellType, DebuggerScope) \
     v(errorInstanceSpace, errorInstanceHeapCellType, ErrorInstance) \
+    v(externallyAccessedArgumentsSpace, cellHeapCellType, ExternallyAccessedArguments) \
     v(finalizationRegistrySpace, finalizationRegistryCellType, JSFinalizationRegistry) \
     v(float32ArraySpace, cellHeapCellType, JSFloat32Array) \
     v(float64ArraySpace, cellHeapCellType, JSFloat64Array) \

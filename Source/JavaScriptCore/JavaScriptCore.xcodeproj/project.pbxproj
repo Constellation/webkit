@@ -1926,6 +1926,7 @@
 		E3A0531A21342B680022EC14 /* WasmStreamingParser.h in Headers */ = {isa = PBXBuildFile; fileRef = E3A0531621342B660022EC14 /* WasmStreamingParser.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E3A0531C21342B680022EC14 /* WasmSectionParser.h in Headers */ = {isa = PBXBuildFile; fileRef = E3A0531821342B670022EC14 /* WasmSectionParser.h */; };
 		E3A10E8227803E3B00D3ACD0 /* Zycore.h in Headers */ = {isa = PBXBuildFile; fileRef = E3A10E8027803E3B00D3ACD0 /* Zycore.h */; };
+		E3A28D7629FDACAF00BB71A0 /* ExternallyAccessedArguments.h in Headers */ = {isa = PBXBuildFile; fileRef = E3A28D7529FDACA600BB71A0 /* ExternallyAccessedArguments.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E3A32BC71FC83147007D7E76 /* WeakMapImpl.h in Headers */ = {isa = PBXBuildFile; fileRef = E3A32BC61FC8312E007D7E76 /* WeakMapImpl.h */; };
 		E3A421431D6F58930007C617 /* PreciseJumpTargetsInlines.h in Headers */ = {isa = PBXBuildFile; fileRef = E3A421421D6F588F0007C617 /* PreciseJumpTargetsInlines.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E3AC277721FDB4940024452C /* RegExpCachedResult.h in Headers */ = {isa = PBXBuildFile; fileRef = 86F75EFC151C062F007C9BA3 /* RegExpCachedResult.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -5446,6 +5447,8 @@
 		E3A0531921342B670022EC14 /* WasmStreamingParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WasmStreamingParser.cpp; sourceTree = "<group>"; };
 		E3A10E7F27803E3B00D3ACD0 /* Zycore.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Zycore.c; sourceTree = "<group>"; };
 		E3A10E8027803E3B00D3ACD0 /* Zycore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Zycore.h; sourceTree = "<group>"; };
+		E3A28D7429FDACA600BB71A0 /* ExternallyAccessedArguments.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ExternallyAccessedArguments.cpp; sourceTree = "<group>"; };
+		E3A28D7529FDACA600BB71A0 /* ExternallyAccessedArguments.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ExternallyAccessedArguments.h; sourceTree = "<group>"; };
 		E3A32BC51FC8312D007D7E76 /* WeakMapImpl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WeakMapImpl.cpp; sourceTree = "<group>"; };
 		E3A32BC61FC8312E007D7E76 /* WeakMapImpl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WeakMapImpl.h; sourceTree = "<group>"; };
 		E3A421421D6F588F0007C617 /* PreciseJumpTargetsInlines.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PreciseJumpTargetsInlines.h; sourceTree = "<group>"; };
@@ -7724,6 +7727,8 @@
 				147341E91DC2CF2500AA29BA /* ExecutableBase.cpp */,
 				147341CB1DC02D7200AA29BA /* ExecutableBase.h */,
 				E35A0B9C220AD87A00AC4474 /* ExecutableBaseInlines.h */,
+				E3A28D7429FDACA600BB71A0 /* ExternallyAccessedArguments.cpp */,
+				E3A28D7529FDACA600BB71A0 /* ExternallyAccessedArguments.h */,
 				CECFAD332372DAA700291599 /* FileBasedFuzzerAgent.cpp */,
 				CECFAD322372DAA700291599 /* FileBasedFuzzerAgent.h */,
 				CE20BD04237D3AD40046E520 /* FileBasedFuzzerAgentBase.cpp */,
@@ -10296,6 +10301,7 @@
 				0F3AC754188E5EC80032029F /* ExitingJITType.h in Headers */,
 				0FB105861675481200F8AB6E /* ExitKind.h in Headers */,
 				0F0B83AB14BCF5BB00885B4F /* ExpressionRangeInfo.h in Headers */,
+				E3A28D7629FDACAF00BB71A0 /* ExternallyAccessedArguments.h in Headers */,
 				5267CF82249316B10022BF6D /* FastJITPermissions.h in Headers */,
 				0FEC3C571F33A45300F59B6C /* FastMallocAlignedMemoryAllocator.h in Headers */,
 				CECFAD372372DAD400291599 /* FileBasedFuzzerAgent.h in Headers */,

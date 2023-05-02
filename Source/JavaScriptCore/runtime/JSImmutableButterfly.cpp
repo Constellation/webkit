@@ -29,6 +29,7 @@
 #include "ButterflyInlines.h"
 #include "ClonedArguments.h"
 #include "DirectArguments.h"
+#include "ExternallyAccessedArguments.h"
 #include "JSObjectInlines.h"
 #include "ScopedArguments.h"
 #include <wtf/IterationStatus.h>
@@ -65,7 +66,8 @@ void JSImmutableButterfly::copyToArguments(JSGlobalObject*, JSValue* firstElemen
 
 static_assert(JSImmutableButterfly::offsetOfData() == sizeof(JSImmutableButterfly), "m_header needs to be adjacent to Data");
 
-JSImmutableButterfly* JSImmutableButterfly::createFromClonedArguments(JSGlobalObject* globalObject, ClonedArguments* arguments)
+template<typename Arguments>
+static ALWAYS_INLINE JSImmutableButterfly* createFromClonedArgumentsImpl(JSGlobalObject* globalObject, Arguments* arguments)
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
@@ -112,6 +114,17 @@ JSImmutableButterfly* JSImmutableButterfly::createFromClonedArguments(JSGlobalOb
     }
 
     return result;
+}
+
+
+JSImmutableButterfly* JSImmutableButterfly::createFromClonedArguments(JSGlobalObject* globalObject, ClonedArguments* arguments)
+{
+    return createFromClonedArgumentsImpl(globalObject, arguments);
+}
+
+JSImmutableButterfly* JSImmutableButterfly::createFromExternallyAccessedArguments(JSGlobalObject* globalObject, ExternallyAccessedArguments* arguments)
+{
+    return createFromClonedArgumentsImpl(globalObject, arguments);
 }
 
 template<typename Arguments>

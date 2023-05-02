@@ -384,7 +384,7 @@ JSC_DEFINE_JIT_OPERATION(operationMaterializeObjectInOSR, JSCell*, (JSGlobalObje
             case PhantomDirectArguments:
                 return DirectArguments::createByCopying(globalObject, callFrame);
             case PhantomClonedArguments:
-                return ClonedArguments::createWithMachineFrame(globalObject, callFrame, ArgumentsMode::Cloned);
+                return ClonedArguments::createWithMachineFrame(globalObject, callFrame);
             case PhantomCreateRest: {
                 CodeBlock* codeBlock = baselineCodeBlockForOriginAndBaselineCodeBlock(
                     materialization->origin(), callFrame->codeBlock()->baselineAlternative());
@@ -415,27 +415,27 @@ JSC_DEFINE_JIT_OPERATION(operationMaterializeObjectInOSR, JSCell*, (JSGlobalObje
         } else
             argumentCount = materialization->origin().inlineCallFrame()->argumentCountIncludingThis;
         RELEASE_ASSERT(argumentCount);
-        
-        JSFunction* callee = nullptr;
-        if (materialization->origin().inlineCallFrame()->isClosureCall) {
-            for (unsigned i = materialization->properties().size(); i--;) {
-                const ExitPropertyValue& property = materialization->properties()[i];
-                if (property.location() != PromotedLocationDescriptor(ArgumentsCalleePLoc))
-                    continue;
-                
-                callee = jsCast<JSFunction*>(JSValue::decode(values[i]));
-                break;
-            }
-        } else
-            callee = materialization->origin().inlineCallFrame()->calleeConstant();
-        RELEASE_ASSERT(callee);
-        
+
         CodeBlock* codeBlock = baselineCodeBlockForOriginAndBaselineCodeBlock(
             materialization->origin(), callFrame->codeBlock()->baselineAlternative());
         
         // We have an inline frame and we have all of the data we need to recreate it.
         switch (materialization->type()) {
         case PhantomDirectArguments: {
+            JSFunction* callee = nullptr;
+            if (materialization->origin().inlineCallFrame()->isClosureCall) {
+                for (unsigned i = materialization->properties().size(); i--;) {
+                    const ExitPropertyValue& property = materialization->properties()[i];
+                    if (property.location() != PromotedLocationDescriptor(ArgumentsCalleePLoc))
+                        continue;
+
+                    callee = jsCast<JSFunction*>(JSValue::decode(values[i]));
+                    break;
+                }
+            } else
+                callee = materialization->origin().inlineCallFrame()->calleeConstant();
+            RELEASE_ASSERT(callee);
+
             unsigned length = argumentCount - 1;
             unsigned capacity = std::max(length, static_cast<unsigned>(codeBlock->numParameters() - 1));
             DirectArguments* result = DirectArguments::create(
@@ -466,7 +466,7 @@ JSC_DEFINE_JIT_OPERATION(operationMaterializeObjectInOSR, JSCell*, (JSGlobalObje
         }
         case PhantomClonedArguments: {
             unsigned length = argumentCount - 1;
-            ClonedArguments* result = ClonedArguments::createEmpty(vm, codeBlock->globalObject()->clonedArgumentsStructure(), callee, length, nullptr);
+            ClonedArguments* result = ClonedArguments::createEmpty(vm, codeBlock->globalObject()->clonedArgumentsStructure(), length, nullptr);
             
             for (unsigned i = materialization->properties().size(); i--;) {
                 const ExitPropertyValue& property = materialization->properties()[i];

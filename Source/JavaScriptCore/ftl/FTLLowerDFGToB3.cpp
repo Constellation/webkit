@@ -7621,7 +7621,6 @@ IGNORE_CLANG_WARNINGS_END
             size_t outOfLineCapacity = globalObject->clonedArgumentsStructure()->outOfLineCapacity();
             LValue length = getArgumentsLength().value;
             LValue argumentRegion = getArgumentsStart();
-            LValue callee = getCurrentCallee();
             m_out.branch(m_out.aboveOrEqual(length, m_out.constInt32(MAX_STORAGE_VECTOR_LENGTH)), unsure(slowCase), unsure(allocateButterfly));
 
             LBasicBlock lastNext = m_out.appendTo(allocateButterfly, loopStart);
@@ -7636,7 +7635,6 @@ IGNORE_CLANG_WARNINGS_END
             m_out.store64(boxInt32(length), m_out.address(m_heaps.properties.atAnyNumber(), butterfly, offsetRelativeToBase(clonedArgumentsLengthPropertyOffset)));
             ValueFromBlock fastButterfly = m_out.anchor(butterfly);
             LValue arguments = allocateObject<ClonedArguments>(m_graph.registerStructure(globalObject->clonedArgumentsStructure()), butterfly, slowCase);
-            m_out.store64(callee, arguments, m_heaps.ClonedArguments_callee);
             ValueFromBlock startLength = m_out.anchor(m_out.zeroExtPtr(length));
             m_out.branch(m_out.isZero32(length), unsure(finish), unsure(loopStart));
 
@@ -7658,7 +7656,7 @@ IGNORE_CLANG_WARNINGS_END
             LValue slowResultValue = vmCall(
                 Int64, operationCreateClonedArguments, weakPointer(globalObject),
                 weakPointer(m_graph.globalObjectFor(m_origin.semantic)->clonedArgumentsStructure()),
-                argumentRegion, length, callee, m_out.phi(pointerType(), nullButterfly, fastButterfly));
+                argumentRegion, length, m_out.phi(pointerType(), nullButterfly, fastButterfly));
             ValueFromBlock slowResult = m_out.anchor(slowResultValue);
             m_out.jump(continuation);
 
@@ -7672,7 +7670,7 @@ IGNORE_CLANG_WARNINGS_END
             Int64, operationCreateClonedArguments, weakPointer(globalObject),
             weakPointer(
                 m_graph.globalObjectFor(m_origin.semantic)->clonedArgumentsStructure()),
-            getArgumentsStart(), getArgumentsLength().value, getCurrentCallee(), m_out.intPtrZero);
+            getArgumentsStart(), getArgumentsLength().value, m_out.intPtrZero);
 
         setJSValue(result);
     }

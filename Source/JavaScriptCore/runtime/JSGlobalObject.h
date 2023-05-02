@@ -296,6 +296,7 @@ public:
     WriteBarrierStructureID m_directArgumentsStructure;
     WriteBarrierStructureID m_scopedArgumentsStructure;
     WriteBarrierStructureID m_clonedArgumentsStructure;
+    WriteBarrierStructureID m_externallyAccessedArgumentsStructure;
 
     WriteBarrierStructureID m_objectStructureForObjectConstructor;
 
@@ -716,6 +717,7 @@ public:
     Structure* directArgumentsStructure() const { return m_directArgumentsStructure.get(); }
     Structure* scopedArgumentsStructure() const { return m_scopedArgumentsStructure.get(); }
     Structure* clonedArgumentsStructure() const { return m_clonedArgumentsStructure.get(); }
+    Structure* externallyAccessedArgumentsStructure() const { return m_externallyAccessedArgumentsStructure.get(); }
     Structure* objectStructureForObjectConstructor() const { return m_objectStructureForObjectConstructor.get(); }
     Structure* originalArrayStructureForIndexingType(IndexingType indexingType) const
     {

@@ -36,6 +36,7 @@ namespace JSC {
 
 class ClonedArguments;
 class DirectArguments;
+class ExternallyAccessedArguments;
 class ScopedArguments;
 
 class JSImmutableButterfly : public JSCell {
@@ -134,6 +135,7 @@ public:
     }
 
     static JSImmutableButterfly* createFromClonedArguments(JSGlobalObject*, ClonedArguments*);
+    static JSImmutableButterfly* createFromExternallyAccessedArguments(JSGlobalObject*, ExternallyAccessedArguments*);
     static JSImmutableButterfly* createFromDirectArguments(JSGlobalObject*, DirectArguments*);
     static JSImmutableButterfly* createFromScopedArguments(JSGlobalObject*, ScopedArguments*);
     static JSImmutableButterfly* createFromString(JSGlobalObject*, JSString*);
