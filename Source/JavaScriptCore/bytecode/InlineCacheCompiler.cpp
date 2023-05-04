@@ -2629,6 +2629,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
     PolymorphicAccess::ListType cases;
     unsigned srcIndex = 0;
     unsigned dstIndex = 0;
+    bool foundMegamorphic = false;
     while (srcIndex < poly.m_list.size()) {
         RefPtr<AccessCase> someCase = WTFMove(poly.m_list[srcIndex++]);
 
@@ -2657,6 +2658,9 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
                 if (poly.m_list[j]->canReplace(*someCase))
                     return;
             }
+            if (someCase->type() == AccessCase::LoadMegamorphic || someCase->type() == AccessCase::IndexedMegamorphicLoad) {
+                foundMegamorphic = true;
+            }
 
             if (isGenerated)
                 cases.append(someCase->clone());
@@ -2673,7 +2677,18 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
 
     // If the resulting set of cases is so big that we would stop caching and this is InstanceOf,
     // then we want to generate the generic InstanceOf and then stop.
-    if (cases.size() >= Options::maxAccessVariantListSize() || m_stubInfo->canBeMegamorphic) {
+    if (foundMegamorphic) {
+        RefPtr<AccessCase> megamorphic;
+        while (!cases.isEmpty()) {
+            auto accessCase = cases.takeLast();
+            if (accessCase->type() == AccessCase::LoadMegamorphic || accessCase->type() == AccessCase::IndexedMegamorphicLoad)
+                megamorphic = WTFMove(accessCase);
+            else
+                poly.m_list.append(WTFMove(accessCase));
+        }
+        cases.append(WTFMove(megamorphic));
+        generatedMegamorphicCode = true;
+    } else if (cases.size() >= Options::maxAccessVariantListSize() || m_stubInfo->canBeMegamorphic) {
         switch (m_stubInfo->accessType) {
         case AccessType::InstanceOf: {
             while (!cases.isEmpty())
@@ -2686,12 +2701,15 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             auto identifier = cases.last()->m_identifier;
             bool allAreSimpleLoadOrMiss = true;
             for (auto& accessCase : cases) {
-                if (accessCase->type() != AccessCase::Load && accessCase->type() != AccessCase::Miss)
+                if (accessCase->type() != AccessCase::Load && accessCase->type() != AccessCase::Miss) {
                     allAreSimpleLoadOrMiss = false;
-                if (accessCase->usesPolyProto())
+                }
+                if (accessCase->usesPolyProto()) {
                     allAreSimpleLoadOrMiss = false;
-                if (accessCase->viaGlobalProxy())
+                }
+                if (accessCase->viaGlobalProxy()) {
                     allAreSimpleLoadOrMiss = false;
+                }
             }
 
             // Currently, we do not apply megamorphic cache for "length" property since Array#length and String#length are too common.
@@ -2713,12 +2731,15 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         case AccessType::GetByVal: {
             bool allAreSimpleLoadOrMiss = true;
             for (auto& accessCase : cases) {
-                if (accessCase->type() != AccessCase::Load && accessCase->type() != AccessCase::Miss)
+                if (accessCase->type() != AccessCase::Load && accessCase->type() != AccessCase::Miss) {
                     allAreSimpleLoadOrMiss = false;
-                if (accessCase->usesPolyProto())
+                }
+                if (accessCase->usesPolyProto()) {
                     allAreSimpleLoadOrMiss = false;
-                if (accessCase->viaGlobalProxy())
+                }
+                if (accessCase->viaGlobalProxy()) {
                     allAreSimpleLoadOrMiss = false;
+                }
             }
 
 #if USE(JSVALUE32_64)
@@ -2822,9 +2843,9 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         AccessGenerationResult::Kind resultKind;
         if (generatedMegamorphicCode)
             resultKind = AccessGenerationResult::GeneratedMegamorphicCode;
-        else if (poly.m_list.size() >= Options::maxAccessVariantListSize())
+        else if (poly.m_list.size() >= Options::maxAccessVariantListSize()) {
             resultKind = AccessGenerationResult::GeneratedFinalCode;
-        else
+        } else
             resultKind = AccessGenerationResult::GeneratedNewCode;
 
         return AccessGenerationResult(resultKind, poly.m_stubRoutine->code().code());

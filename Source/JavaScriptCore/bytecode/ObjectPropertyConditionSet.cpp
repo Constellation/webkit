@@ -536,6 +536,7 @@ static std::optional<PrototypeChainCachingStatus> prepareChainForCaching(JSGloba
     bool found = false;
     bool usesPolyProto = false;
     bool flattenedDictionary = false;
+    bool usableForPolymorphic = true;
 
     while (true) {
         if (structure->isDictionary()) {
@@ -544,17 +545,20 @@ static std::optional<PrototypeChainCachingStatus> prepareChainForCaching(JSGloba
 
             ASSERT(structure->isObject());
             if (structure->hasBeenFlattenedBefore())
-                return std::nullopt;
-
-            structure->flattenDictionaryStructure(vm, asObject(current));
-            flattenedDictionary = true;
+                usableForPolymorphic = false;
+            else {
+                structure->flattenDictionaryStructure(vm, asObject(current));
+                flattenedDictionary = true;
+            }
         }
 
-        if (!structure->propertyAccessesAreCacheable())
+        if (!structure->propertyAccessesAreCacheable()) {
             return std::nullopt;
+        }
 
-        if (structure->isProxy())
+        if (structure->isProxy()) {
             return std::nullopt;
+        }
 
         if (current && current == target) {
             found = true;
@@ -575,8 +579,9 @@ static std::optional<PrototypeChainCachingStatus> prepareChainForCaching(JSGloba
         // poly proto.
         JSValue prototype;
         if (structure->hasPolyProto()) {
-            if (!current)
+            if (!current) {
                 return std::nullopt;
+            }
             usesPolyProto = true;
             prototype = structure->prototypeForLookup(globalObject, current);
         } else
@@ -588,12 +593,14 @@ static std::optional<PrototypeChainCachingStatus> prepareChainForCaching(JSGloba
         structure = current->structure();
     }
 
-    if (!found && !!target)
+    if (!found && !!target) {
         return std::nullopt;
+    }
 
     PrototypeChainCachingStatus result;
     result.usesPolyProto = usesPolyProto;
     result.flattenedDictionary = flattenedDictionary;
+    result.usableForPolymorphic = usableForPolymorphic;
 
     return result;
 }

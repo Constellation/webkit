@@ -256,19 +256,22 @@ static InlineCacheAction actionForCell(VM& vm, JSCell* cell)
     Structure* structure = cell->structure();
 
     TypeInfo typeInfo = structure->typeInfo();
-    if (typeInfo.prohibitsPropertyCaching())
+    if (typeInfo.prohibitsPropertyCaching()) {
         return GiveUpOnCache;
+    }
 
     if (structure->isUncacheableDictionary()) {
-        if (structure->hasBeenFlattenedBefore())
+        if (structure->hasBeenFlattenedBefore()) {
             return GiveUpOnCache;
+        }
         // Flattening could have changed the offset, so return early for another try.
         asObject(cell)->flattenDictionaryObject(vm);
         return RetryCacheLater;
     }
     
-    if (!structure->propertyAccessesAreCacheable())
+    if (!structure->propertyAccessesAreCacheable()) {
         return GiveUpOnCache;
+    }
 
     return AttemptToCache;
 }
@@ -348,8 +351,9 @@ static InlineCacheAction tryCacheGetBy(JSGlobalObject* globalObject, CodeBlock* 
             return GiveUpOnCache;
         
         // FIXME: Cache property access for immediates.
-        if (!baseValue.isCell())
+        if (!baseValue.isCell()) {
             return GiveUpOnCache;
+        }
         JSCell* baseCell = baseValue.asCell();
         const bool isPrivate = kind == GetByKind::PrivateName || kind == GetByKind::PrivateNameById;
 
@@ -405,16 +409,18 @@ static InlineCacheAction tryCacheGetBy(JSGlobalObject* globalObject, CodeBlock* 
         }
         
         if (!newCase) {
-            if (!slot.isCacheable() && !slot.isUnset())
+            if (!slot.isCacheable() && !slot.isUnset()) {
                 return GiveUpOnCache;
+            }
 
             ObjectPropertyConditionSet conditionSet;
             Structure* structure = baseCell->structure();
 
             bool loadTargetFromProxy = false;
             if (baseCell->type() == GlobalProxyType) {
-                if (isPrivate)
+                if (isPrivate) {
                     return GiveUpOnCache;
+                }
                 baseValue = jsCast<JSGlobalProxy*>(baseCell)->target();
                 baseCell = baseValue.asCell();
                 structure = baseCell->structure();
@@ -451,40 +457,49 @@ static InlineCacheAction tryCacheGetBy(JSGlobalObject* globalObject, CodeBlock* 
                 // need to be informed if the custom goes away since we cache the
                 // constant function pointer.
 
-                if (!prepareChainForCaching(globalObject, slot.slotBase(), propertyName.uid(), slot.slotBase()))
+                auto cacheStatus = prepareChainForCaching(globalObject, slot.slotBase(), propertyName.uid(), slot.slotBase());
+                if (!cacheStatus || !cacheStatus->usableForPolymorphic) {
                     return GiveUpOnCache;
+                }
             }
 
             if (slot.isUnset() || slot.slotBase() != baseValue) {
-                if (structure->typeInfo().prohibitsPropertyCaching())
+                if (structure->typeInfo().prohibitsPropertyCaching()) {
                     return GiveUpOnCache;
+                }
 
                 if (structure->isDictionary()) {
-                    if (structure->hasBeenFlattenedBefore())
+                    if (structure->hasBeenFlattenedBefore()) {
                         return GiveUpOnCache;
+                    }
                     structure->flattenDictionaryStructure(vm, jsCast<JSObject*>(baseCell));
                     return RetryCacheLater; // We may have changed property offsets.
                 }
 
-                if (slot.isUnset() && structure->typeInfo().getOwnPropertySlotIsImpureForPropertyAbsence())
+                if (slot.isUnset() && structure->typeInfo().getOwnPropertySlotIsImpureForPropertyAbsence()) {
                     return GiveUpOnCache;
+                }
 
                 // If a kind is GetByKind::ByIdDirect or GetByKind::PrivateName, we do not need to investigate prototype chains further.
                 // Cacheability just depends on the head structure.
                 if (kind != GetByKind::ByIdDirect && !isPrivate) {
                     auto cacheStatus = prepareChainForCaching(globalObject, baseCell, propertyName.uid(), slot);
-                    if (!cacheStatus)
+                    if (!cacheStatus) {
                         return GiveUpOnCache;
-
-                    if (cacheStatus->flattenedDictionary) {
-                        // Property offsets may have changed due to flattening. We'll cache later.
-                        return RetryCacheLater;
                     }
 
-                    if (cacheStatus->usesPolyProto) {
-                        prototypeAccessChain = PolyProtoAccessChain::tryCreate(globalObject, baseCell, propertyName, slot);
-                        if (!prototypeAccessChain)
+                    if (!cacheStatus->usableForPolymorphic) {
+                        if (kind == GetByKind::ByVal) {
+                            newCase = AccessCase::create(vm, codeBlock, AccessCase::IndexedMegamorphicLoad, propertyName);
+                        } else if (kind == GetByKind::ById) {
+                            newCase = AccessCase::create(vm, codeBlock, AccessCase::LoadMegamorphic, propertyName);
+                        } else
                             return GiveUpOnCache;
+                    } else if (cacheStatus->usesPolyProto) {
+                        prototypeAccessChain = PolyProtoAccessChain::tryCreate(globalObject, baseCell, propertyName, slot);
+                        if (!prototypeAccessChain) {
+                            return GiveUpOnCache;
+                        }
                         ASSERT(slot.isCacheableCustom() || prototypeAccessChain->slotBaseStructure(vm, structure)->get(vm, propertyName.uid()) == offset);
                     } else {
                         // We use ObjectPropertyConditionSet instead for faster accesses.
@@ -506,65 +521,70 @@ static InlineCacheAction tryCacheGetBy(JSGlobalObject* globalObject, CodeBlock* 
                                 propertyName.uid(), slot.attributes());
                         }
 
-                        if (!conditionSet.isValid())
+                        if (!conditionSet.isValid()) {
                             return GiveUpOnCache;
+                        }
                     }
                 }
             }
 
-            JSFunction* getter = nullptr;
-            if (slot.isCacheableGetter())
-                getter = jsDynamicCast<JSFunction*>(slot.getterSetter()->getter());
+            if (!newCase) {
+                JSFunction* getter = nullptr;
+                if (slot.isCacheableGetter())
+                    getter = jsDynamicCast<JSFunction*>(slot.getterSetter()->getter());
 
-            std::optional<DOMAttributeAnnotation> domAttribute;
-            if (slot.isCacheableCustom() && slot.domAttribute())
-                domAttribute = slot.domAttribute();
+                std::optional<DOMAttributeAnnotation> domAttribute;
+                if (slot.isCacheableCustom() && slot.domAttribute())
+                    domAttribute = slot.domAttribute();
 
-            if (kind == GetByKind::TryById) {
-                AccessCase::AccessType type;
-                if (slot.isCacheableValue())
-                    type = AccessCase::Load;
-                else if (slot.isUnset())
-                    type = AccessCase::Miss;
-                else if (slot.isCacheableGetter())
-                    type = AccessCase::GetGetter;
-                else
-                    RELEASE_ASSERT_NOT_REACHED();
-
-                newCase = ProxyableAccessCase::create(vm, codeBlock, type, propertyName, offset, structure, conditionSet, loadTargetFromProxy, slot.watchpointSet(), WTFMove(prototypeAccessChain));
-            } else if (!loadTargetFromProxy && getter && InlineCacheCompiler::canEmitIntrinsicGetter(stubInfo, getter, structure))
-                newCase = IntrinsicGetterAccessCase::create(vm, codeBlock, propertyName, slot.cachedOffset(), structure, conditionSet, getter, WTFMove(prototypeAccessChain));
-            else {
-                if (isPrivate) {
-                    RELEASE_ASSERT(!slot.isUnset());
-                    constexpr bool isGlobalProxy = false;
-                    if (!slot.isCacheable())
-                        return GiveUpOnCache;
-                    newCase = ProxyableAccessCase::create(vm, codeBlock, AccessCase::Load, propertyName, offset, structure,
-                        conditionSet, isGlobalProxy, slot.watchpointSet(), WTFMove(prototypeAccessChain));
-                } else if (slot.isCacheableValue() || slot.isUnset()) {
-                    newCase = ProxyableAccessCase::create(vm, codeBlock, slot.isUnset() ? AccessCase::Miss : AccessCase::Load,
-                        propertyName, offset, structure, conditionSet, loadTargetFromProxy, slot.watchpointSet(), WTFMove(prototypeAccessChain));
-                } else {
+                if (kind == GetByKind::TryById) {
                     AccessCase::AccessType type;
-                    if (slot.isCacheableGetter())
-                        type = AccessCase::Getter;
-                    else if (slot.attributes() & PropertyAttribute::CustomAccessor)
-                        type = AccessCase::CustomAccessorGetter;
+                    if (slot.isCacheableValue())
+                        type = AccessCase::Load;
+                    else if (slot.isUnset())
+                        type = AccessCase::Miss;
+                    else if (slot.isCacheableGetter())
+                        type = AccessCase::GetGetter;
                     else
-                        type = AccessCase::CustomValueGetter;
+                        RELEASE_ASSERT_NOT_REACHED();
 
-                    if ((kind == GetByKind::ByIdWithThis || kind == GetByKind::ByValWithThis) && type == AccessCase::CustomAccessorGetter && domAttribute)
-                        return GiveUpOnCache;
+                    newCase = ProxyableAccessCase::create(vm, codeBlock, type, propertyName, offset, structure, conditionSet, loadTargetFromProxy, slot.watchpointSet(), WTFMove(prototypeAccessChain));
+                } else if (!loadTargetFromProxy && getter && InlineCacheCompiler::canEmitIntrinsicGetter(stubInfo, getter, structure))
+                    newCase = IntrinsicGetterAccessCase::create(vm, codeBlock, propertyName, slot.cachedOffset(), structure, conditionSet, getter, WTFMove(prototypeAccessChain));
+                else {
+                    if (isPrivate) {
+                        RELEASE_ASSERT(!slot.isUnset());
+                        constexpr bool isGlobalProxy = false;
+                        if (!slot.isCacheable()) {
+                            return GiveUpOnCache;
+                        }
+                        newCase = ProxyableAccessCase::create(vm, codeBlock, AccessCase::Load, propertyName, offset, structure,
+                            conditionSet, isGlobalProxy, slot.watchpointSet(), WTFMove(prototypeAccessChain));
+                    } else if (slot.isCacheableValue() || slot.isUnset()) {
+                        newCase = ProxyableAccessCase::create(vm, codeBlock, slot.isUnset() ? AccessCase::Miss : AccessCase::Load,
+                            propertyName, offset, structure, conditionSet, loadTargetFromProxy, slot.watchpointSet(), WTFMove(prototypeAccessChain));
+                    } else {
+                        AccessCase::AccessType type;
+                        if (slot.isCacheableGetter())
+                            type = AccessCase::Getter;
+                        else if (slot.attributes() & PropertyAttribute::CustomAccessor)
+                            type = AccessCase::CustomAccessorGetter;
+                        else
+                            type = AccessCase::CustomValueGetter;
 
-                    CodePtr<CustomAccessorPtrTag> customAccessor;
-                    if (slot.isCacheableCustom())
-                        customAccessor = slot.customGetter();
-                    newCase = GetterSetterAccessCase::create(
-                        vm, codeBlock, type, propertyName, offset, structure, conditionSet, loadTargetFromProxy,
-                        slot.watchpointSet(), customAccessor,
-                        slot.isCacheableCustom() && slot.slotBase() != baseValue ? slot.slotBase() : nullptr,
-                        domAttribute, WTFMove(prototypeAccessChain));
+                        if ((kind == GetByKind::ByIdWithThis || kind == GetByKind::ByValWithThis) && type == AccessCase::CustomAccessorGetter && domAttribute) {
+                            return GiveUpOnCache;
+                        }
+
+                        CodePtr<CustomAccessorPtrTag> customAccessor;
+                        if (slot.isCacheableCustom())
+                            customAccessor = slot.customGetter();
+                        newCase = GetterSetterAccessCase::create(
+                            vm, codeBlock, type, propertyName, offset, structure, conditionSet, loadTargetFromProxy,
+                            slot.watchpointSet(), customAccessor,
+                            slot.isCacheableCustom() && slot.slotBase() != baseValue ? slot.slotBase() : nullptr,
+                            domAttribute, WTFMove(prototypeAccessChain));
+                    }
                 }
             }
         }
@@ -599,6 +619,9 @@ static InlineCacheAction tryCacheGetBy(JSGlobalObject* globalObject, CodeBlock* 
 
     if (result.generatedMegamorphicCode())
         return PromoteToMegamorphic;
+    if (result.shouldGiveUpNow()) {
+        return GiveUpOnCache;
+    }
     return result.shouldGiveUpNow() ? GiveUpOnCache : RetryCacheLater;
 }
 
@@ -614,9 +637,10 @@ void repatchGetBy(JSGlobalObject* globalObject, CodeBlock* codeBlock, JSValue ba
             repatchSlowPathCall(codeBlock, stubInfo, operationGetByValMegamorphic);
         break;
     }
-    case GiveUpOnCache:
+    case GiveUpOnCache: {
         repatchSlowPathCall(codeBlock, stubInfo, appropriateGetByFunction(kind));
         break;
+    }
     case RetryCacheLater:
     case AttemptToCache:
         break;
@@ -721,7 +745,7 @@ static InlineCacheAction tryCacheArrayGetByVal(JSGlobalObject* globalObject, Cod
 
                 // FIXME: prepareChainForCaching is conservative. We should have another function which only cares about information related to this IC.
                 auto cacheStatus = prepareChainForCaching(globalObject, base, nullptr, nullptr);
-                if (!cacheStatus)
+                if (!cacheStatus || !cacheStatus->usableForPolymorphic)
                     return GiveUpOnCache;
 
                 if (cacheStatus->usesPolyProto)
@@ -971,7 +995,7 @@ static InlineCacheAction tryCachePutBy(JSGlobalObject* globalObject, CodeBlock* 
                 ObjectPropertyConditionSet conditionSet;
                 if (putKind == PutKind::NotDirect) {
                     auto cacheStatus = prepareChainForCaching(globalObject, baseCell, propertyName.uid(), nullptr);
-                    if (!cacheStatus)
+                    if (!cacheStatus || !cacheStatus->usableForPolymorphic)
                         return GiveUpOnCache;
 
                     if (cacheStatus->usesPolyProto) {
@@ -1005,7 +1029,7 @@ static InlineCacheAction tryCachePutBy(JSGlobalObject* globalObject, CodeBlock* 
                 // because we need to be informed if the custom goes away since we cache the constant
                 // function pointer.
                 auto cacheStatus = prepareChainForCaching(globalObject, baseCell, propertyName.uid(), slot.base());
-                if (!cacheStatus)
+                if (!cacheStatus || !cacheStatus->usableForPolymorphic)
                     return GiveUpOnCache;
 
                 if (slot.base() != baseValue) {
@@ -1033,7 +1057,7 @@ static InlineCacheAction tryCachePutBy(JSGlobalObject* globalObject, CodeBlock* 
 
                 if (slot.base() != baseValue) {
                     auto cacheStatus = prepareChainForCaching(globalObject, baseCell, propertyName.uid(), slot.base());
-                    if (!cacheStatus)
+                    if (!cacheStatus || !cacheStatus->usableForPolymorphic)
                         return GiveUpOnCache;
                     if (cacheStatus->flattenedDictionary)
                         return RetryCacheLater;
@@ -1353,7 +1377,7 @@ static InlineCacheAction tryCacheInBy(
 
             if (slot.slotBase() != base) {
                 auto cacheStatus = prepareChainForCaching(globalObject, base, propertyName.uid(), slot);
-                if (!cacheStatus)
+                if (!cacheStatus || !cacheStatus->usableForPolymorphic)
                     return GiveUpOnCache;
                 if (cacheStatus->flattenedDictionary)
                     return RetryCacheLater;
@@ -1377,7 +1401,7 @@ static InlineCacheAction tryCacheInBy(
                 return GiveUpOnCache;
 
             auto cacheStatus = prepareChainForCaching(globalObject, base, propertyName.uid(), nullptr);
-            if (!cacheStatus)
+            if (!cacheStatus || !cacheStatus->usableForPolymorphic)
                 return GiveUpOnCache;
 
             if (cacheStatus->usesPolyProto) {

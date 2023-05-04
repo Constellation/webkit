@@ -192,6 +192,7 @@ ObjectPropertyConditionSet generateConditionsForPropertySetterMissConcurrently(
 struct PrototypeChainCachingStatus {
     bool usesPolyProto;
     bool flattenedDictionary;
+    bool usableForPolymorphic;
 };
 
 std::optional<PrototypeChainCachingStatus> prepareChainForCaching(JSGlobalObject*, JSCell* base, UniquedStringImpl*, const PropertySlot&);
