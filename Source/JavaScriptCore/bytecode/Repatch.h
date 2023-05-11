@@ -27,7 +27,6 @@
 
 #include "CacheableIdentifier.h"
 #include "CallVariant.h"
-#include "PutKind.h"
 
 namespace JSC {
 
@@ -49,6 +48,12 @@ enum class GetByKind {
 enum class PutByKind {
     ById,
     ByVal,
+    ByIdDirect,
+    ByValDirect,
+    DefinePrivateNameById,
+    DefinePrivateNameByVal,
+    SetPrivateNameById,
+    SetPrivateNameByVal,
 };
 
 enum class DelByKind {
@@ -64,8 +69,8 @@ enum class InByKind {
 
 void repatchArrayGetByVal(JSGlobalObject*, CodeBlock*, JSValue base, JSValue index, StructureStubInfo&, GetByKind);
 void repatchGetBy(JSGlobalObject*, CodeBlock*, JSValue, CacheableIdentifier, const PropertySlot&, StructureStubInfo&, GetByKind);
-void repatchArrayPutByVal(JSGlobalObject*, CodeBlock*, JSValue base, JSValue index, StructureStubInfo&, PutKind, ECMAMode);
-void repatchPutBy(JSGlobalObject*, CodeBlock*, JSValue, Structure*, CacheableIdentifier, const PutPropertySlot&, StructureStubInfo&, PutByKind, PutKind);
+void repatchArrayPutByVal(JSGlobalObject*, CodeBlock*, JSValue base, JSValue index, StructureStubInfo&, PutByKind, ECMAMode);
+void repatchPutBy(JSGlobalObject*, CodeBlock*, JSValue, Structure*, CacheableIdentifier, const PutPropertySlot&, StructureStubInfo&, PutByKind);
 void repatchDeleteBy(JSGlobalObject*, CodeBlock*, DeletePropertySlot&, JSValue, Structure*, CacheableIdentifier, StructureStubInfo&, DelByKind, ECMAMode);
 void repatchInBy(JSGlobalObject*, CodeBlock*, JSObject*, CacheableIdentifier, bool wasFound, const PropertySlot&, StructureStubInfo&, InByKind);
 void repatchHasPrivateBrand(JSGlobalObject*, CodeBlock*, JSObject*, CacheableIdentifier, bool wasFound,  StructureStubInfo&);
@@ -86,6 +91,7 @@ void resetCheckPrivateBrand(CodeBlock*, StructureStubInfo&);
 void resetSetPrivateBrand(CodeBlock*, StructureStubInfo&);
 
 void repatchGetBySlowPathCall(CodeBlock*, StructureStubInfo&, GetByKind);
+void repatchPutBySlowPathCall(CodeBlock*, StructureStubInfo&, bool isStrictMode, PutByKind);
 
 void ftlThunkAwareRepatchCall(CodeBlock*, CodeLocationCall<JSInternalPtrTag>, CodePtr<CFunctionPtrTag> newCalleeFunction);
 CodePtr<JSEntryPtrTag> jsToWasmICCodePtr(CodeSpecializationKind, JSObject* callee);

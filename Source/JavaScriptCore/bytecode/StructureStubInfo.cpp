@@ -271,9 +271,26 @@ void StructureStubInfo::reset(const ConcurrentJSLockerBase& locker, CodeBlock* c
     case AccessType::PutById:
         resetPutBy(codeBlock, *this, PutByKind::ById);
         break;
+    case AccessType::PutByIdDirect:
+        resetPutBy(codeBlock, *this, PutByKind::ByIdDirect);
+        break;
     case AccessType::PutByVal:
-    case AccessType::PutPrivateName:
         resetPutBy(codeBlock, *this, PutByKind::ByVal);
+        break;
+    case AccessType::PutByValDirect:
+        resetPutBy(codeBlock, *this, PutByKind::ByValDirect);
+        break;
+    case AccessType::DefinePrivateNameById:
+        resetPutBy(codeBlock, *this, PutByKind::DefinePrivateNameById);
+        break;
+    case AccessType::SetPrivateNameById:
+        resetPutBy(codeBlock, *this, PutByKind::SetPrivateNameById);
+        break;
+    case AccessType::DefinePrivateNameByVal:
+        resetPutBy(codeBlock, *this, PutByKind::DefinePrivateNameByVal);
+        break;
+    case AccessType::SetPrivateNameByVal:
+        resetPutBy(codeBlock, *this, PutByKind::SetPrivateNameByVal);
         break;
     case AccessType::InById:
         resetInBy(codeBlock, *this, InByKind::ById);
@@ -388,8 +405,15 @@ StubInfoSummary StructureStubInfo::summary(VM& vm) const
             }
         }
         if (list->size() == 1) {
-            if (list->at(0).type() == AccessCase::LoadMegamorphic || list->at(0).type() == AccessCase::IndexedMegamorphicLoad)
+            switch (list->at(0).type()) {
+            case AccessCase::LoadMegamorphic:
+            case AccessCase::IndexedMegamorphicLoad:
+            case AccessCase::StoreMegamorphic:
+            case AccessCase::IndexedMegamorphicStore:
                 return StubInfoSummary::Megamorphic;
+            default:
+                break;
+            }
         }
     }
     
@@ -456,41 +480,33 @@ static CodePtr<OperationPtrTag> slowOperationFromUnlinkedStructureStubInfo(const
     case AccessType::GetPrivateNameById:
         return operationGetPrivateNameByIdOptimize;
     case AccessType::PutById:
-        switch (unlinkedStubInfo.putKind) {
-        case PutKind::NotDirect:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                return operationPutByIdStrictOptimize;
-            else
-                return operationPutByIdNonStrictOptimize;
-        case PutKind::Direct:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                return operationPutByIdDirectStrictOptimize;
-            else
-                return operationPutByIdDirectNonStrictOptimize;
-        case PutKind::DirectPrivateFieldDefine:
-            return operationPutByIdDefinePrivateFieldStrictOptimize;
-        case PutKind::DirectPrivateFieldSet:
-            return operationPutByIdSetPrivateFieldStrictOptimize;
-        }
-        break;
+        if (unlinkedStubInfo.ecmaMode.isStrict())
+            return operationPutByIdStrictOptimize;
+        else
+            return operationPutByIdSloppyOptimize;
+    case AccessType::PutByIdDirect:
+        if (unlinkedStubInfo.ecmaMode.isStrict())
+            return operationPutByIdDirectStrictOptimize;
+        else
+            return operationPutByIdDirectSloppyOptimize;
     case AccessType::PutByVal:
-        switch (unlinkedStubInfo.putKind) {
-        case PutKind::NotDirect:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                return operationPutByValStrictOptimize;
-            else
-                return operationPutByValNonStrictOptimize;
-        case PutKind::Direct:
-            if (unlinkedStubInfo.ecmaMode.isStrict())
-                return operationDirectPutByValStrictOptimize;
-            else
-                return operationDirectPutByValNonStrictOptimize;
-        default:
-            RELEASE_ASSERT_NOT_REACHED();
-        }
-        break;
-    case AccessType::PutPrivateName:
-        return unlinkedStubInfo.privateFieldPutKind.isDefine() ? operationPutByValDefinePrivateFieldOptimize : operationPutByValSetPrivateFieldOptimize;
+        if (unlinkedStubInfo.ecmaMode.isStrict())
+            return operationPutByValStrictOptimize;
+        else
+            return operationPutByValSloppyOptimize;
+    case AccessType::PutByValDirect:
+        if (unlinkedStubInfo.ecmaMode.isStrict())
+            return operationDirectPutByValStrictOptimize;
+        else
+            return operationDirectPutByValSloppyOptimize;
+    case AccessType::DefinePrivateNameById:
+        return operationPutByIdDefinePrivateFieldStrictOptimize;
+    case AccessType::SetPrivateNameById:
+        return operationPutByIdSetPrivateFieldStrictOptimize;
+    case AccessType::DefinePrivateNameByVal:
+        return operationPutByValDefinePrivateFieldOptimize;
+    case AccessType::SetPrivateNameByVal:
+        return operationPutByValSetPrivateFieldOptimize;
     case AccessType::SetPrivateBrand:
         return operationSetPrivateBrandOptimize;
     case AccessType::CheckPrivateBrand:
@@ -642,6 +658,9 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
 #endif
         break;
     case AccessType::PutById:
+    case AccessType::PutByIdDirect:
+    case AccessType::DefinePrivateNameById:
+    case AccessType::SetPrivateNameById:
         hasConstantIdentifier = true;
         m_extraGPR = InvalidGPRReg;
         m_baseGPR = BaselineJITRegisters::PutById::baseJSR.payloadGPR();
@@ -654,13 +673,15 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
 #endif
         break;
     case AccessType::PutByVal:
-    case AccessType::PutPrivateName:
+    case AccessType::PutByValDirect:
+    case AccessType::DefinePrivateNameByVal:
+    case AccessType::SetPrivateNameByVal:
         hasConstantIdentifier = false;
         m_baseGPR = BaselineJITRegisters::PutByVal::baseJSR.payloadGPR();
         m_extraGPR = BaselineJITRegisters::PutByVal::propertyJSR.payloadGPR();
         m_valueGPR = BaselineJITRegisters::PutByVal::valueJSR.payloadGPR();
         m_stubInfoGPR = BaselineJITRegisters::PutByVal::stubInfoGPR;
-        if (accessType == AccessType::PutByVal)
+        if (accessType == AccessType::PutByVal || accessType == AccessType::PutByValDirect)
             m_arrayProfileGPR = BaselineJITRegisters::PutByVal::profileGPR;
 #if USE(JSVALUE32_64)
         m_baseTagGPR = BaselineJITRegisters::PutByVal::baseJSR.tagGPR();

@@ -671,7 +671,8 @@ private:
 
             case PutById:
             case PutByIdDirect:
-            case PutByIdFlush: {
+            case PutByIdFlush:
+            case PutByIdMegamorphic: {
                 bool isDirect = node->op() == PutByIdDirect;
                 tryFoldAsPutByOffset(node, indexInBlock, node->child1(), node->child2(), isDirect, PrivateFieldPutKind::none(), changed, alreadyHandled);
                 break;

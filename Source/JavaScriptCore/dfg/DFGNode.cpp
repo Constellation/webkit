@@ -28,6 +28,7 @@
 
 #if ENABLE(DFG_JIT)
 
+#include "CacheableIdentifierInlines.h"
 #include "DFGGraph.h"
 #include "DFGPromotedHeapLocation.h"
 #include "DOMJITSignature.h"
@@ -356,7 +357,7 @@ void Node::convertToRegExpTestInline(FrozenValue* globalObject, FrozenValue* reg
 void Node::convertToGetByIdMaybeMegamorphic(Graph& graph, CacheableIdentifier identifier)
 {
     ASSERT(op() == GetByVal || op() == GetByValMegamorphic);
-    bool isMegamorphic = op() == GetByValMegamorphic;
+    bool isMegamorphic = op() == GetByValMegamorphic && canUseMegamorphicGetById(graph.m_vm, identifier.uid());
     Edge base = graph.varArgChild(this, 0);
     ASSERT(base.useKind() == ObjectUse);
     for (unsigned i = 0; i < numChildren(); ++i) {
