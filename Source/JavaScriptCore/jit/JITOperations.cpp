@@ -818,7 +818,7 @@ ALWAYS_INLINE static void putByIdMegamorphic(JSGlobalObject* globalObject, VM& v
     auto* uid = identifier.uid();
     PutPropertySlot slot(baseValue, isStrict, callFrame->codeBlock()->putByIdContext());
 
-    if (UNLIKELY(!baseValue.isObject() || asObject(baseValue)->structure()->typeInfo().overridesPut())) {
+    if (UNLIKELY(!baseValue.isObject())) {
         if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
             repatchPutBySlowPathCall(callFrame->codeBlock(), *stubInfo, isStrict, PutByKind::ById);
         scope.release();
@@ -1470,7 +1470,7 @@ ALWAYS_INLINE static void putByValMegamorphic(JSGlobalObject* globalObject, VM& 
 {
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    if (UNLIKELY(!baseValue.isObject() || asObject(baseValue)->structure()->typeInfo().overridesPut() || !(subscript.isString() && CacheableIdentifier::isCacheableIdentifierCell(subscript)))) {
+    if (UNLIKELY(!baseValue.isObject() || !(subscript.isString() && CacheableIdentifier::isCacheableIdentifierCell(subscript)))) {
         if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
             repatchPutBySlowPathCall(callFrame->codeBlock(), *stubInfo, isStrict, PutByKind::ByVal);
         scope.release();

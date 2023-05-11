@@ -2588,9 +2588,25 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         case Array::ForceExit:
             m_state.setIsValid(false);
             break;
-        case Array::Generic:
+        case Array::Generic: {
+            if (node->op() == PutByVal || node->op() == PutByValMegamorphic) {
+                if (m_graph.child(node, 0).useKind() == CellUse) {
+                    AbstractValue& property = forNode(m_graph.child(node, 1));
+                    if (JSValue constant = property.value()) {
+                        if (constant.isString()) {
+                            JSString* string = asString(constant);
+                            if (CacheableIdentifier::isCacheableIdentifierCell(string) && !parseIndex(CacheableIdentifier::createFromCell(string).uid())) {
+                                m_state.setShouldTryConstantFolding(true);
+                                didFoldClobberWorld();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
             clobberWorld();
             break;
+        }
         case Array::Int32:
             if (node->arrayMode().isOutOfBounds())
                 clobberWorld();

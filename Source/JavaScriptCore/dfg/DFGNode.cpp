@@ -371,6 +371,25 @@ void Node::convertToGetByIdMaybeMegamorphic(Graph& graph, CacheableIdentifier id
     m_opInfo = identifier;
 }
 
+void Node::convertToPutByIdMaybeMegamorphic(Graph& graph, CacheableIdentifier identifier)
+{
+    ASSERT(op() == PutByVal || op() == PutByValMegamorphic);
+    bool isMegamorphic = op() == PutByValMegamorphic && canUseMegamorphicPutById(graph.m_vm, identifier.uid());
+    Edge base = graph.child(this, 0);
+    Edge value = graph.child(this, 2);
+    ASSERT(base.useKind() == CellUse);
+    for (unsigned i = 0; i < numChildren(); ++i) {
+        Edge& edge = graph.varArgChild(this, i);
+        edge = Edge();
+    }
+
+    setOpAndDefaultFlags(isMegamorphic ? PutByIdMegamorphic : PutById);
+    children.child1() = Edge(base.node(), CellUse);
+    children.child2() = Edge(value.node());
+    children.child3() = Edge();
+    m_opInfo = identifier;
+}
+
 String Node::tryGetString(Graph& graph)
 {
     if (hasConstant())
