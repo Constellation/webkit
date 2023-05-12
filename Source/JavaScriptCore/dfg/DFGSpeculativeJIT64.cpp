@@ -6858,6 +6858,16 @@ void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
                 codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, AccessType::PutByVal, usedRegisters,
                 baseRegs, propertyRegs, valueRegs, InvalidGPRReg, scratchGPR, ecmaMode, PrivateFieldPutKind::none());
 
+            std::visit([&](auto* stubInfo) {
+                if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecString))
+                    stubInfo->propertyIsString = true;
+                else if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecInt32Only))
+                    stubInfo->propertyIsInt32 = true;
+                else if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecSymbol))
+                    stubInfo->propertyIsSymbol = true;
+                stubInfo->isEnumerator = true;
+            }, stubInfo);
+
             JumpList slowCases;
 
             std::unique_ptr<SlowPathGenerator> slowPath;

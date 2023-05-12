@@ -2692,6 +2692,18 @@ static void commit(const GCSafeConcurrentJSLocker&, VM& vm, std::unique_ptr<Watc
     }
 }
 
+static inline bool canUseMegamorphicPutFastPath(Structure* structure)
+{
+    while (true) {
+        if (structure->hasReadOnlyOrGetterSetterPropertiesExcludingProto() || structure->typeInfo().overridesGetPrototype() || structure->typeInfo().overridesPut() || structure->hasPolyProto())
+            return false;
+        JSValue prototype = structure->storedPrototype();
+        if (prototype.isNull())
+            return true;
+        structure = asObject(prototype)->structure();
+    }
+}
+
 AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSLocker& locker, PolymorphicAccess& poly, CodeBlock* codeBlock)
 {
     SuperSamplerScope superSamplerScope(false);
@@ -2820,9 +2832,11 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             for (auto& accessCase : cases) {
                 if (accessCase->type() != AccessCase::Replace && accessCase->type() != AccessCase::Transition)
                     allAreSimpleReplaceOrTransition = false;
-                if (accessCase->usesPolyProto())
+                else if (accessCase->usesPolyProto())
                     allAreSimpleReplaceOrTransition = false;
-                if (accessCase->viaGlobalProxy())
+                else if (accessCase->viaGlobalProxy())
+                    allAreSimpleReplaceOrTransition = false;
+                else if (!canUseMegamorphicPutFastPath(accessCase->structure()))
                     allAreSimpleReplaceOrTransition = false;
             }
 
@@ -2847,9 +2861,11 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             for (auto& accessCase : cases) {
                 if (accessCase->type() != AccessCase::Replace && accessCase->type() != AccessCase::Transition)
                     allAreSimpleReplaceOrTransition = false;
-                if (accessCase->usesPolyProto())
+                else if (accessCase->usesPolyProto())
                     allAreSimpleReplaceOrTransition = false;
-                if (accessCase->viaGlobalProxy())
+                else if (accessCase->viaGlobalProxy())
+                    allAreSimpleReplaceOrTransition = false;
+                else if (!canUseMegamorphicPutFastPath(accessCase->structure()))
                     allAreSimpleReplaceOrTransition = false;
             }
 

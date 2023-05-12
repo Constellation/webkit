@@ -15140,6 +15140,7 @@ IGNORE_CLANG_WARNINGS_END
             auto generator = Box<JITPutByValGenerator>::create(
                 jit.codeBlock(), stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::PutByVal,
                 params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(valueGPR), InvalidGPRReg, stubInfoGPR, ecmaMode, PrivateFieldPutKind::none());
+            generator->stubInfo()->isEnumerator = true;
 
             generator->generateFastPath(jit);
             CCallHelpers::Label done = jit.label();

@@ -1544,6 +1544,7 @@ ALWAYS_INLINE static void putByValMegamorphic(JSGlobalObject* globalObject, VM& 
     if (UNLIKELY(newStructure->previousID() != oldStructure)) {
         if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
             repatchPutBySlowPathCall(callFrame->codeBlock(), *stubInfo, isStrict, PutByKind::ByVal);
+        return;
     }
 
     if (newStructure->outOfLineCapacity() == oldStructure->outOfLineCapacity()) {

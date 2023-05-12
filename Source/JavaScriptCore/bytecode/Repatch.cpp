@@ -829,8 +829,6 @@ static CodePtr<CFunctionPtrTag> appropriateGenericPutByFunction(bool isStrictMod
 // Mainly used to transition from megamorphic case to generic case.
 void repatchPutBySlowPathCall(CodeBlock* codeBlock, StructureStubInfo& stubInfo, bool isStrictMode, PutByKind kind)
 {
-    dataLogLn("GENERIC DROPDOWN");
-    WTFReportBacktrace();
     resetPutBy(codeBlock, stubInfo, kind);
     repatchSlowPathCall(codeBlock, stubInfo, appropriateGenericPutByFunction(isStrictMode, kind));
 }
