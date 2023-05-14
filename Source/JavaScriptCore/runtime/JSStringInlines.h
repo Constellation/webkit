@@ -30,11 +30,17 @@
 
 namespace JSC {
     
-inline JSString::~JSString()
+ALWAYS_INLINE void JSString::destroy(JSCell* cell)
 {
-    if (isRope())
-        return;
-    valueInternal().~String();
+    auto* string = static_cast<JSString*>(cell);
+    string->valueInternal().~String();
+}
+
+ALWAYS_INLINE void JSRopeString::destroy(JSCell* cell)
+{
+    auto* string = static_cast<JSRopeString*>(cell);
+    if (!string->isRope())
+        string->valueInternal().~String();
 }
 
 bool JSString::equal(JSGlobalObject* globalObject, JSString* other) const
