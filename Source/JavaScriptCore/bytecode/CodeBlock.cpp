@@ -1101,7 +1101,11 @@ void CodeBlock::visitChildren(Visitor& visitor)
     stronglyVisitStrongReferences(locker, visitor);
     stronglyVisitWeakReferences(locker, visitor);
     
-    Heap::CodeBlockSpaceAndSet::setFor(*subspace()).add(this);
+    if (Heap::CodeBlockSpaceAndSet::setFor(*subspace()).add(this)) {
+        unsigned numberOfLiveNonArgumentValueProfiles = 0;
+        unsigned numberOfSamplesInProfiles = 0;
+        updateAllNonLazyValueProfilePredictionsAndCountLiveness(locker, numberOfLiveNonArgumentValueProfiles, numberOfSamplesInProfiles);
+    }
 }
 
 template<typename Visitor>
