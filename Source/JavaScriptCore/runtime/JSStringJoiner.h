@@ -34,6 +34,11 @@ namespace JSC {
 class JSStringJoiner {
     WTF_FORBID_HEAP_ALLOCATION;
 public:
+    enum class AppendResult : uint8_t {
+        Immutable,
+        NoSideEffect,
+        SideEffect,
+    };
 
     struct Entry {
         NO_UNIQUE_ADDRESS StringViewWithUnderlyingString m_view;
@@ -46,7 +51,7 @@ public:
 
     void reserveCapacity(JSGlobalObject*, size_t);
 
-    void append(JSGlobalObject*, JSValue);
+    AppendResult append(JSGlobalObject*, JSValue);
     void appendNumber(VM&, int32_t);
     void appendNumber(VM&, double);
     bool appendWithoutSideEffects(JSGlobalObject*, JSValue);
@@ -175,19 +180,22 @@ ALWAYS_INLINE bool JSStringJoiner::appendWithoutSideEffects(JSGlobalObject* glob
     return true;
 }
 
-ALWAYS_INLINE void JSStringJoiner::append(JSGlobalObject* globalObject, JSValue value)
+ALWAYS_INLINE JSStringJoiner::AppendResult JSStringJoiner::append(JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     bool success = appendWithoutSideEffects(globalObject, value);
-    RETURN_IF_EXCEPTION(scope, void());
-    if (!success) {
-        ASSERT(value.isCell());
-        JSString* jsString = value.asCell()->toStringInline(globalObject);
-        RETURN_IF_EXCEPTION(scope, void());
-        RELEASE_AND_RETURN(scope, append(jsString, jsString->viewWithUnderlyingString(globalObject)));
-    }
+    RETURN_IF_EXCEPTION(scope, AppendResult::SideEffect);
+    if (success)
+        return AppendResult::Immutable;
+    ASSERT(value.isCell());
+    auto [jsString, noSideEffect] = value.asCell()->toStringInline(globalObject);
+    RETURN_IF_EXCEPTION(scope, AppendResult::SideEffect);
+
+    scope.release();
+    append(jsString, jsString->viewWithUnderlyingString(globalObject));
+    return noSideEffect ? AppendResult::NoSideEffect : AppendResult::SideEffect;
 }
 
 ALWAYS_INLINE void JSStringJoiner::appendNumber(VM& vm, int32_t value)

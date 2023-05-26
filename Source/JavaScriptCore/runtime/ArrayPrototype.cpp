@@ -371,6 +371,9 @@ inline JSValue fastJoin(JSGlobalObject* globalObject, JSObject* thisObject, Stri
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    if (!length)
+        return jsEmptyString(vm);
+
     JSStringJoiner joiner(separator);
 
     unsigned i = 0;
@@ -406,10 +409,20 @@ inline JSValue fastJoin(JSGlobalObject* globalObject, JSObject* thisObject, Stri
         auto data = butterfly.contiguous().data();
         bool holesKnownToBeOK = false;
         for (; i < length; ++i) {
-            if (JSValue value = data[i].get()) {
-                if (!joiner.appendWithoutSideEffects(globalObject, value))
-                    goto generalCase;
+            JSValue value = data[i].get();
+            if (LIKELY(value)) {
+                auto appendResult = joiner.append(globalObject, value);
                 RETURN_IF_EXCEPTION(scope, { });
+                switch (appendResult) {
+                case JSStringJoiner::AppendResult::Immutable:
+                    continue;
+                case JSStringJoiner::AppendResult::NoSideEffect:
+                    genericCase = true;
+                    continue;
+                case JSStringJoiner::AppendResult::SideEffect:
+                    ++i;
+                    goto generalCase;
+                }
             } else {
                 sawHoles = true;
                 if (!holesKnownToBeOK) {
@@ -447,20 +460,20 @@ inline JSValue fastJoin(JSGlobalObject* globalObject, JSObject* thisObject, Stri
         RELEASE_AND_RETURN(scope, joiner.join(globalObject));
     }
     case ALL_UNDECIDED_INDEXING_TYPES: {
-        if (length && holesMustForwardToPrototype(thisObject))
+        if (holesMustForwardToPrototype(thisObject))
             goto generalCase;
         switch (separator.length()) {
         case 0:
             RELEASE_AND_RETURN(scope, jsEmptyString(vm));
         case 1: {
-            if (length <= 1)
+            if (length == 1)
                 RELEASE_AND_RETURN(scope, jsEmptyString(vm));
             if (separator.is8Bit())
                 RELEASE_AND_RETURN(scope, repeatCharacter(globalObject, separator.characters8()[0], length - 1));
             RELEASE_AND_RETURN(scope, repeatCharacter(globalObject, separator.characters16()[0], length - 1));
         default:
             JSString* result = jsEmptyString(vm);
-            if (length <= 1)
+            if (length == 1)
                 return result;
 
             JSString* operand = jsString(vm, separator);

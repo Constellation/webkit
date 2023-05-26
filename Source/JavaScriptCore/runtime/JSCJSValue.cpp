@@ -396,7 +396,7 @@ JSString* JSValue::toStringSlowCase(JSGlobalObject* globalObject, bool returnEmp
     if (isBigInt32())
         return int32ToString(vm, bigInt32AsInt32(), 10);
 #endif
-    JSString* returnString = asCell()->toStringInline(globalObject);
+    auto [returnString, noSideEffect] = asCell()->toStringInline(globalObject);
     RETURN_IF_EXCEPTION(scope, errorValue());
     return returnString;
 }

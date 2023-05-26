@@ -449,23 +449,22 @@ inline JSObject* JSCell::toObject(JSGlobalObject* globalObject) const
     return toObjectSlow(globalObject);
 }
 
-ALWAYS_INLINE JSString* JSCell::toStringInline(JSGlobalObject* globalObject) const
+ALWAYS_INLINE std::tuple<JSString*, bool> JSCell::toStringInline(JSGlobalObject* globalObject) const
 {
     Structure* structure = this->structure();
-    if (structure->hasRareData()) {
-        auto* rareData = structure->rareData();
+    if (auto* rareData = structure->tryRareData()) {
         if (rareData->cachedSpecialProperty(CachedSpecialPropertyKey::ToPrimitive).isUndefinedOrNull()) {
             if (rareData->cachedSpecialProperty(CachedSpecialPropertyKey::ToString) == globalObject->objectProtoToStringFunction()) {
                 if (auto result = rareData->cachedSpecialProperty(CachedSpecialPropertyKey::ToStringTag))
-                    return asString(result);
+                    return std::tuple { asString(result), true };
             }
         }
     }
     if (isObject())
-        return asObject(this)->toString(globalObject);
+        return std::tuple { asObject(this)->toString(globalObject), false };
     if (isString())
-        return asString(this);
-    return toStringSlowCase(globalObject);
+        return std::tuple { asString(this), true };
+    return std::tuple { toStringSlowCase(globalObject), false };
 }
 
 ALWAYS_INLINE bool JSCell::putInline(JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
