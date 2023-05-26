@@ -1253,7 +1253,7 @@ ALWAYS_INLINE JSValue fastIndexOf(JSGlobalObject* globalObject, VM& vm, JSArray*
         }
         auto& butterfly = *array->butterfly();
         auto data = butterfly.contiguous().data();
-        if (direction == IndexOfDirection::Forward) {
+        if constexpr (direction == IndexOfDirection::Forward) {
             for (; index < length; ++index) {
                 // Array#indexOf uses `===` semantics (not HashMap isEqual semantics).
                 // And the hole never matches against Int32 value.
@@ -1275,7 +1275,16 @@ ALWAYS_INLINE JSValue fastIndexOf(JSGlobalObject* globalObject, VM& vm, JSArray*
         auto& butterfly = *array->butterfly();
         auto data = butterfly.contiguous().data();
 
-        if (direction == IndexOfDirection::Forward) {
+        if constexpr (direction == IndexOfDirection::Forward) {
+            if (index >= length)
+                return jsNumber(-1);
+            if (searchElement.isObject()) {
+                auto* result = bitwise_cast<const WriteBarrier<Unknown>*>(WTF::find64(bitwise_cast<const uint64_t*>(data + index), JSValue::encode(searchElement), length - index));
+                if (result)
+                    return jsNumber(result - data);
+                return jsNumber(-1);
+            }
+
             for (; index < length; ++index) {
                 JSValue value = data[index].get();
                 if (!value)
@@ -1305,7 +1314,7 @@ ALWAYS_INLINE JSValue fastIndexOf(JSGlobalObject* globalObject, VM& vm, JSArray*
         double searchNumber = searchElement.asNumber();
         auto& butterfly = *array->butterfly();
         auto data = butterfly.contiguousDouble().data();
-        if (direction == IndexOfDirection::Forward) {
+        if constexpr (direction == IndexOfDirection::Forward) {
             for (; index < length; ++index) {
                 // Array#indexOf uses `===` semantics (not HashMap isEqual semantics).
                 // And the hole never matches since it is NaN.
