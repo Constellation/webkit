@@ -1278,7 +1278,12 @@ private:
                 break;
             case Array::ForceExit:
             case Array::Generic:
-                if (child1->shouldSpeculateCell()) {
+                if (child1->shouldSpeculateCell()
+                    || (child1->shouldSpeculateCellOrOther()
+                        && !m_graph.hasExitSite(node->origin.semantic, BadType)
+                        && !m_graph.hasExitSite(node->origin.semantic, BadCache)
+                        && !m_graph.hasExitSite(node->origin.semantic, BadIndexingType)
+                        && !m_graph.hasExitSite(node->origin.semantic, ExoticObjectMode))) {
                     if (child2->shouldSpeculateString()) {
                         fixEdge<CellUse>(child1);
                         fixEdge<StringUse>(child2);
