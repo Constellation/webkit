@@ -1978,6 +1978,8 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         case Int52RepUse:
         case DoubleRepUse:
         case NotCellUse:
+        case OtherUse:
+        case StringOrOtherUse:
             def(PureValue(node));
             return;
             

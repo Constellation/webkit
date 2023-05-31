@@ -9474,7 +9474,36 @@ IGNORE_CLANG_WARNINGS_END
         case DoubleRepUse:
             setJSValue(vmCall(Int64, operationDoubleToStringWithValidRadix, weakPointer(globalObject), lowDouble(m_node->child1()), m_out.constInt32(10)));
             return;
-            
+
+        case OtherUse: {
+            LValue value = lowOther(m_node->child1());
+            setJSValue(m_out.select(m_out.equal(value, m_out.constInt64(JSValue::encode(jsUndefined()))), weakPointer(vm().smallStrings.undefinedString()), weakPointer(vm().smallStrings.nullString())));
+            return;
+        }
+
+        case StringOrOtherUse: {
+            LValue value = lowJSValue(m_node->child1(), ManualOperandSpeculation);
+            speculateStringOrOther(m_node->child1(), value);
+
+            LBasicBlock cellCase = m_out.newBlock();
+            LBasicBlock notCellCase = m_out.newBlock();
+            LBasicBlock continuation = m_out.newBlock();
+
+            m_out.branch(isCell(value, provenType(m_node->child1())), unsure(cellCase), unsure(notCellCase));
+
+            LBasicBlock lastNext = m_out.appendTo(cellCase, notCellCase);
+            ValueFromBlock stringResult = m_out.anchor(value);
+            m_out.jump(continuation);
+
+            m_out.appendTo(notCellCase, continuation);
+            ValueFromBlock nonStringResult = m_out.anchor(m_out.select(m_out.equal(value, m_out.constInt64(JSValue::encode(jsUndefined()))), weakPointer(vm().smallStrings.undefinedString()), weakPointer(vm().smallStrings.nullString())));
+            m_out.jump(continuation);
+
+            m_out.appendTo(continuation, lastNext);
+            setJSValue(m_out.phi(pointerType(), stringResult, nonStringResult));
+            return;
+        }
+
         default:
             DFG_CRASH(m_graph, m_node, "Bad use kind");
             break;
@@ -20408,6 +20437,13 @@ IGNORE_CLANG_WARNINGS_END
         FTL_TYPE_CHECK(jsValueValue(result), edge, ~SpecCellCheck, isCell(result));
         return result;
     }
+
+    LValue lowOther(Edge edge)
+    {
+        LValue result = lowJSValue(edge, ManualOperandSpeculation);
+        speculateOther(edge, result);
+        return result;
+    }
     
     LValue lowStorage(Edge edge)
     {
@@ -21811,15 +21847,18 @@ IGNORE_CLANG_WARNINGS_END
         m_interpreter.filter(edge, ~SpecSymbol);
     }
 
-    void speculateOther(Edge edge)
+    void speculateOther(Edge edge, LValue value)
     {
         if (!m_interpreter.needsTypeCheck(edge))
             return;
-        
-        LValue value = lowJSValue(edge, ManualOperandSpeculation);
         typeCheck(jsValueValue(value), edge, SpecOther, isNotOther(value));
     }
-    
+
+    void speculateOther(Edge edge)
+    {
+        speculateOther(edge, lowJSValue(edge, ManualOperandSpeculation));
+    }
+
     void speculateMisc(Edge edge)
     {
         if (!m_interpreter.needsTypeCheck(edge))

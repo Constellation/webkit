@@ -460,6 +460,8 @@ bool doesGC(Graph& graph, Node* node)
         switch (node->child1().useKind()) {
         case StringObjectUse:
         case StringOrStringObjectUse:
+        case StringOrOtherUse:
+        case OtherUse:
             return false;
         default:
             break;

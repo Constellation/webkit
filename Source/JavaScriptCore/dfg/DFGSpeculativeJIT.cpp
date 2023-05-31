@@ -11583,6 +11583,43 @@ void SpeculativeJIT::compileToStringOrCallStringConstructorOrStringValueOf(Node*
         return;
     }
 
+    case OtherUse: {
+        JSValueOperand argument(this, node->child1(), ManualOperandSpeculation);
+        GPRTemporary result(this);
+
+        JSValueRegs argumentRegs = argument.jsValueRegs();
+        GPRReg resultGPR = result.gpr();
+
+        speculateOther(node->child1(), argumentRegs);
+
+        loadLinkableConstant(LinkableConstant(*this, vm().smallStrings.undefinedString()), resultGPR);
+        auto isUndefined = branchIfUndefined(argumentRegs);
+        loadLinkableConstant(LinkableConstant(*this, vm().smallStrings.nullString()), resultGPR);
+        isUndefined.link(this);
+        cellResult(resultGPR, node);
+        return;
+    }
+
+    case StringOrOtherUse: {
+        JSValueOperand argument(this, node->child1(), ManualOperandSpeculation);
+        GPRTemporary result(this);
+
+        JSValueRegs argumentRegs = argument.jsValueRegs();
+        GPRReg resultGPR = result.gpr();
+
+        speculateStringOrOther(node->child1(), argumentRegs, resultGPR);
+
+        move(argumentRegs.payloadGPR(), resultGPR);
+        auto isString = branchIfCell(argumentRegs);
+        loadLinkableConstant(LinkableConstant(*this, vm().smallStrings.undefinedString()), resultGPR);
+        auto isUndefined = branchIfUndefined(argumentRegs);
+        loadLinkableConstant(LinkableConstant(*this, vm().smallStrings.nullString()), resultGPR);
+        isUndefined.link(this);
+        isString.link(this);
+        cellResult(resultGPR, node);
+        return;
+    }
+
     case UntypedUse: {
         JSValueOperand op1(this, node->child1());
         JSValueRegs op1Regs = op1.jsValueRegs();

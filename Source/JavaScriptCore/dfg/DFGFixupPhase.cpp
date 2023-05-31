@@ -1124,26 +1124,57 @@ private:
             case Array::Unprofiled:
                 RELEASE_ASSERT_NOT_REACHED();
                 break;
-            case Array::Generic:
+            case Array::Generic: {
+                Edge& child1 = m_graph.varArgChild(node, 0);
+                Edge& child2 = m_graph.varArgChild(node, 1);
                 if (node->op() == GetByValMegamorphic) {
-                    fixEdge<ObjectUse>(m_graph.varArgChild(node, 0));
-                    fixEdge<StringUse>(m_graph.varArgChild(node, 1));
+                    fixEdge<ObjectUse>(child1);
+                    if (child2->shouldSpeculateString()) {
+                        fixEdge<StringUse>(child2);
+                        break;
+                    }
+                    if (child2->shouldSpeculateOther()) {
+                        createToString<OtherUse>(node, child2);
+                        fixEdge<StringUse>(child2);
+                        break;
+                    }
+                    if (child2->shouldSpeculateStringOrOther()) {
+                        createToString<StringOrOtherUse>(node, child2);
+                        fixEdge<StringUse>(child2);
+                        break;
+                    }
+                    fixEdge<StringUse>(child2);
                 } else {
-                    if (m_graph.varArgChild(node, 0)->shouldSpeculateObject()) {
-                        if (m_graph.varArgChild(node, 1)->shouldSpeculateString()) {
-                            fixEdge<ObjectUse>(m_graph.varArgChild(node, 0));
-                            fixEdge<StringUse>(m_graph.varArgChild(node, 1));
+                    if (child1->shouldSpeculateObject()) {
+                        if (child2->shouldSpeculateString()) {
+                            fixEdge<ObjectUse>(child1);
+                            fixEdge<StringUse>(child2);
                             break;
                         }
 
-                        if (m_graph.varArgChild(node, 1)->shouldSpeculateSymbol()) {
-                            fixEdge<ObjectUse>(m_graph.varArgChild(node, 0));
-                            fixEdge<SymbolUse>(m_graph.varArgChild(node, 1));
+                        if (child2->shouldSpeculateSymbol()) {
+                            fixEdge<ObjectUse>(child1);
+                            fixEdge<SymbolUse>(child2);
+                            break;
+                        }
+
+                        if (child2->shouldSpeculateOther()) {
+                            fixEdge<ObjectUse>(child1);
+                            createToString<OtherUse>(node, child2);
+                            fixEdge<StringUse>(child2);
+                            break;
+                        }
+
+                        if (child2->shouldSpeculateStringOrOther()) {
+                            fixEdge<ObjectUse>(child1);
+                            createToString<StringOrOtherUse>(node, child2);
+                            fixEdge<StringUse>(child2);
                             break;
                         }
                     }
                 }
                 break;
+            }
             case Array::ForceExit:
                 break;
             case Array::String:
@@ -3105,6 +3136,8 @@ private:
         case Int52RepUse:
         case DoubleRepUse:
         case NotCellUse:
+        case StringOrOtherUse:
+        case OtherUse:
             toString->clearFlags(NodeMustGenerate);
             break;
         default:
@@ -3631,6 +3664,18 @@ private:
 
         if (node->child1()->shouldSpeculateNumber()) {
             fixEdge<DoubleRepUse>(node->child1());
+            node->clearFlags(NodeMustGenerate);
+            return;
+        }
+
+        if (node->child1()->shouldSpeculateOther()) {
+            fixEdge<OtherUse>(node->child1());
+            node->clearFlags(NodeMustGenerate);
+            return;
+        }
+
+        if (node->child1()->shouldSpeculateStringOrOther()) {
+            fixEdge<StringOrOtherUse>(node->child1());
             node->clearFlags(NodeMustGenerate);
             return;
         }

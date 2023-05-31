@@ -3028,16 +3028,51 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         case Int52RepUse:
         case DoubleRepUse:
         case NotCellUse:
+            setForNode(node, m_vm.stringStructure.get());
             break;
         case CellUse:
         case UntypedUse:
             clobberWorld();
+            setForNode(node, m_vm.stringStructure.get());
             break;
+        case OtherUse: {
+            JSValue value = m_state.forNode(node->child1()).value();
+            if (value && value.isUndefinedOrNull()) {
+                if (value.isUndefined()) {
+                    setConstant(node, *m_graph.freeze(m_vm.smallStrings.undefinedString()));
+                    break;
+                }
+                ASSERT(value.isNull());
+                setConstant(node, *m_graph.freeze(m_vm.smallStrings.nullString()));
+                break;
+            }
+            setTypeForNode(node, SpecStringIdent);
+            break;
+        }
+        case StringOrOtherUse: {
+            JSValue value = m_state.forNode(node->child1()).value();
+            if (value) {
+                if (value.isUndefinedOrNull()) {
+                    if (value.isUndefined()) {
+                        setConstant(node, *m_graph.freeze(m_vm.smallStrings.undefinedString()));
+                        break;
+                    }
+                    ASSERT(value.isNull());
+                    setConstant(node, *m_graph.freeze(m_vm.smallStrings.nullString()));
+                    break;
+                }
+                if (value.isString()) {
+                    setConstant(node, *m_graph.freeze(asString(value)));
+                    break;
+                }
+            }
+            setForNode(node, m_vm.stringStructure.get());
+            break;
+        }
         default:
             RELEASE_ASSERT_NOT_REACHED();
             break;
         }
-        setForNode(node, m_vm.stringStructure.get());
         break;
     }
 
