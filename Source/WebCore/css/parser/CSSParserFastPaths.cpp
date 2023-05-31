@@ -533,6 +533,42 @@ static RefPtr<CSSValue> parseColor(StringView string, const CSSParserContext& co
     return nullptr;
 }
 
+static RefPtr<CSSValue> parseSimpleDisplay(StringView string)
+{
+    ASSERT(!string.isEmpty());
+    auto valueID = cssValueKeywordID(string);
+    switch (valueID) {
+    // <display-box>
+    case CSSValueContents:
+    case CSSValueNone:
+    // <display-internal>
+    case CSSValueTableCaption:
+    case CSSValueTableCell:
+    case CSSValueTableColumnGroup:
+    case CSSValueTableColumn:
+    case CSSValueTableHeaderGroup:
+    case CSSValueTableFooterGroup:
+    case CSSValueTableRow:
+    case CSSValueTableRowGroup:
+    // <display-legacy>
+    case CSSValueInlineBlock:
+    case CSSValueInlineFlex:
+    case CSSValueInlineGrid:
+    case CSSValueInlineTable:
+    // Prefixed values
+    case CSSValueWebkitInlineBox:
+    case CSSValueWebkitBox:
+    // No layout support for the full <display-listitem> syntax, so treat it as <display-legacy>
+    case CSSValueListItem:
+    // It is very common that this property only has this one keyword. Handle this quickly here.
+    case CSSValueBlock:
+    case CSSValueInline:
+        return CSSPrimitiveValue::create(valueID);
+    default:
+        return nullptr;
+    }
+}
+
 static std::optional<SRGBA<uint8_t>> finishParsingNamedColor(char* buffer, unsigned length)
 {
     buffer[length] = '\0';
@@ -917,6 +953,8 @@ RefPtr<CSSValue> CSSParserFastPaths::maybeParseValue(CSSPropertyID propertyID, S
         return parseColorWithAuto(string, context);
     if (CSSProperty::isColorProperty(propertyID))
         return parseColor(string, context);
+    if (propertyID == CSSPropertyDisplay)
+        return parseSimpleDisplay(string);
     if (auto result = parseKeywordValue(propertyID, string, context))
         return result;
     return parseSimpleTransform(propertyID, string);
