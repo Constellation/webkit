@@ -570,6 +570,7 @@ public:
     JSONAtomStringCache jsonAtomStringCache;
     KeyAtomStringCache keyAtomStringCache;
     StringSplitCache stringSplitCache;
+    Vector<unsigned> stringSplitIndice;
 
     AtomStringTable* atomStringTable() const { return m_atomStringTable; }
     WTF::SymbolRegistry& symbolRegistry() { return m_symbolRegistry; }
