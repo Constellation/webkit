@@ -46,5 +46,6 @@ protected:
     virtual String shorthandPropertySerialization(CSSPropertyID) const = 0;
     virtual RefPtr<CSSValue> customPropertyValue(const AtomString&) const = 0;
 };
+static_assert(sizeof(MainThreadStylePropertyMapReadOnly) == sizeof(StylePropertyMapReadOnly));
 
 } // namespace WebCore

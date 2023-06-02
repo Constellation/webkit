@@ -37,6 +37,8 @@
 
 namespace WebCore {
 
+WTF_MAKE_ISO_ALLOCATED_IMPL(ComputedStylePropertyMapReadOnly);
+
 Ref<ComputedStylePropertyMapReadOnly> ComputedStylePropertyMapReadOnly::create(Element& element)
 {
     return adoptRef(*new ComputedStylePropertyMapReadOnly(element));

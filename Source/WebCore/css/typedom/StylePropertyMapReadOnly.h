@@ -38,7 +38,8 @@ class Element;
 class ScriptExecutionContext;
 class StyledElement;
 
-class StylePropertyMapReadOnly : public RefCounted<StylePropertyMapReadOnly> {
+class StylePropertyMapReadOnly : public ScriptWrappable, public RefCounted<StylePropertyMapReadOnly> {
+    WTF_MAKE_ISO_ALLOCATED(StylePropertyMapReadOnly);
 public:
     using StylePropertyMapEntry = KeyValuePair<String, Vector<RefPtr<CSSStyleValue>>>;
     class Iterator {
@@ -52,7 +53,7 @@ public:
     };
     Iterator createIterator(ScriptExecutionContext* context) { return Iterator(*this, context); }
 
-    virtual ~StylePropertyMapReadOnly() = default;
+    virtual ~StylePropertyMapReadOnly();
     virtual ExceptionOr<RefPtr<CSSStyleValue>> get(ScriptExecutionContext&, const AtomString& property) const = 0;
     virtual ExceptionOr<Vector<RefPtr<CSSStyleValue>>> getAll(ScriptExecutionContext&, const AtomString&) const = 0;
     virtual ExceptionOr<bool> has(ScriptExecutionContext&, const AtomString&) const = 0;

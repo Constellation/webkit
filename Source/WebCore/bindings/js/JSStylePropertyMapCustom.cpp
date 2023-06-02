@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Apple Inc. All rights reserved.
+ * Copyright (C) 2023 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,30 +23,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "config.h"
+#include "JSStylePropertyMap.h"
 
-#include "MainThreadStylePropertyMapReadOnly.h"
-#include <wtf/HashMap.h>
-#include <wtf/text/AtomStringHash.h>
+#include "WebCoreOpaqueRootInlines.h"
 
 namespace WebCore {
 
-class HashMapStylePropertyMapReadOnly final : public MainThreadStylePropertyMapReadOnly {
-    WTF_MAKE_ISO_ALLOCATED(HashMapStylePropertyMapReadOnly);
-public:
-    static Ref<HashMapStylePropertyMapReadOnly> create(HashMap<AtomString, RefPtr<CSSValue>>&&);
-    ~HashMapStylePropertyMapReadOnly();
-
-    RefPtr<CSSValue> propertyValue(CSSPropertyID) const final;
-    String shorthandPropertySerialization(CSSPropertyID) const final;
-    RefPtr<CSSValue> customPropertyValue(const AtomString& property) const final;
-    unsigned size() const final;
-    Vector<StylePropertyMapEntry> entries(ScriptExecutionContext*) const final;
-
-private:
-    HashMapStylePropertyMapReadOnly(HashMap<AtomString, RefPtr<CSSValue>>&&);
-
-    HashMap<AtomString, RefPtr<CSSValue>> m_map;
-};
+bool JSStylePropertyMapOwner::isReachableFromOpaqueRoots(JSC::Handle<JSC::Unknown> handle, void*, AbstractSlotVisitor& visitor, const char** reason)
+{
+    auto& map = jsCast<JSStylePropertyMap*>(handle.slot()->asCell())->wrapped();
+    if (auto* node = map.ownerElement()) {
+        if (UNLIKELY(reason))
+            *reason = "Owner element is alive";
+        return containsWebCoreOpaqueRoot(visitor, *node);
+    }
+    return false;
+}
 
 } // namespace WebCore

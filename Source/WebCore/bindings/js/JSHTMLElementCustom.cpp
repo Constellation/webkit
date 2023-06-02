@@ -44,6 +44,8 @@ namespace WebCore {
 
 using namespace JSC;
 
+static_assert(sizeof(JSHTMLElement) <= 32, "Need to keep it small");
+
 EncodedJSValue constructJSHTMLElement(JSGlobalObject* lexicalGlobalObject, CallFrame& callFrame)
 {
     VM& vm = lexicalGlobalObject->vm();

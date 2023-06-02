@@ -31,6 +31,7 @@ namespace WebCore {
 class Element;
 
 class ComputedStylePropertyMapReadOnly final : public MainThreadStylePropertyMapReadOnly {
+    WTF_MAKE_ISO_ALLOCATED(ComputedStylePropertyMapReadOnly);
 public:
     static Ref<ComputedStylePropertyMapReadOnly> create(Element&);
 

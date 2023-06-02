@@ -35,6 +35,7 @@ class StyleRule;
 
 // https://drafts.css-houdini.org/css-typed-om/#declared-stylepropertymap-objects
 class DeclaredStylePropertyMap final : public StylePropertyMap {
+    WTF_MAKE_ISO_ALLOCATED(DeclaredStylePropertyMap);
 public:
     static Ref<DeclaredStylePropertyMap> create(CSSStyleRule&);
 

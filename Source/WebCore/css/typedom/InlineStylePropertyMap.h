@@ -33,6 +33,7 @@ namespace WebCore {
 class WeakPtrImplWithEventTargetData;
 
 class InlineStylePropertyMap final : public StylePropertyMap {
+    WTF_MAKE_ISO_ALLOCATED(InlineStylePropertyMap);
 public:
     static Ref<InlineStylePropertyMap> create(StyledElement&);
 
@@ -47,6 +48,7 @@ public:
     bool setCustomProperty(Document&, const AtomString& property, Ref<CSSVariableReferenceValue>&&) final;
     void removeCustomProperty(const AtomString& property) final;
     void clear() final;
+    Element* ownerElement() final;
 
 private:
     explicit InlineStylePropertyMap(StyledElement&);

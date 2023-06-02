@@ -649,6 +649,7 @@ bindings/js/JSServiceWorkerGlobalScopeCustom.cpp
 bindings/js/JSShadowRootCustom.cpp
 bindings/js/JSSourceBufferCustom.cpp
 bindings/js/JSStaticRangeCustom.cpp
+bindings/js/JSStylePropertyMapCustom.cpp
 bindings/js/JSStyleSheetCustom.cpp
 bindings/js/JSTextCustom.cpp
 bindings/js/JSTextTrackCueCustom.cpp

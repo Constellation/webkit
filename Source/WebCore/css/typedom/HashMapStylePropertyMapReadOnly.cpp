@@ -30,6 +30,8 @@
 
 namespace WebCore {
 
+WTF_MAKE_ISO_ALLOCATED_IMPL(HashMapStylePropertyMapReadOnly);
+
 Ref<HashMapStylePropertyMapReadOnly> HashMapStylePropertyMapReadOnly::create(HashMap<AtomString, RefPtr<CSSValue>>&& map)
 {
     return adoptRef(*new HashMapStylePropertyMapReadOnly(WTFMove(map)));

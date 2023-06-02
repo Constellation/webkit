@@ -44,6 +44,10 @@
 
 namespace WebCore {
 
+WTF_MAKE_ISO_ALLOCATED_IMPL(StylePropertyMapReadOnly);
+
+StylePropertyMapReadOnly::~StylePropertyMapReadOnly() = default;
+
 RefPtr<CSSStyleValue> StylePropertyMapReadOnly::reifyValue(RefPtr<CSSValue>&& value, std::optional<CSSPropertyID> propertyID, Document& document)
 {
     if (!value)

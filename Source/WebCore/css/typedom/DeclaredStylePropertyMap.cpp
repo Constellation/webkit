@@ -38,6 +38,8 @@
 
 namespace WebCore {
 
+WTF_MAKE_ISO_ALLOCATED_IMPL(DeclaredStylePropertyMap);
+
 Ref<DeclaredStylePropertyMap> DeclaredStylePropertyMap::create(CSSStyleRule& ownerRule)
 {
     return adoptRef(*new DeclaredStylePropertyMap(ownerRule));

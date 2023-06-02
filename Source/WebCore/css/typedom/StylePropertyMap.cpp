@@ -61,6 +61,11 @@ static RefPtr<CSSValue> cssValueFromStyleValues(std::optional<CSSPropertyID> pro
     return CSSValueList::create(separator, WTFMove(list));
 }
 
+Element* StylePropertyMap::ownerElement()
+{
+    return nullptr;
+}
+
 // https://drafts.css-houdini.org/css-typed-om/#dom-stylepropertymap-set
 ExceptionOr<void> StylePropertyMap::set(Document& document, const AtomString& property, FixedVector<std::variant<RefPtr<CSSStyleValue>, String>>&& values)
 {

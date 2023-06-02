@@ -33,6 +33,8 @@
 
 namespace WebCore {
 
+WTF_MAKE_ISO_ALLOCATED_IMPL(InlineStylePropertyMap);
+
 Ref<InlineStylePropertyMap> InlineStylePropertyMap::create(StyledElement& element)
 {
     return adoptRef(*new InlineStylePropertyMap(element));
@@ -135,6 +137,11 @@ void InlineStylePropertyMap::clear()
 {
     if (m_element)
         m_element->removeAllInlineStyleProperties();
+}
+
+Element* InlineStylePropertyMap::ownerElement()
+{
+    return m_element.get();
 }
 
 } // namespace WebCore
