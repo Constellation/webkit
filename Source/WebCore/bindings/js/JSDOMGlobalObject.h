@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include "DOMStructures.h"
 #include <JavaScriptCore/JSGlobalObject.h>
 #include <JavaScriptCore/WeakGCMap.h>
 #include <wtf/Forward.h>
@@ -39,7 +40,6 @@ enum class JSPromiseRejectionOperation : unsigned;
 namespace WebCore {
 
 class DOMConstructors;
-class DOMStructures;
 class DOMGuardedObject;
 class JSBuiltinInternalFunctions;
 class Event;
@@ -157,5 +157,14 @@ JSDOMGlobalObject& legacyActiveGlobalObjectForAccessor(JSC::JSGlobalObject&, JSC
 
 template<class JSClass>
 inline JSClass* toJSDOMGlobalObject(JSC::VM&, JSC::JSValue);
+
+template<typename WrapperClass> inline JSC::Structure* getDOMStructure(JSC::VM& vm, JSDOMGlobalObject& globalObject)
+{
+    if (auto* structure = globalObject.structures().get<WrapperClass>())
+        return structure;
+    auto* structure = WrapperClass::createStructure(vm, &globalObject, WrapperClass::createPrototype(vm, globalObject));
+    globalObject.structures().set<WrapperClass>(vm, &globalObject, structure);
+    return structure;
+}
 
 } // namespace WebCore

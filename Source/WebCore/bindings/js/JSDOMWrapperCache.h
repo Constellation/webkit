@@ -24,7 +24,7 @@
 #pragma once
 
 #include "DOMWrapperWorld.h"
-#include "JSDOMGlobalObjectInlines.h"
+#include "JSDOMGlobalObject.h"
 #include "JSDOMWrapper.h"
 #include "ScriptWrappableInlines.h"
 #include "WebCoreTypedArrayController.h"
