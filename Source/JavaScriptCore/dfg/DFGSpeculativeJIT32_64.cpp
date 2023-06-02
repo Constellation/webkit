@@ -1803,14 +1803,18 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
     case Array::Generic: {
         if (m_graph.m_slowGetByVal.contains(node)) {
             if (m_graph.varArgChild(node, 0).useKind() == ObjectUse) {
-                if (m_graph.varArgChild(node, 1).useKind() == StringUse) {
+                switch (m_graph.varArgChild(node, 1).useKind()) {
+                case StringUse:
                     compileGetByValForObjectWithString(node, prefix);
                     return;
-                }
-
-                if (m_graph.varArgChild(node, 1).useKind() == SymbolUse) {
+                case SymbolUse:
                     compileGetByValForObjectWithSymbol(node, prefix);
                     return;
+                case Int32Use:
+                    compileGetByValForObjectWithInt32(node, prefix);
+                    return;
+                default:
+                    break;
                 }
             }
 

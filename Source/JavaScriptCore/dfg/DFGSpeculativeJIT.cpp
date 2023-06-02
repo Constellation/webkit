@@ -4410,6 +4410,32 @@ void SpeculativeJIT::compileGetByValForObjectWithSymbol(Node* node, const Scoped
     jsValueResult(resultRegs, node);
 }
 
+void SpeculativeJIT::compileGetByValForObjectWithInt32(Node* node, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix)
+{
+    SpeculateCellOperand arg1(this, m_graph.varArgChild(node, 0));
+    SpeculateInt32Operand arg2(this, m_graph.varArgChild(node, 1));
+
+    GPRReg arg1GPR = arg1.gpr();
+    GPRReg arg2GPR = arg2.gpr();
+
+    JSValueRegs resultRegs;
+    CanUseFlush canUseFlush = CanUseFlush::Yes;
+    std::tie(resultRegs, std::ignore, canUseFlush) = prefix(DataFormatJS);
+
+    speculateObject(m_graph.varArgChild(node, 0), arg1GPR);
+
+    if (canUseFlush == CanUseFlush::No)
+        silentSpillAllRegisters(resultRegs);
+    else
+        flushRegisters();
+    callOperation(operationGetByValObjectInt, resultRegs, LinkableConstant::globalObject(*this, node), arg1GPR, arg2GPR);
+    if (canUseFlush == CanUseFlush::No)
+        silentFillAllRegisters();
+    exceptionCheck();
+
+    jsValueResult(resultRegs, node);
+}
+
 void SpeculativeJIT::compileGetPrivateName(Node* node)
 {
     switch (m_graph.child(node, 0).useKind()) {

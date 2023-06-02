@@ -6030,16 +6030,27 @@ IGNORE_CLANG_WARNINGS_END
         case Array::Generic: {
             if (m_graph.m_slowGetByVal.contains(m_node)) {
                 if (m_graph.varArgChild(m_node, 0).useKind() == ObjectUse) {
-                    if (m_graph.varArgChild(m_node, 1).useKind() == StringUse) {
+                    switch (m_graph.varArgChild(m_node, 1).useKind()) {
+                    case StringUse: {
                         return vmCall(
                             Int64, operationGetByValObjectString, weakPointer(globalObject),
                             lowObject(m_graph.varArgChild(m_node, 0)), lowString(m_graph.varArgChild(m_node, 1)));
                     }
 
-                    if (m_graph.varArgChild(m_node, 1).useKind() == SymbolUse) {
+                    case SymbolUse: {
                         return vmCall(
                             Int64, operationGetByValObjectSymbol, weakPointer(globalObject),
                             lowObject(m_graph.varArgChild(m_node, 0)), lowSymbol(m_graph.varArgChild(m_node, 1)));
+                    }
+
+                    case Int32Use: {
+                        return vmCall(
+                            Int64, operationGetByValObjectInt, weakPointer(globalObject),
+                            lowObject(m_graph.varArgChild(m_node, 0)), lowInt32(m_graph.varArgChild(m_node, 1)));
+                    }
+
+                    default:
+                        break;
                     }
                 }
 

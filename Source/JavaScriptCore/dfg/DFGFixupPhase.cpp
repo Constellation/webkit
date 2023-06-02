@@ -1141,6 +1141,12 @@ private:
                             fixEdge<SymbolUse>(m_graph.varArgChild(node, 1));
                             break;
                         }
+
+                        if (m_graph.varArgChild(node, 1)->shouldSpeculateInt32()) {
+                            fixEdge<ObjectUse>(m_graph.varArgChild(node, 0));
+                            fixEdge<Int32Use>(m_graph.varArgChild(node, 1));
+                            break;
+                        }
                     }
                 }
                 break;

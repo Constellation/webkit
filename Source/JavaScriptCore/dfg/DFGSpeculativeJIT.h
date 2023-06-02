@@ -1474,6 +1474,7 @@ public:
     void compilePutByValForFloatTypedArray(Node*, TypedArrayType);
     void compileGetByValForObjectWithString(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
     void compileGetByValForObjectWithSymbol(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
+    void compileGetByValForObjectWithInt32(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
     void compilePutByValForCellWithString(Node*);
     void compilePutByValForCellWithSymbol(Node*);
     void compileGetByValWithThis(Node*);
