@@ -27,21 +27,25 @@
 #pragma once
 
 #include "DOMConstructors.h"
+#include "DOMStructures.h"
 #include "JSDOMGlobalObject.h"
 #include <JavaScriptCore/JSObjectInlines.h>
 
 namespace WebCore {
 
-inline JSDOMStructureMap& JSDOMGlobalObject::structures(NoLockingNecessaryTag)
-{
-    ASSERT(!vm().heap.mutatorShouldBeFenced());
-    return m_structures;
-}
-
 inline DOMGuardedObjectSet& JSDOMGlobalObject::guardedObjects(NoLockingNecessaryTag)
 {
     ASSERT(!vm().heap.mutatorShouldBeFenced());
     return m_guardedObjects;
+}
+
+template<typename WrapperClass> inline JSC::Structure* getDOMStructure(JSC::VM& vm, JSDOMGlobalObject& globalObject)
+{
+    if (auto* structure = globalObject.structures().get<WrapperClass>())
+        return structure;
+    auto* structure = WrapperClass::createStructure(vm, &globalObject, WrapperClass::createPrototype(vm, globalObject));
+    globalObject.structures().set<WrapperClass>(vm, &globalObject, structure);
+    return structure;
 }
 
 template<class ConstructorClass, DOMConstructorID constructorID>

@@ -3097,6 +3097,8 @@ sub GenerateHeader
     }
 
     # Structure ID
+    $headerIncludes{"DOMStructures.h"} = 1;
+    push(@headerContent, "    static constexpr DOMStructureID structureIndex = DOMStructureID::${interfaceName};\n");
     push(@headerContent, "    static JSC::Structure* createStructure(JSC::VM& vm, JSC::JSGlobalObject* globalObject, JSC::JSValue prototype)\n");
     push(@headerContent, "    {\n");
     my $indexingModeIncludingHistory = InstanceOverridesGetOwnPropertySlot($interface) ? "JSC::MayHaveIndexedAccessors" : "JSC::NonArray";
@@ -6953,6 +6955,7 @@ public:
         );
     }
 
+    static constexpr DOMStructureID structureIndex = DOMStructureID::${interfaceName}Iterator;
     static JSC::Structure* createStructure(JSC::VM& vm, JSC::JSGlobalObject* globalObject, JSC::JSValue prototype)
     {
         return JSC::Structure::create(vm, globalObject, prototype, JSC::TypeInfo(JSC::ObjectType, StructureFlags), info());

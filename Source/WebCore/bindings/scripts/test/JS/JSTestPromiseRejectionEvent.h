@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "DOMStructures.h"
 #include "JSDOMConvertDictionary.h"
 #include "JSDOMWrapper.h"
 #include "JSEvent.h"
@@ -43,6 +44,7 @@ public:
 
     DECLARE_INFO;
 
+    static constexpr DOMStructureID structureIndex = DOMStructureID::TestPromiseRejectionEvent;
     static JSC::Structure* createStructure(JSC::VM& vm, JSC::JSGlobalObject* globalObject, JSC::JSValue prototype)
     {
         return JSC::Structure::create(vm, globalObject, prototype, JSC::TypeInfo(JSC::JSType(JSEventType), StructureFlags), info(), JSC::NonArray);

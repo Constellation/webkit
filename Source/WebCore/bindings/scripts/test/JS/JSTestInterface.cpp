@@ -1113,6 +1113,7 @@ public:
         );
     }
 
+    static constexpr DOMStructureID structureIndex = DOMStructureID::TestInterfaceIterator;
     static JSC::Structure* createStructure(JSC::VM& vm, JSC::JSGlobalObject* globalObject, JSC::JSValue prototype)
     {
         return JSC::Structure::create(vm, globalObject, prototype, JSC::TypeInfo(JSC::ObjectType, StructureFlags), info());

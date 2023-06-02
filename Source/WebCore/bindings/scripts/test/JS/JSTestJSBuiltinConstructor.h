@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "DOMStructures.h"
 #include "JSDOMWrapper.h"
 
 namespace WebCore {
@@ -40,6 +41,7 @@ public:
 
     DECLARE_INFO;
 
+    static constexpr DOMStructureID structureIndex = DOMStructureID::TestJSBuiltinConstructor;
     static JSC::Structure* createStructure(JSC::VM& vm, JSC::JSGlobalObject* globalObject, JSC::JSValue prototype)
     {
         return JSC::Structure::create(vm, globalObject, prototype, JSC::TypeInfo(JSC::ObjectType, StructureFlags), info(), JSC::NonArray);

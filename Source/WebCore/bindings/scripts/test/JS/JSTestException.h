@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "DOMStructures.h"
 #include "JSDOMWrapper.h"
 #include "TestException.h"
 #include <JavaScriptCore/ErrorPrototype.h>
@@ -44,6 +45,7 @@ public:
 
     DECLARE_INFO;
 
+    static constexpr DOMStructureID structureIndex = DOMStructureID::TestException;
     static JSC::Structure* createStructure(JSC::VM& vm, JSC::JSGlobalObject* globalObject, JSC::JSValue prototype)
     {
         return JSC::Structure::create(vm, globalObject, prototype, JSC::TypeInfo(JSC::ObjectType, StructureFlags), info(), JSC::NonArray);

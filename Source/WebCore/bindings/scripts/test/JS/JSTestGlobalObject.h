@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "DOMStructures.h"
 #include "JSDOMWrapper.h"
 #include "TestGlobalObject.h"
 #include <wtf/NeverDestroyed.h>
@@ -43,6 +44,7 @@ public:
 
     DECLARE_INFO;
 
+    static constexpr DOMStructureID structureIndex = DOMStructureID::TestGlobalObject;
     static JSC::Structure* createStructure(JSC::VM& vm, JSC::JSGlobalObject* globalObject, JSC::JSValue prototype)
     {
         return JSC::Structure::create(vm, globalObject, prototype, JSC::TypeInfo(JSC::GlobalObjectType, StructureFlags), info(), JSC::NonArray);

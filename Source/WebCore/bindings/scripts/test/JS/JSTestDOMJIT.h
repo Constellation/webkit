@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "DOMStructures.h"
 #include "JSDOMWrapper.h"
 #include "JSNode.h"
 #include "TestDOMJIT.h"
@@ -43,6 +44,7 @@ public:
 
     DECLARE_INFO;
 
+    static constexpr DOMStructureID structureIndex = DOMStructureID::TestDOMJIT;
     static JSC::Structure* createStructure(JSC::VM& vm, JSC::JSGlobalObject* globalObject, JSC::JSValue prototype)
     {
         return JSC::Structure::create(vm, globalObject, prototype, JSC::TypeInfo(JSC::JSType(JSNodeType), StructureFlags), info(), JSC::NonArray);

@@ -26,6 +26,7 @@
 #ifndef ObjCRuntimeObject_h
 #define ObjCRuntimeObject_h
 
+#include "DOMStructures.h"
 #include "runtime_object.h"
 
 namespace JSC {
@@ -36,6 +37,7 @@ class ObjcInstance;
 class ObjCRuntimeObject final : public RuntimeObject {
 public:
     using Base = RuntimeObject;
+    static constexpr WebCore::DOMStructureID structureIndex = WebCore::DOMStructureID::ObjCRuntimeObject;
 
     static ObjCRuntimeObject* create(VM& vm, Structure* structure, RefPtr<ObjcInstance>&& inst)
     {
