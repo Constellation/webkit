@@ -568,7 +568,7 @@ private:
             ASSERT(m_node->op() != RegExpMatchFast);
 
             unsigned lastIndex = UINT_MAX;
-            if (m_node->op() != RegExpExecNonGlobalOrSticky) {
+            if (regExp->globalOrSticky()) {
                 // This will only work if we can prove what the value of lastIndex is. To do this
                 // safely, we need to execute the insertion set so that we see any previous strength
                 // reductions. This is needed for soundness since otherwise the effectfulness of any
@@ -598,8 +598,7 @@ private:
                         dataLog("Giving up because the last index is not known.\n");
                     break;
                 }
-            }
-            if (!regExp->globalOrSticky())
+            } else
                 lastIndex = 0;
 
             auto foldToConstant = [&] {
@@ -858,8 +857,9 @@ private:
                     m_graph.m_parameterSlots = std::max(m_graph.m_parameterSlots, argumentCountForStackSize(alignedFrameSize));
 
                 NodeOrigin origin = m_node->origin;
-                m_insertionSet.insertNode(
-                    m_nodeIndex, SpecNone, Check, origin, m_node->children.justChecks());
+                m_insertionSet.insertNode(m_nodeIndex, SpecNone, Check, origin, m_node->children.justChecks());
+                Node* stringNode = m_insertionSet.insertNode(m_nodeIndex, SpecNone, ResolveRope, origin, Edge(m_node->child3().node(), KnownStringUse));
+                m_node->child3() = Edge(stringNode, StringUse);
                 m_node->convertToRegExpTestInline(m_graph.freeze(globalObject), m_graph.freeze(regExp));
                 m_changed = true;
                 return true;

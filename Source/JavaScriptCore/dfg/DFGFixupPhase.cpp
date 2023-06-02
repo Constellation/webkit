@@ -1532,9 +1532,7 @@ private:
             
             if (node->child2()->shouldSpeculateRegExpObject()) {
                 fixEdge<RegExpObjectUse>(node->child2());
-
-                if (node->child3()->shouldSpeculateString())
-                    fixEdge<StringUse>(node->child3());
+                fixEdge<StringUse>(node->child3());
             }
             break;
         }
