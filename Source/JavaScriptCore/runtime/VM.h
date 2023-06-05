@@ -52,6 +52,7 @@
 #include "SlotVisitorMacros.h"
 #include "SmallStrings.h"
 #include "StringSplitCache.h"
+#include "StringReplaceCache.h"
 #include "Strong.h"
 #include "SubspaceAccess.h"
 #include "ThunkGenerator.h"
@@ -571,6 +572,7 @@ public:
     KeyAtomStringCache keyAtomStringCache;
     StringSplitCache stringSplitCache;
     Vector<unsigned> stringSplitIndice;
+    StringReplaceCache stringReplaceCache;
 
     AtomStringTable* atomStringTable() const { return m_atomStringTable; }
     WTF::SymbolRegistry& symbolRegistry() { return m_symbolRegistry; }
