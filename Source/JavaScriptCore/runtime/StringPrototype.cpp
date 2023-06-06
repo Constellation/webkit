@@ -405,7 +405,6 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
 
     unsigned sourceLen = source.length();
     size_t lastIndex = 0;
-    unsigned startPosition = 0;
     unsigned cachedCount = regExp->numSubpatterns() + 2;
     unsigned argCount = cachedCount + 1;
 
@@ -425,6 +424,14 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
                 cachedCall.appendArgument(result->get(cursor + i));
             cachedCall.appendArgument(string);
 
+            int32_t start = result->get(cursor + cachedCount - 1).asInt32();
+            int32_t end = start + asString(result->get(cursor))->length();
+
+            if (UNLIKELY(!sourceRanges.tryConstructAndAppend(lastIndex, start))) {
+                throwOutOfMemoryError(globalObject, scope);
+                return nullptr;
+            }
+
             cachedCall.setThis(jsUndefined());
             if (UNLIKELY(cachedCall.hasOverflowedArguments())) {
                 throwOutOfMemoryError(globalObject, scope);
@@ -435,6 +442,8 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
             RETURN_IF_EXCEPTION(scope, nullptr);
             replacements.append(jsResult.toWTFString(globalObject));
             RETURN_IF_EXCEPTION(scope, nullptr);
+
+            lastIndex = end;
         }
 
         if (!lastIndex && replacements.isEmpty())
@@ -446,6 +455,8 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
         }
         RELEASE_AND_RETURN(scope, jsSpliceSubstringsWithSeparators(globalObject, string, source, sourceRanges.data(), sourceRanges.size(), replacements.data(), replacements.size()));
     }
+
+    unsigned startPosition = 0;
 
     // This is either a loop (if global is set) or a one-way (if not).
     // regExp->numSubpatterns() + 1 for pattern args, + 2 for match start and string
