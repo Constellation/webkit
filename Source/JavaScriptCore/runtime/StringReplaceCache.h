@@ -33,24 +33,26 @@ namespace JSC {
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(StringReplaceCache);
 
 class JSImmutableButterfly;
+class RegExp;
 
 class StringReplaceCache {
     WTF_MAKE_FAST_ALLOCATED;
     WTF_MAKE_NONCOPYABLE(StringReplaceCache);
 public:
     static constexpr unsigned cacheSize = 64;
+    static constexpr unsigned minSubjectLengthToCache = 0x1000;
 
     StringReplaceCache() = default;
 
     struct Entry {
         RefPtr<AtomStringImpl> m_subject { nullptr };
-        RefPtr<AtomStringImpl> m_separator { nullptr };
+        RegExp* m_regExp { nullptr };
+        JSImmutableButterfly* m_result { nullptr }; // We use JSImmutableButterfly since we would like to keep all entries alive while repeatedly calling a JS function.
         Vector<int> m_lastMatch { };
-        Vector<int> m_result { };
     };
 
-    Entry* get(const String& subject, const String& separator);
-    void set(const String& subject, const String& separator, const Vector<int>&, const Vector<int>&);
+    Entry* get(const String& subject, RegExp* regExp);
+    void set(const String& subject, RegExp* regExp, JSImmutableButterfly*, const Vector<int>&);
 
     void clear()
     {
