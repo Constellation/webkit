@@ -404,13 +404,8 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
     ASSERT(!regExp->hasNamedCaptures());
 
     unsigned sourceLen = source.length();
-    unsigned startPosition = 0;
-    size_t lastIndex = 0;
     unsigned cachedCount = regExp->numSubpatterns() + 2;
     unsigned argCount = cachedCount + 1;
-
-    Vector<Range<int32_t>, 16> sourceRanges;
-    Vector<String, 16> replacements;
 
     JSImmutableButterfly* result = nullptr;
 
@@ -418,6 +413,8 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
     if (!entry) {
         // This is either a loop (if global is set) or a one-way (if not).
         // regExp->numSubpatterns() + 1 for pattern args, + 2 for match start and string
+        size_t lastIndex = 0;
+        unsigned startPosition = 0;
         MarkedArgumentBuffer results;
         while (true) {
             int* ovector;
@@ -477,6 +474,9 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
 
     // regExp->numSubpatterns() + 1 for pattern args, + 2 for match start and string
     unsigned length = result->length();
+    size_t lastIndex = 0;
+    Vector<Range<int32_t>, 16> sourceRanges;
+    Vector<String, 16> replacements;
 
     CachedCall cachedCall(globalObject, replaceFunction, argCount);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -507,6 +507,9 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
 
         lastIndex = end;
     }
+
+    if (!lastIndex && replacements.isEmpty())
+        return string;
 
     if (static_cast<unsigned>(lastIndex) < sourceLen) {
         if (UNLIKELY(!sourceRanges.tryConstructAndAppend(lastIndex, sourceLen))) {
