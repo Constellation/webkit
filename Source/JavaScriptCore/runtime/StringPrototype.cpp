@@ -431,8 +431,10 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
 
                 if (matchStart < 0)
                     patternValue = jsUndefined();
-                else
-                    patternValue = jsSubstring(vm, source, matchStart, matchLen);
+                else {
+                    patternValue = jsSubstring(globalObject, string, matchStart, matchLen);
+                    RETURN_IF_EXCEPTION(scope, { });
+                }
 
                 results.append(patternValue);
             }
@@ -474,9 +476,19 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
 
     // regExp->numSubpatterns() + 1 for pattern args, + 2 for match start and string
     unsigned length = result->length();
+    unsigned items = length / cachedCount;
     size_t lastIndex = 0;
     Vector<Range<int32_t>, 16> sourceRanges;
     Vector<String, 16> replacements;
+
+    if (UNLIKELY(!sourceRanges.tryReserveCapacity(items + 1))) {
+        throwOutOfMemoryError(globalObject, scope);
+        return nullptr;
+    }
+    if (UNLIKELY(!replacements.tryReserveCapacity(items))) {
+        throwOutOfMemoryError(globalObject, scope);
+        return nullptr;
+    }
 
     CachedCall cachedCall(globalObject, replaceFunction, argCount);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -489,10 +501,7 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
         int32_t start = result->get(cursor + cachedCount - 1).asInt32();
         int32_t end = start + asString(result->get(cursor))->length();
 
-        if (UNLIKELY(!sourceRanges.tryConstructAndAppend(lastIndex, start))) {
-            throwOutOfMemoryError(globalObject, scope);
-            return nullptr;
-        }
+        sourceRanges.uncheckedConstructAndAppend(lastIndex, start);
 
         cachedCall.setThis(jsUndefined());
         if (UNLIKELY(cachedCall.hasOverflowedArguments())) {
@@ -502,21 +511,14 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
 
         JSValue jsResult = cachedCall.call();
         RETURN_IF_EXCEPTION(scope, nullptr);
-        replacements.append(jsResult.toWTFString(globalObject));
+        replacements.uncheckedAppend(jsResult.toWTFString(globalObject));
         RETURN_IF_EXCEPTION(scope, nullptr);
 
         lastIndex = end;
     }
 
-    if (!lastIndex && replacements.isEmpty())
-        return string;
-
-    if (static_cast<unsigned>(lastIndex) < sourceLen) {
-        if (UNLIKELY(!sourceRanges.tryConstructAndAppend(lastIndex, sourceLen))) {
-            throwOutOfMemoryError(globalObject, scope);
-            return nullptr;
-        }
-    }
+    if (static_cast<unsigned>(lastIndex) < sourceLen)
+        sourceRanges.uncheckedConstructAndAppend(lastIndex, sourceLen);
     RELEASE_AND_RETURN(scope, jsSpliceSubstringsWithSeparators(globalObject, string, source, sourceRanges.data(), sourceRanges.size(), replacements.data(), replacements.size()));
 }
 
