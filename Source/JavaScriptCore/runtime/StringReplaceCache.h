@@ -40,7 +40,6 @@ class StringReplaceCache {
     WTF_MAKE_NONCOPYABLE(StringReplaceCache);
 public:
     static constexpr unsigned cacheSize = 64;
-    static constexpr unsigned minSubjectLengthToCache = 0x1000;
 
     StringReplaceCache() = default;
 

@@ -399,11 +399,12 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
 {
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    ASSERT(source.length() >= StringReplaceCache::minSubjectLengthToCache);
+    ASSERT(source.length() >= Options::thresholdForStringReplaceCache());
     // Currently not caching results when named captures are specified.
     ASSERT(!regExp->hasNamedCaptures());
 
     unsigned sourceLen = source.length();
+    unsigned startPosition = 0;
     size_t lastIndex = 0;
     unsigned cachedCount = regExp->numSubpatterns() + 2;
     unsigned argCount = cachedCount + 1;
@@ -411,85 +412,87 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
     Vector<Range<int32_t>, 16> sourceRanges;
     Vector<String, 16> replacements;
 
-    if (auto* entry = vm.stringReplaceCache.get(source, regExp)) {
+    JSImmutableButterfly* result = nullptr;
+
+    auto* entry = vm.stringReplaceCache.get(source, regExp);
+    if (!entry) {
+        // This is either a loop (if global is set) or a one-way (if not).
         // regExp->numSubpatterns() + 1 for pattern args, + 2 for match start and string
-        Vector<int> lastMatch = entry->m_lastMatch;
-        JSImmutableButterfly* result = entry->m_result;
-        unsigned length = result->length();
-        CachedCall cachedCall(globalObject, replaceFunction, argCount);
-        RETURN_IF_EXCEPTION(scope, nullptr);
-        for (unsigned cursor = 0; cursor < length; cursor += cachedCount) {
-            cachedCall.clearArguments();
-            for (unsigned i = 0; i < cachedCount; ++i)
-                cachedCall.appendArgument(result->get(cursor + i));
-            cachedCall.appendArgument(string);
+        MarkedArgumentBuffer results;
+        while (true) {
+            int* ovector;
+            MatchResult result = globalObject->regExpGlobalData().performMatch(globalObject, regExp, string, source, startPosition, &ovector);
+            RETURN_IF_EXCEPTION(scope, nullptr);
+            if (!result)
+                break;
 
-            int32_t start = result->get(cursor + cachedCount - 1).asInt32();
-            int32_t end = start + asString(result->get(cursor))->length();
+            for (unsigned i = 0; i < regExp->numSubpatterns() + 1; ++i) {
+                int matchStart = ovector[i * 2];
+                int matchLen = ovector[i * 2 + 1] - matchStart;
 
-            if (UNLIKELY(!sourceRanges.tryConstructAndAppend(lastIndex, start))) {
-                throwOutOfMemoryError(globalObject, scope);
-                return nullptr;
+                JSValue patternValue;
+
+                if (matchStart < 0)
+                    patternValue = jsUndefined();
+                else
+                    patternValue = jsSubstring(vm, source, matchStart, matchLen);
+
+                results.append(patternValue);
             }
 
-            cachedCall.setThis(jsUndefined());
-            if (UNLIKELY(cachedCall.hasOverflowedArguments())) {
-                throwOutOfMemoryError(globalObject, scope);
-                return nullptr;
+            results.append(jsNumber(result.start));
+
+            lastIndex = result.end;
+            startPosition = lastIndex;
+
+            // special case of empty match
+            if (result.empty()) {
+                startPosition++;
+                if (startPosition > sourceLen)
+                    break;
+                if (U16_IS_LEAD(source[startPosition - 1]) && U16_IS_TRAIL(source[startPosition])) {
+                    startPosition++;
+                    if (startPosition > sourceLen)
+                        break;
+                }
             }
-
-            JSValue jsResult = cachedCall.call();
-            RETURN_IF_EXCEPTION(scope, nullptr);
-            replacements.append(jsResult.toWTFString(globalObject));
-            RETURN_IF_EXCEPTION(scope, nullptr);
-
-            lastIndex = end;
         }
 
-        if (!lastIndex && replacements.isEmpty())
+        // Nothing matches.
+        if (results.isEmpty())
             return string;
 
-        if (static_cast<unsigned>(lastIndex) < sourceLen) {
-            if (UNLIKELY(!sourceRanges.tryConstructAndAppend(lastIndex, sourceLen)))
-                OUT_OF_MEMORY(globalObject, scope);
+        result = JSImmutableButterfly::tryCreateFromArgList(vm, results);
+        if (UNLIKELY(!result)) {
+            throwOutOfMemoryError(globalObject, scope);
+            return nullptr;
         }
-        RELEASE_AND_RETURN(scope, jsSpliceSubstringsWithSeparators(globalObject, string, source, sourceRanges.data(), sourceRanges.size(), replacements.data(), replacements.size()));
+
+        vm.stringReplaceCache.set(source, regExp, result, globalObject->regExpGlobalData().ovector());
+    } else {
+        result = entry->m_result;
+        auto lastMatch = entry->m_lastMatch;
+        globalObject->regExpGlobalData().resetResultFromCache(globalObject, regExp, string, WTFMove(lastMatch));
     }
 
-    unsigned startPosition = 0;
-
-    // This is either a loop (if global is set) or a one-way (if not).
     // regExp->numSubpatterns() + 1 for pattern args, + 2 for match start and string
+    unsigned length = result->length();
+
     CachedCall cachedCall(globalObject, replaceFunction, argCount);
     RETURN_IF_EXCEPTION(scope, nullptr);
-    while (true) {
-        int* ovector;
-        MatchResult result = globalObject->regExpGlobalData().performMatch(globalObject, regExp, string, source, startPosition, &ovector);
-        RETURN_IF_EXCEPTION(scope, nullptr);
-        if (!result)
-            break;
-
-        if (UNLIKELY(!sourceRanges.tryConstructAndAppend(lastIndex, result.start)))
-            OUT_OF_MEMORY(globalObject, scope);
-
+    for (unsigned cursor = 0; cursor < length; cursor += cachedCount) {
         cachedCall.clearArguments();
-
-        for (unsigned i = 0; i < regExp->numSubpatterns() + 1; ++i) {
-            int matchStart = ovector[i * 2];
-            int matchLen = ovector[i * 2 + 1] - matchStart;
-
-            JSValue patternValue;
-
-            if (matchStart < 0)
-                patternValue = jsUndefined();
-            else
-                patternValue = jsSubstring(vm, source, matchStart, matchLen);
-
-            cachedCall.appendArgument(patternValue);
-        }
-
-        cachedCall.appendArgument(jsNumber(result.start));
+        for (unsigned i = 0; i < cachedCount; ++i)
+            cachedCall.appendArgument(result->get(cursor + i));
         cachedCall.appendArgument(string);
+
+        int32_t start = result->get(cursor + cachedCount - 1).asInt32();
+        int32_t end = start + asString(result->get(cursor))->length();
+
+        if (UNLIKELY(!sourceRanges.tryConstructAndAppend(lastIndex, start))) {
+            throwOutOfMemoryError(globalObject, scope);
+            return nullptr;
+        }
 
         cachedCall.setThis(jsUndefined());
         if (UNLIKELY(cachedCall.hasOverflowedArguments())) {
@@ -502,28 +505,14 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
         replacements.append(jsResult.toWTFString(globalObject));
         RETURN_IF_EXCEPTION(scope, nullptr);
 
-        lastIndex = result.end;
-        startPosition = lastIndex;
-
-        // special case of empty match
-        if (result.empty()) {
-            startPosition++;
-            if (startPosition > sourceLen)
-                break;
-            if (U16_IS_LEAD(source[startPosition - 1]) && U16_IS_TRAIL(source[startPosition])) {
-                startPosition++;
-                if (startPosition > sourceLen)
-                    break;
-            }
-        }
+        lastIndex = end;
     }
 
-    if (!lastIndex && replacements.isEmpty())
-        return string;
-
     if (static_cast<unsigned>(lastIndex) < sourceLen) {
-        if (UNLIKELY(!sourceRanges.tryConstructAndAppend(lastIndex, sourceLen)))
-            OUT_OF_MEMORY(globalObject, scope);
+        if (UNLIKELY(!sourceRanges.tryConstructAndAppend(lastIndex, sourceLen))) {
+            throwOutOfMemoryError(globalObject, scope);
+            return nullptr;
+        }
     }
     RELEASE_AND_RETURN(scope, jsSpliceSubstringsWithSeparators(globalObject, string, source, sourceRanges.data(), sourceRanges.size(), replacements.data(), replacements.size()));
 }
@@ -551,7 +540,7 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearch(
         if (callData.type == CallData::Type::None && !replacementString.length())
             RELEASE_AND_RETURN(scope, removeUsingRegExpSearch(vm, globalObject, string, source, regExp));
 
-        if (callData.type == CallData::Type::JS && sourceLen >= StringReplaceCache::minSubjectLengthToCache && !hasNamedCaptures)
+        if (callData.type == CallData::Type::JS && !hasNamedCaptures && sourceLen >= Options::thresholdForStringReplaceCache())
             RELEASE_AND_RETURN(scope, replaceUsingRegExpSearchWithCache(vm, globalObject, string, source, regExp, jsCast<JSFunction*>(replaceValue)));
     }
 
