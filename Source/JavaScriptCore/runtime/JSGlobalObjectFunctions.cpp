@@ -541,6 +541,38 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncParseFloat, (JSGlobalObject* globalObject, Ca
     return JSValue::encode(jsNumber(parseFloat(viewWithString.view)));
 }
 
+JSC_DEFINE_HOST_FUNCTION(globalFuncConcatStrings, (JSGlobalObject* globalObject, CallFrame* callFrame))
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    auto* array = jsCast<JSArray*>(callFrame->uncheckedArgument(0));
+
+    StringBuilder builder;
+    unsigned length = array->length();
+    if (LIKELY(hasContiguous(array->indexingType()))) {
+        auto& butterfly = *array->butterfly();
+        auto data = butterfly.contiguous().data();
+        for (unsigned i = 0; i < length; ++i) {
+            JSString* string = jsCast<JSString*>(data[i].get());
+            auto value = string->value(globalObject);
+            RETURN_IF_EXCEPTION(scope, { });
+            builder.append(WTFMove(value));
+        }
+        ensureStillAliveHere(array);
+        RELEASE_AND_RETURN(scope, JSValue::encode(jsString(vm, builder.toString())));
+    }
+
+    for (unsigned i = 0; i < length; ++i) {
+        JSValue string = array->getIndex(globalObject, i);
+        RETURN_IF_EXCEPTION(scope, { });
+        auto value = jsCast<JSString*>(string)->value(globalObject);
+        RETURN_IF_EXCEPTION(scope, { });
+        builder.append(WTFMove(value));
+    }
+    RELEASE_AND_RETURN(scope, JSValue::encode(jsString(vm, builder.toString())));
+}
+
 JSC_DEFINE_HOST_FUNCTION(globalFuncDecodeURI, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     static constexpr auto doNotUnescapeWhenDecodingURI = makeCharacterBitmap(

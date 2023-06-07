@@ -41,6 +41,7 @@ extern const ASCIILiteral RestrictedPropertyAccessError;
 JSC_DECLARE_HOST_FUNCTION(globalFuncEval);
 JSC_DECLARE_HOST_FUNCTION(globalFuncParseInt);
 JSC_DECLARE_HOST_FUNCTION(globalFuncParseFloat);
+JSC_DECLARE_HOST_FUNCTION(globalFuncConcatStrings);
 JSC_DECLARE_HOST_FUNCTION(globalFuncDecodeURI);
 JSC_DECLARE_HOST_FUNCTION(globalFuncDecodeURIComponent);
 JSC_DECLARE_HOST_FUNCTION(globalFuncEncodeURI);

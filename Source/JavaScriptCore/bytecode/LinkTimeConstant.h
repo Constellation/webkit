@@ -77,6 +77,7 @@ class JSGlobalObject;
     v(isArraySlow, nullptr) \
     v(concatMemcpy, nullptr) \
     v(appendMemcpy, nullptr) \
+    v(concatStrings, nullptr) \
     v(hostPromiseRejectionTracker, nullptr) \
     v(Set, nullptr) \
     v(Map, nullptr) \

@@ -140,6 +140,7 @@ namespace JSC {
     macro(sameValue) \
     macro(concatMemcpy) \
     macro(appendMemcpy) \
+    macro(concatStrings) \
     macro(regExpCreate) \
     macro(isRegExp) \
     macro(replaceUsingRegExp) \

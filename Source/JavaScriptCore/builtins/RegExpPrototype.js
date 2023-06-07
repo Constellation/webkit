@@ -283,12 +283,13 @@ function regExpReplaceWithFunction(array, func)
 {
     "use strict";
 
-    for (var i = 0, length = array.length; i < length; ++i) {
+    for (var i = 1, length = array.length; i < length; ++i) {
         var value = array[i];
         if (typeof value !== "string")
             array[i] = @toString(func.@apply(@undefined, value));
     }
-    return array.join("");
+
+    return @concatStrings(array);
 }
 
 @overriddenName="[Symbol.replace]"
