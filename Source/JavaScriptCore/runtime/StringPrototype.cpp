@@ -398,6 +398,7 @@ static ALWAYS_INLINE JSString* removeUsingRegExpSearch(VM& vm, JSGlobalObject* g
 static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGlobalObject* globalObject, JSString* string, const String& source, RegExp* regExp, JSFunction* replaceFunction)
 {
     auto scope = DECLARE_THROW_SCOPE(vm);
+    SuperSamplerScope superSamplerScope(true);
 
     ASSERT(source.length() >= Options::thresholdForStringReplaceCache());
     // Currently not caching results when named captures are specified.
@@ -511,8 +512,9 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
 
         JSValue jsResult = cachedCall.call();
         RETURN_IF_EXCEPTION(scope, nullptr);
-        replacements.uncheckedAppend(jsResult.toWTFString(globalObject));
+        auto string = jsResult.toWTFString(globalObject)
         RETURN_IF_EXCEPTION(scope, nullptr);
+        replacements.uncheckedAppend(WTFMove(string));
 
         lastIndex = end;
     }
