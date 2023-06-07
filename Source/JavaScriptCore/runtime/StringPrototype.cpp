@@ -484,8 +484,24 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
         globalObject->regExpGlobalData().resetResultFromCache(globalObject, regExp, string, WTFMove(lastMatch));
     }
 
-    // regExp->numSubpatterns() + 1 for pattern args, + 2 for match start and string
     unsigned length = result->length();
+
+    if (length > 100 && length < MIN_SPARSE_ARRAY_INDEX) {
+        Structure* arrayStructure = globalObject->originalArrayStructureForIndexingType(CopyOnWriteArrayWithContiguous);
+        auto* array = JSArray::createWithButterfly(vm, nullptr, arrayStructure, result->toButterfly());
+
+        MarkedArgumentBuffer arguments;
+        arguments.append(array);
+        arguments.append(replaceFunction);
+        ASSERT(!arguments.hasOverflowed());
+        scope.release();
+        JSValue result = call(globalObject, globalObject->regExpReplaceWithFunctionFunction(), JSC::getCallData(globalObject->regExpReplaceWithFunctionFunction()), jsUndefined(), arguments);
+        if (UNLIKELY(!result.isString()))
+            return nullptr;
+        return asString(result);
+    }
+
+    // regExp->numSubpatterns() + 1 for pattern args, + 2 for match start and string
     StringBuilder builder;
 
     CachedCall cachedCall(globalObject, replaceFunction, argCount);

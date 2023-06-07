@@ -669,6 +669,7 @@ public:
     JSFunction* regExpProtoExecFunction() const;
     JSFunction* typedArrayProtoSort() const { return m_typedArrayProtoSort.get(this); }
     JSFunction* stringProtoSubstringFunction() const;
+    JSFunction* regExpReplaceWithFunctionFunction() const;
     JSFunction* performProxyObjectHasFunction() const;
     JSFunction* performProxyObjectGetFunction() const;
     JSFunction* performProxyObjectGetFunctionConcurrently() const;
