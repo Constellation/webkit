@@ -65,6 +65,7 @@ ExitMode mayExitImpl(Graph& graph, Node* node, StateType& state)
     case LoopHint:
     case Phi:
     case Upsilon:
+    case ZombieHint:
     case ExitOK:
     case BottomValue:
     case PutHint:

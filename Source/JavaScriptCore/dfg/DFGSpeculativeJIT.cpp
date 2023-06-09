@@ -2424,7 +2424,7 @@ void SpeculativeJIT::compileLoopHint(Node* node)
 
 void SpeculativeJIT::compileMovHint(Node* node)
 {
-    ASSERT(node->containsMovHint());
+    ASSERT(node->containsMovHint() && node->op() != ZombieHint);
     
     Node* child = node->child1().node();
     noticeOSRBirth(child);

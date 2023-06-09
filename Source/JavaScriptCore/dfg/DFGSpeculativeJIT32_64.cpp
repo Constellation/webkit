@@ -2254,6 +2254,12 @@ void SpeculativeJIT::compile(Node* node)
         break;
     }
 
+    case ZombieHint: {
+        recordSetLocal(m_currentNode->unlinkedOperand(), VirtualRegister(), DataFormatDead);
+        noResult(node);
+        break;
+    }
+
     case ExitOK: {
         noResult(node);
         break;
