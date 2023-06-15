@@ -808,7 +808,11 @@ let InjectedScript = class InjectedScript extends PrototypelessObjectBase
 
         let isArrayLike = false;
         try {
-            isArrayLike = subtype === "array" && @isFinite(object.length) && object.length > 0;
+            if (subtype === "array") {
+                let length = @toNumber(object.length);
+                if (length === length && length !== @Infinity && length > 0)
+                    isArrayLike = true;
+            }
         } catch { }
 
         for (let o = object; isDefined(o); o = @Object.@getPrototypeOf(o)) {
@@ -1097,8 +1101,11 @@ let RemoteObject = class RemoteObject extends PrototypelessObjectBase
 
         // FireBug's array detection.
         try {
-            if (typeof value.splice === "function" && @isFinite(value.length))
-                return "array";
+            if (typeof value.splice === "function") {
+                let length = @toNumber(value.length);
+                if (length === length && length !== @Infinity && length !== -@Infinity)
+                    return "array";
+            }
         } catch { }
 
         return null;

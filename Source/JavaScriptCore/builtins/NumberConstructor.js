@@ -23,16 +23,3 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-function isFinite(value)
-{
-    "use strict";
-
-    if (typeof value !== "number")
-        return false;
-
-    // Return false if value is |NaN|.
-    if (value !== value)
-        return false;
-
-    return value !== @Infinity && value !== -@Infinity;
-}

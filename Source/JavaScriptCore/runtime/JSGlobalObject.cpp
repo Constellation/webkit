@@ -563,7 +563,7 @@ const GlobalObjectMethodTable* JSGlobalObject::baseGlobalObjectMethodTable()
 /* Source for JSGlobalObject.lut.h
 @begin globalObjectTable
   isNaN                 globalFuncIsNaN                              DontEnum|Function 1         GlobalIsNaNIntrinsic
-  isFinite              JSBuiltin                                    DontEnum|Function 1
+  isFinite              globalFuncIsFinite                           DontEnum|Function 1         GlobalIsFiniteIntrinsic
   escape                globalFuncEscape                             DontEnum|Function 1
   unescape              globalFuncUnescape                           DontEnum|Function 1
   decodeURI             globalFuncDecodeURI                          DontEnum|Function 1

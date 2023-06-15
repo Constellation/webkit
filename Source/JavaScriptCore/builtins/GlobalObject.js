@@ -24,14 +24,3 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-@linkTimeConstant
-function isFinite(value)
-{
-    "use strict";
-
-    var numberValue = @toNumber(value);
-    // Return false if numberValue is |NaN|.
-    if (numberValue !== numberValue)
-        return false;
-    return numberValue !== @Infinity && numberValue !== -@Infinity;
-}

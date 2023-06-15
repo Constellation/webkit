@@ -1072,4 +1072,10 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncIsNaN, (JSGlobalObject* globalObject, CallFra
     return JSValue::encode(jsBoolean(std::isnan(argument.toNumber(globalObject))));
 }
 
+JSC_DEFINE_HOST_FUNCTION(globalFuncIsFinite, (JSGlobalObject* globalObject, CallFrame* callFrame))
+{
+    JSValue argument = callFrame->argument(0);
+    return JSValue::encode(jsBoolean(std::isfinite(argument.toNumber(globalObject))));
+}
+
 } // namespace JSC

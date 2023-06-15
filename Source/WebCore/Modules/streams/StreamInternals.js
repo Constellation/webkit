@@ -138,7 +138,7 @@ function enqueueValueWithSize(queue, value, size)
     "use strict";
 
     size = @toNumber(size);
-    if (!@isFinite(size) || size < 0)
+    if (size !== size || size === @Infinity || size < 0)
         @throwRangeError("size has an incorrect value");
     @arrayPush(queue.content, { value, size });
     queue.size += size;

@@ -82,6 +82,7 @@ namespace JSC {
     macro(DatePrototypeGetTimezoneOffsetIntrinsic) \
     macro(DatePrototypeGetYearIntrinsic) \
     macro(FromCharCodeIntrinsic) \
+    macro(GlobalIsFiniteIntrinsic) \
     macro(GlobalIsNaNIntrinsic) \
     macro(PowIntrinsic) \
     macro(FloorIntrinsic) \
@@ -118,6 +119,7 @@ namespace JSC {
     macro(StringPrototypeSubstringIntrinsic) \
     macro(StringPrototypeToLowerCaseIntrinsic) \
     macro(NumberPrototypeToStringIntrinsic) \
+    macro(NumberIsFiniteIntrinsic) \
     macro(NumberIsNaNIntrinsic) \
     macro(NumberIsIntegerIntrinsic) \
     macro(NumberConstructorIntrinsic) \
