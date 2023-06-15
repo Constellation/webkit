@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 1999-2000 Harri Porten (porten@kde.org)
- * Copyright (C) 2006-2020 Apple Inc. All rights reserved.
+ * Copyright (C) 2006-2023 Apple Inc. All rights reserved.
  * Copyright (C) 2009 Google Inc. All rights reserved.
+ * Copyright (C) 2012 the V8 project authors. All rights reserved.
  * Copyright (C) 2010 Research In Motion Limited. All rights reserved.
  *
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -95,6 +96,7 @@ extern WTF_EXPORT_PRIVATE const ASCIILiteral weekdayName[7];
 extern WTF_EXPORT_PRIVATE const ASCIILiteral monthName[12];
 extern WTF_EXPORT_PRIVATE const ASCIILiteral monthFullName[12];
 extern WTF_EXPORT_PRIVATE const int firstDayOfMonth[2][12];
+extern WTF_EXPORT_PRIVATE const int8_t daysInMonths[12];
 
 static constexpr double hoursPerDay = 24.0;
 static constexpr double minutesPerHour = 60.0;
@@ -126,6 +128,13 @@ public:
     static constexpr int64_t msPerHour = msPerSecond * secondsPerHour;
     static constexpr int64_t msPerDay = msPerSecond * secondsPerDay;
     static constexpr int64_t maxECMAScriptTime = 8.64E15;
+
+    static constexpr int64_t daysIn4Years = 4 * 365 + 1;
+    static constexpr int64_t daysIn100Years = 25 * daysIn4Years - 1;
+    static constexpr int64_t daysIn400Years = 4 * daysIn100Years + 1;
+    static constexpr int64_t days1970to2000 = 30 * 365 + 7;
+    static constexpr int32_t daysOffset = 1000 * daysIn400Years + 5 * daysIn400Years - days1970to2000;
+    static constexpr int32_t yearsOffset = 400000;
 
     explicit TimeClippedPositiveMilliseconds(int64_t value)
         : m_value(value)
@@ -201,9 +210,71 @@ inline double msToDays(double ms)
     return floor(ms / msPerDay);
 }
 
-inline int64_t msToDays(TimeClippedPositiveMilliseconds ms)
+inline int32_t msToDays(TimeClippedPositiveMilliseconds ms)
 {
-    return ms.value() / TimeClippedPositiveMilliseconds::msPerDay;
+    int64_t time = ms.value();
+    if (time < 0)
+        time -= (TimeClippedPositiveMilliseconds::msPerDay - 1);
+    return static_cast<int>(time / TimeClippedPositiveMilliseconds::msPerDay);
+}
+
+inline int32_t timeInDay(TimeClippedPositiveMilliseconds ms, int days)
+{
+    return static_cast<int32_t>(ms.value() - days * TimeClippedPositiveMilliseconds::msPerDay);
+}
+
+inline std::tuple<int32_t, int32_t, int32_t> yearMonthDayFromDays(int32_t passedDays)
+{
+    int32_t days = passedDays;
+    days += TimeClippedPositiveMilliseconds::daysOffset;
+    int32_t year = 400 * (days / TimeClippedPositiveMilliseconds::daysIn400Years) - TimeClippedPositiveMilliseconds::yearsOffset;
+    days %= TimeClippedPositiveMilliseconds::daysIn400Years;
+
+    days--;
+    int32_t yd1 = days / TimeClippedPositiveMilliseconds::daysIn100Years;
+    days %= TimeClippedPositiveMilliseconds::daysIn100Years;
+    year += 100 * yd1;
+
+    days++;
+    int yd2 = days / TimeClippedPositiveMilliseconds::daysIn4Years;
+    days %= TimeClippedPositiveMilliseconds::daysIn4Years;
+    year += 4 * yd2;
+
+    days--;
+    int yd3 = days / 365;
+    days %= 365;
+    year += yd3;
+
+    bool isLeap = (!yd1 || yd2) && !yd3;
+
+    days += isLeap;
+
+    // Check if the date is after February.
+    int32_t month = 0;
+    int32_t day = 0;
+    if (days >= 31 + 28 + (isLeap ? 1 : 0)) {
+        days -= 31 + 28 + (isLeap ? 1 : 0);
+        // Find the date starting from March.
+        for (int i = 2; i < 12; i++) {
+            if (days < daysInMonths[i]) {
+                month = i;
+                day = days + 1;
+                break;
+            }
+            days -= daysInMonths[i];
+        }
+    } else {
+        // Check January and February.
+        if (days < 31) {
+            month = 0;
+            day = days + 1;
+        } else {
+            month = 1;
+            day = days - 31 + 1;
+        }
+    }
+
+    return std::tuple { year, month, day };
 }
 
 inline int dayInYear(int year, int month, int day)
@@ -311,6 +382,12 @@ inline int msToWeekDay(TimeClippedPositiveMilliseconds ms)
     int result = (static_cast<int>(msToDays(ms)) + 4) % 7;
     ASSERT(result >= 0);
     return result;
+}
+
+inline int32_t weekDay(int32_t days)
+{
+    int32_t result = (days + 4) % 7;
+    return result >= 0 ? result : result + 7;
 }
 
 inline int monthFromDayInYear(int dayInYear, bool leapYear)
