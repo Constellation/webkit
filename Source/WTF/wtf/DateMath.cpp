@@ -113,9 +113,9 @@ const ASCIILiteral monthFullName[12] = { "January"_s, "February"_s, "March"_s, "
 
 // Day of year for the first day of each month, where index 0 is January, and day 0 is January 1.
 // First for non-leap years, then for leap years.
-const int firstDayOfMonth[2][12] = {
-    {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334},
-    {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}
+const int firstDayOfMonth[2][13] = {
+    {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365},
+    {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366}
 };
 
 const int8_t daysInMonths[12] = {

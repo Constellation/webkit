@@ -95,7 +95,7 @@ inline double jsCurrentTime()
 extern WTF_EXPORT_PRIVATE const ASCIILiteral weekdayName[7];
 extern WTF_EXPORT_PRIVATE const ASCIILiteral monthName[12];
 extern WTF_EXPORT_PRIVATE const ASCIILiteral monthFullName[12];
-extern WTF_EXPORT_PRIVATE const int firstDayOfMonth[2][12];
+extern WTF_EXPORT_PRIVATE const int firstDayOfMonth[2][13];
 extern WTF_EXPORT_PRIVATE const int8_t daysInMonths[12];
 
 static constexpr double hoursPerDay = 24.0;
@@ -223,7 +223,7 @@ inline int32_t timeInDay(TimeClippedPositiveMilliseconds ms, int days)
     return static_cast<int32_t>(ms.value() - days * TimeClippedPositiveMilliseconds::msPerDay);
 }
 
-inline std::tuple<int32_t, int32_t, int32_t> yearMonthDayFromDays(int32_t passedDays)
+ALWAYS_INLINE std::tuple<int32_t, int32_t, int32_t> yearMonthDayFromDays(int32_t passedDays)
 {
     int32_t days = passedDays;
     days += TimeClippedPositiveMilliseconds::daysOffset;
@@ -249,6 +249,19 @@ inline std::tuple<int32_t, int32_t, int32_t> yearMonthDayFromDays(int32_t passed
 
     days += isLeap;
 
+    for (int32_t i = 0; i < 12; ++i) {
+        int32_t lastFirstDay = firstDayOfMonth[isLeap][i];
+        int32_t firstDay = firstDayOfMonth[isLeap][i + 1];
+        if (days < firstDay) {
+            int32_t month = i;
+            int32_t day = days - lastFirstDay + 1;
+            return std::tuple { year, month, day };
+        }
+    }
+
+    return std::tuple { 0, 0, 0 };
+
+#if 0
     // Check if the date is after February.
     int32_t month = 0;
     int32_t day = 0;
@@ -275,6 +288,7 @@ inline std::tuple<int32_t, int32_t, int32_t> yearMonthDayFromDays(int32_t passed
     }
 
     return std::tuple { year, month, day };
+#endif
 }
 
 inline int dayInYear(int year, int month, int day)
