@@ -2,6 +2,7 @@
  * Copyright (C) 1999-2000 Harri Porten (porten@kde.org)
  * Copyright (C) 2006-2023 Apple Inc. All rights reserved.
  * Copyright (C) 2009 Google Inc. All rights reserved.
+ * Copyright (C) 2012 the V8 project authors. All rights reserved.
  * Copyright (C) 2010 Research In Motion Limited. All rights reserved.
  *
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -45,6 +46,7 @@
 #include "DateInstanceCache.h"
 #include <wtf/DateMath.h>
 #include <wtf/GregorianDateTime.h>
+#include <wtf/SaturatedArithmetic.h>
 
 namespace JSC {
 
@@ -65,13 +67,16 @@ struct OpaqueICUTimeZoneDeleter {
 };
 
 struct LocalTimeOffsetCache {
+    static constexpr uint64_t invalidEpoch = 0;
+
     LocalTimeOffsetCache() = default;
 
-    LocalTimeOffset offset;
+    bool isEmpty() { return start > end; }
+
+    LocalTimeOffset offset { };
     double start { 0.0 };
     double end { -1.0 };
-    double incrementStart { 0.0 };
-    double incrementEnd { 0.0 };
+    uint64_t epoch { 0 };
 };
 
 class DateCache {
@@ -114,8 +119,55 @@ public:
     static void timeZoneChanged();
 
 private:
+    class DSTCache {
+    public:
+        static constexpr unsigned cacheSize = 32;
+        // The implementation relies on the fact that no time zones have
+        // more than one daylight savings offset change per 19 days.
+        // In Egypt in 2010 they decided to suspend DST during Ramadan. This
+        // led to a short interval where DST is in effect from September 10 to
+        // September 30.
+        static constexpr double defaultDSTDeltaInMilliseconds = 19 * secondsPerDay * 1000;
+
+        DSTCache()
+            : m_before(&m_entries.front())
+            , m_after(&m_entries.front() + 1)
+        {
+        }
+
+        uint64_t bumpEpoch()
+        {
+            ++m_epoch;
+            return m_epoch;
+        }
+
+        void reset()
+        {
+            m_entries.fill(LocalTimeOffsetCache { });
+            m_before = &m_entries.front();
+            m_after = &m_entries.front() + 1;
+            m_epoch = 1;
+        }
+
+        LocalTimeOffset localTimeOffset(DateCache&, double millisecondsFromEpoch, WTF::TimeType inputTimeType);
+
+    private:
+        LocalTimeOffsetCache* leastRecentlyUsed(LocalTimeOffsetCache* exclude);
+        std::tuple<LocalTimeOffsetCache*, LocalTimeOffsetCache*> probe(double millisecondsFromEpoch);
+        void extendTheAfterSegment(double millisecondsFromEpoch, LocalTimeOffset);
+
+        uint64_t m_epoch { 1 };
+        std::array<LocalTimeOffsetCache, cacheSize> m_entries { };
+        LocalTimeOffsetCache* m_before;
+        LocalTimeOffsetCache* m_after;
+    };
+
     void timeZoneCacheSlow();
-    LocalTimeOffset localTimeOffset(double millisecondsFromEpoch, WTF::TimeType inputTimeType = WTF::UTCTime);
+    LocalTimeOffset localTimeOffset(double millisecondsFromEpoch, WTF::TimeType inputTimeType = WTF::UTCTime)
+    {
+        return m_caches[inputTimeType == WTF::LocalTime ? 0 : 1].localTimeOffset(*this, millisecondsFromEpoch, inputTimeType);
+    }
+
     LocalTimeOffset calculateLocalTimeOffset(double millisecondsFromEpoch, WTF::TimeType inputTimeType);
 
     OpaqueICUTimeZone* timeZoneCache()
@@ -126,8 +178,7 @@ private:
     }
 
     std::unique_ptr<OpaqueICUTimeZone, OpaqueICUTimeZoneDeleter> m_timeZoneCache;
-    LocalTimeOffsetCache m_utcTimeOffsetCache;
-    LocalTimeOffsetCache m_localTimeOffsetCache;
+    std::array<DSTCache, 2> m_caches;
     String m_cachedDateString;
     double m_cachedDateStringValue;
     DateInstanceCache m_dateInstanceCache;

@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 1999-2000 Harri Porten (porten@kde.org)
- * Copyright (C) 2006-2021 Apple Inc. All rights reserved.
+ * Copyright (C) 2006-2023 Apple Inc. All rights reserved.
  * Copyright (C) 2009 Google Inc. All rights reserved.
+ * Copyright (C) 2012 the V8 project authors. All rights reserved.
  * Copyright (C) 2007-2009 Torch Mobile, Inc.
  * Copyright (C) 2010 &yet, LLC. (nate@andyet.net)
  *
@@ -75,6 +76,7 @@
 #include "ExceptionHelpers.h"
 #include "VM.h"
 #include <limits>
+#include <wtf/DateMath.h>
 #include <wtf/Language.h>
 #include <wtf/unicode/CharacterNames.h>
 #include <wtf/unicode/icu/ICUHelpers.h>
@@ -185,103 +187,158 @@ LocalTimeOffset DateCache::calculateLocalTimeOffset(double millisecondsFromEpoch
     return { !!dstOffset, rawOffset + dstOffset };
 }
 
-LocalTimeOffset DateCache::localTimeOffset(double millisecondsFromEpoch, WTF::TimeType inputTimeType)
+LocalTimeOffsetCache* DateCache::DSTCache::leastRecentlyUsed(LocalTimeOffsetCache* exclude)
 {
-    LocalTimeOffsetCache& cache = inputTimeType == WTF::LocalTime ? m_localTimeOffsetCache : m_utcTimeOffsetCache;
+    LocalTimeOffsetCache* result = nullptr;
+    for (auto& cache : m_entries) {
+        if (&cache == exclude)
+            continue;
+        if (!result) {
+            result = &cache;
+            continue;
+        }
+        if (result->epoch > cache.epoch)
+            result = &cache;
+    }
+    *result = LocalTimeOffsetCache { };
+    return result;
+}
 
-    double start = cache.start;
-    double end = cache.end;
+std::tuple<LocalTimeOffsetCache*, LocalTimeOffsetCache*> DateCache::DSTCache::probe(double millisecondsFromEpoch)
+{
+    LocalTimeOffsetCache* before = nullptr;
+    LocalTimeOffsetCache* after = nullptr;
+    for (auto& cache : m_entries) {
+        if (cache.start <= millisecondsFromEpoch) {
+            if (!before || before->start < cache.start)
+                before = &cache;
+        } else if (millisecondsFromEpoch < cache.end) {
+            if (!after || after->end > cache.end)
+                after = &cache;
+        }
+    }
 
-    auto resetCache = [&]() {
+    if (!before) {
+        if (m_before->isEmpty())
+            before = m_before;
+        else
+            before = leastRecentlyUsed(after);
+    }
+    if (!after) {
+        if (m_after->isEmpty())
+            after = m_after;
+        else
+            after = leastRecentlyUsed(before);
+    }
+
+    m_before = before;
+    m_after = after;
+    return std::tuple { before, after };
+}
+
+void DateCache::DSTCache::extendTheAfterSegment(double millisecondsFromEpoch, LocalTimeOffset offset)
+{
+    if (m_after->offset == offset &&
+        m_after->start - defaultDSTDeltaInMilliseconds <= millisecondsFromEpoch &&
+        millisecondsFromEpoch <= m_after->end) {
+        // Extend the m_after segment.
+        m_after->start = millisecondsFromEpoch;
+    } else {
+        // The m_after segment is either invalid or starts too late.
+        if (!m_after->isEmpty()) {
+            // If the m_after segment is valid, replace it with a new segment.
+            m_after = leastRecentlyUsed(m_before);
+        }
+        m_after->start = millisecondsFromEpoch;
+        m_after->end = millisecondsFromEpoch;
+        m_after->offset = offset;
+        m_after->epoch = bumpEpoch();
+    }
+}
+
+LocalTimeOffset DateCache::DSTCache::localTimeOffset(DateCache& dateCache, double millisecondsFromEpoch, WTF::TimeType inputTimeType)
+{
+    if (m_epoch > UINT32_MAX)
+        reset();
+
+    // If the time fits in the cached interval in the last cache hit, return the cached offset.
+    if (m_before->start <= millisecondsFromEpoch && millisecondsFromEpoch <= m_before->end) {
+        m_before->epoch = bumpEpoch();
+        return m_before->offset;
+    }
+
+    auto [before, after] = probe(millisecondsFromEpoch);
+    if (before->isEmpty()) {
+        // Cache miss.
         // Compute the DST offset for the time and shrink the cache interval
         // to only contain the time. This allows fast repeated DST offset
         // computations for the same time.
-        LocalTimeOffset offset = calculateLocalTimeOffset(millisecondsFromEpoch, inputTimeType);
-        cache.offset = offset;
-        cache.start = millisecondsFromEpoch;
-        cache.end = millisecondsFromEpoch;
-        cache.incrementStart = WTF::msPerMonth;
-        cache.incrementEnd = WTF::msPerMonth;
+        LocalTimeOffset offset = dateCache.calculateLocalTimeOffset(millisecondsFromEpoch, inputTimeType);
+        before->offset = offset;
+        before->start = millisecondsFromEpoch;
+        before->end = millisecondsFromEpoch;
+        before->epoch = bumpEpoch();
         return offset;
-    };
+    }
 
+    // Cache hit!
     // If the time fits in the cached interval, return the cached offset.
-    if (start <= millisecondsFromEpoch && millisecondsFromEpoch <= end)
-        return cache.offset;
+    if (millisecondsFromEpoch <= before->end) {
+        before->epoch = bumpEpoch();
+        return before->offset;
+    }
 
-    if (start <= millisecondsFromEpoch) {
-        // Compute a possible new interval end.
-        double newEnd = end + cache.incrementEnd;
-        if (!(millisecondsFromEpoch <= newEnd))
-            return resetCache();
-
-        LocalTimeOffset endOffset = calculateLocalTimeOffset(newEnd, inputTimeType);
-        if (cache.offset == endOffset) {
-            // If the offset at the end of the new interval still matches
-            // the offset in the cache, we grow the cached time interval
-            // and return the offset.
-            cache.end = newEnd;
-            cache.incrementStart = WTF::msPerMonth;
-            cache.incrementEnd = WTF::msPerMonth;
-            return endOffset;
-        }
-        LocalTimeOffset offset = calculateLocalTimeOffset(millisecondsFromEpoch, inputTimeType);
-        if (offset == endOffset) {
-            // The offset at the given time is equal to the offset at the
-            // new end of the interval, so that means that we've just skipped
-            // the point in time where the DST offset change occurred. Update
-            // the interval to reflect this and reset the increment.
-            cache.start = millisecondsFromEpoch;
-            cache.end = newEnd;
-            cache.incrementStart = WTF::msPerMonth;
-            cache.incrementEnd = WTF::msPerMonth;
-        } else {
-            // The interval contains a DST offset change and the given time is
-            // before it. Adjust the increment to avoid a linear search for
-            // the offset change point and change the end of the interval.
-            cache.incrementEnd /= 3;
-            cache.end = millisecondsFromEpoch;
-        }
-        // Update the offset in the cache and return it.
-        cache.offset = offset;
+    if ((millisecondsFromEpoch - defaultDSTDeltaInMilliseconds) > before->end) {
+        LocalTimeOffset offset = dateCache.calculateLocalTimeOffset(millisecondsFromEpoch, inputTimeType);
+        extendTheAfterSegment(millisecondsFromEpoch, offset);
+        std::swap(m_before, m_after);
         return offset;
     }
 
-    // Compute a possible new interval start.
-    double newStart = start - cache.incrementStart;
-    if (!(newStart <= millisecondsFromEpoch))
-        return resetCache();
+    m_before->epoch = bumpEpoch();
 
-    LocalTimeOffset startOffset = calculateLocalTimeOffset(newStart, inputTimeType);
-    if (cache.offset == startOffset) {
-        // If the offset at the start of the new interval still matches
-        // the offset in the cache, we grow the cached time interval
-        // and return the offset.
-        cache.start = newStart;
-        cache.incrementStart = WTF::msPerMonth;
-        cache.incrementEnd = WTF::msPerMonth;
-        return startOffset;
-    }
-    LocalTimeOffset offset = calculateLocalTimeOffset(millisecondsFromEpoch, inputTimeType);
-    if (offset == startOffset) {
-        // The offset at the given time is equal to the offset at the
-        // new start of the interval, so that means that we've just skipped
-        // the point in time where the DST offset change occurred. Update
-        // the interval to reflect this and reset the increment.
-        cache.start = newStart;
-        cache.end = millisecondsFromEpoch;
-        cache.incrementStart = WTF::msPerMonth;
-        cache.incrementEnd = WTF::msPerMonth;
+    // Check if m_after segment is invalid or starts too late.
+    // Note that start of invalid segments is kMaxEpochTimeInSec.
+    double newStart = m_before->end < WTF::maxECMAScriptTime - defaultDSTDeltaInMilliseconds ? m_before->end + defaultDSTDeltaInMilliseconds : WTF::maxECMAScriptTime;
+    if (newStart <= m_after->start) {
+        LocalTimeOffset offset = dateCache.calculateLocalTimeOffset(newStart, inputTimeType);
+        extendTheAfterSegment(newStart, offset);
     } else {
-        // The interval contains a DST offset change and the given time is
-        // before it. Adjust the increment to avoid a linear search for
-        // the offset change point and change the end of the interval.
-        cache.incrementStart /= 3;
-        cache.start = millisecondsFromEpoch;
+        // Update the usage counter of m_after since it is going to be used.
+        m_after->epoch = bumpEpoch();
     }
-    // Update the offset in the cache and return it.
-    cache.offset = offset;
-    return offset;
+
+    // Now the millisecondsFromEpoch is between m_before->end and m_after->start.
+    // Only one daylight savings offset change can occur in this interval.
+
+    if (m_before->offset == m_after->offset) {
+        // Merge two segments if they have the same offset.
+        m_before->end = m_after->end;
+        *m_after = LocalTimeOffsetCache { };
+        return m_before->offset;
+    }
+
+    // Binary search for daylight savings offset change point,
+    // but give up if we don't find it in five iterations.
+    for (int i = 4; i >= 0; --i) {
+        double delta = m_after->start - m_before->end;
+        double middle = (i == 0) ? millisecondsFromEpoch : m_before->end + delta / 2;
+        LocalTimeOffset offset = dateCache.calculateLocalTimeOffset(middle, inputTimeType);
+        if (m_before->offset == offset) {
+            m_before->end = middle;
+            if (millisecondsFromEpoch <= m_before->end)
+                return offset;
+        } else {
+            m_after->start = middle;
+            if (millisecondsFromEpoch >= m_after->start) {
+                // This swap helps the optimistic fast check in subsequent invocations.
+                std::swap(m_before, m_after);
+                return offset;
+            }
+        }
+    }
+
+    return LocalTimeOffset { };
 }
 
 double DateCache::gregorianDateTimeToMS(const GregorianDateTime& t, double milliseconds, WTF::TimeType inputTimeType)
@@ -489,8 +546,8 @@ void DateCache::resetIfNecessarySlow()
     // FIXME: We should clear it only when we know the timezone has been changed on Non-Cocoa platforms.
     // https://bugs.webkit.org/show_bug.cgi?id=218365
     m_timeZoneCache.reset();
-    m_utcTimeOffsetCache = LocalTimeOffsetCache();
-    m_localTimeOffsetCache = LocalTimeOffsetCache();
+    for (auto& cache : m_caches)
+        cache.reset();
     m_cachedDateString = String();
     m_cachedDateStringValue = std::numeric_limits<double>::quiet_NaN();
     m_dateInstanceCache.reset();
