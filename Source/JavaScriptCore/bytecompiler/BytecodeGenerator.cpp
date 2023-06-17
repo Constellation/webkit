@@ -330,6 +330,12 @@ ParserError BytecodeGenerator::generate(unsigned& size)
     RELEASE_ASSERT(m_codeBlock->numCalleeLocals() < static_cast<unsigned>(FirstConstantRegisterIndex));
     size = instructions().size();
     m_codeBlock->finalize(m_writer.finalize());
+
+    // We limit total bytecode sequence size in int32_t so that any int32_t jump offset can cover.
+    // Also, this allows us to use one bit of bytecode for some flag, including "ignore-result-flag".
+    if (size > static_cast<unsigned>(INT32_MAX))
+        return ParserError(ParserError::OutOfMemory);
+
     if (m_expressionTooDeep)
         return ParserError(ParserError::OutOfMemory);
     return ParserError(ParserError::ErrorNone);
