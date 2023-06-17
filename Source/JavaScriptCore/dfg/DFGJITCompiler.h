@@ -125,6 +125,7 @@ public:
         return m_jitCode->common.codeOrigins->addCodeOrigin(codeOrigin);
     }
 
+    // FIXME: Add bit.
     CallSiteIndex emitStoreCodeOrigin(CodeOrigin codeOrigin)
     {
         CallSiteIndex callSite = addCallSite(codeOrigin);
@@ -132,6 +133,7 @@ public:
         return callSite;
     }
 
+    // FIXME: Add bit.
     void emitStoreCallSiteIndex(CallSiteIndex callSite)
     {
         store32(TrustedImm32(callSite.bits()), tagFor(CallFrameSlot::argumentCountIncludingThis));

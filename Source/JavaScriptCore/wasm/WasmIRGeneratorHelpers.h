@@ -55,8 +55,10 @@ struct PatchpointExceptionHandle {
     void generate(CCallHelpers& jit, const B3::StackmapGenerationParams& params, Generator* generator) const
     {
         if (m_callSiteIndex == s_invalidCallSiteIndex) {
-            if (!m_hasExceptionHandlers || m_hasExceptionHandlers.value())
+            if (!m_hasExceptionHandlers || m_hasExceptionHandlers.value()) {
+                // FIXME: a bit
                 jit.store32(CCallHelpers::TrustedImm32(m_callSiteIndex), CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
+            }
             return;
         }
 
@@ -68,6 +70,7 @@ struct PatchpointExceptionHandle {
 
         generator->addStackMap(m_callSiteIndex, WTFMove(values));
         JIT_COMMENT(jit, "Store call site index ", m_callSiteIndex, " at throw or call site.");
+        // FIXME: a bit
         jit.store32(CCallHelpers::TrustedImm32(m_callSiteIndex), CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
     }
 

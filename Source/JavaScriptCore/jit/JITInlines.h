@@ -113,6 +113,7 @@ ALWAYS_INLINE JIT::Jump JIT::emitNakedNearJump(CodePtr<JITThunkPtrTag> target)
 
 ALWAYS_INLINE void JIT::updateTopCallFrame()
 {
+    // FIXME: a bit.
     uint32_t locationBits = CallSiteIndex(m_bytecodeIndex.offset()).bits();
     store32(TrustedImm32(locationBits), tagFor(CallFrameSlot::argumentCountIncludingThis));
     prepareCallOperation(*m_vm);

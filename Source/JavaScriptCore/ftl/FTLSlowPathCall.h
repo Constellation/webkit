@@ -109,9 +109,10 @@ SlowPathCall callOperation(
     ArgumentTypes... arguments)
 {
     if (callSiteIndex) {
+        // FIXME: a bit
         jit.store32(
             CCallHelpers::TrustedImm32(callSiteIndex.bits()),
-            CCallHelpers::tagFor(VirtualRegister(CallFrameSlot::argumentCountIncludingThis)));
+            CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
     }
     return callOperation(vm, usedRegisters, jit, exceptionTarget, function, resultGPR, arguments...);
 }
@@ -160,9 +161,10 @@ SlowPathCall callOperation(
     ArgumentTypes... arguments)
 {
     if (callSiteIndex) {
+        // FIXME: a bit
         jit.store32(
             CCallHelpers::TrustedImm32(callSiteIndex.bits()),
-            CCallHelpers::tagFor(VirtualRegister(CallFrameSlot::argumentCountIncludingThis)));
+            CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
     }
     return callOperation(vm, usedRegisters, jit, exceptionTarget, function, resultGPR, arguments...);
 }

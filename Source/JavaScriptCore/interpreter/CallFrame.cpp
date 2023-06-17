@@ -104,6 +104,7 @@ const JSInstruction* CallFrame::currentVPC() const
     return codeBlock()->instructions().at(callSiteBitsAsBytecodeOffset()).ptr();
 }
 
+// FIXME: a bit
 void CallFrame::setCurrentVPC(const JSInstruction* vpc)
 {
     CallSiteIndex callSite(codeBlock()->bytecodeIndex(vpc));

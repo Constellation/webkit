@@ -1096,8 +1096,10 @@ AirIRGeneratorBase<Derived, ExpressionType>::AirIRGeneratorBase(const ModuleInfo
             // This allows leaf functions to not do stack checks if their frame size is within
             // certain limits since their caller would have already done the check.
             if (needsOverflowCheck) {
-                if (mayHaveExceptionHandlers)
+                if (mayHaveExceptionHandlers) {
+                    // FIXME: a bit
                     jit.store32(CCallHelpers::TrustedImm32(PatchpointExceptionHandle::s_invalidCallSiteIndex), CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
+                }
 
                 GPRReg scratch = wasmCallingConvention().prologueScratchGPRs[0];
                 GPRReg scratch2 = wasmCallingConvention().prologueScratchGPRs[1];

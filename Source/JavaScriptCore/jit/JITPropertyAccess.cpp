@@ -137,6 +137,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_val_callSlowOperationT
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
+    // FIXME: a bit.
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
@@ -227,6 +228,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_private_name_callSlowOper
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
+    // FIXME: a bit.
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
@@ -452,6 +454,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_put_by_val_callSlowOperationT
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
+    // FIXME: a bit.
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
@@ -544,6 +547,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_put_private_name_callSlowOper
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
+    // FIXME: a bit.
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
@@ -718,6 +722,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_del_by_id_callSlowOperationTh
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
+    // FIXME: a bit.
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
@@ -824,6 +829,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_del_by_val_callSlowOperationT
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
+    // FIXME: a bit.
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
@@ -1038,6 +1044,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_id_callSlowOperationTh
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
+    // FIXME: a bit.
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
@@ -1134,6 +1141,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_id_with_this_callSlowO
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
+    // FIXME: a bit.
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
@@ -1236,6 +1244,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_put_by_id_callSlowOperationTh
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
+    // FIXME: a bit.
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
@@ -1649,6 +1658,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_resolve_scopeGenerator(VM& vm
     jit.emitCTIThunkPrologue(/* returnAddressAlreadyTagged: */ true); // Return address tagged in 'generateOpResolveScopeThunk'
 
     // Call slow operation
+    // FIXME: a bit
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     jit.loadPtr(addressFor(CallFrameSlot::codeBlock), scratchGPR);
@@ -1866,6 +1876,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_from_scopeGenerator(VM& v
 
     jit.emitCTIThunkPrologue(/* returnAddressAlreadyTagged: */ true); // Return address tagged in 'generateOpGetFromScopeThunk'
 
+    // FIXME: a bit
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     jit.loadPtr(addressFor(CallFrameSlot::codeBlock), instructionGPR);
@@ -2079,6 +2090,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_put_to_scopeGenerator(VM& vm)
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
+    // FIXME: a bit
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     jit.loadPtr(addressFor(CallFrameSlot::codeBlock), codeBlockGPR);
@@ -2245,6 +2257,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_val_with_this_callSlow
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
+    // FIXME: a bit
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
