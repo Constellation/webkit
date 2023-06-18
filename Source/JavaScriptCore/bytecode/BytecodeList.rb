@@ -565,6 +565,17 @@ op :call,
         profile: ValueProfile,
     }
 
+op :call_without_result,
+    args: {
+        callee: VirtualRegister,
+        argc: unsigned,
+        argv: unsigned,
+    },
+    metadata: {
+        callLinkInfo: BaselineCallLinkInfo,
+        arrayProfile: ArrayProfile,
+    }
+
 op :get_argument,
     args: {
         dst: VirtualRegister,

@@ -7800,6 +7800,11 @@ void ByteCodeParser::parseBlock(unsigned limit)
             NEXT_OPCODE(op_call_direct_eval);
         }
 
+        case op_call_without_result:
+            handleCall<OpCallWithoutResult>(currentInstruction, Call, CallMode::Regular, nextOpcodeIndex());
+            ASSERT_WITH_MESSAGE(m_currentInstruction == currentInstruction, "handleCall, which may have inlined the callee, trashed m_currentInstruction");
+            NEXT_OPCODE(op_call_without_result);
+
         case op_iterator_open: {
             auto bytecode = currentInstruction->as<OpIteratorOpen>();
             auto& metadata = bytecode.metadata(codeBlock);
