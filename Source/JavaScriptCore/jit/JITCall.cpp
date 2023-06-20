@@ -240,7 +240,7 @@ bool JIT::compileTailCall(const OpTailCall& bytecode, BaselineUnlinkedCallLinkIn
 template<typename Op>
 void JIT::compileOpCall(const JSInstruction* instruction, unsigned callLinkInfoIndex)
 {
-    OpcodeID opcodeID = Op::opcodeID;
+    constexpr OpcodeID opcodeID = Op::opcodeID;
     auto bytecode = instruction->as<Op>();
     VirtualRegister callee = calleeFor(bytecode, m_bytecodeIndex.checkpoint());
 
@@ -310,7 +310,8 @@ void JIT::compileOpCall(const JSInstruction* instruction, unsigned callLinkInfoI
     if constexpr (Op::opcodeID != op_iterator_open && Op::opcodeID != op_iterator_next)
         setFastPathResumePoint();
     resetSP();
-    emitPutCallResult(bytecode);
+    if constexpr (Op::opcodeID != op_call_ignore_result)
+        emitPutCallResult(bytecode);
 }
 
 template<typename Op>
