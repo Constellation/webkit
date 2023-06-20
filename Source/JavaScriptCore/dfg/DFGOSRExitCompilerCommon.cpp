@@ -157,6 +157,8 @@ static CodePtr<JSEntryPtrTag> callerReturnPC(CodeBlock* baselineCodeBlockForCall
         case InlineCallFrame::BoundFunctionCall: {
             if (callInstruction.opcodeID() == op_call)
                 jumpTarget = LLINT_RETURN_LOCATION(op_call);
+            else if (callInstruction.opcodeID() == op_call_ignore_result)
+                jumpTarget = LLINT_RETURN_LOCATION(op_call_ignore_result);
             else if (callInstruction.opcodeID() == op_iterator_open)
                 jumpTarget = LLINT_RETURN_LOCATION(op_iterator_open);
             else if (callInstruction.opcodeID() == op_iterator_next)

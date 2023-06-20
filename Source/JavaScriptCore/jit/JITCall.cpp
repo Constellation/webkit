@@ -86,7 +86,7 @@ JIT::compileSetupFrame(const Op& bytecode)
     int registerOffset = -static_cast<int>(stackOffsetInRegistersForCall(bytecode, checkpoint));
 
 
-    if (Op::opcodeID == op_call && shouldEmitProfiling()) {
+    if ((Op::opcodeID == op_call || Op::opcodeID == op_call_ignore_result) && shouldEmitProfiling()) {
         constexpr JSValueRegs tmpJSR = returnValueJSR;
         constexpr GPRReg tmpGPR = tmpJSR.payloadGPR();
         emitGetVirtualRegister(VirtualRegister(registerOffset + CallFrame::argumentOffsetIncludingThis(0)), tmpJSR);
@@ -342,6 +342,11 @@ void JIT::emit_op_call(const JSInstruction* currentInstruction)
     compileOpCall<OpCall>(currentInstruction, m_callLinkInfoIndex++);
 }
 
+void JIT::emit_op_call_ignore_result(const JSInstruction* currentInstruction)
+{
+    compileOpCall<OpCallIgnoreResult>(currentInstruction, m_callLinkInfoIndex++);
+}
+
 void JIT::emit_op_tail_call(const JSInstruction* currentInstruction)
 {
     compileOpCall<OpTailCall>(currentInstruction, m_callLinkInfoIndex++);
@@ -380,6 +385,11 @@ void JIT::emit_op_construct(const JSInstruction* currentInstruction)
 void JIT::emitSlow_op_call(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
 {
     compileOpCallSlowCase<OpCall>(currentInstruction, iter, m_callLinkInfoIndex++);
+}
+
+void JIT::emitSlow_op_call_ignore_result(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
+{
+    compileOpCallSlowCase<OpCallIgnoreResult>(currentInstruction, iter, m_callLinkInfoIndex++);
 }
 
 void JIT::emitSlow_op_tail_call(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)

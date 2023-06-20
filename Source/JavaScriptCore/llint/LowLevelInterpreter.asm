@@ -2377,6 +2377,9 @@ commonCallOp(op_call, _llint_slow_path_call, OpCall, prepareForRegularCall, invo
     arrayProfileForCall(OpCall, getu)
 end)
 
+commonCallOp(op_call_ignore_result, _llint_slow_path_call_ignore_result, OpCallIgnoreResult, prepareForRegularCall, invokeForRegularCall, prepareForPolymorphicRegularCall, prepareForSlowRegularCall, macro (getu, metadata)
+    arrayProfileForCall(OpCallIgnoreResult, getu)
+end)
 
 macro callOp(opcodeName, opcodeStruct, prepareCall, invokeCall, preparePolymorphic, prepareSlowCall, fn)
     commonCallOp(op_%opcodeName%, _llint_slow_path_%opcodeName%, opcodeStruct, prepareCall, invokeCall, preparePolymorphic, prepareSlowCall, fn)

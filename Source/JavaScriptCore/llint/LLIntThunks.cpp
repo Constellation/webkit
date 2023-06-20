@@ -655,6 +655,7 @@ MacroAssemblerCodeRef<JSEntryPtrTag> returnLocationThunk(OpcodeID opcodeID, Opco
 
     switch (opcodeID) {
     LLINT_RETURN_LOCATION(op_call)
+    LLINT_RETURN_LOCATION(op_call_ignore_result)
     LLINT_RETURN_LOCATION(op_iterator_open)
     LLINT_RETURN_LOCATION(op_iterator_next)
     LLINT_RETURN_LOCATION(op_construct)
