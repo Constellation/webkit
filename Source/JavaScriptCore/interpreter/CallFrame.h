@@ -49,7 +49,8 @@ using JSInstruction = BaseInstruction<JSOpcodeTraits>;
 
     class CallSiteIndex {
     public:
-        static constexpr uint32_t mask = ~(0x1U << 31); // Top-bit is not usable.
+        static constexpr uint32_t ignoreResultBit = 0x1U << 31;
+        static constexpr uint32_t mask = ~ignoreResultBit; // Top-bit is not usable.
         CallSiteIndex() = default;
 
         CallSiteIndex(WTF::HashTableDeletedValueType)
@@ -221,7 +222,7 @@ using JSInstruction = BaseInstruction<JSOpcodeTraits>;
         CallSiteIndex unsafeCallSiteIndex() const;
 
         // This flag can be only used from host functions.
-        bool resultIsNotUsed() const { return callSiteAsRawBits() & (0x1U << 31); }
+        bool ignoreResult() const { return callSiteAsRawBits() & CallSiteIndex::ignoreResultBit; }
 
 #if ENABLE(WEBASSEMBLY)
         Wasm::Instance* wasmInstance() const;

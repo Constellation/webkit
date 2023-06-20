@@ -268,8 +268,9 @@ void JIT::compileOpCall(const JSInstruction* instruction, unsigned callLinkInfoI
     compileSetupFrame(bytecode);
 
     // SP holds newCallFrame + sizeof(CallerFrameAndPC), with ArgumentCount initialized.
-    // FIXME: a bit
     uint32_t locationBits = CallSiteIndex(m_bytecodeIndex).bits();
+    if constexpr (Op::opcodeID == op_call_ignore_result)
+        locationBits |= CallSiteIndex::ignoreResultBit;
     store32(TrustedImm32(locationBits), Address(callFrameRegister, CallFrameSlot::argumentCountIncludingThis * static_cast<int>(sizeof(Register)) + TagOffset));
 
     emitGetVirtualRegister(callee, BaselineJITRegisters::Call::calleeJSR);

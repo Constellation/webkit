@@ -2377,9 +2377,28 @@ commonCallOp(op_call, _llint_slow_path_call, OpCall, prepareForRegularCall, invo
     arrayProfileForCall(OpCall, getu)
 end)
 
-commonCallOp(op_call_ignore_result, _llint_slow_path_call_ignore_result, OpCallIgnoreResult, prepareForRegularCall, invokeForRegularCall, prepareForPolymorphicRegularCall, prepareForSlowRegularCall, dispatchAfterCallIgnoreResult, macro (getu, metadata)
-    arrayProfileForCall(OpCallIgnoreResult, getu)
-end)
+commonCallOp(op_call_ignore_result, _llint_slow_path_call_ignore_result, OpCallIgnoreResult,
+    macro (temp1, temp2, temp3, temp4, storeCodeBlock)
+        ori (constexpr CallSiteIndex::ignoreResultBit), PC
+        storePC()
+        prepareForRegularCall(temp1, temp2, temp3, temp4, storeCodeBlock)
+    end,
+    invokeForRegularCall,
+    macro (opcodeName, size, opcodeStruct, valueProfileName, dstVirtualRegister, dispatch, callPtrTag)
+        ori (constexpr CallSiteIndex::ignoreResultBit), PC
+        storePC()
+        prepareForPolymorphicRegularCall(opcodeName, size, opcodeStruct, valueProfileName, dstVirtualRegister, dispatch, callPtrTag)
+    end,
+    macro ()
+        ori (constexpr CallSiteIndex::ignoreResultBit), PC
+        storePC()
+        prepareForSlowRegularCall()
+    end,
+    dispatchAfterCallIgnoreResult,
+    macro (getu, metadata)
+        arrayProfileForCall(OpCallIgnoreResult, getu)
+    end
+)
 
 macro callOp(opcodeName, opcodeStruct, prepareCall, invokeCall, preparePolymorphic, prepareSlowCall, fn)
     commonCallOp(op_%opcodeName%, _llint_slow_path_%opcodeName%, opcodeStruct, prepareCall, invokeCall, preparePolymorphic, prepareSlowCall, dispatchAfterCall, fn)

@@ -112,6 +112,7 @@ end
 
 macro dispatchAfterCallIgnoreResult(size, opcodeStruct, valueProfileName, dstVirtualRegister, dispatch)
     loadPC()
+    andi (constexpr CallSiteIndex::mask), PC
     if C_LOOP or C_LOOP_WIN
         # On non C_LOOP builds, CSR restore takes care of this.
         loadp CodeBlock[cfr], PB
