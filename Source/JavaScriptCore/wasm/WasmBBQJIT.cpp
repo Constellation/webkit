@@ -6712,10 +6712,8 @@ public:
         m_frameSizeLabels.append(m_jit.moveWithPatch(TrustedImmPtr(nullptr), wasmScratchGPR));
 
         bool mayHaveExceptionHandlers = !m_hasExceptionHandlers || m_hasExceptionHandlers.value();
-        if (mayHaveExceptionHandlers) {
-            // FIXME: a bit
+        if (mayHaveExceptionHandlers)
             m_jit.store32(CCallHelpers::TrustedImm32(PatchpointExceptionHandle::s_invalidCallSiteIndex), CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
-        }
 
         // Because we compile in a single pass, we always need to pessimistically check for stack underflow/overflow.
         static_assert(wasmScratchGPR == GPRInfo::nonPreservedNonArgumentGPR0);
@@ -7332,7 +7330,6 @@ public:
         ++m_callSiteIndex;
         bool mayHaveExceptionHandlers = !m_hasExceptionHandlers || m_hasExceptionHandlers.value();
         if (mayHaveExceptionHandlers) {
-            // FIXME: a bit
             m_jit.store32(CCallHelpers::TrustedImm32(m_callSiteIndex), CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
             flushRegisters();
         }
@@ -7349,7 +7346,6 @@ public:
         ++m_callSiteIndex;
         bool mayHaveExceptionHandlers = !m_hasExceptionHandlers || m_hasExceptionHandlers.value();
         if (mayHaveExceptionHandlers) {
-            // FIXME: a bit
             m_jit.store32(CCallHelpers::TrustedImm32(m_callSiteIndex), CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
             flushRegisters();
         }
@@ -7364,7 +7360,6 @@ public:
         ++m_callSiteIndex;
         bool mayHaveExceptionHandlers = !m_hasExceptionHandlers || m_hasExceptionHandlers.value();
         if (mayHaveExceptionHandlers) {
-            // FIXME: a bit
             m_jit.store32(CCallHelpers::TrustedImm32(m_callSiteIndex), CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
             flushRegistersForException();
         }
