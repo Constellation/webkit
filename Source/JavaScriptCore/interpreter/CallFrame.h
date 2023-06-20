@@ -222,7 +222,13 @@ using JSInstruction = BaseInstruction<JSOpcodeTraits>;
         CallSiteIndex unsafeCallSiteIndex() const;
 
         // This flag can be only used from host functions.
-        bool ignoreResult() const { return callSiteAsRawBits() & CallSiteIndex::ignoreResultBit; }
+        bool ignoreResult() const
+        {
+            auto* frame = unsafeCallerFrameOrEntryFrame();
+            if (!frame)
+                return false;
+            return frame->unsafeCallSiteAsRawBits() & CallSiteIndex::ignoreResultBit;
+        }
 
 #if ENABLE(WEBASSEMBLY)
         Wasm::Instance* wasmInstance() const;
