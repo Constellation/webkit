@@ -993,6 +993,9 @@ private:
             return getValueProfilePredictionFromForCodeBlockAndBytecodeOffset(stack->m_profiledBlock, *codeOrigin);
         }
 
+        case op_call_ignore_result:
+            return SpecBytecodeTop;
+
         default:
             return SpecNone;
         }
