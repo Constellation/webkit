@@ -319,7 +319,6 @@ public:
                     // https://bugs.webkit.org/show_bug.cgi?id=172456
                     jit.emitRestore(params.proc().calleeSaveRegisterAtOffsetList());
 
-                    // FIXME: bit
                     jit.store32(
                         MacroAssembler::TrustedImm32(callSiteIndex.bits()),
                         CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
@@ -11201,7 +11200,7 @@ IGNORE_CLANG_WARNINGS_END
 
                 exceptionHandle->scheduleExitCreationForUnwind(params, callSiteIndex);
 
-                // FIXME: bit
+                // FIXME: a bit
                 jit.store32(
                     CCallHelpers::TrustedImm32(callSiteIndex.bits()),
                     CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
@@ -11345,7 +11344,7 @@ IGNORE_CLANG_WARNINGS_END
                     callLinkInfo->setUpCall(CallLinkInfo::DirectTailCall, InvalidGPRReg);
                     
                     CCallHelpers::Label mainPath = jit.label();
-                    // FIXME: bit
+                    // FIXME: a bit
                     jit.store32(
                         CCallHelpers::TrustedImm32(callSiteIndex.bits()),
                         CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
@@ -11379,7 +11378,7 @@ IGNORE_CLANG_WARNINGS_END
                     isConstruct ? CallLinkInfo::DirectConstruct : CallLinkInfo::DirectCall, InvalidGPRReg);
 
                 CCallHelpers::Label mainPath = jit.label();
-                // FIXME: bit
+                // FIXME: a bit
                 jit.store32(
                     CCallHelpers::TrustedImm32(callSiteIndex.bits()),
                     CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
@@ -11488,7 +11487,6 @@ IGNORE_CLANG_WARNINGS_END
                 // Yes, this is really necessary. You could throw an exception in a host call on the
                 // slow path. That'll route us to operationLookupExceptionHandler(), which unwinds starting
                 // with the call site index of our frame. Bad things happen if it's not set.
-                // FIXME: bit
                 jit.store32(
                     CCallHelpers::TrustedImm32(callSiteIndex.bits()),
                     CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
@@ -11706,7 +11704,6 @@ IGNORE_CLANG_WARNINGS_END
 
                 exceptionHandle->scheduleExitCreationForUnwind(params, callSiteIndex);
 
-                // FIXME: bit
                 jit.store32(
                     CCallHelpers::TrustedImm32(callSiteIndex.bits()),
                     CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
@@ -11992,7 +11989,6 @@ IGNORE_CLANG_WARNINGS_END
 
                 exceptionHandle->scheduleExitCreationForUnwind(params, callSiteIndex);
 
-                // FIXME: bit
                 jit.store32(
                     CCallHelpers::TrustedImm32(callSiteIndex.bits()),
                     CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
@@ -12239,7 +12235,6 @@ IGNORE_CLANG_WARNINGS_END
                 
                 exceptionHandle->scheduleExitCreationForUnwind(params, callSiteIndex);
                 
-                // FIXME: bit
                 jit.store32(
                     CCallHelpers::TrustedImm32(callSiteIndex.bits()),
                     CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
@@ -12445,7 +12440,6 @@ IGNORE_CLANG_WARNINGS_END
 
                 exceptionHandle->scheduleExitCreationForUnwind(params, callSiteIndex);
 
-                // FIXME: bit
                 jit.store32(CCallHelpers::TrustedImm32(callSiteIndex.bits()), CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
 
                 constexpr GPRReg scratchGPR = GPRInfo::nonPreservedNonArgumentGPR0;

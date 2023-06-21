@@ -109,7 +109,6 @@ SlowPathCall callOperation(
     ArgumentTypes... arguments)
 {
     if (callSiteIndex) {
-        // FIXME: a bit
         jit.store32(
             CCallHelpers::TrustedImm32(callSiteIndex.bits()),
             CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
@@ -161,7 +160,6 @@ SlowPathCall callOperation(
     ArgumentTypes... arguments)
 {
     if (callSiteIndex) {
-        // FIXME: a bit
         jit.store32(
             CCallHelpers::TrustedImm32(callSiteIndex.bits()),
             CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
