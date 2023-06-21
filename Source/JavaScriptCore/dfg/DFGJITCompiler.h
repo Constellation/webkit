@@ -125,16 +125,16 @@ public:
         return m_jitCode->common.codeOrigins->addCodeOrigin(codeOrigin);
     }
 
-    CallSiteIndex emitStoreCodeOrigin(CodeOrigin codeOrigin)
+    CallSiteIndex emitStoreCodeOrigin(CodeOrigin codeOrigin, bool ignoreResult = false)
     {
         CallSiteIndex callSite = addCallSite(codeOrigin);
-        emitStoreCallSiteIndex(callSite);
+        emitStoreCallSiteIndex(callSite, ignoreResult);
         return callSite;
     }
 
-    void emitStoreCallSiteIndex(CallSiteIndex callSite)
+    void emitStoreCallSiteIndex(CallSiteIndex callSite, bool ignoreResult = false)
     {
-        store32(TrustedImm32(callSite.bits()), tagFor(CallFrameSlot::argumentCountIncludingThis));
+        store32(TrustedImm32(callSite.bits() | (ignoreResult ? CallSiteIndex::ignoreResultBit : 0)), tagFor(CallFrameSlot::argumentCountIncludingThis));
     }
 
     // Add a call out from JIT code, without an exception check.

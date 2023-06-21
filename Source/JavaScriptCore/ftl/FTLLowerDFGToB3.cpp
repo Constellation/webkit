@@ -11192,6 +11192,9 @@ IGNORE_CLANG_WARNINGS_END
         VM* vm = &this->vm();
         CodeOrigin nodeSemanticOrigin = node->origin.semantic;
         auto nodeOp = node->op();
+        bool isIgnoreResult = false;
+        if (nodeOp == DFG::Call)
+            isIgnoreResult = !m_node->adjustedRefCount();
         patchpoint->setGenerator(
             [=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
                 JIT_COMMENT(jit, "CallOrConstruct");
@@ -11200,9 +11203,8 @@ IGNORE_CLANG_WARNINGS_END
 
                 exceptionHandle->scheduleExitCreationForUnwind(params, callSiteIndex);
 
-                // FIXME: a bit
                 jit.store32(
-                    CCallHelpers::TrustedImm32(callSiteIndex.bits()),
+                    CCallHelpers::TrustedImm32(callSiteIndex.bits() | (isIgnoreResult ? CallSiteIndex::ignoreResultBit : 0 )),
                     CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
 
                 auto* callLinkInfo = state->addCallLinkInfo(nodeSemanticOrigin);
@@ -11241,6 +11243,9 @@ IGNORE_CLANG_WARNINGS_END
         Node* node = m_node;
         bool isTail = node->op() == DirectTailCall;
         bool isConstruct = node->op() == DirectConstruct;
+        bool isIgnoreResult = false;
+        if (node->op() == DirectCall)
+            isIgnoreResult = !m_node->adjustedRefCount();
         
         ExecutableBase* executable = node->castOperand<ExecutableBase*>();
         FunctionExecutable* functionExecutable = jsDynamicCast<FunctionExecutable*>(executable);
@@ -11378,9 +11383,8 @@ IGNORE_CLANG_WARNINGS_END
                     isConstruct ? CallLinkInfo::DirectConstruct : CallLinkInfo::DirectCall, InvalidGPRReg);
 
                 CCallHelpers::Label mainPath = jit.label();
-                // FIXME: a bit
                 jit.store32(
-                    CCallHelpers::TrustedImm32(callSiteIndex.bits()),
+                    CCallHelpers::TrustedImm32(callSiteIndex.bits() | (isIgnoreResult ? CallSiteIndex::ignoreResultBit : 0 )),
                     CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
                 callLinkInfo->emitDirectFastPath(jit);
                 jit.addPtr(

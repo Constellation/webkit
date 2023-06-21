@@ -636,8 +636,12 @@ void SpeculativeJIT::emitCall(Node* node)
     bool isTail = false;
     bool isEmulatedTail = false;
     bool isDirect = false;
+    bool isIgnoreResult = false;
     switch (node->op()) {
     case DFG::Call:
+        callType = CallLinkInfo::Call;
+        isIgnoreResult = !node->adjustedRefCount();
+        break;
     case CallDirectEval:
         callType = CallLinkInfo::Call;
         break;
@@ -691,6 +695,7 @@ void SpeculativeJIT::emitCall(Node* node)
     case DirectCall:
         callType = CallLinkInfo::DirectCall;
         isDirect = true;
+        isIgnoreResult = !node->adjustedRefCount();
         break;
     case DirectConstruct:
         callType = CallLinkInfo::DirectConstruct;
@@ -1036,7 +1041,7 @@ void SpeculativeJIT::emitCall(Node* node)
         }
         
         Label mainPath = label();
-        emitStoreCallSiteIndex(callSite);
+        emitStoreCallSiteIndex(callSite, isIgnoreResult);
         linkedCallLinkInfo->emitDirectFastPath(*this);
         Jump done = jump();
         
@@ -1056,7 +1061,7 @@ void SpeculativeJIT::emitCall(Node* node)
         return;
     }
     
-    emitStoreCallSiteIndex(callSite);
+    emitStoreCallSiteIndex(callSite, isIgnoreResult);
     
     JumpList slowCases;
     std::optional<Jump> done;
