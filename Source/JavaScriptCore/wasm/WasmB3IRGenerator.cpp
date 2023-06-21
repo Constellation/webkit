@@ -1300,7 +1300,6 @@ void B3IRGenerator::insertConstants()
     if (!mayHaveExceptionHandlers)
         return;
 
-    // FIXME: a bit
     Value* storeCallSiteIndex = m_proc.add<B3::MemoryValue>(B3::Store, Origin(), invalidCallSiteIndex, framePointer(), safeCast<int32_t>(CallFrameSlot::argumentCountIncludingThis * sizeof(Register) + TagOffset));
 
     BasicBlock* block = m_rootBlocks[0];
@@ -4645,7 +4644,6 @@ auto B3IRGenerator::emitInlineDirectCall(uint32_t calleeFunctionIndex, const Typ
     dataLogLnIf(WasmB3IRGeneratorInternal::verboseInlining, "Block ", *m_currentBlock, " is going to do an inline call to block ", *irGenerator.m_topLevelBlock, " then continue at ", *continuation);
 
     bool mayHaveExceptionHandlers = !m_hasExceptionHandlers || m_hasExceptionHandlers.value();
-    // FIXME: a bit
     m_currentBlock->appendNew<B3::MemoryValue>(m_proc, B3::Store, origin(),
         m_currentBlock->appendIntConstant(m_proc, origin(), Int32, mayHaveExceptionHandlers ? PatchpointExceptionHandle::s_invalidCallSiteIndex : firstInlineCSI),
         framePointer(), safeCast<int32_t>(CallFrameSlot::argumentCountIncludingThis * sizeof(Register) + TagOffset));
@@ -4658,7 +4656,6 @@ auto B3IRGenerator::emitInlineDirectCall(uint32_t calleeFunctionIndex, const Typ
 
     auto lastInlineCSI = advanceCallSiteIndex();
 
-    // FIXME: a bit
     m_currentBlock->appendNew<B3::MemoryValue>(m_proc, B3::Store, origin(),
         m_currentBlock->appendIntConstant(m_proc, origin(), Int32, mayHaveExceptionHandlers ? PatchpointExceptionHandle::s_invalidCallSiteIndex : advanceCallSiteIndex()),
         framePointer(), safeCast<int32_t>(CallFrameSlot::argumentCountIncludingThis * sizeof(Register) + TagOffset));

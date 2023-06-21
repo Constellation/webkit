@@ -224,10 +224,11 @@ using JSInstruction = BaseInstruction<JSOpcodeTraits>;
         // This flag can be only used from host functions.
         bool ignoreResult() const
         {
-            auto* frame = unsafeCallerFrameOrEntryFrame();
+            auto* frame = bitwise_cast<CallFrame*>(unsafeCallerFrameOrEntryFrame());
             if (!frame)
                 return false;
-            return frame->unsafeCallSiteAsRawBits() & CallSiteIndex::ignoreResultBit;
+            unsigned bits = frame->unsafeCallSiteAsRawBits();
+            return (bits & CallSiteIndex::ignoreResultBit) && (bits != std::numeric_limits<unsigned>::max());
         }
 
 #if ENABLE(WEBASSEMBLY)
