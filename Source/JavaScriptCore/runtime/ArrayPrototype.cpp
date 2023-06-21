@@ -1144,10 +1144,14 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncSplice, (JSGlobalObject* globalObject, Ca
     if (speciesResult.first == SpeciesConstructResult::Exception)
         return JSValue::encode(jsUndefined());
 
-    JSObject* result = nullptr;
+    JSValue result;
     if (LIKELY(speciesResult.first == SpeciesConstructResult::FastPath)) {
-        result = JSArray::fastSlice(globalObject, thisObj, actualStart, actualDeleteCount);
-        RETURN_IF_EXCEPTION(scope, { });
+        if (callFrame->ignoreResult())
+            result = jsUndefined();
+        else {
+            result = JSArray::fastSlice(globalObject, thisObj, actualStart, actualDeleteCount);
+            RETURN_IF_EXCEPTION(scope, { });
+        }
     }
 
     if (!result) {
@@ -1164,15 +1168,16 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncSplice, (JSGlobalObject* globalObject, Ca
                 return encodedJSValue();
             }
         }
+        JSObject* resultArray = asObject(result);
         for (uint64_t k = 0; k < actualDeleteCount; ++k) {
             JSValue v = getProperty(globalObject, thisObj, k + actualStart);
             RETURN_IF_EXCEPTION(scope, encodedJSValue());
             if (UNLIKELY(!v))
                 continue;
-            result->putDirectIndex(globalObject, k, v, 0, PutDirectIndexShouldThrow);
+            resultArray->putDirectIndex(globalObject, k, v, 0, PutDirectIndexShouldThrow);
             RETURN_IF_EXCEPTION(scope, encodedJSValue());
         }
-        setLength(globalObject, vm, result, actualDeleteCount);
+        setLength(globalObject, vm, resultArray, actualDeleteCount);
         RETURN_IF_EXCEPTION(scope, { });
     }
 
