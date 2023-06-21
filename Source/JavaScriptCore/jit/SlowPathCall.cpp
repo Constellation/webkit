@@ -57,7 +57,6 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JITSlowPathCall::generateThunk(VM& vm, Slo
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
-    // FIXME: a bit
     jit.store32(bytecodeOffsetGPR, CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
 
