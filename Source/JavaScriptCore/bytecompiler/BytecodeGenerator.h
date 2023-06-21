@@ -477,6 +477,7 @@ namespace JSC {
         void emitNode(RegisterID* dst, StatementNode* n)
         {
             SetForScope tailPositionPoisoner(m_inTailPosition, false);
+            SetForScope callIgnoreResultPositionPoisoner(m_inCallIgnoreResultPosition, false);
             return emitNodeInTailPosition(dst, n);
         }
 
@@ -511,6 +512,7 @@ namespace JSC {
         RegisterID* emitNode(RegisterID* dst, ExpressionNode* n)
         {
             SetForScope tailPositionPoisoner(m_inTailPosition, false);
+            SetForScope callIgnoreResultPositionPoisoner(m_inCallIgnoreResultPosition, false);
             return emitNodeInTailPosition(dst, n);
         }
 
@@ -1324,6 +1326,7 @@ namespace JSC {
         bool m_isBuiltinFunction { false };
         bool m_usesSloppyEval { false };
         bool m_inTailPosition { false };
+        bool m_inCallIgnoreResultPosition { false };
         bool m_needsToUpdateArrowFunctionContext : 1;
         ECMAMode m_ecmaMode;
         DerivedContextType m_derivedContextType { DerivedContextType::None };

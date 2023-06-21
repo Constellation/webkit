@@ -353,6 +353,7 @@ BytecodeGenerator::BytecodeGenerator(VM& vm, ProgramNode* programNode, UnlinkedP
     , m_isBuiltinFunction(false)
     , m_usesSloppyEval(false)
     , m_inTailPosition(false)
+    , m_inCallIgnoreResultPosition(false)
     , m_needsToUpdateArrowFunctionContext(programNode->usesArrowFunction() || programNode->usesEval())
     , m_ecmaMode(ECMAMode::fromBool(programNode->isStrictMode()))
 {
@@ -405,6 +406,7 @@ BytecodeGenerator::BytecodeGenerator(VM& vm, FunctionNode* functionNode, Unlinke
     //
     // Note that we intentionally enable tail call for naked constructors since it does not have special code for "return".
     , m_inTailPosition(Options::useTailCalls() && !isConstructor() && constructorKind() == ConstructorKind::None && functionNode->isStrictMode())
+    , m_inCallIgnoreResultPosition(true)
     , m_needsToUpdateArrowFunctionContext(functionNode->usesArrowFunction() || functionNode->usesEval())
     , m_ecmaMode(ECMAMode::fromBool(functionNode->isStrictMode()))
     , m_derivedContextType(codeBlock->derivedContextType())
@@ -902,6 +904,7 @@ BytecodeGenerator::BytecodeGenerator(VM& vm, EvalNode* evalNode, UnlinkedEvalCod
     , m_isBuiltinFunction(false)
     , m_usesSloppyEval(evalNode->usesEval() && !evalNode->isStrictMode())
     , m_inTailPosition(false)
+    , m_inCallIgnoreResultPosition(false)
     , m_needsToUpdateArrowFunctionContext(evalNode->usesArrowFunction() || evalNode->usesEval())
     , m_ecmaMode(ECMAMode::fromBool(evalNode->isStrictMode()))
     , m_derivedContextType(codeBlock->derivedContextType())
@@ -965,6 +968,7 @@ BytecodeGenerator::BytecodeGenerator(VM& vm, ModuleProgramNode* moduleProgramNod
     , m_isBuiltinFunction(false)
     , m_usesSloppyEval(false)
     , m_inTailPosition(false)
+    , m_inCallIgnoreResultPosition(false)
     , m_needsToUpdateArrowFunctionContext(moduleProgramNode->usesArrowFunction() || moduleProgramNode->usesEval())
     , m_ecmaMode(ECMAMode::strict())
 {
@@ -3465,6 +3469,8 @@ RegisterID* BytecodeGenerator::emitCallInTailPosition(RegisterID* dst, RegisterI
         m_codeBlock->setHasTailCalls();
         return emitCall<OpTailCall>(dst, func, expectedFunction, callArguments, divot, divotStart, divotEnd, debuggableCall);
     }
+    if (m_inCallIgnoreResultPosition)
+        return emitCall<OpCallIgnoreResult>(dst, func, expectedFunction, callArguments, divot, divotStart, divotEnd, debuggableCall);
     return emitCall<OpCall>(dst, func, expectedFunction, callArguments, divot, divotStart, divotEnd, debuggableCall);
 }
 
