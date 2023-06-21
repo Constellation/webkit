@@ -516,6 +516,12 @@ namespace JSC {
             return emitNodeInTailPosition(dst, n);
         }
 
+        RegisterID* emitNodeInTailPositionFromReturnNode(RegisterID* dst, ExpressionNode* n)
+        {
+            SetForScope callIgnoreResultPositionPoisoner(m_inCallIgnoreResultPosition, false);
+            return emitNodeInTailPosition(dst, n);
+        }
+
         RegisterID* emitNodeInTailPosition(RegisterID* dst, ExpressionNode* n)
         {
             // Node::emitCode assumes that dst, if provided, is either a local or a referenced temporary.
