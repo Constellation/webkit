@@ -11349,7 +11349,6 @@ IGNORE_CLANG_WARNINGS_END
                     callLinkInfo->setUpCall(CallLinkInfo::DirectTailCall, InvalidGPRReg);
                     
                     CCallHelpers::Label mainPath = jit.label();
-                    // FIXME: a bit
                     jit.store32(
                         CCallHelpers::TrustedImm32(callSiteIndex.bits()),
                         CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
@@ -22095,7 +22094,6 @@ IGNORE_CLANG_WARNINGS_END
     void callPreflight(CodeOrigin codeOrigin)
     {
         CallSiteIndex callSiteIndex = m_ftlState.jitCode->common.codeOrigins->addCodeOrigin(codeOrigin);
-        // FIXME: a bit
         m_out.store32(
             m_out.constInt32(callSiteIndex.bits()),
             tagFor(CallFrameSlot::argumentCountIncludingThis));
