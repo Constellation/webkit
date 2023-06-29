@@ -52,7 +52,9 @@ class DateInstanceData;
 class JSGlobalObject;
 class OpaqueICUTimeZone;
 class VM;
+namespace ISO8601 {
 class PlainGregorianDateTime;
+}
 
 static constexpr double minECMAScriptTime = -8.64E15;
 
@@ -109,7 +111,7 @@ public:
     String timeZoneDisplayName(bool isDST);
     Ref<DateInstanceData> cachedDateInstanceData(double millisecondsFromEpoch);
 
-    void msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, PlainGregorianDateTime&);
+    void msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, ISO8601::PlainGregorianDateTime&);
     double gregorianDateTimeToMS(int32_t year, int32_t month, int32_t monthDay, int32_t hour, int32_t minute, int32_t second, double milliseconds, WTF::TimeType);
     double localTimeToMS(double milliseconds, WTF::TimeType);
     JS_EXPORT_PRIVATE double parseDate(JSGlobalObject*, VM&, const WTF::String&);

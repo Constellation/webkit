@@ -404,7 +404,7 @@ std::tuple<int32_t, int32_t, int32_t> DateCache::yearMonthDayFromDaysWithCache(i
 }
 
 // input is UTC
-void DateCache::msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, PlainGregorianDateTime& tm)
+void DateCache::msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, ISO8601::PlainGregorianDateTime& tm)
 {
     LocalTimeOffset localTime;
     if (outputTimeType == WTF::LocalTime && std::isfinite(millisecondsFromEpoch)) {
@@ -419,7 +419,7 @@ void DateCache::msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeTyp
         int32_t hour = timeInDayMS / (60 * 60 * 1000);
         int32_t minute = (timeInDayMS / (60 * 1000)) % 60;
         int32_t second = (timeInDayMS / 1000) % 60;
-        tm = PlainGregorianDateTime(year, month, day, WTF::weekDay(days), hour, minute, second, localTime.offset / WTF::Int64Milliseconds::msPerMinute, localTime.isDST);
+        tm = ISO8601::PlainGregorianDateTime(year, month, day, WTF::weekDay(days), hour, minute, second, localTime.offset / WTF::Int64Milliseconds::msPerMinute, localTime.isDST);
     } else
         tm = { };
 }
