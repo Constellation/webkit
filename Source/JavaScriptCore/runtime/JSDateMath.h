@@ -110,7 +110,7 @@ public:
     Ref<DateInstanceData> cachedDateInstanceData(double millisecondsFromEpoch);
 
     void msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, PlainGregorianDateTime&);
-    double gregorianDateTimeToMS(const PlainGregorianDateTime&, double milliseconds, WTF::TimeType);
+    double gregorianDateTimeToMS(int32_t year, int32_t month, int32_t monthDay, int32_t hour, int32_t minute, int32_t second, double milliseconds, WTF::TimeType);
     double localTimeToMS(double milliseconds, WTF::TimeType);
     JS_EXPORT_PRIVATE double parseDate(JSGlobalObject*, VM&, const WTF::String&);
 

@@ -366,10 +366,10 @@ LocalTimeOffset DateCache::DSTCache::localTimeOffset(DateCache& dateCache, int64
     return { };
 }
 
-double DateCache::gregorianDateTimeToMS(const PlainGregorianDateTime& t, double milliseconds, WTF::TimeType inputTimeType)
+double DateCache::gregorianDateTimeToMS(int32_t year, int32_t month, int32_t monthDay, int32_t hour, int32_t minute, int32_t second, double milliseconds, WTF::TimeType inputTimeType)
 {
-    double day = dateToDaysFrom1970(t.year(), t.month(), t.monthDay());
-    double ms = timeToMS(t.hour(), t.minute(), t.second(), milliseconds);
+    double day = dateToDaysFrom1970(year, month, monthDay);
+    double ms = timeToMS(hour, minute, second, milliseconds);
     double localTimeResult = (day * WTF::msPerDay) + ms;
 
     if (inputTimeType == WTF::LocalTime && std::isfinite(localTimeResult))

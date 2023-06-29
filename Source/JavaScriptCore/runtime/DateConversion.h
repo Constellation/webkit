@@ -25,7 +25,7 @@
 #pragma once
 
 #include <wtf/Forward.h>
-#include <wtf/GregorianDateTime.h>
+#include <wtf/PlainGregorianDateTime.h>
 
 namespace JSC {
 
@@ -37,6 +37,6 @@ enum DateTimeFormat {
     DateTimeFormatDateAndTime = DateTimeFormatDate | DateTimeFormatTime
 };
 
-JS_EXPORT_PRIVATE WTF::String formatDateTime(const GregorianDateTime&, DateTimeFormat, bool asUTCVariant, DateCache&);
+JS_EXPORT_PRIVATE WTF::String formatDateTime(const PlainGregorianDateTime&, DateTimeFormat, bool asUTCVariant, DateCache&);
 
 } // namespace JSC
