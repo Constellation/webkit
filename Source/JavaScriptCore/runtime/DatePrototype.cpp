@@ -881,8 +881,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncSetYear, (JSGlobalObject* globalObject, Ca
         return JSValue::encode(jsNaN());
     }
 
-    int32_t year = toInt32((year >= 0 && year <= 99) ? (year + 1900) : year);
-    double timeInMilliseconds = cache.gregorianDateTimeToMS(year, gregorianDateTime.month(), gregorianDateTime.monthDay(), gregorianDateTime.hour(), gregorianDateTime.minute(), gregorianDateTime.second(), ms, WTF::LocalTime);
+    double timeInMilliseconds = cache.gregorianDateTimeToMS(toInt32((year >= 0 && year <= 99) ? (year + 1900) : year), gregorianDateTime.month(), gregorianDateTime.monthDay(), gregorianDateTime.hour(), gregorianDateTime.minute(), gregorianDateTime.second(), ms, WTF::LocalTime);
     double result = timeClip(timeInMilliseconds);
     thisDateObj->setInternalNumber(result);
     return JSValue::encode(jsNumber(result));
