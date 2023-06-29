@@ -43,8 +43,6 @@
 
 #pragma once
 
-#include "DateInstanceCache.h"
-#include "ISO8601.h"
 #include <wtf/DateMath.h>
 #include <wtf/SaturatedArithmetic.h>
 
@@ -53,6 +51,7 @@ namespace JSC {
 class JSGlobalObject;
 class OpaqueICUTimeZone;
 class VM;
+class PlainGregorianDateTime;
 
 static constexpr double minECMAScriptTime = -8.64E15;
 
