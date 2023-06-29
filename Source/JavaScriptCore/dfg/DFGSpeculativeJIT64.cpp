@@ -5334,8 +5334,9 @@ void SpeculativeJIT::compile(Node* node)
         break;
     }
 
-    case ToLowerCase: {
-        compileToLowerCase(node);
+    case StringToLowerCase:
+    case StringToUpperCase: {
+        compileStringToLowerOrUpperCase(node);
         break;
     }
 

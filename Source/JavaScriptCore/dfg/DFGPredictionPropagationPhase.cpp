@@ -1073,7 +1073,8 @@ private:
         case StringValueOf:
         case StringSlice:
         case StringSubstring:
-        case ToLowerCase:
+        case StringToLowerCase:
+        case StringToUpperCase:
             setPrediction(SpecString);
             break;
 

@@ -1520,21 +1520,29 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         break;
     }
 
-    case ToLowerCase: {
+    case StringToLowerCase:
+    case StringToUpperCase: {
         AbstractValue& property = forNode(m_graph.child(node, 0));
         if (JSValue value = property.value()) {
             if (value.isString()) {
                 JSString* string = asString(value);
                 if (const StringImpl* a = asString(string)->tryGetValueImpl()) {
-                    bool lower = true;
+                    bool noChange = true;
                     for (unsigned index = 0; index < a->length(); ++index) {
                         UChar character = a->at(index);
-                        if (!isASCII(character) || isASCIIUpper(character)) {
-                            lower = false;
-                            break;
+                        if (node->op() == StringToLowerCase) {
+                            if (!isASCII(character) || isASCIIUpper(character)) {
+                                noChange = false;
+                                break;
+                            }
+                        } else {
+                            if (!isASCII(character) || isASCIILower(character)) {
+                                noChange = false;
+                                break;
+                            }
                         }
                     }
-                    if (lower) {
+                    if (noChange) {
                         setConstant(node, *m_graph.freeze(string));
                         break;
                     }

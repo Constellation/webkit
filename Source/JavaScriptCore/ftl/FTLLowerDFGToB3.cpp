@@ -1723,8 +1723,9 @@ private:
         case StringSubstring:
             compileStringSubstring();
             break;
-        case ToLowerCase:
-            compileToLowerCase();
+        case StringToLowerCase:
+        case StringToUpperCase:
+            compileStringToLowerOrUpperCase();
             break;
         case NumberToStringWithRadix:
             compileNumberToStringWithRadix();
@@ -17010,7 +17011,7 @@ IGNORE_CLANG_WARNINGS_END
     }
 
 
-    void compileToLowerCase()
+    void compileStringToLowerOrUpperCase()
     {
         JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
         LBasicBlock notRope = m_out.newBlock();
@@ -17052,14 +17053,18 @@ IGNORE_CLANG_WARNINGS_END
         // https://bugs.webkit.org/show_bug.cgi?id=174924
         LValue byte = m_out.load8ZeroExt32(m_out.baseIndex(m_heaps.characters8, buffer, m_out.zeroExtPtr(index)));
         LValue isInvalidAsciiRange = m_out.bitAnd(byte, m_out.constInt32(~0x7F));
-        LValue isUpperCase = m_out.belowOrEqual(m_out.sub(byte, m_out.constInt32('A')), m_out.constInt32('Z' - 'A'));
-        LValue isBadCharacter = m_out.bitOr(isInvalidAsciiRange, isUpperCase);
+        LValue isSensitiveCase = nullptr;
+        if (m_node->op() == StringToLowerCase)
+            isSensitiveCase = m_out.belowOrEqual(m_out.sub(byte, m_out.constInt32('A')), m_out.constInt32('Z' - 'A'));
+        else
+            isSensitiveCase = m_out.belowOrEqual(m_out.sub(byte, m_out.constInt32('a')), m_out.constInt32('z' - 'a'));
+        LValue isBadCharacter = m_out.bitOr(isInvalidAsciiRange, isSensitiveCase);
         m_out.addIncomingToPhi(index, m_out.anchor(m_out.add(index, m_out.int32One)));
         m_out.branch(isBadCharacter, unsure(slowPath), unsure(loopTop));
 
         m_out.appendTo(slowPath, continuation);
         LValue slowPathIndex = m_out.phi(Int32, startIndexForCall, indexFromBlock);
-        ValueFromBlock slowResult = m_out.anchor(vmCall(pointerType(), operationToLowerCase, weakPointer(globalObject), string, slowPathIndex));
+        ValueFromBlock slowResult = m_out.anchor(vmCall(pointerType(), m_node->op() == StringToLowerCase ? operationStringToLowerCase : operationStringToUpperCase, weakPointer(globalObject), string, slowPathIndex));
         m_out.jump(continuation);
 
         m_out.appendTo(continuation, lastNext);

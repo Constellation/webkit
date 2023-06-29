@@ -143,7 +143,7 @@ void StringPrototype::finishCreation(VM& vm, JSGlobalObject* globalObject)
     JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION("substr"_s, stringProtoFuncSubstr, static_cast<unsigned>(PropertyAttribute::DontEnum), 2, ImplementationVisibility::Public);
     putDirectWithoutTransition(vm, Identifier::fromString(vm, "substring"_s), globalObject->stringProtoSubstringFunction(), static_cast<unsigned>(PropertyAttribute::DontEnum));
     JSC_NATIVE_INTRINSIC_FUNCTION_WITHOUT_TRANSITION("toLowerCase"_s, stringProtoFuncToLowerCase, static_cast<unsigned>(PropertyAttribute::DontEnum), 0, ImplementationVisibility::Public, StringPrototypeToLowerCaseIntrinsic);
-    JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION("toUpperCase"_s, stringProtoFuncToUpperCase, static_cast<unsigned>(PropertyAttribute::DontEnum), 0, ImplementationVisibility::Public);
+    JSC_NATIVE_INTRINSIC_FUNCTION_WITHOUT_TRANSITION("toUpperCase"_s, stringProtoFuncToUpperCase, static_cast<unsigned>(PropertyAttribute::DontEnum), 0, ImplementationVisibility::Public, StringPrototypeToUpperCaseIntrinsic);
     JSC_NATIVE_INTRINSIC_FUNCTION_WITHOUT_TRANSITION("localeCompare"_s, stringProtoFuncLocaleCompare, static_cast<unsigned>(PropertyAttribute::DontEnum), 1, ImplementationVisibility::Public, StringPrototypeLocaleCompareIntrinsic);
     JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION("toLocaleLowerCase"_s, stringProtoFuncToLocaleLowerCase, static_cast<unsigned>(PropertyAttribute::DontEnum), 0, ImplementationVisibility::Public);
     JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION("toLocaleUpperCase"_s, stringProtoFuncToLocaleUpperCase, static_cast<unsigned>(PropertyAttribute::DontEnum), 0, ImplementationVisibility::Public);
@@ -1279,12 +1279,26 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncSplitFast, (JSGlobalObject* globalObject
         if (LIKELY(limit == 0xFFFFFFFFu && !globalObject->isHavingABadTime() && result.size() < MIN_SPARSE_ARRAY_INDEX)) {
             auto* newButterfly = JSImmutableButterfly::create(vm, CopyOnWriteArrayWithContiguous, result.size());
             unsigned start = 0;
-            for (unsigned i = 0, size = result.size(); i < size; ++i) {
-                unsigned end = result[i];
-                auto* string = jsSubstring(globalObject, thisString, start, end - start);
-                RETURN_IF_EXCEPTION(scope, { });
-                newButterfly->setIndex(vm, i, string);
-                start = end + separatorLength;
+            unsigned size = result.size();
+            dataLogLn(size);
+            if (size < 100 && (!input.impl() || input.impl()->isAtom()) && (!separator.impl() || !separator.impl()->isAtom())) {
+                for (unsigned i = 0; i < size; ++i) {
+                    unsigned end = result[i];
+                    auto* string = jsSubstring(globalObject, thisString, start, end - start);
+                    RETURN_IF_EXCEPTION(scope, { });
+                    string = jsAtomString(globalObject, vm, string);
+                    RETURN_IF_EXCEPTION(scope, { });
+                    newButterfly->setIndex(vm, i, string);
+                    start = end + separatorLength;
+                }
+            } else {
+                for (unsigned i = 0; i < size; ++i) {
+                    unsigned end = result[i];
+                    auto* string = jsSubstring(globalObject, thisString, start, end - start);
+                    RETURN_IF_EXCEPTION(scope, { });
+                    newButterfly->setIndex(vm, i, string);
+                    start = end + separatorLength;
+                }
             }
             vm.stringSplitCache.set(input, separator, newButterfly);
             Structure* arrayStructure = globalObject->originalArrayStructureForIndexingType(CopyOnWriteArrayWithContiguous);

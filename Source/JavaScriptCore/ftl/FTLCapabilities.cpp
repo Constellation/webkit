@@ -390,7 +390,8 @@ inline CapabilityLevel canCompile(Node* node)
     case StringValueOf:
     case StringSlice:
     case StringSubstring:
-    case ToLowerCase:
+    case StringToLowerCase:
+    case StringToUpperCase:
     case NumberToStringWithRadix:
     case NumberToStringWithValidRadixConstant:
     case CheckJSCast:

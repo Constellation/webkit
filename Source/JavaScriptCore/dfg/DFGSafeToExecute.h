@@ -309,7 +309,8 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node, bool igno
     case NormalizeMapKey:
     case StringSlice:
     case StringSubstring:
-    case ToLowerCase:
+    case StringToLowerCase:
+    case StringToUpperCase:
     case GetMapBucket:
     case GetMapBucketHead:
     case GetMapBucketNext:

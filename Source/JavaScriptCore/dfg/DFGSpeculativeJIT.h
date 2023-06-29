@@ -1569,7 +1569,7 @@ public:
     void compileDefineAccessorProperty(Node*);
     void compileStringSlice(Node*);
     void compileStringSubstring(Node*);
-    void compileToLowerCase(Node*);
+    void compileStringToLowerOrUpperCase(Node*);
     void compileThrow(Node*);
     void compileThrowStaticError(Node*);
 

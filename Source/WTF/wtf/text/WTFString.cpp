@@ -135,6 +135,12 @@ String String::convertToLowercaseWithoutLocaleStartingAtFailingIndex8Bit(unsigne
     return m_impl ? m_impl->convertToLowercaseWithoutLocaleStartingAtFailingIndex8Bit(failingIndex) : String { };
 }
 
+String String::convertToUppercaseWithoutLocaleStartingAtFailingIndex8Bit(unsigned failingIndex) const
+{
+    // FIXME: Should this function, and the many others like it, be inlined?
+    return m_impl ? m_impl->convertToUppercaseWithoutLocaleStartingAtFailingIndex8Bit(failingIndex) : String { };
+}
+
 String String::convertToUppercaseWithoutLocale() const
 {
     // FIXME: Should this function, and the many others like it, be inlined?

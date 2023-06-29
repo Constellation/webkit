@@ -2801,9 +2801,10 @@ private:
             break;
         }
 
-        case ToLowerCase: {
+        case StringToLowerCase:
+        case StringToUpperCase: {
             // We currently only support StringUse since that will ensure that
-            // ToLowerCase is a pure operation. If we decide to update this with
+            // StringToLowerCase / StringToUpperCase is a pure operation. If we decide to update this with
             // more types in the future, we need to ensure that the clobberize rules
             // are correct.
             fixEdge<StringUse>(node->child1());

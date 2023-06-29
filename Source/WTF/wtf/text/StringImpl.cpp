@@ -402,11 +402,12 @@ Ref<StringImpl> StringImpl::convertToLowercaseWithoutLocaleStartingAtFailingInde
     LChar* data8;
     auto newImpl = createUninitializedInternalNonEmpty(m_length, data8);
 
+#if ASSERT_ENABLED
     for (unsigned i = 0; i < failingIndex; ++i) {
         ASSERT(isASCII(m_data8[i]));
         ASSERT(!isASCIIUpper(m_data8[i]));
-        data8[i] = m_data8[i];
     }
+#endif
 
     for (unsigned i = failingIndex; i < m_length; ++i) {
         LChar character = m_data8[i];
@@ -423,77 +424,26 @@ Ref<StringImpl> StringImpl::convertToLowercaseWithoutLocaleStartingAtFailingInde
 
 Ref<StringImpl> StringImpl::convertToUppercaseWithoutLocale()
 {
-    // This function could be optimized for no-op cases the way
-    // convertToLowercaseWithoutLocale() is, but in empirical testing,
-    // few actual calls to upper() are no-ops, so it wouldn't be worth
-    // the extra time for pre-scanning.
-
     if (m_length > MaxLength)
         CRASH();
-    int32_t length = m_length;
 
+    // First scan the string for uppercase and non-ASCII characters:
     if (is8Bit()) {
-        LChar* data8;
-        auto newImpl = createUninitialized(m_length, data8);
-        
-        // Do a faster loop for the case where all the characters are ASCII.
-        unsigned ored = 0;
-        for (int i = 0; i < length; ++i) {
+        for (unsigned i = 0; i < m_length; ++i) {
             LChar character = m_data8[i];
-            ored |= character;
-            data8[i] = toASCIIUpper(character);
-        }
-        if (!(ored & ~0x7F))
-            return newImpl;
-
-        // Do a slower implementation for cases that include non-ASCII Latin-1 characters.
-        int numberSharpSCharacters = 0;
-
-        // There are two special cases.
-        //  1. Some Latin-1 characters when converted to upper case are 16 bit characters.
-        //  2. Lower case sharp-S converts to "SS" (two characters)
-        for (int32_t i = 0; i < length; ++i) {
-            LChar character = m_data8[i];
-            if (UNLIKELY(character == smallLetterSharpS))
-                ++numberSharpSCharacters;
-            ASSERT(u_toupper(character) <= 0xFFFF);
-            UChar upper = u_toupper(character);
-            if (UNLIKELY(!isLatin1(upper))) {
-                // Since this upper-cased character does not fit in an 8-bit string, we need to take the 16-bit path.
-                goto upconvert;
-            }
-            data8[i] = static_cast<LChar>(upper);
+            if (UNLIKELY(!isASCII(character) || isASCIILower(character)))
+                return convertToUppercaseWithoutLocaleStartingAtFailingIndex8Bit(i);
         }
 
-        if (!numberSharpSCharacters)
-            return newImpl;
-
-        // We have numberSSCharacters sharp-s characters, but none of the other special characters.
-        newImpl = createUninitialized(m_length + numberSharpSCharacters, data8);
-
-        LChar* dest = data8;
-
-        for (int32_t i = 0; i < length; ++i) {
-            LChar character = m_data8[i];
-            if (character == smallLetterSharpS) {
-                *dest++ = 'S';
-                *dest++ = 'S';
-            } else {
-                ASSERT(isLatin1(u_toupper(character)));
-                *dest++ = static_cast<LChar>(u_toupper(character));
-            }
-        }
-
-        return newImpl;
+        return *this;
     }
 
-upconvert:
-    auto upconvertedCharacters = StringView(*this).upconvertedCharacters();
-    const UChar* source16 = upconvertedCharacters;
+    int32_t length = m_length;
+    const UChar* source16 = m_data16;
 
     UChar* data16;
     auto newImpl = createUninitialized(m_length, data16);
-    
+
     // Do a faster loop for the case where all the characters are ASCII.
     unsigned ored = 0;
     for (int i = 0; i < length; ++i) {
@@ -514,6 +464,87 @@ upconvert:
     u_strToUpper(data16, realLength, source16, m_length, "", &status);
     if (U_FAILURE(status))
         return *this;
+    return newImpl;
+}
+
+Ref<StringImpl> StringImpl::convertToUppercaseWithoutLocaleStartingAtFailingIndex8Bit(unsigned failingIndex)
+{
+    ASSERT(is8Bit());
+    LChar* data8;
+    auto newImpl = createUninitializedInternalNonEmpty(m_length, data8);
+
+#if ASSERT_ENABLED
+    for (unsigned i = 0; i < failingIndex; ++i) {
+        ASSERT(isASCII(m_data8[i]));
+        ASSERT(!isASCIILower(m_data8[i]));
+    }
+#endif
+    copyCharacters(data8, m_data8, failingIndex);
+
+    // Do a faster loop for the case where all the characters are ASCII.
+    int32_t length = m_length;
+    unsigned ored = 0;
+    for (int32_t i = failingIndex; i < length; ++i) {
+        LChar character = m_data8[i];
+        ored |= character;
+        data8[i] = toASCIIUpper(character);
+    }
+    if (!(ored & ~0x7F))
+        return newImpl;
+
+    // Do a slower implementation for cases that include non-ASCII Latin-1 characters.
+    unsigned numberSharpSCharacters = 0;
+
+    // There are two special cases.
+    //  1. Some Latin-1 characters when converted to upper case are 16 bit characters.
+    //  2. Lower case sharp-S converts to "SS" (two characters)
+    for (int32_t i = failingIndex; i < length; ++i) {
+        LChar character = m_data8[i];
+        if (UNLIKELY(character == smallLetterSharpS))
+            ++numberSharpSCharacters;
+        ASSERT(u_toupper(character) <= 0xFFFF);
+        UChar upper = u_toupper(character);
+        if (UNLIKELY(!isLatin1(upper))) {
+            // Since this upper-cased character does not fit in an 8-bit string, we need to take the 16-bit path.
+            auto upconvertedCharacters = StringView(*this).upconvertedCharacters();
+            const UChar* source16 = upconvertedCharacters;
+            UChar* data16;
+            auto newImpl = createUninitialized(m_length, data16);
+            // Do a slower implementation for cases that include non-ASCII characters.
+            UErrorCode status = U_ZERO_ERROR;
+            int32_t realLength = u_strToUpper(data16, length, source16, m_length, "", &status);
+            if (U_SUCCESS(status) && realLength == length)
+                return newImpl;
+            newImpl = createUninitialized(realLength, data16);
+            status = U_ZERO_ERROR;
+            u_strToUpper(data16, realLength, source16, m_length, "", &status);
+            if (U_FAILURE(status))
+                return *this;
+            return newImpl;
+        }
+        data8[i] = static_cast<LChar>(upper);
+    }
+
+    if (!numberSharpSCharacters)
+        return newImpl;
+
+    // We have numberSSCharacters sharp-s characters, but none of the other special characters.
+    newImpl = createUninitialized(m_length + numberSharpSCharacters, data8);
+    copyCharacters(data8, m_data8, failingIndex);
+
+    LChar* dest = data8;
+
+    for (int32_t i = failingIndex; i < length; ++i) {
+        LChar character = m_data8[i];
+        if (character == smallLetterSharpS) {
+            *dest++ = 'S';
+            *dest++ = 'S';
+        } else {
+            ASSERT(isLatin1(u_toupper(character)));
+            *dest++ = static_cast<LChar>(u_toupper(character));
+        }
+    }
+
     return newImpl;
 }
 

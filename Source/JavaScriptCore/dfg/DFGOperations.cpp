@@ -2733,7 +2733,7 @@ JSC_DEFINE_JIT_OPERATION(operationStringSubstringWithEnd, JSString*, (JSGlobalOb
     return stringSubstring(globalObject, string, start, end);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationToLowerCase, JSString*, (JSGlobalObject* globalObject, JSString* string, uint32_t failingIndex))
+JSC_DEFINE_JIT_OPERATION(operationStringToLowerCase, JSString*, (JSGlobalObject* globalObject, JSString* string, uint32_t failingIndex))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
@@ -2750,6 +2750,25 @@ JSC_DEFINE_JIT_OPERATION(operationToLowerCase, JSString*, (JSGlobalObject* globa
     if (lowercasedString.impl() == inputString.impl())
         return string;
     RELEASE_AND_RETURN(scope, jsString(vm, WTFMove(lowercasedString)));
+}
+
+JSC_DEFINE_JIT_OPERATION(operationStringToUpperCase, JSString*, (JSGlobalObject* globalObject, JSString* string, uint32_t failingIndex))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    String inputString = string->value(globalObject);
+    RETURN_IF_EXCEPTION(scope, nullptr);
+    if (!inputString.length())
+        return vm.smallStrings.emptyString();
+
+    String uppercasedString = inputString.is8Bit() ? inputString.convertToUppercaseWithoutLocaleStartingAtFailingIndex8Bit(failingIndex) : inputString.convertToUppercaseWithoutLocale();
+    if (uppercasedString.impl() == inputString.impl())
+        return string;
+    RELEASE_AND_RETURN(scope, jsString(vm, WTFMove(uppercasedString)));
 }
 
 JSC_DEFINE_JIT_OPERATION(operationStringLocaleCompare, UCPUStrictInt32, (JSGlobalObject* globalObject, JSString* base, JSString* argument))

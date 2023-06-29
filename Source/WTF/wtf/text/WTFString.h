@@ -195,6 +195,7 @@ public:
     WTF_EXPORT_PRIVATE String WARN_UNUSED_RETURN convertToLowercaseWithoutLocale() const;
     WTF_EXPORT_PRIVATE String WARN_UNUSED_RETURN convertToLowercaseWithoutLocaleStartingAtFailingIndex8Bit(unsigned) const;
     WTF_EXPORT_PRIVATE String WARN_UNUSED_RETURN convertToUppercaseWithoutLocale() const;
+    WTF_EXPORT_PRIVATE String WARN_UNUSED_RETURN convertToUppercaseWithoutLocaleStartingAtFailingIndex8Bit(unsigned) const;
     WTF_EXPORT_PRIVATE String WARN_UNUSED_RETURN convertToLowercaseWithLocale(const AtomString& localeIdentifier) const;
     WTF_EXPORT_PRIVATE String WARN_UNUSED_RETURN convertToUppercaseWithLocale(const AtomString& localeIdentifier) const;
 

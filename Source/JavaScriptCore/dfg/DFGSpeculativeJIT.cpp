@@ -2213,9 +2213,9 @@ void SpeculativeJIT::compileStringSubstring(Node* node)
     cellResult(resultGPR, node);
 }
 
-void SpeculativeJIT::compileToLowerCase(Node* node)
+void SpeculativeJIT::compileStringToLowerOrUpperCase(Node* node)
 {
-    ASSERT(node->op() == ToLowerCase);
+    ASSERT(node->op() == StringToLowerCase || node->op() == StringToUpperCase);
     SpeculateCellOperand string(this, node->child1());
     GPRTemporary temp(this);
     GPRTemporary index(this);
@@ -2246,15 +2246,20 @@ void SpeculativeJIT::compileToLowerCase(Node* node)
     auto loopDone = branch32(AboveOrEqual, indexGPR, lengthGPR);
     load8(BaseIndex(tempGPR, indexGPR, TimesOne), charGPR);
     slowPath.append(branchTest32(NonZero, charGPR, TrustedImm32(~0x7F)));
-    sub32(TrustedImm32('A'), charGPR);
-    slowPath.append(branch32(BelowOrEqual, charGPR, TrustedImm32('Z' - 'A')));
+    if (node->op() == StringToLowerCase) {
+        sub32(TrustedImm32('A'), charGPR);
+        slowPath.append(branch32(BelowOrEqual, charGPR, TrustedImm32('Z' - 'A')));
+    } else {
+        sub32(TrustedImm32('a'), charGPR);
+        slowPath.append(branch32(BelowOrEqual, charGPR, TrustedImm32('z' - 'a')));
+    }
 
     add32(TrustedImm32(1), indexGPR);
     jump().linkTo(loopStart, this);
     
     slowPath.link(this);
     silentSpillAllRegisters(lengthGPR);
-    callOperation(operationToLowerCase, lengthGPR, LinkableConstant::globalObject(*this, node), stringGPR, indexGPR);
+    callOperation(node->op() == StringToLowerCase ? operationStringToLowerCase : operationStringToUpperCase, lengthGPR, LinkableConstant::globalObject(*this, node), stringGPR, indexGPR);
     silentFillAllRegisters();
     exceptionCheck();
     auto done = jump();

@@ -420,7 +420,8 @@ bool doesGC(Graph& graph, Node* node)
     case StringSubstring:
     case StringValueOf:
     case CreateRest:
-    case ToLowerCase:
+    case StringToLowerCase:
+    case StringToUpperCase:
     case CallDOMGetter:
     case CallDOM:
     case ArraySlice:
