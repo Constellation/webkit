@@ -25,11 +25,12 @@
 #pragma once
 
 #include <wtf/Forward.h>
-#include <wtf/PlainGregorianDateTime.h>
+#include <wtf/GregorianDateTime.h>
 
 namespace JSC {
 
 class DateCache;
+class PlainGregorianDateTime;
 
 enum DateTimeFormat {
     DateTimeFormatDate = 1,
