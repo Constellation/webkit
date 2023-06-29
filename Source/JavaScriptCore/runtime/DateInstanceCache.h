@@ -44,9 +44,9 @@ public:
     static ptrdiff_t offsetOfCachedGregorianDateTimeUTC() { return OBJECT_OFFSETOF(DateInstanceData, m_cachedGregorianDateTimeUTC); }
 
     double m_gregorianDateTimeCachedForMS { PNaN };
-    PlainGregorianDateTime m_cachedGregorianDateTime;
+    ISO8601::PlainGregorianDateTime m_cachedGregorianDateTime;
     double m_gregorianDateTimeUTCCachedForMS { PNaN };
-    PlainGregorianDateTime m_cachedGregorianDateTimeUTC;
+    ISO8601::PlainGregorianDateTime m_cachedGregorianDateTimeUTC;
 
 private:
     DateInstanceData() = default;

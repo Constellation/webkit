@@ -127,7 +127,7 @@ static void applyToNumberToOtherwiseIgnoredArguments(JSGlobalObject* globalObjec
 // ms (representing milliseconds) and t (representing the rest of the date structure) appropriately.
 //
 // Format of member function: f([hour,] [min,] [sec,] [ms])
-static std::optional<std::tuple<int, int, int, double>> fillStructuresUsingTimeArgs(JSGlobalObject* globalObject, CallFrame* callFrame, unsigned maxArgs, double ms, PlainGregorianDateTime dateTime)
+static std::optional<std::tuple<int, int, int, double>> fillStructuresUsingTimeArgs(JSGlobalObject* globalObject, CallFrame* callFrame, unsigned maxArgs, double ms, ISO8601::PlainGregorianDateTime dateTime)
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
@@ -180,7 +180,7 @@ static std::optional<std::tuple<int, int, int, double>> fillStructuresUsingTimeA
 // ms (representing milliseconds) and t (representing the rest of the date structure) appropriately.
 //
 // Format of member function: f([years,] [months,] [days])
-static std::optional<std::tuple<int, int, int, double>> fillStructuresUsingDateArgs(JSGlobalObject* globalObject, CallFrame* callFrame, unsigned maxArgs, double ms, PlainGregorianDateTime dateTime)
+static std::optional<std::tuple<int, int, int, double>> fillStructuresUsingDateArgs(JSGlobalObject* globalObject, CallFrame* callFrame, unsigned maxArgs, double ms, ISO8601::PlainGregorianDateTime dateTime)
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
@@ -707,7 +707,7 @@ static EncodedJSValue setNewValueFromTimeArgs(JSGlobalObject* globalObject, Call
         return JSValue::encode(jsNaN());
     }
 
-    PlainGregorianDateTime gregorianDateTime(*other);
+    ISO8601::PlainGregorianDateTime gregorianDateTime(*other);
     auto result = fillStructuresUsingTimeArgs(globalObject, callFrame, numArgsToUse, ms, gregorianDateTime);
     RETURN_IF_EXCEPTION(scope, { });
     if (!result) {
@@ -743,7 +743,7 @@ static EncodedJSValue setNewValueFromDateArgs(JSGlobalObject* globalObject, Call
     double milli = thisDateObj->internalNumber();
     double ms = 0;
 
-    PlainGregorianDateTime gregorianDateTime;
+    ISO8601::PlainGregorianDateTime gregorianDateTime;
     if (numArgsToUse == 3 && std::isnan(milli))
         cache.msToGregorianDateTime(0, WTF::UTCTime, gregorianDateTime);
     else {
@@ -862,7 +862,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncSetYear, (JSGlobalObject* globalObject, Ca
     double milli = thisDateObj->internalNumber();
     double ms = 0;
 
-    PlainGregorianDateTime gregorianDateTime;
+    ISO8601::PlainGregorianDateTime gregorianDateTime;
     if (std::isnan(milli))
         // Based on ECMA 262 B.2.5 (setYear)
         // the time must be reset to +0 if it is NaN.
