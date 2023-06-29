@@ -6494,57 +6494,57 @@ void SpeculativeJIT::compileDateGet(Node* node)
     }
 
     case DatePrototypeGetFullYearIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfYear(), operationDateGetFullYear);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfYear(), operationDateGetFullYear);
         break;
     case DatePrototypeGetUTCFullYearIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfYear(), operationDateGetUTCFullYear);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfYear(), operationDateGetUTCFullYear);
         break;
     case DatePrototypeGetMonthIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfMonth(), operationDateGetMonth);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfMonth(), operationDateGetMonth);
         break;
     case DatePrototypeGetUTCMonthIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfMonth(), operationDateGetUTCMonth);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfMonth(), operationDateGetUTCMonth);
         break;
     case DatePrototypeGetDateIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfMonthDay(), operationDateGetDate);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfMonthDay(), operationDateGetDate);
         break;
     case DatePrototypeGetUTCDateIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfMonthDay(), operationDateGetUTCDate);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfMonthDay(), operationDateGetUTCDate);
         break;
     case DatePrototypeGetDayIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfWeekDay(), operationDateGetDay);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfWeekDay(), operationDateGetDay);
         break;
     case DatePrototypeGetUTCDayIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfWeekDay(), operationDateGetUTCDay);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfWeekDay(), operationDateGetUTCDay);
         break;
     case DatePrototypeGetHoursIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfHour(), operationDateGetHours);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfHour(), operationDateGetHours);
         break;
     case DatePrototypeGetUTCHoursIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfHour(), operationDateGetUTCHours);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfHour(), operationDateGetUTCHours);
         break;
     case DatePrototypeGetMinutesIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfMinute(), operationDateGetMinutes);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfMinute(), operationDateGetMinutes);
         break;
     case DatePrototypeGetUTCMinutesIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfMinute(), operationDateGetUTCMinutes);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfMinute(), operationDateGetUTCMinutes);
         break;
     case DatePrototypeGetSecondsIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfSecond(), operationDateGetSeconds);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfSecond(), operationDateGetSeconds);
         break;
     case DatePrototypeGetUTCSecondsIntrinsic:
-        emitGetCode(DateInstanceData::offsetOfPlainGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfSecond(), operationDateGetUTCSeconds);
+        emitGetCode(DateInstanceData::offsetOfGregorianDateTimeUTCCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfSecond(), operationDateGetUTCSeconds);
         break;
 
     case DatePrototypeGetTimezoneOffsetIntrinsic: {
-        emitGetCodeWithCallback(DateInstanceData::offsetOfPlainGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfUTCOffsetInMinute(), operationDateGetTimezoneOffset, [&] (GPRReg offsetGPR) {
+        emitGetCodeWithCallback(DateInstanceData::offsetOfGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfUTCOffsetInMinute(), operationDateGetTimezoneOffset, [&] (GPRReg offsetGPR) {
             neg32(offsetGPR);
         });
         break;
     }
 
     case DatePrototypeGetYearIntrinsic: {
-        emitGetCodeWithCallback(DateInstanceData::offsetOfPlainGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfYear(), operationDateGetYear, [&] (GPRReg yearGPR) {
+        emitGetCodeWithCallback(DateInstanceData::offsetOfGregorianDateTimeCachedForMS(), DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfYear(), operationDateGetYear, [&] (GPRReg yearGPR) {
             sub32(TrustedImm32(1900), yearGPR);
         });
         break;
