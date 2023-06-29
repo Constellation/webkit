@@ -58,22 +58,22 @@ namespace JSC { namespace FTL {
     macro(DateInstance_data, DateInstance::offsetOfData()) \
     macro(DateInstanceData_gregorianDateTimeCachedForMS, DateInstanceData::offsetOfGregorianDateTimeCachedForMS()) \
     macro(DateInstanceData_gregorianDateTimeUTCCachedForMS, DateInstanceData::offsetOfGregorianDateTimeUTCCachedForMS()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTime_year, DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfYear()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTimeUTC_year, DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfYear()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTime_month, DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfMonth()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTimeUTC_month, DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfMonth()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTime_monthDay, DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfMonthDay()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTimeUTC_monthDay, DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfMonthDay()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTime_weekDay, DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfWeekDay()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTimeUTC_weekDay, DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfWeekDay()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTime_hour, DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfHour()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTimeUTC_hour, DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfHour()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTime_minute, DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfMinute()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTimeUTC_minute, DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfMinute()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTime_second, DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfSecond()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTimeUTC_second, DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfSecond()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTime_utcOffsetInMinute, DateInstanceData::offsetOfCachedPlainGregorianDateTime() + PlainGregorianDateTime::offsetOfUTCOffsetInMinute()) \
-    macro(DateInstanceData_cachedPlainGregorianDateTimeUTC_utcOffsetInMinute, DateInstanceData::offsetOfCachedPlainGregorianDateTimeUTC() + PlainGregorianDateTime::offsetOfUTCOffsetInMinute()) \
+    macro(DateInstanceData_cachedGregorianDateTime_year, DateInstanceData::offsetOfCachedGregorianDateTime() + GregorianDateTime::offsetOfYear()) \
+    macro(DateInstanceData_cachedGregorianDateTimeUTC_year, DateInstanceData::offsetOfCachedGregorianDateTimeUTC() + GregorianDateTime::offsetOfYear()) \
+    macro(DateInstanceData_cachedGregorianDateTime_month, DateInstanceData::offsetOfCachedGregorianDateTime() + GregorianDateTime::offsetOfMonth()) \
+    macro(DateInstanceData_cachedGregorianDateTimeUTC_month, DateInstanceData::offsetOfCachedGregorianDateTimeUTC() + GregorianDateTime::offsetOfMonth()) \
+    macro(DateInstanceData_cachedGregorianDateTime_monthDay, DateInstanceData::offsetOfCachedGregorianDateTime() + GregorianDateTime::offsetOfMonthDay()) \
+    macro(DateInstanceData_cachedGregorianDateTimeUTC_monthDay, DateInstanceData::offsetOfCachedGregorianDateTimeUTC() + GregorianDateTime::offsetOfMonthDay()) \
+    macro(DateInstanceData_cachedGregorianDateTime_weekDay, DateInstanceData::offsetOfCachedGregorianDateTime() + GregorianDateTime::offsetOfWeekDay()) \
+    macro(DateInstanceData_cachedGregorianDateTimeUTC_weekDay, DateInstanceData::offsetOfCachedGregorianDateTimeUTC() + GregorianDateTime::offsetOfWeekDay()) \
+    macro(DateInstanceData_cachedGregorianDateTime_hour, DateInstanceData::offsetOfCachedGregorianDateTime() + GregorianDateTime::offsetOfHour()) \
+    macro(DateInstanceData_cachedGregorianDateTimeUTC_hour, DateInstanceData::offsetOfCachedGregorianDateTimeUTC() + GregorianDateTime::offsetOfHour()) \
+    macro(DateInstanceData_cachedGregorianDateTime_minute, DateInstanceData::offsetOfCachedGregorianDateTime() + GregorianDateTime::offsetOfMinute()) \
+    macro(DateInstanceData_cachedGregorianDateTimeUTC_minute, DateInstanceData::offsetOfCachedGregorianDateTimeUTC() + GregorianDateTime::offsetOfMinute()) \
+    macro(DateInstanceData_cachedGregorianDateTime_second, DateInstanceData::offsetOfCachedGregorianDateTime() + GregorianDateTime::offsetOfSecond()) \
+    macro(DateInstanceData_cachedGregorianDateTimeUTC_second, DateInstanceData::offsetOfCachedGregorianDateTimeUTC() + GregorianDateTime::offsetOfSecond()) \
+    macro(DateInstanceData_cachedGregorianDateTime_utcOffsetInMinute, DateInstanceData::offsetOfCachedGregorianDateTime() + GregorianDateTime::offsetOfUTCOffsetInMinute()) \
+    macro(DateInstanceData_cachedGregorianDateTimeUTC_utcOffsetInMinute, DateInstanceData::offsetOfCachedGregorianDateTimeUTC() + GregorianDateTime::offsetOfUTCOffsetInMinute()) \
     macro(DirectArguments_callee, DirectArguments::offsetOfCallee()) \
     macro(DirectArguments_length, DirectArguments::offsetOfLength()) \
     macro(DirectArguments_minCapacity, DirectArguments::offsetOfMinCapacity()) \
