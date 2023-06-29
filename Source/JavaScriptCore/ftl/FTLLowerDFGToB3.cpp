@@ -17837,56 +17837,56 @@ IGNORE_CLANG_WARNINGS_END
         }
 
         case DatePrototypeGetFullYearIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTime_year, operationDateGetFullYear);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_year, operationDateGetFullYear);
             break;
         case DatePrototypeGetUTCFullYearIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTimeUTC_year, operationDateGetUTCFullYear);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_year, operationDateGetUTCFullYear);
             break;
         case DatePrototypeGetMonthIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTime_month, operationDateGetMonth);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_month, operationDateGetMonth);
             break;
         case DatePrototypeGetUTCMonthIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTimeUTC_month, operationDateGetUTCMonth);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_month, operationDateGetUTCMonth);
             break;
         case DatePrototypeGetDateIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTime_monthDay, operationDateGetDate);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_monthDay, operationDateGetDate);
             break;
         case DatePrototypeGetUTCDateIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTimeUTC_monthDay, operationDateGetUTCDate);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_monthDay, operationDateGetUTCDate);
             break;
         case DatePrototypeGetDayIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTime_weekDay, operationDateGetDay);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_weekDay, operationDateGetDay);
             break;
         case DatePrototypeGetUTCDayIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTimeUTC_weekDay, operationDateGetUTCDay);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_weekDay, operationDateGetUTCDay);
             break;
         case DatePrototypeGetHoursIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTime_hour, operationDateGetHours);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_hour, operationDateGetHours);
             break;
         case DatePrototypeGetUTCHoursIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTimeUTC_hour, operationDateGetUTCHours);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_hour, operationDateGetUTCHours);
             break;
         case DatePrototypeGetMinutesIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTime_minute, operationDateGetMinutes);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_minute, operationDateGetMinutes);
             break;
         case DatePrototypeGetUTCMinutesIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTimeUTC_minute, operationDateGetUTCMinutes);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_minute, operationDateGetUTCMinutes);
             break;
         case DatePrototypeGetSecondsIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTime_second, operationDateGetSeconds);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_second, operationDateGetSeconds);
             break;
         case DatePrototypeGetUTCSecondsIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTimeUTC_second, operationDateGetUTCSeconds);
+            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_second, operationDateGetUTCSeconds);
             break;
 
         case DatePrototypeGetTimezoneOffsetIntrinsic:
-            emitGetCodeWithCallback(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTime_utcOffsetInMinute, operationDateGetTimezoneOffset, [&] (LValue offset) {
+            emitGetCodeWithCallback(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_utcOffsetInMinute, operationDateGetTimezoneOffset, [&] (LValue offset) {
                 return m_out.neg(offset);
             });
             break;
 
         case DatePrototypeGetYearIntrinsic:
-            emitGetCodeWithCallback(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedPlainGregorianDateTime_year, operationDateGetYear, [&] (LValue year) {
+            emitGetCodeWithCallback(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_year, operationDateGetYear, [&] (LValue year) {
                 return m_out.sub(year, m_out.constInt32(1900));
             });
             break;
