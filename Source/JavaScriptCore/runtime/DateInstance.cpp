@@ -41,7 +41,7 @@ void DateInstance::finishCreation(VM& vm, double time)
     m_internalNumber = timeClip(time);
 }
 
-const PlainGregorianDateTime* DateInstance::calculateGregorianDateTime(DateCache& cache) const
+const ISO8601::PlainGregorianDateTime* DateInstance::calculateGregorianDateTime(DateCache& cache) const
 {
     double milli = internalNumber();
     if (std::isnan(milli))
@@ -57,7 +57,7 @@ const PlainGregorianDateTime* DateInstance::calculateGregorianDateTime(DateCache
     return &m_data->m_cachedGregorianDateTime;
 }
 
-const PlainGregorianDateTime* DateInstance::calculateGregorianDateTimeUTC(DateCache& cache) const
+const ISO8601::PlainGregorianDateTime* DateInstance::calculateGregorianDateTimeUTC(DateCache& cache) const
 {
     double milli = internalNumber();
     if (std::isnan(milli))
