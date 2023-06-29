@@ -72,6 +72,7 @@
 #include "config.h"
 #include "JSDateMath.h"
 
+#include "DateInstanceCache.h"
 #include "ExceptionHelpers.h"
 #include "ISO8601.h"
 #include "VM.h"

@@ -717,9 +717,9 @@ static EncodedJSValue setNewValueFromTimeArgs(JSGlobalObject* globalObject, Call
     auto [hours, minutes, seconds, milliseconds] = result.value();
 
     double newUTCDate = cache.gregorianDateTimeToMS(gregorianDateTime.year(), gregorianDateTime.month(), gregorianDateTime.monthDay(), hours, minutes, seconds, milliseconds, inputTimeType);
-    double result = timeClip(newUTCDate);
-    thisDateObj->setInternalNumber(result);
-    return JSValue::encode(jsNumber(result));
+    double time = timeClip(newUTCDate);
+    thisDateObj->setInternalNumber(time);
+    return JSValue::encode(jsNumber(time));
 }
 
 static EncodedJSValue setNewValueFromDateArgs(JSGlobalObject* globalObject, CallFrame* callFrame, unsigned numArgsToUse, WTF::TimeType inputTimeType)
@@ -765,12 +765,12 @@ static EncodedJSValue setNewValueFromDateArgs(JSGlobalObject* globalObject, Call
         thisDateObj->setInternalNumber(PNaN);
         return JSValue::encode(jsNaN());
     }
-    auto [years, months, days, ms] = result.value();
+    auto [years, months, days, milliseconds] = result.value();
 
-    double newUTCDate = cache.gregorianDateTimeToMS(years, months, days, gregorianDateTime.hour(), gregorianDateTime.minute(), gregorianDateTime.second(), ms, inputTimeType);
-    double result = timeClip(newUTCDate);
-    thisDateObj->setInternalNumber(result);
-    return JSValue::encode(jsNumber(result));
+    double newUTCDate = cache.gregorianDateTimeToMS(years, months, days, gregorianDateTime.hour(), gregorianDateTime.minute(), gregorianDateTime.second(), milliseconds, inputTimeType);
+    double time = timeClip(newUTCDate);
+    thisDateObj->setInternalNumber(time);
+    return JSValue::encode(jsNumber(time));
 }
 
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncSetMilliSeconds, (JSGlobalObject* globalObject, CallFrame* callFrame))
@@ -881,8 +881,8 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncSetYear, (JSGlobalObject* globalObject, Ca
         return JSValue::encode(jsNaN());
     }
 
-    gregorianDateTime.setYear(toInt32((year >= 0 && year <= 99) ? (year + 1900) : year));
-    double timeInMilliseconds = cache.gregorianDateTimeToMS(gregorianDateTime, ms, WTF::LocalTime);
+    int32_t year = toInt32((year >= 0 && year <= 99) ? (year + 1900) : year);
+    double timeInMilliseconds = cache.gregorianDateTimeToMS(year, gregorianDateTime.month(), gregorianDateTime.monthDay(), gregorianDateTime.hour(), gregorianDateTime.minute(), gregorianDateTime.second(), ms, WTF::LocalTime);
     double result = timeClip(timeInMilliseconds);
     thisDateObj->setInternalNumber(result);
     return JSValue::encode(jsNumber(result));
