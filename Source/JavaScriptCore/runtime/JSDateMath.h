@@ -48,6 +48,7 @@
 
 namespace JSC {
 
+class DateInstanceData;
 class JSGlobalObject;
 class OpaqueICUTimeZone;
 class VM;
@@ -190,7 +191,6 @@ private:
     std::optional<YearMonthDayCache> m_yearMonthDayCache;
     String m_cachedDateString;
     double m_cachedDateStringValue;
-    DateInstanceCache m_dateInstanceCache;
     uint64_t m_cachedTimezoneID { 0 };
     String m_timeZoneStandardDisplayNameCache;
     String m_timeZoneDSTDisplayNameCache;

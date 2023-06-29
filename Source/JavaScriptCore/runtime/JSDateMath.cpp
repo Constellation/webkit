@@ -551,9 +551,9 @@ DateCache::DateCache()
 
 DateCache::~DateCache() = default;
 
-Ref<DateInstanceData> DateCache::cachedDateInstanceData(double millisecondsFromEpoch)
+Ref<DateInstanceData> DateCache::cachedDateInstanceData(double)
 {
-    return *m_dateInstanceCache.add(millisecondsFromEpoch);
+    return DateInstanceData::create();
 }
 
 void DateCache::timeZoneCacheSlow()
@@ -606,7 +606,6 @@ void DateCache::resetIfNecessarySlow()
     m_yearMonthDayCache = std::nullopt;
     m_cachedDateString = String();
     m_cachedDateStringValue = std::numeric_limits<double>::quiet_NaN();
-    m_dateInstanceCache.reset();
     m_timeZoneStandardDisplayNameCache = String();
     m_timeZoneDSTDisplayNameCache = String();
 }
