@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "ISO8601.h"
 #include "PureNaN.h"
 #include <array>
 #include <wtf/GregorianDateTime.h>
@@ -43,9 +44,9 @@ public:
     static ptrdiff_t offsetOfCachedGregorianDateTimeUTC() { return OBJECT_OFFSETOF(DateInstanceData, m_cachedGregorianDateTimeUTC); }
 
     double m_gregorianDateTimeCachedForMS { PNaN };
-    GregorianDateTime m_cachedGregorianDateTime;
+    PlainGregorianDateTime m_cachedGregorianDateTime;
     double m_gregorianDateTimeUTCCachedForMS { PNaN };
-    GregorianDateTime m_cachedGregorianDateTimeUTC;
+    PlainGregorianDateTime m_cachedGregorianDateTimeUTC;
 
 private:
     DateInstanceData() = default;

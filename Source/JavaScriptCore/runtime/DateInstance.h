@@ -59,14 +59,14 @@ public:
 
     DECLARE_EXPORT_INFO;
 
-    const GregorianDateTime* gregorianDateTime(DateCache& cache) const
+    const PlainGregorianDateTime* gregorianDateTime(DateCache& cache) const
     {
         if (m_data && m_data->m_gregorianDateTimeCachedForMS == internalNumber())
             return &m_data->m_cachedGregorianDateTime;
         return calculateGregorianDateTime(cache);
     }
 
-    const GregorianDateTime* gregorianDateTimeUTC(DateCache& cache) const
+    const PlainGregorianDateTime* gregorianDateTimeUTC(DateCache& cache) const
     {
         if (m_data && m_data->m_gregorianDateTimeUTCCachedForMS == internalNumber())
             return &m_data->m_cachedGregorianDateTimeUTC;
@@ -86,8 +86,8 @@ private:
 
     DECLARE_DEFAULT_FINISH_CREATION;
     JS_EXPORT_PRIVATE void finishCreation(VM&, double);
-    JS_EXPORT_PRIVATE const GregorianDateTime* calculateGregorianDateTime(DateCache&) const;
-    JS_EXPORT_PRIVATE const GregorianDateTime* calculateGregorianDateTimeUTC(DateCache&) const;
+    JS_EXPORT_PRIVATE const PlainGregorianDateTime* calculateGregorianDateTime(DateCache&) const;
+    JS_EXPORT_PRIVATE const PlainGregorianDateTime* calculateGregorianDateTimeUTC(DateCache&) const;
 
     double m_internalNumber { PNaN };
     mutable RefPtr<DateInstanceData> m_data;

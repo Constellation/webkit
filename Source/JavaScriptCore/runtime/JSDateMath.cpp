@@ -366,7 +366,7 @@ LocalTimeOffset DateCache::DSTCache::localTimeOffset(DateCache& dateCache, int64
     return { };
 }
 
-double DateCache::gregorianDateTimeToMS(const GregorianDateTime& t, double milliseconds, WTF::TimeType inputTimeType)
+double DateCache::gregorianDateTimeToMS(const PlainGregorianDateTime& t, double milliseconds, WTF::TimeType inputTimeType)
 {
     double day = dateToDaysFrom1970(t.year(), t.month(), t.monthDay());
     double ms = timeToMS(t.hour(), t.minute(), t.second(), milliseconds);
@@ -404,7 +404,7 @@ std::tuple<int32_t, int32_t, int32_t> DateCache::yearMonthDayFromDaysWithCache(i
 }
 
 // input is UTC
-void DateCache::msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, GregorianDateTime& tm)
+void DateCache::msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, PlainGregorianDateTime& tm)
 {
     LocalTimeOffset localTime;
     if (outputTimeType == WTF::LocalTime && std::isfinite(millisecondsFromEpoch)) {
@@ -419,9 +419,9 @@ void DateCache::msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeTyp
         int32_t hour = timeInDayMS / (60 * 60 * 1000);
         int32_t minute = (timeInDayMS / (60 * 1000)) % 60;
         int32_t second = (timeInDayMS / 1000) % 60;
-        tm = GregorianDateTime(year, month, dayInYear(year, month, day), day, WTF::weekDay(days), hour, minute, second, localTime.offset / WTF::Int64Milliseconds::msPerMinute, localTime.isDST);
+        tm = PlainGregorianDateTime(year, month, day, WTF::weekDay(days), hour, minute, second, localTime.offset / WTF::Int64Milliseconds::msPerMinute, localTime.isDST);
     } else
-        tm = GregorianDateTime(millisecondsFromEpoch, localTime);
+        tm = { };
 }
 
 double DateCache::parseDate(JSGlobalObject* globalObject, VM& vm, const String& date)

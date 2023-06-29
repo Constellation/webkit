@@ -44,8 +44,8 @@
 #pragma once
 
 #include "DateInstanceCache.h"
+#include "ISO8601.h"
 #include <wtf/DateMath.h>
-#include <wtf/GregorianDateTime.h>
 #include <wtf/SaturatedArithmetic.h>
 
 namespace JSC {
@@ -109,8 +109,8 @@ public:
     String timeZoneDisplayName(bool isDST);
     Ref<DateInstanceData> cachedDateInstanceData(double millisecondsFromEpoch);
 
-    void msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, GregorianDateTime&);
-    double gregorianDateTimeToMS(const GregorianDateTime&, double milliseconds, WTF::TimeType);
+    void msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, PlainGregorianDateTime&);
+    double gregorianDateTimeToMS(const PlainGregorianDateTime&, double milliseconds, WTF::TimeType);
     double localTimeToMS(double milliseconds, WTF::TimeType);
     JS_EXPORT_PRIVATE double parseDate(JSGlobalObject*, VM&, const WTF::String&);
 
