@@ -48,7 +48,6 @@
 
 namespace JSC {
 
-class DateInstanceData;
 class JSGlobalObject;
 class OpaqueICUTimeZone;
 class VM;
@@ -109,7 +108,6 @@ public:
 
     String defaultTimeZone();
     String timeZoneDisplayName(bool isDST);
-    Ref<DateInstanceData> cachedDateInstanceData(double millisecondsFromEpoch);
 
     void msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, ISO8601::PlainGregorianDateTime&);
     double gregorianDateTimeToMS(int32_t year, int32_t month, int32_t monthDay, int32_t hour, int32_t minute, int32_t second, double milliseconds, WTF::TimeType);

@@ -72,7 +72,6 @@
 #include "config.h"
 #include "JSDateMath.h"
 
-#include "DateInstanceCache.h"
 #include "ExceptionHelpers.h"
 #include "ISO8601.h"
 #include "VM.h"
@@ -552,11 +551,6 @@ DateCache::DateCache()
 }
 
 DateCache::~DateCache() = default;
-
-Ref<DateInstanceData> DateCache::cachedDateInstanceData(double)
-{
-    return DateInstanceData::create();
-}
 
 void DateCache::timeZoneCacheSlow()
 {
