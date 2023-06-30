@@ -83,8 +83,6 @@ public:
     static ptrdiff_t offsetOfCachedGregorianDateTime() { return OBJECT_OFFSETOF(DateInstance, m_cachedGregorianDateTime); }
     static ptrdiff_t offsetOfCachedGregorianDateTimeUTC() { return OBJECT_OFFSETOF(DateInstance, m_cachedGregorianDateTimeUTC); }
 
-    static ptrdiff_t offsetOfData() { return OBJECT_OFFSETOF(DateInstance, m_cachedGregorianDateTimeUTC); }
-
 private:
     JS_EXPORT_PRIVATE DateInstance(VM&, Structure*);
 
