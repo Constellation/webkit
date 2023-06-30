@@ -46,15 +46,8 @@ ISO8601::PlainGregorianDateTime DateInstance::calculateGregorianDateTime(DateCac
     double milli = internalNumber();
     if (std::isnan(milli))
         return { };
-
-    if (!m_data)
-        m_data = cache.cachedDateInstanceData(milli);
-
-    if (m_data->m_gregorianDateTimeCachedForMS != milli) {
-        cache.msToGregorianDateTime(milli, WTF::LocalTime, m_data->m_cachedGregorianDateTime);
-        m_data->m_gregorianDateTimeCachedForMS = milli;
-    }
-    return m_data->m_cachedGregorianDateTime;
+    cache.msToGregorianDateTime(milli, WTF::LocalTime, m_cachedGregorianDateTime);
+    return m_cachedGregorianDateTime;
 }
 
 ISO8601::PlainGregorianDateTime DateInstance::calculateGregorianDateTimeUTC(DateCache& cache) const
@@ -62,15 +55,8 @@ ISO8601::PlainGregorianDateTime DateInstance::calculateGregorianDateTimeUTC(Date
     double milli = internalNumber();
     if (std::isnan(milli))
         return { };
-
-    if (!m_data)
-        m_data = cache.cachedDateInstanceData(milli);
-
-    if (m_data->m_gregorianDateTimeUTCCachedForMS != milli) {
-        cache.msToGregorianDateTime(milli, WTF::UTCTime, m_data->m_cachedGregorianDateTimeUTC);
-        m_data->m_gregorianDateTimeUTCCachedForMS = milli;
-    }
-    return m_data->m_cachedGregorianDateTimeUTC;
+    cache.msToGregorianDateTime(milli, WTF::UTCTime, m_cachedGregorianDateTimeUTC);
+    return m_cachedGregorianDateTimeUTC;
 }
 
 } // namespace JSC

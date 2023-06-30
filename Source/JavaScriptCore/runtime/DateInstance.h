@@ -30,12 +30,6 @@ class DateInstance final : public JSNonFinalObject {
 public:
     using Base = JSNonFinalObject;
 
-    static constexpr bool needsDestruction = true;
-    static void destroy(JSCell* cell)
-    {
-        static_cast<DateInstance*>(cell)->DateInstance::~DateInstance();
-    }
-
     template<typename CellType, SubspaceAccess mode>
     static GCClient::IsoSubspace* subspaceFor(VM& vm)
     {
@@ -57,21 +51,26 @@ public:
     }
 
     double internalNumber() const { return m_internalNumber; }
-    void setInternalNumber(double value) { m_internalNumber = value; }
+    void setInternalNumber(double value)
+    {
+        m_internalNumber = value;
+        m_cachedGregorianDateTime = { };
+        m_cachedGregorianDateTimeUTC = { };
+    }
 
     DECLARE_EXPORT_INFO;
 
     ISO8601::PlainGregorianDateTime gregorianDateTime(DateCache& cache) const
     {
-        if (m_data && m_data->m_gregorianDateTimeCachedForMS == internalNumber())
-            return m_data->m_cachedGregorianDateTime;
+        if (m_cachedGregorianDateTime)
+            return m_cachedGregorianDateTime;
         return calculateGregorianDateTime(cache);
     }
 
     ISO8601::PlainGregorianDateTime gregorianDateTimeUTC(DateCache& cache) const
     {
-        if (m_data && m_data->m_gregorianDateTimeUTCCachedForMS == internalNumber())
-            return m_data->m_cachedGregorianDateTimeUTC;
+        if (m_cachedGregorianDateTimeUTC)
+            return m_cachedGregorianDateTimeUTC;
         return calculateGregorianDateTimeUTC(cache);
     }
 
@@ -81,7 +80,10 @@ public:
     }
 
     static ptrdiff_t offsetOfInternalNumber() { return OBJECT_OFFSETOF(DateInstance, m_internalNumber); }
-    static ptrdiff_t offsetOfData() { return OBJECT_OFFSETOF(DateInstance, m_data); }
+    static ptrdiff_t offsetOfCachedGregorianDateTime() { return OBJECT_OFFSETOF(DateInstance, m_cachedGregorianDateTime); }
+    static ptrdiff_t offsetOfCachedGregorianDateTimeUTC() { return OBJECT_OFFSETOF(DateInstance, m_cachedGregorianDateTimeUTC); }
+
+    static ptrdiff_t offsetOfData() { return OBJECT_OFFSETOF(DateInstance, m_cachedGregorianDateTimeUTC); }
 
 private:
     JS_EXPORT_PRIVATE DateInstance(VM&, Structure*);
@@ -92,7 +94,8 @@ private:
     JS_EXPORT_PRIVATE ISO8601::PlainGregorianDateTime calculateGregorianDateTimeUTC(DateCache&) const;
 
     double m_internalNumber { PNaN };
-    mutable RefPtr<DateInstanceData> m_data;
+    ISO8601::PlainGregorianDateTime m_cachedGregorianDateTime { };
+    ISO8601::PlainGregorianDateTime m_cachedGregorianDateTimeUTC { };
 };
 
 } // namespace JSC
