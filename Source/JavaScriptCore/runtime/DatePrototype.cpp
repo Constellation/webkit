@@ -698,7 +698,7 @@ static EncodedJSValue setNewValueFromTimeArgs(JSGlobalObject* globalObject, Call
     double secs = floor(milli / msPerSecond);
     double ms = milli - secs * msPerSecond;
 
-    ISO8601::PlainGregorianDateTime gregorianDateTim = inputTimeType == WTF::UTCTime
+    ISO8601::PlainGregorianDateTime gregorianDateTime = inputTimeType == WTF::UTCTime
         ? thisDateObj->gregorianDateTimeUTC(cache)
         : thisDateObj->gregorianDateTime(cache);
     if (!gregorianDateTime) {
