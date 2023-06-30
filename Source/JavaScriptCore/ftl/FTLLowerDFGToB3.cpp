@@ -17799,7 +17799,7 @@ IGNORE_CLANG_WARNINGS_END
             LBasicBlock continuation = m_out.newBlock();
 
             LValue data = m_out.load64(base, dataOffset);
-            m_out.branch(m_out.notZero64(data), usually(dataExistsCase), rarely(slowCase));
+            m_out.branch(m_out.notZero64(data), unsure(dataExistsCase), unsure(slowCase));
 
             LBasicBlock lastNext = m_out.appendTo(dataExistsCase, fastCase);
             LValue result = nullptr;
