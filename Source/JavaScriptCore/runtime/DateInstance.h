@@ -94,8 +94,8 @@ private:
     JS_EXPORT_PRIVATE ISO8601::PlainGregorianDateTime calculateGregorianDateTimeUTC(DateCache&) const;
 
     double m_internalNumber { PNaN };
-    ISO8601::PlainGregorianDateTime m_cachedGregorianDateTime { };
-    ISO8601::PlainGregorianDateTime m_cachedGregorianDateTimeUTC { };
+    mutable ISO8601::PlainGregorianDateTime m_cachedGregorianDateTime { };
+    mutable ISO8601::PlainGregorianDateTime m_cachedGregorianDateTimeUTC { };
 };
 
 } // namespace JSC
