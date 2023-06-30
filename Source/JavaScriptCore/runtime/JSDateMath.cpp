@@ -385,7 +385,7 @@ double DateCache::localTimeToMS(double milliseconds, WTF::TimeType inputTimeType
     return milliseconds;
 }
 
-std::tuple<int32_t, int32_t, int32_t> DateCache::yearMonthDayFromDaysWithCache(int32_t days)
+ALWAYS_INLINE std::tuple<int32_t, int32_t, int32_t> DateCache::yearMonthDayFromDaysWithCache(int32_t days)
 {
     if (m_yearMonthDayCache) {
         // Check conservatively if the given 'days' has

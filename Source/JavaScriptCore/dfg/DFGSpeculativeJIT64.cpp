@@ -6435,12 +6435,22 @@ void SpeculativeJIT::compileDateGet(Node* node)
         load64(Address(baseGPR, dataOffset), resultRegs.payloadGPR());
         slowCases.append(branchTest64(Zero, resultRegs.payloadGPR()));
         if (isSigned) {
+#if CPU(ARM64)
+            UNUSED_PARAM(fieldMask);
+            extractSignedBitfield64(resultRegs.payloadGPR(), TrustedImm32(fieldOffset), TrustedImm32(fieldWidth), resultRegs.payloadGPR());
+#else
             lshift64(TrustedImm32(64 - fieldWidth - fieldOffset), resultRegs.payloadGPR());
             rshift64(TrustedImm32(64 - fieldWidth), resultRegs.payloadGPR());
+#endif
             zeroExtend32ToWord(resultRegs.payloadGPR(), resultRegs.payloadGPR());
         } else {
+#if CPU(ARM64)
+            UNUSED_PARAM(fieldMask);
+            extractUnsignedBitfield64(resultRegs.payloadGPR(), TrustedImm32(fieldOffset), TrustedImm32(fieldWidth), resultRegs.payloadGPR());
+#else
             urshift64(TrustedImm32(fieldOffset), resultRegs.payloadGPR());
             and64(TrustedImm32(fieldMask), resultRegs.payloadGPR());
+#endif
         }
         callback(resultRegs.payloadGPR());
         boxInt32(resultRegs.payloadGPR(), resultRegs);
