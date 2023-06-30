@@ -377,6 +377,8 @@ public:
 
     static PlainGregorianDateTime tryCreate(double ms, LocalTimeOffset);
 
+    explicit operator bool() const { return !!m_payload; }
+
     PlainGregorianDateTime(int32_t year, uint8_t month, uint8_t monthDay, uint8_t weekDay, uint8_t hour, uint8_t minute, uint8_t second, int32_t utcOffsetInMinute, bool isDST);
 
 private:
