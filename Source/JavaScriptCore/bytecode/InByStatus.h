@@ -48,6 +48,8 @@ public:
         // It's cached for a simple access to a known object property with
         // a possible structure chain and a possible specific value.
         Simple,
+        // It's cached for a megamorphic case.
+        Megamorphic,
         // It's known to often take slow path.
         TakesSlowPath,
     };
@@ -79,8 +81,8 @@ public:
         RELEASE_ASSERT_NOT_REACHED();
     }
     
-    static InByStatus computeFor(CodeBlock*, ICStatusMap&, BytecodeIndex);
-    static InByStatus computeFor(CodeBlock*, ICStatusMap&, BytecodeIndex, ExitFlag);
+    static InByStatus computeFor(CodeBlock*, ICStatusMap&, BytecodeIndex, CodeOrigin);
+    static InByStatus computeFor(CodeBlock*, ICStatusMap&, BytecodeIndex, ExitFlag, CodeOrigin);
     static InByStatus computeFor(CodeBlock* baselineBlock, ICStatusMap& baselineMap, ICStatusContextStack&, CodeOrigin);
 
 #if ENABLE(DFG_JIT)
@@ -92,13 +94,14 @@ public:
     bool isSet() const { return m_state != NoInformation; }
     explicit operator bool() const { return isSet(); }
     bool isSimple() const { return m_state == Simple; }
+    bool isMegamorphic() const { return m_state == Megamorphic; }
 
     size_t numVariants() const { return m_variants.size(); }
     const Vector<InByVariant, 1>& variants() const { return m_variants; }
     const InByVariant& at(size_t index) const { return m_variants[index]; }
     const InByVariant& operator[](size_t index) const { return at(index); }
 
-    bool takesSlowPath() const { return m_state == TakesSlowPath; }
+    bool takesSlowPath() const { return m_state == Megamorphic || m_state == TakesSlowPath; }
     
     void merge(const InByStatus&);
 
@@ -115,7 +118,7 @@ public:
 
 private:
 #if ENABLE(DFG_JIT)
-    static InByStatus computeForStubInfoWithoutExitSiteFeedback(const ConcurrentJSLocker&, VM&, StructureStubInfo*);
+    static InByStatus computeForStubInfoWithoutExitSiteFeedback(const ConcurrentJSLocker&, VM&, StructureStubInfo*, CodeOrigin);
 #endif
     bool appendVariant(const InByVariant&);
     void shrinkToFit();

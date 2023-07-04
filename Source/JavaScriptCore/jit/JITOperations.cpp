@@ -611,6 +611,81 @@ JSC_DEFINE_JIT_OPERATION(operationInByIdOptimize, EncodedJSValue, (JSGlobalObjec
     return JSValue::encode(jsBoolean(found));
 }
 
+static ALWAYS_INLINE JSValue inByIdMegamorphic(JSGlobalObject* globalObject, VM& vm, CallFrame* callFrame, StructureStubInfo* stubInfo, JSValue baseValue, CacheableIdentifier identifier)
+{
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    auto* uid = identifier.uid();
+    PropertySlot slot(baseValue, PropertySlot::InternalMethodType::HasProperty);
+
+    if (UNLIKELY(!baseValue.isObject())) {
+        if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
+            repatchInBySlowPathCall(callFrame->codeBlock(), *stubInfo, InByKind::ById);
+        throwException(globalObject, scope, createInvalidInParameterError(globalObject, baseValue));
+        return jsUndefined();
+    }
+
+    JSObject* baseObject = asObject(baseValue);
+    JSObject* object = baseObject;
+    bool cacheable = true;
+    while (true) {
+        if (UNLIKELY(TypeInfo::overridesGetOwnPropertySlot(object->inlineTypeFlags()) && object->type() != ArrayType && object->type() != JSFunctionType && object != globalObject->arrayPrototype())) {
+            if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
+                repatchInBySlowPathCall(callFrame->codeBlock(), *stubInfo, InByKind::ById);
+            RELEASE_AND_RETURN(scope, jsBoolean(object->getNonIndexPropertySlot(globalObject, uid, slot)));
+        }
+
+        Structure* structure = object->structure();
+        bool hasProperty = object->getOwnNonIndexPropertySlot(vm, structure, uid, slot);
+        structure = object->structure(); // Reload it again since static-class-table can cause transition. But this transition only affects on this Structure.
+        cacheable &= structure->propertyAccessesAreCacheable();
+        if (hasProperty) {
+            if (LIKELY(cacheable && slot.isCacheableValue())) {
+                if (slot.slotBase() == baseObject || !baseObject->structure()->isDictionary())
+                    vm.megamorphicCache()->initAsHasHit(baseObject->structureID(), uid);
+                else {
+                    if (UNLIKELY(baseObject->structure()->hasBeenFlattenedBefore())) {
+                        if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
+                            repatchInBySlowPathCall(callFrame->codeBlock(), *stubInfo, InByKind::ById);
+                    }
+                }
+            } else {
+                if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
+                    repatchInBySlowPathCall(callFrame->codeBlock(), *stubInfo, InByKind::ById);
+            }
+            return jsBoolean(true);
+        }
+
+        cacheable &= structure->propertyAccessesAreCacheableForAbsence();
+        cacheable &= structure->hasMonoProto();
+
+        JSValue prototype = object->getPrototypeDirect();
+        if (!prototype.isObject()) {
+            if (LIKELY(cacheable)) {
+                if (LIKELY(!baseObject->structure()->isDictionary())) {
+                    vm.megamorphicCache()->initAsHasMiss(baseObject->structureID(), uid);
+                    return jsBoolean(false);
+                }
+                if (LIKELY(!baseObject->structure()->hasBeenFlattenedBefore()))
+                    return jsBoolean(false);
+            }
+            if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
+                repatchInBySlowPathCall(callFrame->codeBlock(), *stubInfo, InByKind::ById);
+            return jsBoolean(false);
+        }
+        object = asObject(prototype);
+    }
+}
+
+JSC_DEFINE_JIT_OPERATION(operationInByIdMegamorphic, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+    JSValue baseValue = JSValue::decode(base);
+    return JSValue::encode(inByIdMegamorphic(globalObject, vm, callFrame, stubInfo, baseValue, CacheableIdentifier::createFromRawBits(rawCacheableIdentifier)));
+}
+
 JSC_DEFINE_JIT_OPERATION(operationInByValOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, ArrayProfile* arrayProfile, EncodedJSValue encodedBase, EncodedJSValue encodedKey))
 {
     SuperSamplerScope superSamplerScope(false);
@@ -665,6 +740,91 @@ JSC_DEFINE_JIT_OPERATION(operationInByValGeneric, EncodedJSValue, (JSGlobalObjec
 
     stubInfo->tookSlowPath = true;
     return JSValue::encode(jsBoolean(CommonSlowPaths::opInByVal(globalObject, JSValue::decode(base), JSValue::decode(key), arrayProfile)));
+}
+
+static ALWAYS_INLINE JSValue inByValMegamorphic(JSGlobalObject* globalObject, VM& vm, CallFrame* callFrame, StructureStubInfo* stubInfo, ArrayProfile* profile, JSValue baseValue, JSValue thisValue, JSValue subscript)
+{
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    if (UNLIKELY(!baseValue.isObject() || !(subscript.isString() && CacheableIdentifier::isCacheableIdentifierCell(subscript)))) {
+        if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
+            repatchInBySlowPathCall(callFrame->codeBlock(), *stubInfo, InByKind::ByVal);
+        RELEASE_AND_RETURN(scope, jsBoolean(CommonSlowPaths::opInByVal(globalObject, baseValue, subscript, profile)));
+    }
+
+    Identifier propertyName = subscript.toPropertyKey(globalObject);
+    RETURN_IF_EXCEPTION(scope, { });
+
+    JSObject* baseObject = asObject(baseValue);
+    UniquedStringImpl* uid = propertyName.impl();
+    if (UNLIKELY(!canUseMegamorphicInById(vm, uid))) {
+        if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
+            repatchInBySlowPathCall(callFrame->codeBlock(), *stubInfo, InByKind::ByVal);
+        if (profile)
+            profile->observeStructure(baseObject->structure());
+        RELEASE_AND_RETURN(scope, jsBoolean(baseObject->hasProperty(globalObject, uid)));
+    }
+
+    PropertySlot slot(thisValue, PropertySlot::InternalMethodType::HasProperty);
+    JSObject* object = baseObject;
+    bool cacheable = true;
+    while (true) {
+        if (UNLIKELY(TypeInfo::overridesGetOwnPropertySlot(object->inlineTypeFlags()) && object->type() != ArrayType && object->type() != JSFunctionType && object != globalObject->arrayPrototype())) {
+            if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
+                repatchInBySlowPathCall(callFrame->codeBlock(), *stubInfo, InByKind::ByVal);
+            RELEASE_AND_RETURN(scope, jsBoolean(object->getNonIndexPropertySlot(globalObject, uid, slot)));
+        }
+
+        Structure* structure = object->structure();
+        bool hasProperty = object->getOwnNonIndexPropertySlot(vm, structure, uid, slot);
+        structure = object->structure(); // Reload it again since static-class-table can cause transition. But this transition only affects on this Structure.
+        cacheable &= structure->propertyAccessesAreCacheable();
+        if (hasProperty) {
+            if (LIKELY(cacheable && slot.isCacheableValue())) {
+                if (slot.slotBase() == baseObject || !baseObject->structure()->isDictionary())
+                    vm.megamorphicCache()->initAsHasHit(baseObject->structureID(), uid);
+                else {
+                    if (UNLIKELY(baseObject->structure()->hasBeenFlattenedBefore())) {
+                        if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
+                            repatchInBySlowPathCall(callFrame->codeBlock(), *stubInfo, InByKind::ByVal);
+                    }
+                }
+            } else {
+                if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
+                    repatchInBySlowPathCall(callFrame->codeBlock(), *stubInfo, InByKind::ByVal);
+            }
+            return jsBoolean(true);
+        }
+
+        cacheable &= structure->propertyAccessesAreCacheableForAbsence();
+        cacheable &= structure->hasMonoProto();
+
+        JSValue prototype = object->getPrototypeDirect();
+        if (!prototype.isObject()) {
+            if (LIKELY(cacheable)) {
+                if (LIKELY(!baseObject->structure()->isDictionary())) {
+                    vm.megamorphicCache()->initAsHasMiss(baseObject->structureID(), uid);
+                    return jsBoolean(false);
+                }
+                if (LIKELY(!baseObject->structure()->hasBeenFlattenedBefore()))
+                    return jsBoolean(false);
+            }
+
+            if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
+                repatchInBySlowPathCall(callFrame->codeBlock(), *stubInfo, InByKind::ByVal);
+            return jsBoolean(false);
+        }
+        object = asObject(prototype);
+    }
+}
+
+JSC_DEFINE_JIT_OPERATION(operationInByValMegamorphic, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, ArrayProfile* profile, EncodedJSValue encodedBase, EncodedJSValue encodedSubscript))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+    JSValue baseValue = JSValue::decode(encodedBase);
+    return JSValue::encode(inByValMegamorphic(globalObject, vm, callFrame, stubInfo, profile, baseValue, baseValue, JSValue::decode(encodedSubscript)));
 }
 
 JSC_DEFINE_JIT_OPERATION(operationHasPrivateNameOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, EncodedJSValue encodedProperty))
@@ -2707,17 +2867,19 @@ static ALWAYS_INLINE JSValue getByValMegamorphic(JSGlobalObject* globalObject, V
     Identifier propertyName = subscript.toPropertyKey(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
 
+    JSObject* baseObject = asObject(baseValue);
     UniquedStringImpl* uid = propertyName.impl();
     if (UNLIKELY(!canUseMegamorphicGetById(vm, uid))) {
         if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
             repatchGetBySlowPathCall(callFrame->codeBlock(), *stubInfo, kind);
         if (kind == GetByKind::ByVal)
-            RELEASE_AND_RETURN(scope, getByVal(globalObject, callFrame, profile, baseValue, subscript));
-        RELEASE_AND_RETURN(scope, getByValWithThis(globalObject, callFrame, profile, baseValue, subscript, thisValue));
+            RELEASE_AND_RETURN(scope, baseObject->get(globalObject, uid));
+
+        PropertySlot slot(thisValue, PropertySlot::PropertySlot::InternalMethodType::Get);
+        RELEASE_AND_RETURN(scope, baseValue.get(globalObject, uid, slot));
     }
 
     PropertySlot slot(thisValue, PropertySlot::InternalMethodType::Get);
-    JSObject* baseObject = asObject(baseValue);
     JSObject* object = baseObject;
     bool cacheable = true;
     while (true) {

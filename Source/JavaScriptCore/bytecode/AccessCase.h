@@ -111,6 +111,7 @@ DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(AccessCase);
     macro(IntrinsicGetter) \
     macro(InHit) \
     macro(InMiss) \
+    macro(InMegamorphic) \
     macro(ArrayLength) \
     macro(StringLength) \
     macro(DirectArgumentsLength) \
@@ -175,6 +176,7 @@ DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(AccessCase);
     macro(IndexedResizableTypedArrayUint32Store) \
     macro(IndexedResizableTypedArrayFloat32Store) \
     macro(IndexedResizableTypedArrayFloat64Store) \
+    macro(IndexedMegamorphicIn) \
 
 
 class AccessCase : public ThreadSafeRefCounted<AccessCase> {

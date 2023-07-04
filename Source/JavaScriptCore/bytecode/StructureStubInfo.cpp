@@ -422,6 +422,8 @@ StubInfoSummary StructureStubInfo::summary(VM& vm) const
             case AccessCase::IndexedMegamorphicLoad:
             case AccessCase::StoreMegamorphic:
             case AccessCase::IndexedMegamorphicStore:
+            case AccessCase::InMegamorphic:
+            case AccessCase::IndexedMegamorphicIn:
                 return StubInfoSummary::Megamorphic;
             default:
                 break;
