@@ -778,6 +778,14 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncFromFast(VM& vm, JS
             // If the destination is uint32_t or int32_t, we can use copyElements.
             // 1. int32_t -> uint32_t conversion does not change any bit representation. So we can simply copy them.
             // 2. Hole is represented as JSEmpty in Int32Shape, which lower 32bits is zero. And we expect 0 for undefined, thus this copying simply works.
+            if constexpr (std::is_same_v<typename ViewClass::Adaptor::Type, uint8_t> || std::is_same_v<typename ViewClass::Adaptor::Type, int8_t>) {
+                WTF::copyElements(bitwise_cast<uint8_t*>(result->typedVector()), bitwise_cast<const uint64_t*>(array->butterfly()->contiguous().data()), length);
+                return JSValue::encode(result);
+            }
+            if constexpr (std::is_same_v<typename ViewClass::Adaptor::Type, uint16_t> || std::is_same_v<typename ViewClass::Adaptor::Type, int16_t>) {
+                WTF::copyElements(bitwise_cast<uint16_t*>(result->typedVector()), bitwise_cast<const uint64_t*>(array->butterfly()->contiguous().data()), length);
+                return JSValue::encode(result);
+            }
             if constexpr (std::is_same_v<typename ViewClass::Adaptor::Type, uint32_t> || std::is_same_v<typename ViewClass::Adaptor::Type, int32_t>) {
                 WTF::copyElements(bitwise_cast<uint32_t*>(result->typedVector()), bitwise_cast<const uint64_t*>(array->butterfly()->contiguous().data()), length);
                 return JSValue::encode(result);

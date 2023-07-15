@@ -1015,6 +1015,57 @@ inline void copyElements(uint32_t* destination, const uint64_t* source, unsigned
         *destination++ = *source++;
 }
 
+inline void copyElements(uint16_t* destination, const uint64_t* source, unsigned length)
+{
+    const auto* end = destination + length;
+#if CPU(ARM64)
+    const uintptr_t memoryAccessSize = 64 / sizeof(uint64_t);
+
+    if (length >= memoryAccessSize) {
+        const uintptr_t memoryAccessMask = memoryAccessSize - 1;
+
+        // Vector interleaved unpack, we only store the lower 8 bits.
+        const uintptr_t lengthLeft = end - destination;
+        const auto* const simdEnd = destination + (lengthLeft & ~memoryAccessMask);
+        do {
+            asm("ld4   { v0.8H, v1.8H, v2.8H, v3.8H }, [%[SOURCE]], #64\n\t"
+                "st1   { v0.8H }, [%[DESTINATION]], #16\n\t"
+                : [SOURCE]"+r" (source), [DESTINATION]"+r" (destination)
+                :
+                : "memory", "v0", "v1", "v2", "v3");
+        } while (destination != simdEnd);
+    }
+#endif
+    while (destination != end)
+        *destination++ = *source++;
+}
+
+inline void copyElements(uint8_t* destination, const uint64_t* source, unsigned length)
+{
+    const auto* end = destination + length;
+#if CPU(ARM64)
+    const uintptr_t memoryAccessSize = 64 / sizeof(uint64_t);
+
+    if (length >= memoryAccessSize) {
+        const uintptr_t memoryAccessMask = memoryAccessSize - 1;
+
+        // Vector interleaved unpack, we only store the lower 8 bits.
+        const uintptr_t lengthLeft = end - destination;
+        const auto* const simdEnd = destination + (lengthLeft & ~memoryAccessMask);
+        do {
+            asm("ld4   { v0.8H, v1.8H, v2.8H, v3.8H }, [%[SOURCE]], #64\n\t"
+                "xtn   v0.8B, v0.8H\n\t"
+                "st1   { v0.8B }, [%[DESTINATION]], #8\n\t"
+                : [SOURCE]"+r" (source), [DESTINATION]"+r" (destination)
+                :
+                : "memory", "v0", "v1", "v2", "v3");
+        } while (destination != simdEnd);
+    }
+#endif
+    while (destination != end)
+        *destination++ = *source++;
+}
+
 }
 
 using WTF::equalIgnoringASCIICase;
