@@ -892,11 +892,6 @@ inline void copyElements(uint16_t* destination, const uint8_t* source, unsigned 
 
 inline void copyElements(uint8_t* destination, const uint16_t* source, unsigned length)
 {
-#if ASSERT_ENABLED
-    for (unsigned i = 0; i < length; ++i)
-        ASSERT(isLatin1(source[i]));
-#endif
-
 #if CPU(X86_SSE2)
     const uintptr_t memoryAccessSize = 16; // Memory accesses on 16 byte (128 bit) alignment
     const uintptr_t memoryAccessMask = memoryAccessSize - 1;
