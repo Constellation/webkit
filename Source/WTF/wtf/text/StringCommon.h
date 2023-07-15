@@ -965,6 +965,56 @@ inline void copyElements(uint8_t* destination, const uint16_t* source, unsigned 
 #endif
 }
 
+inline void copyElements(uint16_t* destination, const uint32_t* source, unsigned length)
+{
+    const auto* end = destination + length;
+#if CPU(ARM64)
+    const uintptr_t memoryAccessSize = 32 / sizeof(uint32_t);
+
+    if (length >= memoryAccessSize) {
+        const uintptr_t memoryAccessMask = memoryAccessSize - 1;
+
+        // Vector interleaved unpack, we only store the lower 8 bits.
+        const uintptr_t lengthLeft = end - destination;
+        const auto* const simdEnd = destination + (lengthLeft & ~memoryAccessMask);
+        do {
+            asm("ld2   { v0.8H, v1.8H }, [%[SOURCE]], #32\n\t"
+                "st1   { v0.8H }, [%[DESTINATION]], #16\n\t"
+                : [SOURCE]"+r" (source), [DESTINATION]"+r" (destination)
+                :
+                : "memory", "v0", "v1");
+        } while (destination != simdEnd);
+    }
+#endif
+    while (destination != end)
+        *destination++ = *source++;
+}
+
+inline void copyElements(uint32_t* destination, const uint64_t* source, unsigned length)
+{
+    const auto* end = destination + length;
+#if CPU(ARM64)
+    const uintptr_t memoryAccessSize = 32 / sizeof(uint64_t);
+
+    if (length >= memoryAccessSize) {
+        const uintptr_t memoryAccessMask = memoryAccessSize - 1;
+
+        // Vector interleaved unpack, we only store the lower 8 bits.
+        const uintptr_t lengthLeft = end - destination;
+        const auto* const simdEnd = destination + (lengthLeft & ~memoryAccessMask);
+        do {
+            asm("ld2   { v0.4S, v1.4S }, [%[SOURCE]], #32\n\t"
+                "st1   { v0.4S }, [%[DESTINATION]], #16\n\t"
+                : [SOURCE]"+r" (source), [DESTINATION]"+r" (destination)
+                :
+                : "memory", "v0", "v1");
+        } while (destination != simdEnd);
+    }
+#endif
+    while (destination != end)
+        *destination++ = *source++;
+}
+
 }
 
 using WTF::equalIgnoringASCIICase;

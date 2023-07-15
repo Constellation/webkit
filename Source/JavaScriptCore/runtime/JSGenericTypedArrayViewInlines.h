@@ -363,6 +363,13 @@ bool JSGenericTypedArrayView<Adaptor>::setFromArrayLike(JSGlobalObject* globalOb
             if (safeLength == length && (safeLength + objectOffset) >= array->length() && array->isIteratorProtocolFastAndNonObservable()) {
                 IndexingType indexingType = array->indexingType() & IndexingShapeMask;
                 if (indexingType == Int32Shape) {
+                    // If the destination is uint32_t or int32_t, we can use copyElements.
+                    // 1. int32_t -> uint32_t conversion does not change any bit representation. So we can simply copy them.
+                    // 2. Hole is represented as JSEmpty in Int32Shape, which lower 32bits is zero. And we expect 0 for undefined, thus this copying simply works.
+                    if constexpr (std::is_same_v<typename Adaptor::Type, uint32_t> || std::is_same_v<typename Adaptor::Type, int32_t>) {
+                        WTF::copyElements(bitwise_cast<uint32_t*>(typedVector() + offset), bitwise_cast<const uint64_t*>(array->butterfly()->contiguous().data() + objectOffset), safeLength);
+                        return true;
+                    }
                     for (size_t i = 0; i < safeLength; ++i) {
                         JSValue value = array->butterfly()->contiguous().at(array, static_cast<unsigned>(i + objectOffset)).get();
                         if (LIKELY(!!value))
@@ -374,6 +381,11 @@ bool JSGenericTypedArrayView<Adaptor>::setFromArrayLike(JSGlobalObject* globalOb
                 }
 
                 if (indexingType == DoubleShape) {
+                    if constexpr (std::is_same_v<typename Adaptor::Type, double>) {
+                        // Double to double copy. Thus we can use memcpy (since Array will never overlap with TypedArrays' backing store).
+                        WTF::copyElements(typedVector() + offset, array->butterfly()->contiguousDouble().data() + objectOffset, safeLength);
+                        return true;
+                    }
                     for (size_t i = 0; i < safeLength; ++i) {
                         double d = array->butterfly()->contiguousDouble().at(array, static_cast<unsigned>(i + objectOffset));
                         setIndexQuicklyToNativeValue(offset + i, Adaptor::toNativeFromDouble(d));
