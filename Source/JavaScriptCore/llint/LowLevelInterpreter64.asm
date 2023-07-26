@@ -1175,7 +1175,7 @@ macro preOp(opcodeName, opcodeStruct, integerOperation)
 
 end
 
-llintOpWithMetadata(op_to_number, OpToNumber, macro (size, get, dispatch, metadata, return)
+llintOpWithReturn(op_to_number, OpToNumber, macro (size, get, dispatch, return)
     get(m_operand, t0)
     loadConstantOrVariable(size, t0, t2)
     bqaeq t2, numberTag, .opToNumberIsInt
@@ -1192,7 +1192,7 @@ llintOpWithMetadata(op_to_number, OpToNumber, macro (size, get, dispatch, metada
     dispatch()
 end)
 
-llintOpWithProfile(op_to_numeric, OpToNumeric, macro (size, get, dispatch, return)
+llintOpWithReturn(op_to_numeric, OpToNumeric, macro (size, get, dispatch, return)
     get(m_operand, t0)
     loadConstantOrVariable(size, t0, t2)
     bqaeq t2, numberTag, .opToNumericIsInt
