@@ -215,6 +215,12 @@ public:
         constexpr UnaryArithProfileBase bits = observedNumber.bits() << argObservedTypeShift;
         return bits;
     }
+    static constexpr UnaryArithProfileBase observedNonNumberBits()
+    {
+        constexpr ObservedType observedNumber { ObservedType().withNonNumber() };
+        constexpr UnaryArithProfileBase bits = observedNumber.bits() << argObservedTypeShift;
+        return bits;
+    }
 
     constexpr ObservedType argObservedType() const { return ObservedType((m_bits >> argObservedTypeShift) & observedTypeMask); }
     void setArgObservedType(ObservedType type)

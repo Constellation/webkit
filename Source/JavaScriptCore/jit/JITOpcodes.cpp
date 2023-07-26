@@ -951,6 +951,7 @@ void JIT::emit_op_to_number(const JSInstruction* currentInstruction)
     move(TrustedImm32(UnaryArithProfile::observedIntBits()), regT3);
     move(TrustedImm32(UnaryArithProfile::observedNumberBits()), regT5);
     moveConditionally64(AboveOrEqual, jsRegT10.payloadGPR(), GPRInfo::numberTagRegister, regT3, regT5);
+
     arithProfile->emitUnconditionalSet(*this, regT5);
     if (srcVReg != dstVReg)
         emitPutVirtualRegister(dstVReg, jsRegT10);
@@ -965,15 +966,19 @@ void JIT::emit_op_to_numeric(const JSInstruction* currentInstruction)
 
     emitGetVirtualRegister(srcVReg, jsRegT10);
 
-    move(TrustedImm32(UnaryArithProfile::observedNumberBits()), regT5);
+    move(TrustedImm32(UnaryArithProfile::observedIntBits()), regT5);
     Jump isNotCell = branchIfNotCell(jsRegT10);
     addSlowCase(branchIfNotHeapBigInt(jsRegT10.payloadGPR()));
+    move(TrustedImm32(UnaryArithProfile::observedNonNumberBits()), regT5);
     Jump isBigInt = jump();
 
     isNotCell.link(this);
     addSlowCase(branchIfNotNumber(jsRegT10, regT2));
+    move(TrustedImm32(UnaryArithProfile::observedNumberBits()), regT3);
+    moveConditionally64(AboveOrEqual, jsRegT10.payloadGPR(), GPRInfo::numberTagRegister, regT5, regT3, regT5);
     isBigInt.link(this);
 
+    arithProfile->emitUnconditionalSet(*this, regT5);
     if (srcVReg != dstVReg)
         emitPutVirtualRegister(dstVReg, jsRegT10);
 }
