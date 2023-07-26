@@ -477,8 +477,6 @@ bool CodeBlock::finishCreation(VM& vm, ScriptExecutable* ownerExecutable, Unlink
         LINK(OpGetByValWithThis, profile)
         LINK(OpGetPrototypeOf, profile)
         LINK(OpGetFromArguments, profile)
-        LINK(OpToNumber, profile)
-        LINK(OpToNumeric, profile)
         LINK(OpToObject, profile)
         LINK(OpGetArgument, profile)
         LINK(OpGetInternalField, profile)
