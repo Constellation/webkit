@@ -167,6 +167,7 @@ public:
 #endif
 
     void emitUnconditionalSet(CCallHelpers&, BitfieldType) const;
+    void emitUnconditionalSet(CCallHelpers&, GPRReg) const;
 #endif // ENABLE(JIT)
 
     constexpr uint32_t bits() const { return m_bits; }

@@ -510,13 +510,56 @@ static void updateArithProfileForBinaryArithOp(JSGlobalObject*, CodeBlock* codeB
 static void updateArithProfileForBinaryArithOp(JSGlobalObject*, CodeBlock*, const JSInstruction*, JSValue, JSValue, JSValue) { }
 #endif
 
+#if ENABLE(JIT)
+static void updateArithProfileForToNumberSlow(UnaryArithProfile& profile, JSValue result)
+{
+    profile.argSawNonNumber();
+    ASSERT(result.isNumber() || result.isBigInt());
+
+    if (result.isHeapBigInt())
+        profile.setObservedHeapBigInt();
+#if USE(BIGINT32)
+    else if (result.isBigInt32())
+        profile.setObservedBigInt32();
+#endif
+    else {
+        ASSERT(result.isNumber());
+        if (!result.isInt32()) {
+            if (operand.isInt32())
+                profile.setObservedInt32Overflow();
+
+            double doubleVal = result.asNumber();
+            if (!doubleVal && std::signbit(doubleVal))
+                profile.setObservedNegZeroDouble();
+            else {
+                profile.setObservedNonNegZeroDouble();
+
+                // The Int52 overflow check here intentionally omits 1ll << 51 as a valid negative Int52 value.
+                // Therefore, we will get a false positive if the result is that value. This is intentionally
+                // done to simplify the checking algorithm.
+                static const int64_t int52OverflowPoint = (1ll << 51);
+                int64_t int64Val = static_cast<int64_t>(std::abs(doubleVal));
+                if (int64Val >= int52OverflowPoint)
+                    profile.setObservedInt52Overflow();
+            }
+        }
+    }
+}
+#else
+static void updateArithProfileForToNumberSlow(UnaryArithProfile&, JSValue) { }
+#endif
+
 JSC_DEFINE_COMMON_SLOW_PATH(slow_path_to_number)
 {
     BEGIN();
     auto bytecode = pc->as<OpToNumber>();
     JSValue argument = GET_C(bytecode.m_operand).jsValue();
     JSValue result = jsNumber(argument.toNumber(globalObject));
-    RETURN_PROFILED(result);
+    CHECK_EXCEPTION();
+    RETURN_WITH_PROFILING(result, {
+        profile.argSawNonNumber();
+        profile.observeResult(result);
+    });
 }
 
 JSC_DEFINE_COMMON_SLOW_PATH(slow_path_to_numeric)
@@ -526,7 +569,10 @@ JSC_DEFINE_COMMON_SLOW_PATH(slow_path_to_numeric)
     JSValue argument = GET_C(bytecode.m_operand).jsValue();
     JSValue result = argument.toNumeric(globalObject);
     CHECK_EXCEPTION();
-    RETURN_PROFILED(result);
+    RETURN_WITH_PROFILING(result, {
+        profile.argSawNonNumber();
+        profile.observeResult(result);
+    });
 }
 
 JSC_DEFINE_COMMON_SLOW_PATH(slow_path_to_object)

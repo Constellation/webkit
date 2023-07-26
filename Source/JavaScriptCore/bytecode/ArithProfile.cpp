@@ -137,6 +137,12 @@ void ArithProfile<BitfieldType>::emitUnconditionalSet(CCallHelpers& jit, Bitfiel
     jit.or16(CCallHelpers::TrustedImm32(mask), CCallHelpers::AbsoluteAddress(addressOfBits()));
 }
 
+template<typename BitfieldType>
+void ArithProfile<BitfieldType>::emitUnconditionalSet(CCallHelpers& jit, GPRReg mask) const
+{
+    jit.or16(mask, CCallHelpers::AbsoluteAddress(addressOfBits()));
+}
+
 // Generate the implementations of the functions above for UnaryArithProfile/BinaryArithProfile
 // If changing the size of either, add the corresponding lines here.
 template class ArithProfile<uint16_t>;

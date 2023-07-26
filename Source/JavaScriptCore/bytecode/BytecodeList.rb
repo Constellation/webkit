@@ -279,7 +279,7 @@ op :to_object,
         profile: ValueProfile,
     }
 
-op_group :ValueProfiledUnaryOp,
+op_group :ProfiledUnaryOp,
     [
         :to_number,
         :to_numeric,
@@ -287,9 +287,7 @@ op_group :ValueProfiledUnaryOp,
     args: {
         dst: VirtualRegister,
         operand: VirtualRegister,
-    },
-    metadata: {
-        profile: ValueProfile,
+        profileIndex: unsigned,
     }
 
 op :tail_call,

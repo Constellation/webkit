@@ -942,12 +942,16 @@ void JIT::emit_op_to_number(const JSInstruction* currentInstruction)
     auto bytecode = currentInstruction->as<OpToNumber>();
     VirtualRegister dstVReg = bytecode.m_dst;
     VirtualRegister srcVReg = bytecode.m_operand;
+    UnaryArithProfile* arithProfile = &m_unlinkedCodeBlock->unaryArithProfile(currentInstruction->as<OpToNumber>().m_profileIndex);
 
     emitGetVirtualRegister(srcVReg, jsRegT10);
-    
+
     addSlowCase(branchIfNotNumber(jsRegT10, regT2));
 
-    emitValueProfilingSite(bytecode, jsRegT10);
+    move(TrustedImm32(UnaryArithProfile::observedIntBits()), regT3);
+    move(TrustedImm32(UnaryArithProfile::observedNumberBits()), regT5);
+    moveConditionally64(AboveOrEqual, jsRegT10.payloadGPR(), GPRInfo::numberTagRegister, regT3, regT5);
+    arithProfile->emitUnconditionalSet(*this, regT5);
     if (srcVReg != dstVReg)
         emitPutVirtualRegister(dstVReg, jsRegT10);
 }
@@ -957,9 +961,11 @@ void JIT::emit_op_to_numeric(const JSInstruction* currentInstruction)
     auto bytecode = currentInstruction->as<OpToNumeric>();
     VirtualRegister dstVReg = bytecode.m_dst;
     VirtualRegister srcVReg = bytecode.m_operand;
+    UnaryArithProfile* arithProfile = &m_unlinkedCodeBlock->unaryArithProfile(currentInstruction->as<OpToNumber>().m_profileIndex);
 
     emitGetVirtualRegister(srcVReg, jsRegT10);
 
+    move(TrustedImm32(UnaryArithProfile::observedNumberBits()), regT5);
     Jump isNotCell = branchIfNotCell(jsRegT10);
     addSlowCase(branchIfNotHeapBigInt(jsRegT10.payloadGPR()));
     Jump isBigInt = jump();
@@ -968,7 +974,6 @@ void JIT::emit_op_to_numeric(const JSInstruction* currentInstruction)
     addSlowCase(branchIfNotNumber(jsRegT10, regT2));
     isBigInt.link(this);
 
-    emitValueProfilingSite(bytecode, jsRegT10);
     if (srcVReg != dstVReg)
         emitPutVirtualRegister(dstVReg, jsRegT10);
 }
