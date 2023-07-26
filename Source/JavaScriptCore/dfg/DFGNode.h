@@ -1955,8 +1955,6 @@ public:
         case StringReplace:
         case StringReplaceRegExp:
         case StringReplaceString:
-        case ToNumber:
-        case ToNumeric:
         case ToObject:
         case CallNumberConstructor:
         case ValueBitAnd:

@@ -453,6 +453,14 @@ public:
         }
     }
 
+    void or16(RegisterID mask, AbsoluteAddress dest)
+    {
+        ARMThumbImmediate armImm = ARMThumbImmediate::makeEncodedImm(imm.m_value);
+        load16(setupArmAddress(dest), dataTempRegister);
+        m_assembler.orr(dataTempRegister, dataTempRegister, mask);
+        store16(dataTempRegister, Address(addressTempRegister));
+    }
+
     void or32(RegisterID src, RegisterID dest)
     {
         m_assembler.orr(dest, dest, src);
