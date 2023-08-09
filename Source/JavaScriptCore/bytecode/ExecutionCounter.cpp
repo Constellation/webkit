@@ -98,6 +98,22 @@ int32_t applyMemoryUsageHeuristicsAndConvertToInt(int32_t value, CodeBlock* code
     return static_cast<int32_t>(doubleResult);
 }
 
+int32_t maximumExecutionCountsBetweenCheckpoints(CountingVariant countingVariant, CodeBlock* codeBlock)
+{
+    double factor = 1.0;
+    if (codeBlock)
+        factor = std::max(std::sqrt(codeBlock->optimizationThresholdScalingFactor()), 1.0);
+    switch (countingVariant) {
+    case CountingForBaseline:
+        return toInt32(Options::maximumExecutionCountsBetweenCheckpointsForBaseline() * factor);
+    case CountingForUpperTiers:
+        return toInt32(Options::maximumExecutionCountsBetweenCheckpointsForUpperTiers() * factor);
+    default:
+        RELEASE_ASSERT_NOT_REACHED();
+        return 0;
+    }
+}
+
 template<CountingVariant countingVariant>
 bool ExecutionCounter<countingVariant>::hasCrossedThreshold(CodeBlock* codeBlock) const
 {
@@ -123,7 +139,7 @@ bool ExecutionCounter<countingVariant>::hasCrossedThreshold(CodeBlock* codeBlock
     
     double actualCount = static_cast<double>(m_totalCount) + m_counter;
     double desiredCount = modifiedThreshold - static_cast<double>(
-        std::min(m_activeThreshold, maximumExecutionCountsBetweenCheckpoints())) / 2;
+        std::min(m_activeThreshold, maximumExecutionCountsBetweenCheckpoints(countingVariant, codeBlock))) / 2;
     
     bool result = actualCount >= desiredCount;
     
@@ -159,7 +175,7 @@ bool ExecutionCounter<countingVariant>::setThreshold(CodeBlock* codeBlock)
         return true;
     }
 
-    threshold = clippedThreshold(threshold);
+    threshold = clippedThreshold(codeBlock, threshold);
     
     m_counter = static_cast<int32_t>(-threshold);
         
