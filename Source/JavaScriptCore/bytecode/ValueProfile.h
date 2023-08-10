@@ -129,19 +129,30 @@ struct ValueProfileBase {
     
     SpeculatedType computeUpdatedPrediction(const ConcurrentJSLocker&)
     {
+#if USE(JSVALUE64)
+        if constexpr (totalNumberOfBuckets == 2) {
+            EncodedJSValue encodedValue1 = m_buckets[0];
+            EncodedJSValue encodedValue2 = m_buckets[1];
+            m_buckets[0] = JSValue::encode(JSValue());
+            m_buckets[1] = JSValue::encode(JSValue());
+            SpeculatedType prediction = m_prediction;
+            if (encodedValue1 | encodedValue2) {
+                prediction |= speculationFromValuePair(JSValue::decode(encodedValue1), JSValue::decode(encodedValue2));
+                m_prediction = prediction;
+            }
+            return prediction;
+        }
+#endif
+
         SpeculatedType merged = SpecNone;
         for (unsigned i = 0; i < totalNumberOfBuckets; ++i) {
             JSValue value = JSValue::decode(m_buckets[i]);
             if (!value)
                 continue;
-            
-            mergeSpeculation(merged, speculationFromValue(value));
-            
+            merged |= speculationFromValue(value);
             m_buckets[i] = JSValue::encode(JSValue());
         }
-
-        mergeSpeculation(m_prediction, merged);
-        
+        m_prediction |= merged;
         return m_prediction;
     }
 

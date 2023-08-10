@@ -520,6 +520,7 @@ SpeculatedType speculationFromClassInfoInheritance(const ClassInfo*);
 SpeculatedType speculationFromStructure(Structure*);
 SpeculatedType speculationFromCell(JSCell*);
 SpeculatedType speculationFromValue(JSValue);
+SpeculatedType speculationFromValuePair(JSValue, JSValue);
 // If it's an anyInt(), it'll return speculated types from the Int52 lattice.
 // Otherwise, it'll return types from the JSValue lattice.
 JS_EXPORT_PRIVATE SpeculatedType int52AwareSpeculationFromValue(JSValue);

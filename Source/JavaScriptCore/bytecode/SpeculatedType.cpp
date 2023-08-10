@@ -602,6 +602,16 @@ SpeculatedType speculationFromValue(JSValue value)
     return SpecOther;
 }
 
+SpeculatedType speculationFromValuePair(JSValue value1, JSValue value2)
+{
+    SpeculatedType result = SpecNone;
+    if (value1)
+        result |= speculationFromValue(value1);
+    if (value2)
+        result |= speculationFromValue(value2);
+    return result;
+}
+
 SpeculatedType int52AwareSpeculationFromValue(JSValue value)
 {
     if (!value.isAnyInt())
