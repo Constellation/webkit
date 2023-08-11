@@ -27,6 +27,7 @@
 #include "Structure.h"
 #include "Yarr.h"
 #include <wtf/Forward.h>
+#include <wtf/text/StringSearch.h>
 #include <wtf/text/WTFString.h>
 
 #if ENABLE(YARR_JIT)
@@ -133,7 +134,17 @@ public:
 
     bool hasCode()
     {
-        return m_state == RegExpState::JITCode || m_state == RegExpState::ByteCode;
+        switch (m_state) {
+        case RegExpState::AtomCharacterCode:
+        case RegExpState::AtomTableCode:
+        case RegExpState::JITCode:
+        case RegExpState::ByteCode:
+            return true;
+        case RegExpState::NotCompiled:
+        case RegExpState::ParseError:
+            return false;
+        }
+        return false;
     }
 
     bool hasCodeFor(Yarr::CharSize);
@@ -177,6 +188,8 @@ private:
 
     enum class RegExpState : uint8_t {
         ParseError,
+        AtomCharacterCode,
+        AtomTableCode,
         JITCode,
         ByteCode,
         NotCompiled
@@ -219,10 +232,12 @@ private:
     OptionSet<Yarr::Flags> m_flags;
     Yarr::ErrorCode m_constructionErrorCode { Yarr::ErrorCode::NoError };
     unsigned m_numSubpatterns { 0 };
+    std::unique_ptr<BoyerMooreHorspoolTable<uint8_t>> m_regExpTable;
     std::unique_ptr<Yarr::BytecodePattern> m_regExpBytecode;
 #if ENABLE(YARR_JIT)
     std::unique_ptr<Yarr::YarrCodeBlock> m_regExpJITCode;
 #endif
+    String m_atom;
     std::unique_ptr<RareData> m_rareData;
 #if ENABLE(REGEXP_TRACING)
     double m_rtMatchOnlyTotalSubjectStringLen { 0.0 };

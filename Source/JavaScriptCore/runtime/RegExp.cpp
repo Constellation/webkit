@@ -242,7 +242,24 @@ void RegExp::compile(VM* vm, Yarr::CharSize charSize, std::optional<StringView> 
     if (!hasCode()) {
         ASSERT(m_state == RegExpState::NotCompiled);
         vm->regExpCache()->addToStrongCache(this);
-        m_state = RegExpState::ByteCode;
+    }
+
+    String atom = pattern.atom();
+    if (!atom.isNull()) {
+        if (atom.length() == 1) {
+            m_atom = WTFMove(atom);
+            m_state = RegExpState::AtomCharacterCode;
+            return;
+        }
+        constexpr unsigned minPatternLength = 4;
+        if (atom.length() <= BoyerMooreHorspoolTable<uint8_t>::maxPatternLength) {
+            if (atom.length() >= minPatternLength) {
+                m_regExpTable = makeUnique<BoyerMooreHorspoolTable<uint8_t>>(atom);
+                m_atom = WTFMove(atom);
+                m_state = RegExpState::AtomTableCode;
+                return;
+            }
+        }
     }
 
 #if ENABLE(YARR_JIT)
@@ -307,7 +324,24 @@ void RegExp::compileMatchOnly(VM* vm, Yarr::CharSize charSize, std::optional<Str
     if (!hasCode()) {
         ASSERT(m_state == RegExpState::NotCompiled);
         vm->regExpCache()->addToStrongCache(this);
-        m_state = RegExpState::ByteCode;
+    }
+
+    String atom = pattern.atom();
+    if (!atom.isNull()) {
+        if (atom.length() == 1) {
+            m_atom = WTFMove(atom);
+            m_state = RegExpState::AtomCharacterCode;
+            return;
+        }
+        constexpr unsigned minPatternLength = 4;
+        if (atom.length() <= BoyerMooreHorspoolTable<uint8_t>::maxPatternLength) {
+            if (atom.length() >= minPatternLength) {
+                m_regExpTable = makeUnique<BoyerMooreHorspoolTable<uint8_t>>(atom);
+                m_atom = WTFMove(atom);
+                m_state = RegExpState::AtomTableCode;
+                return;
+            }
+        }
     }
 
 #if ENABLE(YARR_JIT)
@@ -362,6 +396,8 @@ void RegExp::deleteCode()
     if (!hasCode())
         return;
     m_state = RegExpState::NotCompiled;
+    m_regExpTable = nullptr;
+    m_atom = String();
 #if ENABLE(YARR_JIT)
     if (m_regExpJITCode)
         m_regExpJITCode->clear(locker);
@@ -442,6 +478,8 @@ void RegExp::matchCompareWithInterpreter(const String& s, int startOffset, int* 
         switch (m_state) {
         case RegExpState::ParseError:
         case RegExpState::NotCompiled:
+        case RegExpState::AtomCharacterCode:
+        case RegExpState::AtomTableCode:
             break;
         case RegExpState::ByteCode:
             snprintf(jit8BitMatchOnlyAddr, jitAddrSize, "fallback    ");

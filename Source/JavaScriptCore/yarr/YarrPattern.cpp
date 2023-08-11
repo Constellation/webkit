@@ -1989,7 +1989,12 @@ public:
             builder.append(static_cast<UChar>(term.patternCharacter));
         }
 
-        return builder.toString();
+        String atom = builder.toString();
+        if (atom.length() == 1)
+            return atom;
+        if (atom.length() < 4)
+            return { };
+        return atom;
     }
 
     ErrorCode error() { return m_error; }

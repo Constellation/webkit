@@ -456,7 +456,7 @@ ALWAYS_INLINE static size_t findInner(const SearchCharacterType* searchCharacter
 
 ALWAYS_INLINE const uint8_t* find8(const uint8_t* pointer, uint8_t character, size_t length)
 {
-    constexpr size_t thresholdLength = 16;
+    constexpr size_t thresholdLength = 64;
 
     size_t index = 0;
     size_t runway = std::min(thresholdLength, length);

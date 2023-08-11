@@ -51,25 +51,29 @@ public:
         initializeTable(std::span(pattern.characters(), pattern.characters() + pattern.length()));
     }
 
-    ALWAYS_INLINE size_t find(StringView string, StringView matchString) const
+    ALWAYS_INLINE size_t find(StringView string, StringView matchString, unsigned start = 0) const
     {
         unsigned length = string.length();
         unsigned matchLength = matchString.length();
-        if (matchLength > length)
+        if (start > length)
+            return notFound;
+
+        unsigned searchLength = length - start;
+        if (matchLength > searchLength)
             return notFound;
 
         if (UNLIKELY(!matchLength))
-            return 0;
+            return start;
 
         if (string.is8Bit()) {
             if (matchString.is8Bit())
-                return findInner(string.characters8(), matchString.characters8(), length, matchLength);
-            return findInner(string.characters8(), matchString.characters16(), length, matchLength);
+                return findInner(string.characters8(), matchString.characters8(), length, matchLength, start);
+            return findInner(string.characters8(), matchString.characters16(), length, matchLength, start);
         }
 
         if (matchString.is8Bit())
-            return findInner(string.characters16(), matchString.characters8(), length, matchLength);
-        return findInner(string.characters16(), matchString.characters16(), length, matchLength);
+            return findInner(string.characters16(), matchString.characters8(), length, matchLength, start);
+        return findInner(string.characters16(), matchString.characters16(), length, matchLength, start);
     }
 
 private:
@@ -89,10 +93,10 @@ private:
     }
 
     template <typename SearchCharacterType, typename MatchCharacterType>
-    ALWAYS_INLINE size_t findInner(const SearchCharacterType* characters, const MatchCharacterType* matchCharacters, unsigned length, unsigned matchLength) const
+    ALWAYS_INLINE size_t findInner(const SearchCharacterType* characters, const MatchCharacterType* matchCharacters, unsigned length, unsigned matchLength, unsigned start) const
     {
-        auto* cursor = characters;
-        auto* last = characters + length - matchLength;
+        auto* cursor = characters + start;
+        auto* last = characters + length - matchLength - start;
         while (cursor <= last) {
             if (equal(cursor, matchCharacters, matchLength))
                 return cursor - characters;
