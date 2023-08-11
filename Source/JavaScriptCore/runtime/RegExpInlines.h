@@ -131,18 +131,18 @@ ALWAYS_INLINE int RegExp::matchInline(JSGlobalObject* nullOrGlobalObject, VM& vm
         size_t result = s.find(m_atom.characterAt(0), startOffset);
         if (result == WTF::notFound)
             return -1;
-        offsetVector[0] = result - startOffset;
-        offsetVector[1] = result + 1 - startOffset;
-        return result - startOffset;
+        offsetVector[0] = result;
+        offsetVector[1] = result + 1;
+        return result;
     }
 
     if (m_state == RegExpState::AtomTableCode) {
         size_t result = m_regExpTable->find(s, m_atom, startOffset);
         if (result == WTF::notFound)
             return -1;
-        offsetVector[0] = result - startOffset;
-        offsetVector[1] = result + m_atom.length() - startOffset;
-        return result - startOffset;
+        offsetVector[0] = result;
+        offsetVector[1] = result + m_atom.length();
+        return result;
     }
 
 #if ENABLE(YARR_JIT)
@@ -284,14 +284,14 @@ ALWAYS_INLINE MatchResult RegExp::matchInline(JSGlobalObject* nullOrGlobalObject
         size_t result = s.find(m_atom.characterAt(0), startOffset);
         if (result == WTF::notFound)
             return MatchResult::failed();
-        return MatchResult { result - startOffset, result + 1 - startOffset };
+        return MatchResult { result, result + 1 };
     }
 
     if (m_state == RegExpState::AtomTableCode) {
         size_t result = m_regExpTable->find(s, m_atom, startOffset);
         if (result == WTF::notFound)
             return MatchResult::failed();
-        return MatchResult { result - startOffset, result + m_atom.length() - startOffset };
+        return MatchResult { result, result + m_atom.length() };
     }
 
 #if ENABLE(YARR_JIT)
