@@ -251,7 +251,7 @@ void RegExp::compile(VM* vm, Yarr::CharSize charSize, std::optional<StringView> 
             m_state = RegExpState::AtomCharacterCode;
             return;
         }
-        constexpr unsigned minPatternLength = 4;
+        constexpr unsigned minPatternLength = 8;
         if (atom.length() <= BoyerMooreHorspoolTable<uint8_t>::maxPatternLength) {
             if (atom.length() >= minPatternLength) {
                 m_regExpTable = makeUnique<BoyerMooreHorspoolTable<uint8_t>>(atom);
@@ -333,7 +333,7 @@ void RegExp::compileMatchOnly(VM* vm, Yarr::CharSize charSize, std::optional<Str
             m_state = RegExpState::AtomCharacterCode;
             return;
         }
-        constexpr unsigned minPatternLength = 4;
+        constexpr unsigned minPatternLength = 8;
         if (atom.length() <= BoyerMooreHorspoolTable<uint8_t>::maxPatternLength) {
             if (atom.length() >= minPatternLength) {
                 m_regExpTable = makeUnique<BoyerMooreHorspoolTable<uint8_t>>(atom);
