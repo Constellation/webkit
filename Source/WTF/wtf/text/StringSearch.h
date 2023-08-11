@@ -58,12 +58,12 @@ public:
         if (start > length)
             return notFound;
 
+        if (UNLIKELY(!matchLength))
+            return start;
+
         unsigned searchLength = length - start;
         if (matchLength > searchLength)
             return notFound;
-
-        if (UNLIKELY(!matchLength))
-            return start;
 
         if (string.is8Bit()) {
             if (matchString.is8Bit())
@@ -96,7 +96,7 @@ private:
     ALWAYS_INLINE size_t findInner(const SearchCharacterType* characters, const MatchCharacterType* matchCharacters, unsigned length, unsigned matchLength, unsigned start) const
     {
         auto* cursor = characters + start;
-        auto* last = characters + length - matchLength - start;
+        auto* last = characters + length - matchLength;
         while (cursor <= last) {
             if (equal(cursor, matchCharacters, matchLength))
                 return cursor - characters;
