@@ -72,7 +72,7 @@ ALWAYS_INLINE bool RegExp::hasCodeFor(Yarr::CharSize charSize)
 {
     if (hasCode()) {
 #if ENABLE(YARR_JIT)
-        if (m_state != JITCode)
+        if (m_state != RegExpState::JITCode)
             return true;
         ASSERT(m_regExpJITCode);
         if ((charSize == Yarr::CharSize::Char8) && (m_regExpJITCode->has8BitCode()))
@@ -92,7 +92,7 @@ ALWAYS_INLINE void RegExp::compileIfNecessary(VM& vm, Yarr::CharSize charSize, s
     if (hasCodeFor(charSize))
         return;
 
-    if (m_state == ParseError)
+    if (m_state == RegExpState::ParseError)
         return;
 
     compile(&vm, charSize, sampleString);
@@ -120,7 +120,7 @@ ALWAYS_INLINE int RegExp::matchInline(JSGlobalObject* nullOrGlobalObject, VM& vm
         return -1;
     };
 
-    if (m_state == ParseError)
+    if (m_state == RegExpState::ParseError)
         return throwError();
 
     ovector.resize(offsetVectorSize());
@@ -128,7 +128,7 @@ ALWAYS_INLINE int RegExp::matchInline(JSGlobalObject* nullOrGlobalObject, VM& vm
 
     int result;
 #if ENABLE(YARR_JIT)
-    if (m_state == JITCode) {
+    if (m_state == RegExpState::JITCode) {
         {
             ASSERT(m_regExpJITCode);
             Yarr::MatchingContextHolder regExpContext(vm, m_regExpJITCode->usesPatternContextBuffer(), this, matchFrom);
@@ -142,7 +142,7 @@ ALWAYS_INLINE int RegExp::matchInline(JSGlobalObject* nullOrGlobalObject, VM& vm
         if (result == static_cast<int>(Yarr::JSRegExpResult::JITCodeFailure)) {
             // JIT'ed code couldn't handle expression, so punt back to the interpreter.
             byteCodeCompileIfNecessary(&vm);
-            if (m_state == ParseError)
+            if (m_state == RegExpState::ParseError)
                 return throwError();
             {
                 constexpr bool usesPatternContextBuffer = false;
@@ -152,9 +152,9 @@ ALWAYS_INLINE int RegExp::matchInline(JSGlobalObject* nullOrGlobalObject, VM& vm
         }
 
 #if ENABLE(YARR_JIT_DEBUG)
-        if (m_state == JITCode) {
+        if (m_state == RegExpState::JITCode) {
             byteCodeCompileIfNecessary(&vm);
-            if (m_state == ParseError)
+            if (m_state == RegExpState::ParseError)
                 return throwError();
             matchCompareWithInterpreter(s, startOffset, offsetVector, result);
         }
@@ -210,7 +210,7 @@ ALWAYS_INLINE bool RegExp::hasMatchOnlyCodeFor(Yarr::CharSize charSize)
 {
     if (hasCode()) {
 #if ENABLE(YARR_JIT)
-        if (m_state != JITCode)
+        if (m_state != RegExpState::JITCode)
             return true;
         ASSERT(m_regExpJITCode);
         if ((charSize == Yarr::CharSize::Char8) && (m_regExpJITCode->has8BitCodeMatchOnly()))
@@ -231,7 +231,7 @@ ALWAYS_INLINE void RegExp::compileIfNecessaryMatchOnly(VM& vm, Yarr::CharSize ch
     if (hasMatchOnlyCodeFor(charSize))
         return;
 
-    if (m_state == ParseError)
+    if (m_state == RegExpState::ParseError)
         return;
 
     compileMatchOnly(&vm, charSize, sampleString);
@@ -259,11 +259,11 @@ ALWAYS_INLINE MatchResult RegExp::matchInline(JSGlobalObject* nullOrGlobalObject
         return MatchResult::failed();
     };
 
-    if (m_state == ParseError)
+    if (m_state == RegExpState::ParseError)
         return throwError();
 
 #if ENABLE(YARR_JIT)
-    if (m_state == JITCode) {
+    if (m_state == RegExpState::JITCode) {
         MatchResult result;
         {
             ASSERT(m_regExpJITCode);
@@ -284,7 +284,7 @@ ALWAYS_INLINE MatchResult RegExp::matchInline(JSGlobalObject* nullOrGlobalObject
 
         // JIT'ed code couldn't handle expression, so punt back to the interpreter.
         byteCodeCompileIfNecessary(&vm);
-        if (m_state == ParseError)
+        if (m_state == RegExpState::ParseError)
             return throwError();
     }
 #endif

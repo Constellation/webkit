@@ -304,10 +304,6 @@ void RegExp::compileMatchOnly(VM* vm, Yarr::CharSize charSize, std::optional<Str
     }
     ASSERT(m_numSubpatterns == pattern.m_numSubpatterns);
 
-    String atom = pattern.atom();
-    if (!atom.isNull())
-        dataLogLn("ATOM: ", atom);
-
     if (!hasCode()) {
         ASSERT(m_state == RegExpState::NotCompiled);
         vm->regExpCache()->addToStrongCache(this);
