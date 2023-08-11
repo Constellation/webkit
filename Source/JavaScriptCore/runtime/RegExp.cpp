@@ -158,7 +158,7 @@ void RegExp::finishCreation(VM& vm)
     Base::finishCreation(vm);
     Yarr::YarrPattern pattern(m_patternString, m_flags, m_constructionErrorCode);
     if (!isValid()) {
-        m_state = ParseError;
+        m_state = RegExpState::ParseError;
         return;
     }
 
@@ -216,14 +216,14 @@ void RegExp::byteCodeCompileIfNecessary(VM* vm)
 
     Yarr::YarrPattern pattern(m_patternString, m_flags, m_constructionErrorCode);
     if (hasError(m_constructionErrorCode)) {
-        m_state = ParseError;
+        m_state = RegExpState::ParseError;
         return;
     }
     ASSERT(m_numSubpatterns == pattern.m_numSubpatterns);
 
     m_regExpBytecode = byteCodeCompilePattern(vm, pattern, m_constructionErrorCode);
     if (!m_regExpBytecode) {
-        m_state = ParseError;
+        m_state = RegExpState::ParseError;
         return;
     }
 }
@@ -234,15 +234,15 @@ void RegExp::compile(VM* vm, Yarr::CharSize charSize, std::optional<StringView> 
     
     Yarr::YarrPattern pattern(m_patternString, m_flags, m_constructionErrorCode);
     if (hasError(m_constructionErrorCode)) {
-        m_state = ParseError;
+        m_state = RegExpState::ParseError;
         return;
     }
     ASSERT(m_numSubpatterns == pattern.m_numSubpatterns);
 
     if (!hasCode()) {
-        ASSERT(m_state == NotCompiled);
+        ASSERT(m_state == RegExpState::NotCompiled);
         vm->regExpCache()->addToStrongCache(this);
-        m_state = ByteCode;
+        m_state = RegExpState::ByteCode;
     }
 
 #if ENABLE(YARR_JIT)
@@ -255,7 +255,7 @@ void RegExp::compile(VM* vm, Yarr::CharSize charSize, std::optional<StringView> 
         auto& jitCode = ensureRegExpJITCode();
         Yarr::jitCompile(pattern, m_patternString, charSize, sampleString, vm, jitCode, Yarr::JITCompileMode::IncludeSubpatterns);
         if (!jitCode.failureReason()) {
-            m_state = JITCode;
+            m_state = RegExpState::JITCode;
             return;
         }
     }
@@ -266,10 +266,10 @@ void RegExp::compile(VM* vm, Yarr::CharSize charSize, std::optional<StringView> 
 
     dataLogLnIf(Options::dumpCompiledRegExpPatterns(), "Can't JIT this regular expression: \"/", m_patternString, "/\"");
 
-    m_state = ByteCode;
+    m_state = RegExpState::ByteCode;
     m_regExpBytecode = byteCodeCompilePattern(vm, pattern, m_constructionErrorCode);
     if (!m_regExpBytecode) {
-        m_state = ParseError;
+        m_state = RegExpState::ParseError;
         return;
     }
 }
@@ -288,7 +288,7 @@ bool RegExp::matchConcurrently(
         return false;
 
     position = matchInline<Vector<int>&, Yarr::MatchFrom::CompilerThread>(nullptr, vm, s, startOffset, ovector);
-    if (m_state == ParseError)
+    if (m_state == RegExpState::ParseError)
         return false;
     return true;
 }
@@ -299,15 +299,19 @@ void RegExp::compileMatchOnly(VM* vm, Yarr::CharSize charSize, std::optional<Str
     
     Yarr::YarrPattern pattern(m_patternString, m_flags, m_constructionErrorCode);
     if (hasError(m_constructionErrorCode)) {
-        m_state = ParseError;
+        m_state = RegExpState::ParseError;
         return;
     }
     ASSERT(m_numSubpatterns == pattern.m_numSubpatterns);
 
+    String atom = pattern.atom();
+    if (!atom.isNull())
+        dataLogLn("ATOM: ", atom);
+
     if (!hasCode()) {
-        ASSERT(m_state == NotCompiled);
+        ASSERT(m_state == RegExpState::NotCompiled);
         vm->regExpCache()->addToStrongCache(this);
-        m_state = ByteCode;
+        m_state = RegExpState::ByteCode;
     }
 
 #if ENABLE(YARR_JIT)
@@ -320,7 +324,7 @@ void RegExp::compileMatchOnly(VM* vm, Yarr::CharSize charSize, std::optional<Str
         auto& jitCode = ensureRegExpJITCode();
         Yarr::jitCompile(pattern, m_patternString, charSize, sampleString, vm, jitCode, Yarr::JITCompileMode::MatchOnly);
         if (!jitCode.failureReason()) {
-            m_state = JITCode;
+            m_state = RegExpState::JITCode;
             return;
         }
     }
@@ -331,10 +335,10 @@ void RegExp::compileMatchOnly(VM* vm, Yarr::CharSize charSize, std::optional<Str
 
     dataLogLnIf(Options::dumpCompiledRegExpPatterns(), "Can't JIT this regular expression: \"/", m_patternString, "/\"");
 
-    m_state = ByteCode;
+    m_state = RegExpState::ByteCode;
     m_regExpBytecode = byteCodeCompilePattern(vm, pattern, m_constructionErrorCode);
     if (!m_regExpBytecode) {
-        m_state = ParseError;
+        m_state = RegExpState::ParseError;
         return;
     }
 }
@@ -361,7 +365,7 @@ void RegExp::deleteCode()
     
     if (!hasCode())
         return;
-    m_state = NotCompiled;
+    m_state = RegExpState::NotCompiled;
 #if ENABLE(YARR_JIT)
     if (m_regExpJITCode)
         m_regExpJITCode->clear(locker);
@@ -440,16 +444,16 @@ void RegExp::matchCompareWithInterpreter(const String& s, int startOffset, int* 
         char jit8BitMatchAddr[jitAddrSize] { };
         char jit16BitMatchAddr[jitAddrSize] { };
         switch (m_state) {
-        case ParseError:
-        case NotCompiled:
+        case RegExpState::ParseError:
+        case RegExpState::NotCompiled:
             break;
-        case ByteCode:
+        case RegExpState::ByteCode:
             snprintf(jit8BitMatchOnlyAddr, jitAddrSize, "fallback    ");
             snprintf(jit16BitMatchOnlyAddr, jitAddrSize, "----      ");
             snprintf(jit8BitMatchAddr, jitAddrSize, "fallback    ");
             snprintf(jit16BitMatchAddr, jitAddrSize, "----      ");
             break;
-        case JITCode: {
+        case RegExpState::JITCode: {
             Yarr::YarrCodeBlock& codeBlock = *m_regExpJITCode.get();
             snprintf(jit8BitMatchOnlyAddr, jitAddrSize, "0x%014" PRIxPTR, reinterpret_cast<uintptr_t>(codeBlock.get8BitMatchOnlyAddr()));
             snprintf(jit16BitMatchOnlyAddr, jitAddrSize, "0x%014" PRIxPTR, reinterpret_cast<uintptr_t>(codeBlock.get16BitMatchOnlyAddr()));

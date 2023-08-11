@@ -71,7 +71,7 @@ public:
     JSObject* errorToThrow(JSGlobalObject* globalObject) { return Yarr::errorToThrow(globalObject, m_constructionErrorCode); }
     void reset()
     {
-        m_state = NotCompiled;
+        m_state = RegExpState::NotCompiled;
         m_constructionErrorCode = Yarr::ErrorCode::NoError;
     }
 
@@ -133,7 +133,7 @@ public:
 
     bool hasCode()
     {
-        return m_state == JITCode || m_state == ByteCode;
+        return m_state == RegExpState::JITCode || m_state == RegExpState::ByteCode;
     }
 
     bool hasCodeFor(Yarr::CharSize);
@@ -161,7 +161,7 @@ public:
 #if ENABLE(YARR_JIT)
     Yarr::YarrCodeBlock* getRegExpJITCodeBlock()
     {
-        if (m_state != JITCode)
+        if (m_state != RegExpState::JITCode)
             return nullptr;
 
         return m_regExpJITCode.get();
@@ -175,7 +175,7 @@ private:
 
     static RegExp* createWithoutCaching(VM&, const String&, OptionSet<Yarr::Flags>);
 
-    enum RegExpState : uint8_t {
+    enum class RegExpState : uint8_t {
         ParseError,
         JITCode,
         ByteCode,
@@ -215,7 +215,7 @@ private:
     };
 
     String m_patternString;
-    RegExpState m_state { NotCompiled };
+    RegExpState m_state { RegExpState::NotCompiled };
     OptionSet<Yarr::Flags> m_flags;
     Yarr::ErrorCode m_constructionErrorCode { Yarr::ErrorCode::NoError };
     unsigned m_numSubpatterns { 0 };
