@@ -318,9 +318,24 @@ public:
         return OBJECT_OFFSETOF(HashMapImpl<HashMapBucketType>, m_head);
     }
 
+    static ptrdiff_t offsetOfTail()
+    {
+        return OBJECT_OFFSETOF(HashMapImpl<HashMapBucketType>, m_tail);
+    }
+
     static ptrdiff_t offsetOfBuffer()
     {
         return OBJECT_OFFSETOF(HashMapImpl<HashMapBucketType>, m_buffer);
+    }
+
+    static ptrdiff_t offsetOfKeyCount()
+    {
+        return OBJECT_OFFSETOF(HashMapImpl<HashMapBucketType>, m_keyCount);
+    }
+
+    static ptrdiff_t offsetOfDeleteCount()
+    {
+        return OBJECT_OFFSETOF(HashMapImpl<HashMapBucketType>, m_deleteCount);
     }
 
     static ptrdiff_t offsetOfCapacity()
