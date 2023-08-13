@@ -178,6 +178,7 @@ namespace JSC { namespace FTL {
     macro(HashMapBucket_value, HashMapBucket<HashMapBucketDataKeyValue>::offsetOfValue()) \
     macro(HashMapBucket_key, HashMapBucket<HashMapBucketDataKeyValue>::offsetOfKey()) \
     macro(HashMapBucket_next, HashMapBucket<HashMapBucketDataKeyValue>::offsetOfNext()) \
+    macro(HashMapBucket_prev, HashMapBucket<HashMapBucketDataKeyValue>::offsetOfPrev()) \
     macro(VM_heap_barrierThreshold, VM::offsetOfHeapBarrierThreshold()) \
     macro(VM_heap_mutatorShouldBeFenced, VM::offsetOfHeapMutatorShouldBeFenced()) \
     macro(VM_exception, VM::exceptionOffset()) \

@@ -11934,15 +11934,51 @@ void SpeculativeJIT::compileNewSymbol(Node* node)
 
 void SpeculativeJIT::compileNewMap(Node* node)
 {
+    GPRTemporary head(this);
+    GPRTemporary tail(this);
     GPRTemporary result(this);
     GPRTemporary scratch1(this);
     GPRTemporary scratch2(this);
 
+    GPRReg headGPR = head.gpr();
+    GPRReg tailGPR = tail.gpr();
     GPRReg resultGPR = result.gpr();
     GPRReg scratch1GPR = scratch1.gpr();
     GPRReg scratch2GPR = scratch2.gpr();
 
     JumpList slowPath;
+
+    Allocator allocatorValue = allocatorForConcurrently<JSMap::BucketType>(vm(), sizeof(JSMap::BucketType), AllocatorForMode::AllocatorIfExists);
+    emitAllocateJSCell(headGPR, JITAllocator::constant(allocatorValue), scratch1GPR, TrustedImmPtr(m_graph.registerStructure(vm().hashMapBucketMapStructure.get())), scratch2GPR, slowPath, SlowAllocationResult::UndefinedBehavior);
+
+    ASSERT(JSValue::encode(JSValue()) == 0);
+    ASSERT(JSMap::BucketType::offsetOfNext() + 8 == JSMap::BucketType::offsetOfPrev());
+    ASSERT(JSMap::BucketType::offsetOfKey() + 8 == JSMap::BucketType::offsetOfValue());
+#if CPU(ARM64)
+    storePairPtr(ARM64Registers::zr, ARM64Registers::zr, Address(headGPR, JSMap::BucketType::offsetOfNext()));
+    storePairPtr(ARM64Registers::zr, ARM64Registers::zr, Address(headGPR, JSMap::BucketType::offsetOfKey()));
+#else
+    storePtr(TrustedImmPtr(nullptr), Address(headGPR, JSMap::BucketType::offsetOfNext()));
+    storePtr(TrustedImmPtr(nullptr), Address(headGPR, JSMap::BucketType::offsetOfPrev()));
+    storePtr(TrustedImmPtr(nullptr), Address(headGPR, JSMap::BucketType::offsetOfKey()));
+    storePtr(TrustedImmPtr(nullptr), Address(headGPR, JSMap::BucketType::offsetOfValue()));
+#endif
+    mutatorFence(vm());
+
+    emitAllocateJSCell(tailGPR, JITAllocator::constant(allocatorValue), scratch1GPR, TrustedImmPtr(m_graph.registerStructure(vm().hashMapBucketMapStructure.get())), scratch2GPR, slowPath, SlowAllocationResult::UndefinedBehavior);
+
+#if CPU(ARM64)
+    storePairPtr(ARM64Registers::zr, headGPR, Address(tailGPR, JSMap::BucketType::offsetOfNext()));
+    storePairPtr(ARM64Registers::zr, ARM64Registers::zr, Address(tailGPR, JSMap::BucketType::offsetOfKey()));
+    storePtr(tailGPR, Address(headGPR, JSMap::BucketType::offsetOfNext()));
+#else
+    storePtr(TrustedImmPtr(nullptr), Address(tailGPR, JSMap::BucketType::offsetOfNext()));
+    storePtr(headGPR, Address(tailGPR, JSMap::BucketType::offsetOfPrev()));
+    storePtr(TrustedImmPtr(nullptr), Address(tailGPR, JSMap::BucketType::offsetOfKey()));
+    storePtr(TrustedImmPtr(nullptr), Address(tailGPR, JSMap::BucketType::offsetOfValue()));
+    storePtr(tailGPR, Address(headGPR, JSMap::BucketType::offsetOfNext()));
+#endif
+    mutatorFence(vm());
 
     auto butterfly = TrustedImmPtr(nullptr);
     emitAllocateJSObject<JSMap>(resultGPR, TrustedImmPtr(node->structure()), butterfly, scratch1GPR, scratch2GPR, slowPath, SlowAllocationResult::UndefinedBehavior);
@@ -11951,12 +11987,12 @@ void SpeculativeJIT::compileNewMap(Node* node)
     ASSERT(JSMap::offsetOfHead() + 8 == JSMap::offsetOfTail());
     ASSERT(JSMap::offsetOfBuffer() + 8 == JSMap::offsetOfKeyCount());
     ASSERT(JSMap::offsetOfKeyCount() + 4 == JSMap::offsetOfDeleteCount());
-    storePairPtr(ARM64Registers::zr, ARM64Registers::zr, Address(resultGPR, JSMap::offsetOfHead()));
+    storePairPtr(headGPR, tailGPR, Address(resultGPR, JSMap::offsetOfHead()));
     storePairPtr(ARM64Registers::zr, ARM64Registers::zr, Address(resultGPR, JSMap::offsetOfBuffer()));
     store32(ARM64Registers::zr, Address(resultGPR, JSMap::offsetOfCapacity()));
 #else
-    storePtr(TrustedImmPtr(nullptr), Address(resultGPR, JSMap::offsetOfHead()));
-    storePtr(TrustedImmPtr(nullptr), Address(resultGPR, JSMap::offsetOfTail()));
+    storePtr(headGPR, Address(resultGPR, JSMap::offsetOfHead()));
+    storePtr(tailGPR, Address(resultGPR, JSMap::offsetOfTail()));
     storePtr(TrustedImmPtr(nullptr), Address(resultGPR, JSMap::offsetOfBuffer()));
     store32(TrustedImm32(0), Address(resultGPR, JSMap::offsetOfKeyCount()));
     store32(TrustedImm32(0), Address(resultGPR, JSMap::offsetOfDeleteCount()));
@@ -11971,15 +12007,46 @@ void SpeculativeJIT::compileNewMap(Node* node)
 
 void SpeculativeJIT::compileNewSet(Node* node)
 {
+    GPRTemporary head(this);
+    GPRTemporary tail(this);
     GPRTemporary result(this);
     GPRTemporary scratch1(this);
     GPRTemporary scratch2(this);
 
+    GPRReg headGPR = head.gpr();
+    GPRReg tailGPR = tail.gpr();
     GPRReg resultGPR = result.gpr();
     GPRReg scratch1GPR = scratch1.gpr();
     GPRReg scratch2GPR = scratch2.gpr();
 
     JumpList slowPath;
+
+    Allocator allocatorValue = allocatorForConcurrently<JSSet::BucketType>(vm(), sizeof(JSSet::BucketType), AllocatorForMode::AllocatorIfExists);
+    emitAllocateJSCell(headGPR, JITAllocator::constant(allocatorValue), scratch1GPR, TrustedImmPtr(m_graph.registerStructure(vm().hashMapBucketSetStructure.get())), scratch2GPR, slowPath, SlowAllocationResult::UndefinedBehavior);
+
+    ASSERT(JSValue::encode(JSValue()) == 0);
+    ASSERT(JSSet::BucketType::offsetOfNext() + 8 == JSSet::BucketType::offsetOfPrev());
+    ASSERT(JSSet::BucketType::offsetOfKey() + 8 == JSSet::BucketType::offsetOfValue());
+#if CPU(ARM64)
+    storePairPtr(ARM64Registers::zr, ARM64Registers::zr, Address(headGPR, JSSet::BucketType::offsetOfNext()));
+#else
+    storePtr(TrustedImmPtr(nullptr), Address(headGPR, JSSet::BucketType::offsetOfNext()));
+    storePtr(TrustedImmPtr(nullptr), Address(headGPR, JSSet::BucketType::offsetOfPrev()));
+#endif
+    storePtr(TrustedImmPtr(nullptr), Address(headGPR, JSSet::BucketType::offsetOfKey()));
+    mutatorFence(vm());
+
+    emitAllocateJSCell(tailGPR, JITAllocator::constant(allocatorValue), scratch1GPR, TrustedImmPtr(m_graph.registerStructure(vm().hashMapBucketSetStructure.get())), scratch2GPR, slowPath, SlowAllocationResult::UndefinedBehavior);
+
+#if CPU(ARM64)
+    storePairPtr(ARM64Registers::zr, headGPR, Address(tailGPR, JSSet::BucketType::offsetOfNext()));
+#else
+    storePtr(TrustedImmPtr(nullptr), Address(tailGPR, JSSet::BucketType::offsetOfNext()));
+    storePtr(headGPR, Address(tailGPR, JSSet::BucketType::offsetOfPrev()));
+#endif
+    storePtr(TrustedImmPtr(nullptr), Address(tailGPR, JSSet::BucketType::offsetOfKey()));
+    storePtr(tailGPR, Address(headGPR, JSSet::BucketType::offsetOfNext()));
+    mutatorFence(vm());
 
     auto butterfly = TrustedImmPtr(nullptr);
     emitAllocateJSObject<JSSet>(resultGPR, TrustedImmPtr(node->structure()), butterfly, scratch1GPR, scratch2GPR, slowPath, SlowAllocationResult::UndefinedBehavior);
@@ -11988,12 +12055,12 @@ void SpeculativeJIT::compileNewSet(Node* node)
     ASSERT(JSSet::offsetOfHead() + 8 == JSSet::offsetOfTail());
     ASSERT(JSSet::offsetOfBuffer() + 8 == JSSet::offsetOfKeyCount());
     ASSERT(JSSet::offsetOfKeyCount() + 4 == JSSet::offsetOfDeleteCount());
-    storePairPtr(ARM64Registers::zr, ARM64Registers::zr, Address(resultGPR, JSSet::offsetOfHead()));
+    storePairPtr(headGPR, tailGPR, Address(resultGPR, JSSet::offsetOfHead()));
     storePairPtr(ARM64Registers::zr, ARM64Registers::zr, Address(resultGPR, JSSet::offsetOfBuffer()));
     store32(ARM64Registers::zr, Address(resultGPR, JSSet::offsetOfCapacity()));
 #else
-    storePtr(TrustedImmPtr(nullptr), Address(resultGPR, JSSet::offsetOfHead()));
-    storePtr(TrustedImmPtr(nullptr), Address(resultGPR, JSSet::offsetOfTail()));
+    storePtr(headGPR, Address(resultGPR, JSSet::offsetOfHead()));
+    storePtr(tailGPR, Address(resultGPR, JSSet::offsetOfTail()));
     storePtr(TrustedImmPtr(nullptr), Address(resultGPR, JSSet::offsetOfBuffer()));
     store32(TrustedImm32(0), Address(resultGPR, JSSet::offsetOfKeyCount()));
     store32(TrustedImm32(0), Address(resultGPR, JSSet::offsetOfDeleteCount()));

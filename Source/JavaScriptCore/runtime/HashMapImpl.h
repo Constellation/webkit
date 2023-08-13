@@ -174,6 +174,11 @@ public:
         return OBJECT_OFFSETOF(HashMapBucket, m_next);
     }
 
+    static ptrdiff_t offsetOfPrev()
+    {
+        return OBJECT_OFFSETOF(HashMapBucket, m_prev);
+    }
+
     template <typename T = Data>
     ALWAYS_INLINE static typename std::enable_if<std::is_same<T, HashMapBucketDataKeyValue>::value, JSValue>::type extractValue(const HashMapBucket& bucket)
     {
