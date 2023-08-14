@@ -16194,17 +16194,9 @@ IGNORE_CLANG_WARNINGS_END
         m_out.store64(m_out.intPtrZero, head, m_heaps.HashMapBucket_value);
         mutatorFence();
 
-        LValue tail = allocateCell(m_out.constIntPtr(allocator.localAllocator()), vm().hashMapBucketMapStructure.get(), slowCase);
-        m_out.store64(m_out.intPtrZero, tail, m_heaps.HashMapBucket_next);
-        m_out.store64(head, tail, m_heaps.HashMapBucket_prev);
-        m_out.store64(m_out.intPtrZero, tail, m_heaps.HashMapBucket_key);
-        m_out.store64(m_out.intPtrZero, tail, m_heaps.HashMapBucket_value);
-        m_out.store64(tail, head, m_heaps.HashMapBucket_next);
-        mutatorFence();
-
         LValue fastResultValue = allocateObject<JSMap>(structure, m_out.intPtrZero, slowCase);
         m_out.store64(head, fastResultValue, m_heaps.HashMapImpl_head);
-        m_out.store64(tail, fastResultValue, m_heaps.HashMapImpl_tail);
+        m_out.store64(head, fastResultValue, m_heaps.HashMapImpl_tail);
         m_out.store64(m_out.intPtrZero, fastResultValue, m_heaps.HashMapImpl_buffer);
         m_out.store32(m_out.int32Zero, fastResultValue, m_heaps.HashMapImpl_keyCount);
         m_out.store32(m_out.int32Zero, fastResultValue, m_heaps.HashMapImpl_deleteCount);
@@ -16245,16 +16237,9 @@ IGNORE_CLANG_WARNINGS_END
         m_out.store64(m_out.intPtrZero, head, m_heaps.HashMapBucket_key);
         mutatorFence();
 
-        LValue tail = allocateCell(m_out.constIntPtr(allocator.localAllocator()), vm().hashMapBucketSetStructure.get(), slowCase);
-        m_out.store64(m_out.intPtrZero, tail, m_heaps.HashMapBucket_next);
-        m_out.store64(head, tail, m_heaps.HashMapBucket_prev);
-        m_out.store64(m_out.intPtrZero, tail, m_heaps.HashMapBucket_key);
-        m_out.store64(tail, head, m_heaps.HashMapBucket_next);
-        mutatorFence();
-
         LValue fastResultValue = allocateObject<JSSet>(structure, m_out.intPtrZero, slowCase);
         m_out.store64(head, fastResultValue, m_heaps.HashMapImpl_head);
-        m_out.store64(tail, fastResultValue, m_heaps.HashMapImpl_tail);
+        m_out.store64(head, fastResultValue, m_heaps.HashMapImpl_tail);
         m_out.store64(m_out.intPtrZero, fastResultValue, m_heaps.HashMapImpl_buffer);
         m_out.store32(m_out.int32Zero, fastResultValue, m_heaps.HashMapImpl_keyCount);
         m_out.store32(m_out.int32Zero, fastResultValue, m_heaps.HashMapImpl_deleteCount);
