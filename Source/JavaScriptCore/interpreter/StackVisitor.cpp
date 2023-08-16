@@ -112,7 +112,7 @@ void StackVisitor::readFrame(CallFrame* callFrame)
         return;
     }
 
-    if (callFrame->isWasmFrame()) {
+    if (callFrame->isNativeCalleeFrame()) {
         readInlinableWasmFrame(callFrame);
         return;
     }
@@ -169,12 +169,12 @@ void StackVisitor::readNonInlinedFrame(CallFrame* callFrame, CodeOrigin* codeOri
 #endif
     m_frame.m_wasmDistanceFromDeepestInlineFrame = 0;
 
-    m_frame.m_codeBlock = callFrame->isWasmFrame() ? nullptr : callFrame->codeBlock();
+    m_frame.m_codeBlock = callFrame->isNativeCalleeFrame() ? nullptr : callFrame->codeBlock();
     m_frame.m_bytecodeIndex = !m_frame.codeBlock() ? BytecodeIndex(0)
         : codeOrigin ? codeOrigin->bytecodeIndex()
         : callFrame->bytecodeIndex();
 
-    RELEASE_ASSERT(!callFrame->isWasmFrame());
+    RELEASE_ASSERT(!callFrame->isNativeCalleeFrame());
 }
 
 void StackVisitor::readInlinableWasmFrame(CallFrame* callFrame)
@@ -265,7 +265,7 @@ void StackVisitor::readInlinedFrame(CallFrame* callFrame, CodeOrigin* codeOrigin
 
 StackVisitor::Frame::CodeType StackVisitor::Frame::codeType() const
 {
-    if (isWasmFrame())
+    if (isNativeCalleeFrame())
         return CodeType::Wasm;
 
     if (!codeBlock())
@@ -295,7 +295,7 @@ std::optional<RegisterAtOffsetList> StackVisitor::Frame::calleeSaveRegistersForU
         return std::nullopt;
 
 #if ENABLE(WEBASSEMBLY)
-    if (isWasmFrame()) {
+    if (isNativeCalleeFrame()) {
         if (callee().isCell()) {
             RELEASE_ASSERT(isWebAssemblyInstance(callee().asCell()));
             return std::nullopt;
@@ -489,7 +489,7 @@ bool StackVisitor::Frame::isImplementationVisibilityPrivate() const
         }
 
 #if ENABLE(WEBASSEMBLY)
-        if (isWasmFrame())
+        if (isNativeCalleeFrame())
             return callee().asNativeCallee()->implementationVisibility();
 #endif
 

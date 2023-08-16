@@ -2358,7 +2358,7 @@ void CodeBlock::noticeIncomingCall(CallFrame* callerFrame)
 {
     RELEASE_ASSERT(!m_isJettisoned);
 
-    CodeBlock* callerCodeBlock = callerFrame->isWasmFrame() ? nullptr : callerFrame->codeBlock();
+    CodeBlock* callerCodeBlock = callerFrame->isNativeCalleeFrame() ? nullptr : callerFrame->codeBlock();
     
     dataLogLnIf(Options::verboseCallLink(), "Noticing call link from ", pointerDump(callerCodeBlock), " to ", *this);
     

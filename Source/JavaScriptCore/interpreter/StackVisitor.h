@@ -77,12 +77,12 @@ public:
 #endif
         }
 
-        bool isNativeFrame() const { return !codeBlock() && !isWasmFrame(); }
-        bool isInlinedDFGFrame() const { return !isWasmFrame() && !!inlineCallFrame(); }
-        bool isWasmFrame() const { return m_isWasmFrame; }
+        bool isNativeFrame() const { return !codeBlock() && !isNativeCalleeFrame(); }
+        bool isInlinedDFGFrame() const { return !isNativeCalleeFrame() && !!inlineCallFrame(); }
+        bool isNativeCalleeFrame() const { return m_isWasmFrame; }
         Wasm::IndexOrName const wasmFunctionIndexOrName()
         {
-            ASSERT(isWasmFrame());
+            ASSERT(isNativeCalleeFrame());
             return m_wasmFunctionIndexOrName;
         }
 

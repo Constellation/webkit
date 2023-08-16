@@ -92,7 +92,7 @@ inline bool CallFrame::isStackOverflowFrame() const
     return jsCallee() == jsCallee()->globalObject()->stackOverflowFrameCallee();
 }
 
-inline bool CallFrame::isWasmFrame() const
+inline bool CallFrame::isNativeCalleeFrame() const
 {
     return callee().isNativeCallee();
 }

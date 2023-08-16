@@ -229,7 +229,7 @@ JSGlobalObject* CallFrame::globalObjectOfClosestCodeBlock(VM& vm, CallFrame* cal
     // rdar://83691438
     JSGlobalObject* globalObject = nullptr;
     StackVisitor::visit(callFrame, vm, [&](StackVisitor& visitor) {
-        if (visitor->isWasmFrame()) {
+        if (visitor->isNativeCalleeFrame()) {
             globalObject = visitor->callFrame()->lexicalGlobalObject(vm);
             return IterationStatus::Done;
         }
@@ -251,7 +251,7 @@ JSGlobalObject* CallFrame::globalObjectOfClosestCodeBlock(VM& vm, CallFrame* cal
 
 String CallFrame::friendlyFunctionName()
 {
-    if (this->isWasmFrame())
+    if (this->isNativeCalleeFrame())
         return emptyString();
 
     CodeBlock* codeBlock = this->codeBlock();
@@ -277,7 +277,7 @@ String CallFrame::friendlyFunctionName()
 
 void CallFrame::dump(PrintStream& out) const
 {
-    if (this->isWasmFrame()) {
+    if (this->isNativeCalleeFrame()) {
 #if ENABLE(WEBASSEMBLY)
         Wasm::Callee* wasmCallee = callee().asNativeCallee();
         out.print(Wasm::makeString(wasmCallee->indexOrName()), " [", Wasm::makeString(wasmCallee->compilationMode()), "]");

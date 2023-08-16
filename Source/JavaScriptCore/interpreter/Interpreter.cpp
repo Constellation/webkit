@@ -415,7 +415,7 @@ public:
             return IterationStatus::Continue;
 
         if (m_results.size() < m_results.capacity()) {
-            if (visitor->isWasmFrame()) {
+            if (visitor->isNativeCalleeFrame()) {
                 m_results.uncheckedAppend(StackFrame(visitor->wasmFunctionIndexOrName()));
             } else if (!!visitor->codeBlock() && !visitor->codeBlock()->unlinkedCodeBlock()->isBuiltinFunction()) {
                 m_results.uncheckedAppend(
@@ -618,7 +618,7 @@ public:
         }
 #endif
 
-        if (!m_callFrame->isWasmFrame() && JSC::isRemoteFunction(m_callFrame->jsCallee()) && !m_isTermination) {
+        if (!m_callFrame->isNativeCalleeFrame() && JSC::isRemoteFunction(m_callFrame->jsCallee()) && !m_isTermination) {
             // Continue searching for a handler, but mark that a marshalling function was on the stack so that we can
             // translate the exception before jumping to the handler.
             m_seenRemoteFunction = jsCast<JSRemoteFunction*>(m_callFrame->jsCallee());
@@ -692,7 +692,7 @@ private:
         auto catchScope = DECLARE_CATCH_SCOPE(vm);
 
         SuspendExceptionScope scope(vm);
-        if (callFrame->isWasmFrame()
+        if (callFrame->isNativeCalleeFrame()
             || (callFrame->callee().isCell() && callFrame->callee().asCell()->inherits<JSFunction>()))
             debugger->unwindEvent(callFrame);
         else
@@ -769,7 +769,7 @@ NEVER_INLINE CatchInfo Interpreter::unwind(VM& vm, CallFrame*& callFrame, Except
     auto scope = DECLARE_CATCH_SCOPE(vm);
 
     ASSERT(reinterpret_cast<void*>(callFrame) != vm.topEntryFrame);
-    CodeBlock* codeBlock = callFrame->isWasmFrame() ? nullptr : callFrame->codeBlock();
+    CodeBlock* codeBlock = callFrame->isNativeCalleeFrame() ? nullptr : callFrame->codeBlock();
 
     JSValue exceptionValue = exception->value();
     ASSERT(!exceptionValue.isEmpty());

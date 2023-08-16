@@ -112,7 +112,7 @@ void linkMonomorphicCall(
     // WebAssembly -> JS stubs don't have a valid CodeBlock.
     CodeBlock* callerCodeBlock = nullptr;
     JSCell* owner = nullptr;
-    if (callerFrame->isWasmFrame()) {
+    if (callerFrame->isNativeCalleeFrame()) {
         // When calling this from Wasm, callee is Wasm::Callee.
         owner = webAssemblyOwner(callerFrame);
     } else {
@@ -1713,7 +1713,7 @@ static void linkVirtualFor(VM& vm, CallFrame* callFrame, CallLinkInfo& callLinkI
 
     // WebAssembly -> JS stubs don't have a valid CodeBlock.
     CodeBlock* callerCodeBlock = nullptr;
-    if (!callerFrame->isWasmFrame())
+    if (!callerFrame->isNativeCalleeFrame())
         callerCodeBlock = callerFrame->codeBlock();
 
     dataLogLnIf(shouldDumpDisassemblyFor(callerCodeBlock),
@@ -1750,7 +1750,7 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, CallFrame* callFrame, Cal
     // WebAssembly -> JS stubs don't have a valid CodeBlock.
     CodeBlock* callerCodeBlock = nullptr;
     JSCell* owner = nullptr;
-    bool isWebAssembly = callerFrame->isWasmFrame();
+    bool isWebAssembly = callerFrame->isNativeCalleeFrame();
     if (isWebAssembly) {
         // When calling this from Wasm, callee is Wasm::Callee.
         owner = webAssemblyOwner(callerFrame);
