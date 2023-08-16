@@ -1386,9 +1386,9 @@ JSC_DEFINE_COMMON_SLOW_PATH(slow_path_new_array_buffer)
 {
     BEGIN();
     auto bytecode = pc->as<OpNewArrayBuffer>();
-    ASSERT(bytecode.m_immutableButterfly.isConstant());
-    JSImmutableButterfly* immutableButterfly = bitwise_cast<JSImmutableButterfly*>(GET_C(bytecode.m_immutableButterfly).jsValue().asCell());
-    auto& profile = bytecode.metadata(codeBlock).m_arrayAllocationProfile;
+    auto& metadata = bytecode.metadata(codeBlock);
+    JSImmutableButterfly* immutableButterfly = metadata.m_immutableButterfly.get();
+    auto& profile = metadata.m_arrayAllocationProfile;
 
     IndexingType indexingMode = profile.selectIndexingType();
     Structure* structure = globalObject->arrayStructureForIndexingTypeDuringAllocation(indexingMode);
@@ -1405,7 +1405,7 @@ JSC_DEFINE_COMMON_SLOW_PATH(slow_path_new_array_buffer)
         // We also cannot allocate a new butterfly from compilation threads since it's invalid to allocate cells from
         // a compilation thread.
         WTF::storeStoreFence();
-        codeBlock->constantRegister(bytecode.m_immutableButterfly).set(vm, codeBlock, immutableButterfly);
+        metadata.m_immutableButterfly.set(vm, codeBlock, immutableButterfly);
         WTF::storeStoreFence();
     }
 

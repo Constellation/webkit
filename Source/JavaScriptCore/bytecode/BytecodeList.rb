@@ -40,6 +40,7 @@ types [
     :JSCell,
     :JSGlobalLexicalEnvironment,
     :JSGlobalObject,
+    :JSImmutableButterfly,
     :JSModuleEnvironment,
     :JSObject,
     :JSScope,
@@ -370,11 +371,12 @@ op :new_array_with_size,
 op :new_array_buffer,
     args: {
         dst: VirtualRegister,
-        immutableButterfly: VirtualRegister,
+        initialImmutableButterfly: VirtualRegister,
         recommendedIndexingType: IndexingType
     },
     metadata: {
         arrayAllocationProfile: ArrayAllocationProfile,
+        immutableButterfly: WriteBarrier[JSImmutableButterfly],
     }
 
 op :get_by_id,

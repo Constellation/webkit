@@ -500,7 +500,6 @@ bool CodeBlock::finishCreation(VM& vm, ScriptExecutable* ownerExecutable, Unlink
 
         LINK(OpNewArray)
         LINK(OpNewArrayWithSize)
-        LINK(OpNewArrayBuffer, arrayAllocationProfile)
 
         LINK(OpNewObject, objectAllocationProfile)
 
@@ -525,6 +524,14 @@ bool CodeBlock::finishCreation(VM& vm, ScriptExecutable* ownerExecutable, Unlink
         LINK(OpTailCallForwardArguments, callLinkInfo)
         LINK(OpConstructVarargs, callLinkInfo, profile)
         LINK(OpCallIgnoreResult, callLinkInfo)
+
+        case op_new_array_buffer: {
+            INITIALIZE_METADATA(OpNewArrayBuffer)
+            link_arrayAllocationProfile(instruction, bytecode, metadata);
+            auto* immutableButterfly = jsCast<JSImmutableButterfly*>(getConstant(bytecode.m_initialImmutableButterfly));
+            metadata.m_immutableButterfly.set(vm, this, immutableButterfly);
+            break;
+        }
 
         case op_new_array_with_species: {
             INITIALIZE_METADATA(OpNewArrayWithSpecies)
@@ -1849,6 +1856,11 @@ void CodeBlock::stronglyVisitStrongReferences(const ConcurrentJSLocker& locker, 
     forEachObjectAllocationProfile([&](ObjectAllocationProfile& objectAllocationProfile) {
         objectAllocationProfile.visitAggregate(visitor);
     });
+    if (m_metadata) {
+        m_metadata->forEach<OpNewArrayBuffer>([&](auto& metadata) {
+            visitor.append(metadata.m_immutableButterfly);
+        });
+    }
 
 #if ENABLE(JIT)
     forEachStructureStubInfo([&](StructureStubInfo& stubInfo) {

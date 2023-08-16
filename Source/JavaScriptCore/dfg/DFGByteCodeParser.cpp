@@ -6356,16 +6356,16 @@ void ByteCodeParser::parseBlock(unsigned limit)
 
         case op_new_array_buffer: {
             auto bytecode = currentInstruction->as<OpNewArrayBuffer>();
+            auto& metadata = bytecode.metadata(codeBlock);
             // Unfortunately, we can't allocate a new JSImmutableButterfly if the profile tells us new information because we
             // cannot allocate from compilation threads.
-            FrozenValue* frozen = get(VirtualRegister(bytecode.m_immutableButterfly))->constant();
+            auto* immutableButterfly = metadata.m_immutableButterfly.get();
             WTF::dependentLoadLoadFence();
-            JSImmutableButterfly* immutableButterfly = frozen->cast<JSImmutableButterfly*>();
             NewArrayBufferData data { };
             data.indexingMode = immutableButterfly->indexingMode();
             data.vectorLengthHint = immutableButterfly->toButterfly()->vectorLength();
 
-            set(VirtualRegister(bytecode.m_dst), addToGraph(NewArrayBuffer, OpInfo(frozen), OpInfo(data.asQuadWord)));
+            set(VirtualRegister(bytecode.m_dst), addToGraph(NewArrayBuffer, OpInfo(m_graph.freeze(immutableButterfly)), OpInfo(data.asQuadWord)));
             NEXT_OPCODE(op_new_array_buffer);
         }
             

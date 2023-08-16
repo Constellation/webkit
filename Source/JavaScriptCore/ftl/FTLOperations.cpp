@@ -601,7 +601,7 @@ JSC_DEFINE_JIT_OPERATION(operationMaterializeObjectInOSR, JSCell*, (JSGlobalObje
             // We also cannot allocate a new butterfly from compilation threads since it's invalid to allocate cells from
             // a compilation thread.
             WTF::storeStoreFence();
-            codeBlock->constantRegister(newArrayBuffer.m_immutableButterfly).set(vm, codeBlock, immutableButterfly);
+            metadata.m_immutableButterfly.set(vm, codeBlock, immutableButterfly);
             WTF::storeStoreFence();
         }
 
