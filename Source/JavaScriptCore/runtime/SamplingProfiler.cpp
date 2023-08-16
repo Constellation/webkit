@@ -116,7 +116,7 @@ protected:
         CallSiteIndex callSiteIndex;
         CalleeBits unsafeCallee = m_callFrame->unsafeCallee();
         CodeBlock* codeBlock = m_callFrame->unsafeCodeBlock();
-        if (unsafeCallee.isWasm())
+        if (unsafeCallee.isNativeCallee())
             codeBlock = nullptr;
         if (codeBlock) {
             ASSERT(isValidCodeBlock(codeBlock));
@@ -124,9 +124,9 @@ protected:
         }
         stackTrace[m_depth] = UnprocessedStackFrame(codeBlock, unsafeCallee, callSiteIndex);
 #if ENABLE(WEBASSEMBLY)
-        if (Wasm::isSupported() && unsafeCallee.isWasm()) {
+        if (Wasm::isSupported() && unsafeCallee.isNativeCallee()) {
             assertIsHeld(Wasm::CalleeRegistry::singleton().getLock());
-            auto* wasmCallee = unsafeCallee.asWasmCallee();
+            auto* wasmCallee = unsafeCallee.asNativeCallee();
             if (Wasm::CalleeRegistry::singleton().isValidCallee(wasmCallee)) {
                 // At this point, Wasm::Callee would be dying (ref count is 0), but its fields are still live.
                 // And we can safely copy Wasm::IndexOrName even when any lock is held by suspended threads.
@@ -167,7 +167,7 @@ protected:
         }
 
         CodeBlock* codeBlock = m_callFrame->unsafeCodeBlock();
-        if (!codeBlock || m_callFrame->unsafeCallee().isWasm())
+        if (!codeBlock || m_callFrame->unsafeCallee().isNativeCallee())
             return;
 
         if (!isValidCodeBlock(codeBlock)) {
@@ -508,7 +508,7 @@ void SamplingProfiler::processUnverifiedStackTraces()
 #if ENABLE(WEBASSEMBLY)
         auto storeWasmCalleeIntoLastFrame = [&] (UnprocessedStackFrame& unprocessedStackFrame, void* pc) {
             CalleeBits calleeBits = unprocessedStackFrame.unverifiedCallee;
-            ASSERT_UNUSED(calleeBits, calleeBits.isWasm());
+            ASSERT_UNUSED(calleeBits, calleeBits.isNativeCallee());
             StackFrame& stackFrame = stackTrace.frames.last();
             stackFrame.frameType = FrameType::Wasm;
             stackFrame.wasmIndexOrName = unprocessedStackFrame.wasmIndexOrName;
@@ -531,7 +531,7 @@ void SamplingProfiler::processUnverifiedStackTraces()
             StackFrame& stackFrame = stackTrace.frames.last();
             bool alreadyHasExecutable = !!stackFrame.executable;
 #if ENABLE(WEBASSEMBLY)
-            if (calleeBits.isWasm()) {
+            if (calleeBits.isNativeCallee()) {
                 storeWasmCalleeIntoLastFrame(unprocessedStackFrame, nullptr);
                 return;
             }
@@ -658,7 +658,7 @@ void SamplingProfiler::processUnverifiedStackTraces()
             }
         }
 #if ENABLE(WEBASSEMBLY)
-        else if (!unprocessedStackTrace.frames.isEmpty() && unprocessedStackTrace.frames[0].unverifiedCallee.isWasm()) {
+        else if (!unprocessedStackTrace.frames.isEmpty() && unprocessedStackTrace.frames[0].unverifiedCallee.isNativeCallee()) {
             appendEmptyFrame();
             storeWasmCalleeIntoLastFrame(unprocessedStackTrace.frames[0], unprocessedStackTrace.topPC);
             startIndex = 1;

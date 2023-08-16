@@ -46,19 +46,19 @@ inline Register& CallFrame::uncheckedR(VirtualRegister reg)
 
 inline JSValue CallFrame::guaranteedJSValueCallee() const
 {
-    ASSERT(!callee().isWasm());
+    ASSERT(!callee().isNativeCallee());
     return this[static_cast<int>(CallFrameSlot::callee)].jsValue();
 }
 
 inline JSObject* CallFrame::jsCallee() const
 {
-    ASSERT(!callee().isWasm());
+    ASSERT(!callee().isNativeCallee());
     return this[static_cast<int>(CallFrameSlot::callee)].object();
 }
 
 inline CodeBlock* CallFrame::codeBlock() const
 {
-    ASSERT(!callee().isWasm());
+    ASSERT(!callee().isNativeCallee());
     return this[static_cast<int>(CallFrameSlot::codeBlock)].Register::codeBlock();
 }
 
@@ -71,7 +71,7 @@ inline JSGlobalObject* CallFrame::lexicalGlobalObject(VM& vm) const
 {
     UNUSED_PARAM(vm);
 #if ENABLE(WEBASSEMBLY)
-    if (callee().isWasm())
+    if (callee().isNativeCallee())
         return lexicalGlobalObjectFromWasmCallee(vm);
 #endif
     return jsCallee()->globalObject();
@@ -80,21 +80,21 @@ inline JSGlobalObject* CallFrame::lexicalGlobalObject(VM& vm) const
 #if ENABLE(WEBASSEMBLY)
 inline Wasm::Instance* CallFrame::wasmInstance() const
 {
-    ASSERT(callee().isWasm());
+    ASSERT(callee().isNativeCallee());
     return bitwise_cast<Wasm::Instance*>(const_cast<CallFrame*>(this)->uncheckedR(CallFrameSlot::codeBlock).asanUnsafePointer());
 }
 #endif
 
 inline bool CallFrame::isStackOverflowFrame() const
 {
-    if (callee().isWasm())
+    if (callee().isNativeCallee())
         return false;
     return jsCallee() == jsCallee()->globalObject()->stackOverflowFrameCallee();
 }
 
 inline bool CallFrame::isWasmFrame() const
 {
-    return callee().isWasm();
+    return callee().isNativeCallee();
 }
 
 inline void CallFrame::setCallee(JSObject* callee)

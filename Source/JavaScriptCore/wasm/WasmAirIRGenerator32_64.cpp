@@ -925,7 +925,7 @@ static inline void buildEntryBufferForCatch32(Probe::Context& context)
     unsigned valueSize = (savedFPWidth == SavedFPWidth::SaveVectors) ? 2 : 1;
     CallFrame* callFrame = context.fp<CallFrame*>();
     CallSiteIndex callSiteIndex = callFrame->callSiteIndex();
-    OptimizingJITCallee* callee = bitwise_cast<OptimizingJITCallee*>(callFrame->callee().asWasmCallee());
+    OptimizingJITCallee* callee = bitwise_cast<OptimizingJITCallee*>(callFrame->callee().asNativeCallee());
     const StackMap& stackmap = callee->stackmap(callSiteIndex);
     VM* vm = context.gpr<VM*>(GPRInfo::regT0);
     uint64_t* buffer = vm->wasmContext.scratchBufferForSize(stackmap.size() * valueSize * 8);

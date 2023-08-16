@@ -120,7 +120,7 @@ unsigned CallFrame::callSiteBitsAsBytecodeOffset() const
 
 BytecodeIndex CallFrame::bytecodeIndex() const
 {
-    if (callee().isWasm())
+    if (callee().isNativeCallee())
         return callSiteIndex().bytecodeIndex();
     if (!codeBlock())
         return BytecodeIndex(0);
@@ -279,7 +279,7 @@ void CallFrame::dump(PrintStream& out) const
 {
     if (this->isWasmFrame()) {
 #if ENABLE(WEBASSEMBLY)
-        Wasm::Callee* wasmCallee = callee().asWasmCallee();
+        Wasm::Callee* wasmCallee = callee().asNativeCallee();
         out.print(Wasm::makeString(wasmCallee->indexOrName()), " [", Wasm::makeString(wasmCallee->compilationMode()), "]");
         out.print("(Wasm::Instance: ", RawPointer(wasmInstance()), ")");
 #else
@@ -336,7 +336,7 @@ void CallFrame::convertToStackOverflowFrame(VM& vm, CodeBlock* codeBlockToKeepAl
     CallFrame* throwOriginFrame = this;
     do {
         throwOriginFrame = throwOriginFrame->callerFrame(entryFrame);
-    } while (throwOriginFrame && throwOriginFrame->callee().isWasm());
+    } while (throwOriginFrame && throwOriginFrame->callee().isNativeCallee());
 
     JSObject* originCallee = throwOriginFrame ? throwOriginFrame->jsCallee() : vmEntryRecord(vm.topEntryFrame)->callee();
     JSObject* stackOverflowCallee = originCallee->globalObject()->stackOverflowFrameCallee();
