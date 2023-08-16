@@ -6556,3 +6556,8 @@ imported/w3c/web-platform-tests/html/canvas/offscreen/fill-and-stroke-styles/2d.
 webkit.org/b/225349 imported/w3c/web-platform-tests/html/canvas/element/reset/2d.reset.state.clip.html [ ImageOnlyFailure ]
 webkit.org/b/225349 imported/w3c/web-platform-tests/html/canvas/offscreen/reset/2d.reset.state.clip.html [ ImageOnlyFailure ]
 webkit.org/b/225349 imported/w3c/web-platform-tests/html/canvas/offscreen/reset/2d.reset.state.clip.w.html [ Timeout ]
+
+# import-assertions are obsolete and not supported in WebKit. We only support import-attributes.
+imported/w3c/web-platform-tests/html/semantics/scripting-1/the-script-element/import-assertions [ Skip ]
+imported/w3c/web-platform-tests/html/semantics/scripting-1/the-script-element/json-module-assertions [ Skip ]
+imported/w3c/web-platform-tests/html/semantics/scripting-1/the-script-element/css-module-assertions [ Skip ]

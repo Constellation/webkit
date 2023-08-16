@@ -1,4 +1,4 @@
-//@requireOptions("--useImportAssertion=true")
+//@requireOptions("--useImportAttributes=true")
 
 var list = [
     String.raw`import v from "mod"`,
