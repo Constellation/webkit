@@ -32,21 +32,22 @@
 
 namespace JSC {
 
-NativeCallee::NativeCallee(Type type)
+NativeCallee::NativeCallee(Type type, ImplementationVisibility implementationVisibility)
     : m_type(type)
-    , m_implementationVisibility(ImplementationVisibility::Private)
-{
-}
-
-NativeCallee::NativeCallee(Type type, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name)
-    : m_type(type)
-    , m_indexOrName(index, WTFMove(name))
+    , m_implementationVisibility(implementationVisibility)
 {
 }
 
 void NativeCallee::dump(PrintStream& out) const
 {
-    out.print(makeString(m_indexOrName));
+    switch (m_type) {
+    case Type::Wasm:
+        static_cast<const Wasm::Callee*>(this)->dump(out);
+        break;
+    case Type::InlineCache:
+        // InlineCacheCallee::destroy(static_cast<callee);
+        break;
+    }
 }
 
 void NativeCallee::operator delete(NativeCallee* callee, std::destroying_delete_t)
@@ -54,10 +55,10 @@ void NativeCallee::operator delete(NativeCallee* callee, std::destroying_delete_
     NativeCalleeRegistry::singleton().unregisterCallee(callee);
     switch (m_type) {
     case Type::Wasm:
-        Wasm::Callee::destroy(callee);
+        Wasm::Callee::destroy(static_cast<Wasm::Callee*>(callee));
         break;
     case Type::InlineCache:
-        InlineCacheCallee::destroy(callee);
+        // InlineCacheCallee::destroy(static_cast<callee);
         break;
     }
 }

@@ -36,13 +36,14 @@
 namespace JSC { namespace Wasm {
 
 Callee::Callee(Wasm::CompilationMode compilationMode)
-    : m_compilationMode(compilationMode)
-    , m_implementationVisibility(ImplementationVisibility::Private)
+    : NativeCalllee(NativeCallee::Type::Wasm, ImplementationVisibility::Private)
+    , m_compilationMode(compilationMode)
 {
 }
 
 Callee::Callee(Wasm::CompilationMode compilationMode, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name)
-    : m_compilationMode(compilationMode)
+    : NativeCalllee(NativeCallee::Type::Wasm, ImplementationVisibility::Public)
+    , m_compilationMode(compilationMode)
     , m_indexOrName(index, WTFMove(name))
 {
 }
@@ -127,9 +128,8 @@ RegisterAtOffsetList* Callee::calleeSaveRegisters()
     return result;
 }
 
-void Callee::operator delete(Callee* callee, std::destroying_delete_t)
+void Callee::destroy(Callee* callee)
 {
-    NativeCalleeRegistry::singleton().unregisterCallee(callee);
     callee->runWithDowncast([](auto* derived) {
         std::destroy_at(derived);
         std::decay_t<decltype(*derived)>::freeAfterDestruction(derived);

@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include "WasmIndexOrName.h"
+
 namespace JSC {
 
 class LLIntOffsetsExtractor;
@@ -37,7 +39,6 @@ public:
         Wasm,
     };
 
-    IndexOrName indexOrName() const { return m_indexOrName; }
     Type type() const { return m_type; }
     ImplementationVisibility implementationVisibility() const { return m_implementationVisibility; }
 
@@ -46,13 +47,11 @@ public:
     JS_EXPORT_PRIVATE void operator delete(NativeCallee*, std::destroying_delete_t);
 
 protected:
-    JS_EXPORT_PRIVATE NativeCallee(Type);
-    JS_EXPORT_PRIVATE NativeCallee(Type, size_t, std::pair<const Name*, RefPtr<NameSection>>&&);
+    JS_EXPORT_PRIVATE NativeCallee(Type, ImplementationVisibility);
 
 private:
-    const CompilationMode m_type;
+    Type m_type;
     ImplementationVisibility m_implementationVisibility { ImplementationVisibility::Public };
-    const IndexOrName m_indexOrName;
 
 protected:
     FixedVector<HandlerInfo> m_exceptionHandlers;

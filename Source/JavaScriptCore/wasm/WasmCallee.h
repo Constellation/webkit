@@ -49,12 +49,11 @@ class LLIntOffsetsExtractor;
 
 namespace Wasm {
 
-class Callee : public ThreadSafeRefCounted<Callee> {
+class Callee : public NativeCallee {
     WTF_MAKE_FAST_ALLOCATED;
 public:
     IndexOrName indexOrName() const { return m_indexOrName; }
     CompilationMode compilationMode() const { return m_compilationMode; }
-    ImplementationVisibility implementationVisibility() const { return m_implementationVisibility; }
 
     CodePtr<WasmEntryPtrTag> entrypoint() const;
     RegisterAtOffsetList* calleeSaveRegisters();
@@ -66,7 +65,7 @@ public:
 
     void dump(PrintStream&) const;
 
-    JS_EXPORT_PRIVATE void operator delete(Callee*, std::destroying_delete_t);
+    static void destroy(Callee*);
 
 protected:
     JS_EXPORT_PRIVATE Callee(Wasm::CompilationMode);
