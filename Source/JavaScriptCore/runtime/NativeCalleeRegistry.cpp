@@ -26,11 +26,9 @@
 #include "config.h"
 #include "NativeCalleeRegistry.h"
 
-#if ENABLE(WEBASSEMBLY)
-
 #include <wtf/NeverDestroyed.h>
 
-namespace JSC { namespace Wasm {
+namespace JSC {
 
 static LazyNeverDestroyed<NativeCalleeRegistry> calleeRegistry;
 
@@ -44,6 +42,4 @@ NativeCalleeRegistry& NativeCalleeRegistry::singleton()
     return calleeRegistry.get();
 }
 
-} } // namespace JSC::Wasm
-
-#endif // ENABLE(WEBASSEMBLY)
+} // namespace JSC
