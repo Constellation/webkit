@@ -40,7 +40,7 @@ NativeCallee::NativeCallee(Category category, ImplementationVisibility implement
 
 void NativeCallee::dump(PrintStream& out) const
 {
-    switch (m_category) {
+    switch (category()) {
     case Category::Wasm:
         static_cast<const Wasm::Callee*>(this)->dump(out);
         break;
@@ -53,7 +53,7 @@ void NativeCallee::dump(PrintStream& out) const
 void NativeCallee::operator delete(NativeCallee* callee, std::destroying_delete_t)
 {
     NativeCalleeRegistry::singleton().unregisterCallee(callee);
-    switch (m_category) {
+    switch (callee->category()) {
     case Category::Wasm:
         Wasm::Callee::destroy(static_cast<Wasm::Callee*>(callee));
         break;
