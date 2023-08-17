@@ -123,21 +123,30 @@ protected:
             callSiteIndex = m_callFrame->unsafeCallSiteIndex();
         }
         stackTrace[m_depth] = UnprocessedStackFrame(codeBlock, unsafeCallee, callSiteIndex);
-#if ENABLE(WEBASSEMBLY)
-        if (Wasm::isSupported() && unsafeCallee.isNativeCallee()) {
+        if (unsafeCallee.isNativeCallee()) {
             assertIsHeld(NativeCalleeRegistry::singleton().getLock());
-            auto* wasmCallee = unsafeCallee.asNativeCallee();
-            if (NativeCalleeRegistry::singleton().isValidCallee(wasmCallee)) {
-                // At this point, Wasm::Callee would be dying (ref count is 0), but its fields are still live.
-                // And we can safely copy Wasm::IndexOrName even when any lock is held by suspended threads.
-                stackTrace[m_depth].wasmIndexOrName = wasmCallee->indexOrName();
-                stackTrace[m_depth].wasmCompilationMode = wasmCallee->compilationMode();
+            auto* nativeCallee = unsafeCallee.asNativeCallee();
+            if (NativeCalleeRegistry::singleton().isValidCallee(nativeCallee)) {
+                switch (nativeCallee->category()) {
+                case NativeCallee::Category::Wasm: {
+#if ENABLE(WEBASSEMBLY)
+                    // At this point, Wasm::Callee would be dying (ref count is 0), but its fields are still live.
+                    // And we can safely copy Wasm::IndexOrName even when any lock is held by suspended threads.
+                    auto* wasmCallee = static_cast<Wasm::Callee*>(nativeCallee);
+                    stackTrace[m_depth].wasmIndexOrName = wasmCallee->indexOrName();
+                    stackTrace[m_depth].wasmCompilationMode = wasmCallee->compilationMode();
 #if ENABLE(JIT)
-                stackTrace[m_depth].wasmPCMap = NativeCalleeRegistry::singleton().codeOriginMap(wasmCallee);
+                    stackTrace[m_depth].wasmPCMap = NativeCalleeRegistry::singleton().codeOriginMap(wasmCallee);
 #endif
+#endif
+                    break;
+                }
+                case NativeCallee::Category::InlineCache: {
+                    break;
+                }
+                }
             }
         }
-#endif
         m_depth++;
     }
 

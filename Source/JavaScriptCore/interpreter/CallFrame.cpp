@@ -278,13 +278,22 @@ String CallFrame::friendlyFunctionName()
 void CallFrame::dump(PrintStream& out) const
 {
     if (this->isNativeCalleeFrame()) {
+        auto* nativeCallee = callee().asNativeCallee();
+        switch (nativeCallee->category()) {
+        case NativeCallee::Category::Wasm: {
 #if ENABLE(WEBASSEMBLY)
-        Wasm::Callee* wasmCallee = callee().asNativeCallee();
-        out.print(Wasm::makeString(wasmCallee->indexOrName()), " [", Wasm::makeString(wasmCallee->compilationMode()), "]");
-        out.print("(Wasm::Instance: ", RawPointer(wasmInstance()), ")");
+            auto* wasmCallee = static_cast<Wasm::Callee*>(nativeCallee);
+            out.print(Wasm::makeString(wasmCallee->indexOrName()), " [", Wasm::makeString(wasmCallee->compilationMode()), "]");
+            out.print("(Wasm::Instance: ", RawPointer(wasmInstance()), ")");
 #else
-        out.print(RawPointer(returnPCForInspection()));
+            out.print(RawPointer(returnPCForInspection()));
 #endif
+            break;
+        }
+        case NativeCallee::Category::InlineCache:
+            out.print(RawPointer(returnPCForInspection()));
+            break;
+        }
         return;
     }
 

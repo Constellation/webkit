@@ -604,19 +604,30 @@ public:
             }
         }
 
-#if ENABLE(WEBASSEMBLY)
         CalleeBits callee = visitor->callee();
-        if (m_catchableFromWasm && callee.isNativeCallee()) {
-            Wasm::Callee* wasmCallee = callee.asNativeCallee();
-            if (wasmCallee->hasExceptionHandlers()) {
-                Wasm::Instance* instance = m_callFrame->wasmInstance();
-                unsigned exceptionHandlerIndex = m_callFrame->callSiteIndex().bits();
-                m_handler = { wasmCallee->handlerForIndex(*instance, exceptionHandlerIndex, m_wasmTag), wasmCallee };
-                if (m_handler.m_valid)
-                    return IterationStatus::Done;
+        if (callee.isNativeCallee()) {
+            NativeCallee* nativeCallee = callee.asNativeCallee();
+            switch (nativeCallee->category()) {
+            case NativeCallee::Category::Wasm: {
+#if ENABLE(WEBASSEMBLY)
+                if (m_catchableFromWasm) {
+                    auto* wasmCallee = static_cast<Wasm::Callee*>(nativeCallee);
+                    if (wasmCallee->hasExceptionHandlers()) {
+                        Wasm::Instance* instance = m_callFrame->wasmInstance();
+                        unsigned exceptionHandlerIndex = m_callFrame->callSiteIndex().bits();
+                        m_handler = { wasmCallee->handlerForIndex(*instance, exceptionHandlerIndex, m_wasmTag), wasmCallee };
+                        if (m_handler.m_valid)
+                            return IterationStatus::Done;
+                    }
+                }
+#endif
+                break;
+            }
+            case NativeCallee::Category::InlineCache: {
+                break;
+            }
             }
         }
-#endif
 
         if (!m_callFrame->isNativeCalleeFrame() && JSC::isRemoteFunction(m_callFrame->jsCallee()) && !m_isTermination) {
             // Continue searching for a handler, but mark that a marshalling function was on the stack so that we can

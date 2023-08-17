@@ -36,6 +36,7 @@ class Callee;
 }
 
 class JSCell;
+class NativeCallee;
 
 class CalleeBits {
 public:
@@ -91,13 +92,13 @@ public:
     }
 
 #if ENABLE(WEBASSEMBLY)
-    Wasm::Callee* asNativeCallee() const
+    NativeCallee* asNativeCallee() const
     {
         ASSERT(isNativeCallee());
 #if USE(JSVALUE64)
-        return bitwise_cast<Wasm::Callee*>((bitwise_cast<uintptr_t>(m_ptr) & ~JSValue::NativeCalleeTag) + lowestAccessibleAddress());
+        return bitwise_cast<NativeCallee*>((bitwise_cast<uintptr_t>(m_ptr) & ~JSValue::NativeCalleeTag) + lowestAccessibleAddress());
 #elif USE(JSVALUE32_64)
-        return bitwise_cast<Wasm::Callee*>(bitwise_cast<uintptr_t>(m_ptr) + lowestAccessibleAddress());
+        return bitwise_cast<NativeCallee*>(bitwise_cast<uintptr_t>(m_ptr) + lowestAccessibleAddress());
 #endif
     }
 #endif

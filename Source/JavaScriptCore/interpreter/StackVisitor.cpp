@@ -113,7 +113,7 @@ void StackVisitor::readFrame(CallFrame* callFrame)
     }
 
     if (callFrame->isNativeCalleeFrame()) {
-        readInlinableWasmFrame(callFrame);
+        readInlinableNativeCalleeFrame(callFrame);
         return;
     }
 
@@ -177,46 +177,69 @@ void StackVisitor::readNonInlinedFrame(CallFrame* callFrame, CodeOrigin* codeOri
     RELEASE_ASSERT(!callFrame->isNativeCalleeFrame());
 }
 
-void StackVisitor::readInlinableWasmFrame(CallFrame* callFrame)
+void StackVisitor::readInlinableNativeCalleeFrame(CallFrame* callFrame)
 {
+    RELEASE_ASSERT(callFrame->callee().isNativeCallee());
+    auto& callee = *callFrame->callee().asNativeCallee();
+    switch (callee.category()) {
+    case NativeCallee::Category::Wasm: {
 #if ENABLE(WEBASSEMBLY)
-    auto depth = m_frame.m_wasmDistanceFromDeepestInlineFrame;
-    m_frame.m_isWasmFrame = true;
-    m_frame.m_callFrame = callFrame;
-    m_frame.m_argumentCountIncludingThis = callFrame->argumentCountIncludingThis();
-    m_frame.m_callerEntryFrame = m_frame.m_entryFrame;
-    m_frame.m_callerFrame = callFrame->callerFrame(m_frame.m_callerEntryFrame);
-    m_frame.m_callerIsEntryFrame = m_frame.m_callerEntryFrame != m_frame.m_entryFrame;
-    m_frame.m_callee = callFrame->callee();
-    m_frame.m_codeBlock = nullptr;
-    m_frame.m_wasmDistanceFromDeepestInlineFrame = 0;
+        auto& wasmCallee = static_cast<Wasm::Callee&>(callee);
+        auto depth = m_frame.m_wasmDistanceFromDeepestInlineFrame;
+        m_frame.m_isWasmFrame = true;
+        m_frame.m_callFrame = callFrame;
+        m_frame.m_argumentCountIncludingThis = callFrame->argumentCountIncludingThis();
+        m_frame.m_callerEntryFrame = m_frame.m_entryFrame;
+        m_frame.m_callerFrame = callFrame->callerFrame(m_frame.m_callerEntryFrame);
+        m_frame.m_callerIsEntryFrame = m_frame.m_callerEntryFrame != m_frame.m_entryFrame;
+        m_frame.m_callee = callFrame->callee();
+        m_frame.m_codeBlock = nullptr;
+        m_frame.m_wasmDistanceFromDeepestInlineFrame = 0;
 
-    RELEASE_ASSERT(m_frame.m_callee.isNativeCallee());
-    const auto& callee = *m_frame.m_callee.asNativeCallee();
-    m_frame.m_wasmFunctionIndexOrName = callee.indexOrName();
+        m_frame.m_wasmFunctionIndexOrName = wasmCallee.indexOrName();
 
 #if ENABLE(WEBASSEMBLY_B3JIT)
-    bool canInline = isAnyOMG(callee.compilationMode());
-    if (!canInline)
-        return;
+        bool canInline = isAnyOMG(wasmCallee.compilationMode());
+        if (!canInline)
+            return;
 
-    const auto& omgCallee = *static_cast<const Wasm::OptimizingJITCallee*>(&callee);
-    bool isInlined = false;
-    auto origin = omgCallee.getOrigin(callFrame->callSiteIndex().bits(), depth, isInlined);
-    if (!isInlined)
-        return;
+        const auto& omgCallee = *static_cast<const Wasm::OptimizingJITCallee*>(&wasmCallee);
+        bool isInlined = false;
+        auto origin = omgCallee.getOrigin(callFrame->callSiteIndex().bits(), depth, isInlined);
+        if (!isInlined)
+            return;
 
-    // The callerFrame just needs to be non-null to indicate that we
-    // haven't reached the last frame yet.
-    m_frame.m_callerFrame = callFrame;
-    m_frame.m_wasmDistanceFromDeepestInlineFrame = depth + 1;
-    m_frame.m_wasmFunctionIndexOrName = origin;
+        // The callerFrame just needs to be non-null to indicate that we
+        // haven't reached the last frame yet.
+        m_frame.m_callerFrame = callFrame;
+        m_frame.m_wasmDistanceFromDeepestInlineFrame = depth + 1;
+        m_frame.m_wasmFunctionIndexOrName = origin;
 #else
-    UNUSED_VARIABLE(depth);
+        UNUSED_VARIABLE(depth);
 #endif
 #else
-    UNUSED_PARAM(callFrame);
+        UNUSED_PARAM(callFrame);
 #endif
+        break;
+    }
+    case NativeCallee::Category::InlineCache: {
+        m_frame.m_callFrame = callFrame;
+        m_frame.m_argumentCountIncludingThis = callFrame->argumentCountIncludingThis();
+        m_frame.m_callerEntryFrame = m_frame.m_entryFrame;
+        m_frame.m_callerFrame = callFrame->callerFrame(m_frame.m_callerEntryFrame);
+        m_frame.m_callerIsEntryFrame = m_frame.m_callerEntryFrame != m_frame.m_entryFrame;
+        m_frame.m_isWasmFrame = false;
+        m_frame.m_callee = callFrame->callee();
+#if ENABLE(DFG_JIT)
+        m_frame.m_inlineDFGCallFrame = nullptr;
+#endif
+        m_frame.m_wasmDistanceFromDeepestInlineFrame = 0;
+
+        m_frame.m_codeBlock = nullptr;
+        m_frame.m_bytecodeIndex = BytecodeIndex(0);
+        break;
+    }
+    }
 }
 
 #if ENABLE(DFG_JIT)
@@ -294,18 +317,27 @@ std::optional<RegisterAtOffsetList> StackVisitor::Frame::calleeSaveRegistersForU
     if (isInlinedDFGFrame())
         return std::nullopt;
 
-#if ENABLE(WEBASSEMBLY)
     if (isNativeCalleeFrame()) {
         if (callee().isCell()) {
             RELEASE_ASSERT(isWebAssemblyInstance(callee().asCell()));
             return std::nullopt;
         }
-        Wasm::Callee* wasmCallee = callee().asNativeCallee();
-        if (auto* calleeSaveRegisters = wasmCallee->calleeSaveRegisters())
-            return *calleeSaveRegisters;
+        auto* nativeCallee = callee().asNativeCallee();
+        switch (nativeCallee->category()) {
+        case NativeCallee::Category::Wasm: {
+#if ENABLE(WEBASSEMBLY)
+            auto* wasmCallee = static_cast<Wasm::Callee*>(nativeCallee);
+            if (auto* calleeSaveRegisters = wasmCallee->calleeSaveRegisters())
+                return *calleeSaveRegisters;
+#endif // ENABLE(WEBASSEMBLY)
+            break;
+        }
+        case NativeCallee::Category::InlineCache: {
+            break;
+        }
+        }
         return std::nullopt;
     }
-#endif // ENABLE(WEBASSEMBLY)
 
     if (CodeBlock* codeBlock = this->codeBlock())
         return *codeBlock->jitCode()->calleeSaveRegisters();
