@@ -941,7 +941,7 @@ static inline void emitCatchPrologueShared(B3::Air::Code& code, CCallHelpers& ji
 {
     JIT_COMMENT(jit, "shared catch prologue");
     jit.loadPtr(CCallHelpers::tagFor(CallFrameSlot::callee), GPRInfo::regT0);
-    auto isWasmCallee = jit.branch32(CCallHelpers::Equal, GPRInfo::regT0, CCallHelpers::TrustedImm32(JSValue::WasmTag));
+    auto isWasmCallee = jit.branch32(CCallHelpers::Equal, GPRInfo::regT0, CCallHelpers::TrustedImm32(JSValue::NativeCalleeTag));
     jit.loadPtr(CCallHelpers::addressFor(CallFrameSlot::callee), GPRInfo::regT0);
     CCallHelpers::JumpList doneCases;
     {
