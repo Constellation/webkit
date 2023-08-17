@@ -28,6 +28,7 @@
 #if ENABLE(WEBASSEMBLY)
 
 #include "JITCompilation.h"
+#include "NativeCallee.h"
 #include "RegisterAtOffsetList.h"
 #include "WasmCompilationMode.h"
 #include "WasmFormat.h"
@@ -78,7 +79,6 @@ protected:
 
 private:
     const CompilationMode m_compilationMode;
-    ImplementationVisibility m_implementationVisibility { ImplementationVisibility::Public };
     const IndexOrName m_indexOrName;
 
 protected:

@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "WasmIndexOrName.h"
+#include "ImplementationVisibility.h"
 
 namespace JSC {
 
@@ -52,9 +52,6 @@ protected:
 private:
     Type m_type;
     ImplementationVisibility m_implementationVisibility { ImplementationVisibility::Public };
-
-protected:
-    FixedVector<HandlerInfo> m_exceptionHandlers;
 };
 
 } // namespace JSC
