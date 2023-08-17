@@ -75,9 +75,8 @@ public:
 
     bool isNativeCallee() const
     {
-#if !ENABLE(WEBASSEMBLY)
         return false;
-#elif USE(JSVALUE64)
+#if USE(JSVALUE64)
         return (reinterpret_cast<uintptr_t>(m_ptr) & JSValue::NativeCalleeMask) == JSValue::NativeCalleeTag;
 #elif USE(JSVALUE32_64)
         return m_tag == JSValue::NativeCalleeTag;
@@ -91,7 +90,6 @@ public:
         return static_cast<JSCell*>(m_ptr);
     }
 
-#if ENABLE(WEBASSEMBLY)
     NativeCallee* asNativeCallee() const
     {
         ASSERT(isNativeCallee());
@@ -101,7 +99,6 @@ public:
         return bitwise_cast<NativeCallee*>(bitwise_cast<uintptr_t>(m_ptr) + lowestAccessibleAddress());
 #endif
     }
-#endif
 
     void* rawPtr() const { return m_ptr; }
 

@@ -355,18 +355,19 @@ void CallFrame::convertToStackOverflowFrame(VM& vm, CodeBlock* codeBlockToKeepAl
     setArgumentCountIncludingThis(0);
 }
 
-JSGlobalObject* CallFrame::lexicalGlobalObjectFromNativeCallee(VM&) const
+JSGlobalObject* CallFrame::lexicalGlobalObjectFromNativeCallee(VM& vm) const
 {
-    auto* nativeCallee = asNativeCallee();
+    auto* nativeCallee = callee().asNativeCallee();
     switch (nativeCallee->category()) {
     case NativeCallee::Category::Wasm: {
 #if ENABLE(WEBASSEMBLY)
         return wasmInstance()->globalObject();
 #else
         return nullptr;
+#endif
     }
     case NativeCallee::Category::InlineCache: {
-        return callerFrame()->lexicalGlobalObject();
+        return callerFrame()->lexicalGlobalObject(vm);
     }
     }
     return nullptr;
