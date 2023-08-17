@@ -32,7 +32,7 @@
 #include "LLIntData.h"
 #include "MachineContext.h"
 #include "WasmCallee.h"
-#include "WasmCalleeRegistry.h"
+#include "NativeCalleeRegistry.h"
 #include "WasmCapabilities.h"
 #include "WasmContext.h"
 #include "WasmExceptionType.h"
@@ -78,7 +78,7 @@ static SignalAction trapHandler(Signal signal, SigInfo& sigInfo, PlatformRegiste
             auto didFaultInWasm = [](void* faultingInstruction) {
                 if (LLInt::isWasmLLIntPC(faultingInstruction))
                     return true;
-                auto& calleeRegistry = CalleeRegistry::singleton();
+                auto& calleeRegistry = NativeCalleeRegistry::singleton();
                 Locker locker { calleeRegistry.getLock() };
                 for (auto* callee : calleeRegistry.allCallees()) {
                     auto [start, end] = callee->range();

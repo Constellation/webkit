@@ -973,6 +973,7 @@ runtime/MemoryStatistics.cpp
 runtime/ModuleProgramExecutable.cpp
 runtime/NarrowingNumberPredictionFuzzerAgent.cpp
 runtime/NativeCallee.cpp
+runtime/NativeCalleeRegistry.cpp
 runtime/NativeErrorConstructor.cpp
 runtime/NativeErrorPrototype.cpp
 runtime/NativeExecutable.cpp
@@ -1110,7 +1111,6 @@ wasm/WasmBinding.cpp
 wasm/WasmBranchHintsSectionParser.cpp
 wasm/WasmCallee.cpp
 wasm/WasmCalleeGroup.cpp
-wasm/WasmCalleeRegistry.cpp
 wasm/WasmCallingConvention.cpp
 wasm/WasmCompilationMode.cpp
 wasm/WasmContext.cpp

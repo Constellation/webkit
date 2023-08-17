@@ -40,7 +40,7 @@
 #include "StructureAlignedMemoryAllocator.h"
 #include "SuperSampler.h"
 #include "VMTraps.h"
-#include "WasmCalleeRegistry.h"
+#include "NativeCalleeRegistry.h"
 #include "WasmCapabilities.h"
 #include "WasmFaultSignalHandler.h"
 #include "WasmThunks.h"
@@ -114,10 +114,10 @@ void initialize()
         Thread& thread = Thread::current();
         thread.setSavedLastStackTop(thread.stack().origin());
 
+        NativeCalleeRegistry::initialize();
 #if ENABLE(WEBASSEMBLY)
         if (Wasm::isSupported()) {
             Wasm::Thunks::initialize();
-            Wasm::CalleeRegistry::initialize();
         }
 #endif
 

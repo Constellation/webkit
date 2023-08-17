@@ -27,7 +27,7 @@
 #include "NativeCallee.h"
 
 #include "LLIntExceptions.h"
-#include "WasmCalleeRegistry.h"
+#include "NativeCalleeRegistry.h"
 #include "WasmCallingConvention.h"
 #include "WasmModuleInformation.h"
 
@@ -52,7 +52,7 @@ void NativeCallee::dump(PrintStream& out) const
 
 void NativeCallee::operator delete(NativeCallee* callee, std::destroying_delete_t)
 {
-    CalleeRegistry::singleton().unregisterCallee(callee);
+    NativeCalleeRegistry::singleton().unregisterCallee(callee);
     switch (m_type) {
     case Type::Wasm:
         Wasm::Callee::destroy(callee);

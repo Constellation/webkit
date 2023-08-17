@@ -38,11 +38,11 @@
 #include "MachineContext.h"
 #include "MarkedBlockInlines.h"
 #include "MarkedBlockSet.h"
+#include "NativeCalleeRegistry.h"
 #include "NativeExecutable.h"
 #include "VM.h"
 #include "VMTrapsInlines.h"
 #include "WasmCallee.h"
-#include "WasmCalleeRegistry.h"
 #include "WasmCapabilities.h"
 #include <wtf/CommaPrinter.h>
 #include <wtf/FilePrintStream.h>
@@ -125,15 +125,15 @@ protected:
         stackTrace[m_depth] = UnprocessedStackFrame(codeBlock, unsafeCallee, callSiteIndex);
 #if ENABLE(WEBASSEMBLY)
         if (Wasm::isSupported() && unsafeCallee.isNativeCallee()) {
-            assertIsHeld(Wasm::CalleeRegistry::singleton().getLock());
+            assertIsHeld(NativeCalleeRegistry::singleton().getLock());
             auto* wasmCallee = unsafeCallee.asNativeCallee();
-            if (Wasm::CalleeRegistry::singleton().isValidCallee(wasmCallee)) {
+            if (NativeCalleeRegistry::singleton().isValidCallee(wasmCallee)) {
                 // At this point, Wasm::Callee would be dying (ref count is 0), but its fields are still live.
                 // And we can safely copy Wasm::IndexOrName even when any lock is held by suspended threads.
                 stackTrace[m_depth].wasmIndexOrName = wasmCallee->indexOrName();
                 stackTrace[m_depth].wasmCompilationMode = wasmCallee->compilationMode();
 #if ENABLE(JIT)
-                stackTrace[m_depth].wasmPCMap = Wasm::CalleeRegistry::singleton().codeOriginMap(wasmCallee);
+                stackTrace[m_depth].wasmPCMap = NativeCalleeRegistry::singleton().codeOriginMap(wasmCallee);
 #endif
             }
         }
@@ -363,7 +363,7 @@ void SamplingProfiler::takeSample(Seconds& stackTraceProcessingTime)
         std::optional<LockHolder> wasmCalleesLocker;
 #if ENABLE(WEBASSEMBLY)
         if (Wasm::isSupported())
-            wasmCalleesLocker.emplace(Wasm::CalleeRegistry::singleton().getLock());
+            wasmCalleesLocker.emplace(NativeCalleeRegistry::singleton().getLock());
 #endif
 
         ThreadSuspendLocker threadSuspendLocker;

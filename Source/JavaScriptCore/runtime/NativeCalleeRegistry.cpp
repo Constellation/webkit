@@ -24,7 +24,7 @@
  */
 
 #include "config.h"
-#include "WasmCalleeRegistry.h"
+#include "NativeCalleeRegistry.h"
 
 #if ENABLE(WEBASSEMBLY)
 
@@ -32,14 +32,14 @@
 
 namespace JSC { namespace Wasm {
 
-static LazyNeverDestroyed<CalleeRegistry> calleeRegistry;
+static LazyNeverDestroyed<NativeCalleeRegistry> calleeRegistry;
 
-void CalleeRegistry::initialize()
+void NativeCalleeRegistry::initialize()
 {
     calleeRegistry.construct();
 }
 
-CalleeRegistry& CalleeRegistry::singleton()
+NativeCalleeRegistry& NativeCalleeRegistry::singleton()
 {
     return calleeRegistry.get();
 }
