@@ -34,12 +34,12 @@ class LLIntOffsetsExtractor;
 class NativeCallee : public ThreadSafeRefCounted<NativeCallee> {
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    enum class Type : uint8_t {
+    enum class Category : uint8_t {
         InlineCache,
         Wasm,
     };
 
-    Type type() const { return m_type; }
+    Category category() const { return m_category; }
     ImplementationVisibility implementationVisibility() const { return m_implementationVisibility; }
 
     void dump(PrintStream&) const;
@@ -47,10 +47,10 @@ public:
     JS_EXPORT_PRIVATE void operator delete(NativeCallee*, std::destroying_delete_t);
 
 protected:
-    JS_EXPORT_PRIVATE NativeCallee(Type, ImplementationVisibility);
+    JS_EXPORT_PRIVATE NativeCallee(Category, ImplementationVisibility);
 
 private:
-    Type m_type;
+    Category m_category;
     ImplementationVisibility m_implementationVisibility { ImplementationVisibility::Public };
 };
 

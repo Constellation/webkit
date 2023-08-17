@@ -32,19 +32,19 @@
 
 namespace JSC {
 
-NativeCallee::NativeCallee(Type type, ImplementationVisibility implementationVisibility)
-    : m_type(type)
+NativeCallee::NativeCallee(Category category, ImplementationVisibility implementationVisibility)
+    : m_category(category)
     , m_implementationVisibility(implementationVisibility)
 {
 }
 
 void NativeCallee::dump(PrintStream& out) const
 {
-    switch (m_type) {
-    case Type::Wasm:
+    switch (m_category) {
+    case Category::Wasm:
         static_cast<const Wasm::Callee*>(this)->dump(out);
         break;
-    case Type::InlineCache:
+    case Category::InlineCache:
         // InlineCacheCallee::destroy(static_cast<callee);
         break;
     }
@@ -53,11 +53,11 @@ void NativeCallee::dump(PrintStream& out) const
 void NativeCallee::operator delete(NativeCallee* callee, std::destroying_delete_t)
 {
     NativeCalleeRegistry::singleton().unregisterCallee(callee);
-    switch (m_type) {
-    case Type::Wasm:
+    switch (m_category) {
+    case Category::Wasm:
         Wasm::Callee::destroy(static_cast<Wasm::Callee*>(callee));
         break;
-    case Type::InlineCache:
+    case Category::InlineCache:
         // InlineCacheCallee::destroy(static_cast<callee);
         break;
     }
