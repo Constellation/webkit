@@ -36,13 +36,13 @@
 namespace JSC { namespace Wasm {
 
 Callee::Callee(Wasm::CompilationMode compilationMode)
-    : NativeCallee(NativeCallee::Type::Wasm, ImplementationVisibility::Private)
+    : NativeCallee(NativeCallee::Category::Wasm, ImplementationVisibility::Private)
     , m_compilationMode(compilationMode)
 {
 }
 
 Callee::Callee(Wasm::CompilationMode compilationMode, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name)
-    : NativeCallee(NativeCallee::Type::Wasm, ImplementationVisibility::Public)
+    : NativeCallee(NativeCallee::Category::Wasm, ImplementationVisibility::Public)
     , m_compilationMode(compilationMode)
     , m_indexOrName(index, WTFMove(name))
 {
