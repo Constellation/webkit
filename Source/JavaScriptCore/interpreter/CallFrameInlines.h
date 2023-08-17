@@ -77,7 +77,7 @@ inline JSGlobalObject* CallFrame::lexicalGlobalObject(VM& vm) const
 #if ENABLE(WEBASSEMBLY)
 inline Wasm::Instance* CallFrame::wasmInstance() const
 {
-    ASSERT(callee().isNativeCallee() && callee().asNativeCallee()->category() == NativeCallee::Category::Wasm);
+    ASSERT(callee().isNativeCallee());
     return bitwise_cast<Wasm::Instance*>(const_cast<CallFrame*>(this)->uncheckedR(CallFrameSlot::codeBlock).asanUnsafePointer());
 }
 #endif

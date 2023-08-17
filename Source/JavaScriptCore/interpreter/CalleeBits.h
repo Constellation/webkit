@@ -75,7 +75,6 @@ public:
 
     bool isNativeCallee() const
     {
-        return false;
 #if USE(JSVALUE64)
         return (reinterpret_cast<uintptr_t>(m_ptr) & JSValue::NativeCalleeMask) == JSValue::NativeCalleeTag;
 #elif USE(JSVALUE32_64)
