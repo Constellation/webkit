@@ -28,8 +28,7 @@
 
 #include "LLIntExceptions.h"
 #include "NativeCalleeRegistry.h"
-#include "WasmCallingConvention.h"
-#include "WasmModuleInformation.h"
+#include "WasmCallee.h"
 
 namespace JSC {
 
