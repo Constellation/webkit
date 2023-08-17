@@ -33,30 +33,13 @@ class NativeCallee : public ThreadSafeRefCounted<NativeCallee> {
     WTF_MAKE_FAST_ALLOCATED;
 public:
     enum class Type : uint8_t {
-        JSIC,
-        JSToWasmIC,
-
-        WasmLLInt,
-        WasmIPInt,
-        WasmBBQ,
-        WasmBBQForOSREntry,
-        WasmOMG,
-        WasmOMGForOSREntry,
-        WasmJSEntrypoint,
-        WasmToJS,
+        InlineCache,
+        Wasm,
     };
 
     IndexOrName indexOrName() const { return m_indexOrName; }
     Type type() const { return m_type; }
     ImplementationVisibility implementationVisibility() const { return m_implementationVisibility; }
-
-    CodePtr<WasmEntryPtrTag> entrypoint() const;
-    RegisterAtOffsetList* calleeSaveRegisters();
-    std::tuple<void*, void*> range() const;
-
-    const HandlerInfo* handlerForIndex(Instance&, unsigned, const Tag*);
-
-    bool hasExceptionHandlers() const { return !m_exceptionHandlers.isEmpty(); }
 
     void dump(PrintStream&) const;
 
@@ -65,11 +48,6 @@ public:
 protected:
     JS_EXPORT_PRIVATE NativeCallee(Type);
     JS_EXPORT_PRIVATE NativeCallee(Type, size_t, std::pair<const Name*, RefPtr<NameSection>>&&);
-
-    template<typename Func>
-    void runWithDowncast(const Func&);
-    template<typename Func>
-    void runWithDowncast(const Func&) const;
 
 private:
     const CompilationMode m_type;
