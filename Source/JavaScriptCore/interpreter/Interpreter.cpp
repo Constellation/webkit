@@ -416,7 +416,16 @@ public:
 
         if (m_results.size() < m_results.capacity()) {
             if (visitor->isNativeCalleeFrame()) {
-                m_results.uncheckedAppend(StackFrame(visitor->wasmFunctionIndexOrName()));
+                auto* nativeCallee = visitor->callee().asNativeCallee();
+                switch (nativeCallee->category()) {
+                case NativeCallee::Category::Wasm: {
+                    m_results.uncheckedAppend(StackFrame(visitor->wasmFunctionIndexOrName()));
+                    break;
+                }
+                case NativeCallee::Category::InlineCache: {
+                    break;
+                }
+                }
             } else if (!!visitor->codeBlock() && !visitor->codeBlock()->unlinkedCodeBlock()->isBuiltinFunction()) {
                 m_results.uncheckedAppend(
                     StackFrame(m_vm, m_owner, visitor->callee().asCell(), visitor->codeBlock(), visitor->bytecodeIndex()));

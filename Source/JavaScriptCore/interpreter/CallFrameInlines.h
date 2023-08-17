@@ -82,6 +82,13 @@ inline Wasm::Instance* CallFrame::wasmInstance() const
 }
 #endif
 
+inline JSCell* CallFrame::codeOwnerCell() const
+{
+    if (callee().isNativeCallee())
+        return codeOwnerCellSlow();
+    return codeBlock();
+}
+
 inline bool CallFrame::isStackOverflowFrame() const
 {
     if (callee().isNativeCallee())

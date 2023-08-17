@@ -31,6 +31,7 @@
 #include "InlineCallFrame.h"
 #include "JSCInlines.h"
 #include "JSWebAssemblyInstance.h"
+#include "JSWebAssemblyModule.h"
 #include "LLIntPCRanges.h"
 #include "VMEntryRecord.h"
 #include "VMEntryScopeInlines.h"
@@ -229,6 +230,7 @@ JSGlobalObject* CallFrame::globalObjectOfClosestCodeBlock(VM& vm, CallFrame* cal
     // rdar://83691438
     JSGlobalObject* globalObject = nullptr;
     StackVisitor::visit(callFrame, vm, [&](StackVisitor& visitor) {
+        // Note that this is OK for InlineCache Callee.
         if (visitor->isNativeCalleeFrame()) {
             globalObject = visitor->callFrame()->lexicalGlobalObject(vm);
             return IterationStatus::Done;
@@ -369,6 +371,23 @@ JSGlobalObject* CallFrame::lexicalGlobalObjectFromNativeCallee(VM& vm) const
     case NativeCallee::Category::InlineCache: {
         return callerFrame()->lexicalGlobalObject(vm);
     }
+    }
+    return nullptr;
+}
+
+JSCell* CallFrame::codeOwnerCellSlow() const
+{
+    auto* nativeCallee = callee().asNativeCallee();
+    switch (nativeCallee->category()) {
+    case NativeCallee::Category::Wasm: {
+#if ENABLE(WEBASSEMBLY)
+        return jsCast<JSWebAssemblyInstance*>(wasmInstance()->owner())->module();
+#else
+        return nullptr;
+#endif
+    }
+    case NativeCallee::Category::InlineCache:
+        return callerFrame()->codeOwnerCell();
     }
     return nullptr;
 }

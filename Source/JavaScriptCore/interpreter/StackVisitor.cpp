@@ -288,8 +288,16 @@ void StackVisitor::readInlinedFrame(CallFrame* callFrame, CodeOrigin* codeOrigin
 
 StackVisitor::Frame::CodeType StackVisitor::Frame::codeType() const
 {
-    if (isNativeCalleeFrame())
-        return CodeType::Wasm;
+    if (isNativeCalleeFrame()) {
+        auto* nativeCallee = callee().asNativeCallee();
+        switch (nativeCallee->category()) {
+        case NativeCallee::Category::Wasm:
+            return CodeType::Wasm;
+        case NativeCallee::Category::InlineCache:
+            return CodeType::Native;
+        }
+        return CodeType::Native;
+    }
 
     if (!codeBlock())
         return CodeType::Native;
@@ -318,10 +326,6 @@ std::optional<RegisterAtOffsetList> StackVisitor::Frame::calleeSaveRegistersForU
         return std::nullopt;
 
     if (isNativeCalleeFrame()) {
-        if (callee().isCell()) {
-            RELEASE_ASSERT(isWebAssemblyInstance(callee().asCell()));
-            return std::nullopt;
-        }
         auto* nativeCallee = callee().asNativeCallee();
         switch (nativeCallee->category()) {
         case NativeCallee::Category::Wasm: {

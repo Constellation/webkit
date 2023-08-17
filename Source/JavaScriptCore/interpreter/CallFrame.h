@@ -223,9 +223,12 @@ using JSInstruction = BaseInstruction<JSOpcodeTraits>;
         Wasm::Instance* wasmInstance() const;
 #endif
 
+        JSCell* codeOwnerCell() const;
+
     private:
         unsigned callSiteBitsAsBytecodeOffset() const;
         JS_EXPORT_PRIVATE JSGlobalObject* lexicalGlobalObjectFromNativeCallee(VM&) const;
+        JS_EXPORT_PRIVATE JSCell* codeOwnerCellSlow() const;
     public:
 
         // This will try to get you the bytecode offset, but you should be aware that

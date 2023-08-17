@@ -79,7 +79,7 @@ public:
 
         bool isNativeFrame() const { return !codeBlock() && !isNativeCalleeFrame(); }
         bool isInlinedDFGFrame() const { return !isNativeCalleeFrame() && !!inlineCallFrame(); }
-        bool isNativeCalleeFrame() const { return m_isWasmFrame; }
+        bool isNativeCalleeFrame() const { return m_callee.isNativeCallee(); }
         Wasm::IndexOrName const wasmFunctionIndexOrName()
         {
             ASSERT(isNativeCalleeFrame());
