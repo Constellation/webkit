@@ -972,6 +972,7 @@ runtime/MemoryMode.cpp
 runtime/MemoryStatistics.cpp
 runtime/ModuleProgramExecutable.cpp
 runtime/NarrowingNumberPredictionFuzzerAgent.cpp
+runtime/NativeCallee.cpp
 runtime/NativeErrorConstructor.cpp
 runtime/NativeErrorPrototype.cpp
 runtime/NativeExecutable.cpp
