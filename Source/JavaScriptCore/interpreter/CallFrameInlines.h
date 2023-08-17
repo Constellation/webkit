@@ -69,18 +69,15 @@ inline SUPPRESS_ASAN CodeBlock* CallFrame::unsafeCodeBlock() const
 
 inline JSGlobalObject* CallFrame::lexicalGlobalObject(VM& vm) const
 {
-    UNUSED_PARAM(vm);
-#if ENABLE(WEBASSEMBLY)
     if (callee().isNativeCallee())
-        return lexicalGlobalObjectFromWasmCallee(vm);
-#endif
+        return lexicalGlobalObjectFromNativeCallee(vm);
     return jsCallee()->globalObject();
 }
 
 #if ENABLE(WEBASSEMBLY)
 inline Wasm::Instance* CallFrame::wasmInstance() const
 {
-    ASSERT(callee().isNativeCallee());
+    ASSERT(callee().isNativeCallee() && callee().asNativeCallee()->category() == NativeCallee::Category::Wasm);
     return bitwise_cast<Wasm::Instance*>(const_cast<CallFrame*>(this)->uncheckedR(CallFrameSlot::codeBlock).asanUnsafePointer());
 }
 #endif

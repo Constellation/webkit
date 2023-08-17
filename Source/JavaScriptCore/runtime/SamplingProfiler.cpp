@@ -539,12 +539,21 @@ void SamplingProfiler::processUnverifiedStackTraces()
             CalleeBits calleeBits = unprocessedStackFrame.unverifiedCallee;
             StackFrame& stackFrame = stackTrace.frames.last();
             bool alreadyHasExecutable = !!stackFrame.executable;
-#if ENABLE(WEBASSEMBLY)
             if (calleeBits.isNativeCallee()) {
-                storeWasmCalleeIntoLastFrame(unprocessedStackFrame, nullptr);
+                auto* nativeCallee = calleeBits.asNativeCallee();
+                switch (nativeCallee->category()) {
+                case NativeCallee::Category::Wasm: {
+#if ENABLE(WEBASSEMBLY)
+                    storeWasmCalleeIntoLastFrame(unprocessedStackFrame, nullptr);
+#endif
+                    return;
+                }
+                case NativeCallee::Category::InlineCache: {
+                    return;
+                }
+                }
                 return;
             }
-#endif
 
             JSValue callee = calleeBits.asCell();
             if (!HeapUtil::isValueGCObject(m_vm.heap, filter, callee)) {
@@ -667,7 +676,7 @@ void SamplingProfiler::processUnverifiedStackTraces()
             }
         }
 #if ENABLE(WEBASSEMBLY)
-        else if (!unprocessedStackTrace.frames.isEmpty() && unprocessedStackTrace.frames[0].unverifiedCallee.isNativeCallee()) {
+        else if (!unprocessedStackTrace.frames.isEmpty() && unprocessedStackTrace.frames[0].unverifiedCallee.isNativeCallee() && unprocessedStackTrace.frames[0].unverifiedCallee.asNativeCallee()->category() == NativeCallee::Category::Wasm) {
             appendEmptyFrame();
             storeWasmCalleeIntoLastFrame(unprocessedStackTrace.frames[0], unprocessedStackTrace.topPC);
             startIndex = 1;

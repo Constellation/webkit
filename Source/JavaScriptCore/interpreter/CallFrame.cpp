@@ -355,12 +355,22 @@ void CallFrame::convertToStackOverflowFrame(VM& vm, CodeBlock* codeBlockToKeepAl
     setArgumentCountIncludingThis(0);
 }
 
-#if ENABLE(WEBASSEMBLY)
-JSGlobalObject* CallFrame::lexicalGlobalObjectFromWasmCallee(VM&) const
+JSGlobalObject* CallFrame::lexicalGlobalObjectFromNativeCallee(VM&) const
 {
-    return wasmInstance()->globalObject();
+    auto* nativeCallee = asNativeCallee();
+    switch (nativeCallee->category()) {
+    case NativeCallee::Category::Wasm: {
+#if ENABLE(WEBASSEMBLY)
+        return wasmInstance()->globalObject();
+#else
+        return nullptr;
+    }
+    case NativeCallee::Category::InlineCache: {
+        return callerFrame()->lexicalGlobalObject();
+    }
+    }
+    return nullptr;
 }
-#endif
 
 bool isFromJSCode(void* returnAddress)
 {

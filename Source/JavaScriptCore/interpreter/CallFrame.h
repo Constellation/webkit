@@ -225,9 +225,7 @@ using JSInstruction = BaseInstruction<JSOpcodeTraits>;
 
     private:
         unsigned callSiteBitsAsBytecodeOffset() const;
-#if ENABLE(WEBASSEMBLY)
-        JS_EXPORT_PRIVATE JSGlobalObject* lexicalGlobalObjectFromWasmCallee(VM&) const;
-#endif
+        JS_EXPORT_PRIVATE JSGlobalObject* lexicalGlobalObjectFromNativeCallee(VM&) const;
     public:
 
         // This will try to get you the bytecode offset, but you should be aware that
