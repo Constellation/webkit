@@ -30,6 +30,9 @@
 namespace JSC {
 
 class DateCache;
+namespace ISO8601 {
+class PlainGregorianDateTime;
+}
 
 enum DateTimeFormat {
     DateTimeFormatDate = 1,
@@ -37,6 +40,6 @@ enum DateTimeFormat {
     DateTimeFormatDateAndTime = DateTimeFormatDate | DateTimeFormatTime
 };
 
-JS_EXPORT_PRIVATE WTF::String formatDateTime(const GregorianDateTime&, DateTimeFormat, bool asUTCVariant, DateCache&);
+JS_EXPORT_PRIVATE WTF::String formatDateTime(const ISO8601::PlainGregorianDateTime&, DateTimeFormat, bool asUTCVariant, DateCache&);
 
 } // namespace JSC

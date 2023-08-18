@@ -1044,7 +1044,18 @@ private:
         }
 
         case DateGetTime: {
-            setPrediction(SpecFullNumber);
+            switch (m_currentNode->intrinsic()) {
+            case DatePrototypeGetTimeIntrinsic:
+                setPrediction(SpecFullNumber);
+                break;
+            case DatePrototypeGetUTCMillisecondsIntrinsic:
+            case DatePrototypeGetMillisecondsIntrinsic:
+                setPrediction(m_currentNode->getHeapPrediction());
+                break;
+            default:
+                DFG_CRASH(m_graph, m_currentNode, "Unexpected intrinsic");
+                break;
+            }
             break;
         }
 
@@ -1214,7 +1225,8 @@ private:
         case GetButterfly:
         case GetIndexedPropertyStorage:
         case AllocatePropertyStorage:
-        case ReallocatePropertyStorage: {
+        case ReallocatePropertyStorage:
+        case DateGetStorage: {
             setPrediction(SpecOther);
             break;
         }

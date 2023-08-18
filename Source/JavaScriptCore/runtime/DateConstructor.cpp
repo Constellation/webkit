@@ -25,6 +25,7 @@
 #include "DateConversion.h"
 #include "DateInstance.h"
 #include "DatePrototype.h"
+#include "ISO8601.h"
 #include "JSCInlines.h"
 #include "JSDateMath.h"
 
@@ -188,7 +189,7 @@ JSC_DEFINE_HOST_FUNCTION(constructWithDateConstructor, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(callDate, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    GregorianDateTime ts;
+    ISO8601::PlainGregorianDateTime ts;
     vm.dateCache.msToGregorianDateTime(WallTime::now().secondsSinceEpoch().milliseconds(), WTF::LocalTime, ts);
     return JSValue::encode(jsNontrivialString(vm, formatDateTime(ts, DateTimeFormatDateAndTime, false, vm.dateCache)));
 }

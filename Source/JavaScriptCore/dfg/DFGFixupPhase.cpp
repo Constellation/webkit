@@ -2961,6 +2961,9 @@ private:
             break;
 
         case DateGetInt32OrNaN:
+            break;
+
+        case DateGetStorage:
         case DateGetTime:
             fixEdge<DateObjectUse>(node->child1());
             break;
