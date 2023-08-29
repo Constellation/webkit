@@ -1259,7 +1259,7 @@ Vector<char> SVGToOTFFontConverter::transcodeGlyphPaths(float width, const SVGEl
     CFFBuilder builder(result, width, FloatPoint(horizontalOriginX, horizontalOriginY), static_cast<float>(s_outputUnitsPerEm) / m_inputUnitsPerEm);
     SVGPathStringViewSource source(dAttribute);
 
-    ok = SVGPathParser::parse(source, builder);
+    ok = SVGPathParser<SVGPathStringViewSource, CFFBuilder>::parse(source, builder);
     if (!ok)
         return { };
 

@@ -48,7 +48,7 @@ Path buildPathFromString(StringView d)
     Path path;
     SVGPathBuilder builder(path);
     SVGPathStringViewSource source(d);
-    SVGPathParser::parse(source, builder);
+    SVGPathParser<SVGPathStringViewSource, SVGPathBuilder>::parse(source, builder);
     return path;
 }
 
@@ -88,7 +88,7 @@ bool buildSVGPathByteStreamFromSVGPathSegList(const SVGPathSegList& list, SVGPat
         return true;
 
     SVGPathSegListSource source(list);
-    return SVGPathParser::parseToByteStream(source, stream, parsingMode, checkForInitialMoveTo);
+    return SVGPathParser<SVGPathSegListSource, SVGPathByteStreamBuilder>::parseToByteStream(source, stream, parsingMode, checkForInitialMoveTo);
 }
 
 Path buildPathFromByteStream(const SVGPathByteStream& stream)
@@ -99,7 +99,7 @@ Path buildPathFromByteStream(const SVGPathByteStream& stream)
     Path path;
     SVGPathBuilder builder(path);
     SVGPathByteStreamSource source(stream);
-    SVGPathParser::parse(source, builder);
+    SVGPathParser<SVGPathByteStreamSource, SVGPathBuilder>::parse(source, builder);
     return path;
 }
 
@@ -110,7 +110,7 @@ bool buildSVGPathSegListFromByteStream(const SVGPathByteStream& stream, SVGPathS
 
     SVGPathSegListBuilder builder(list);
     SVGPathByteStreamSource source(stream);
-    return SVGPathParser::parse(source, builder, mode);
+    return SVGPathParser<SVGPathByteStreamSource, SVGPathSegListBuilder>::parse(source, builder, mode);
 }
 
 bool buildStringFromByteStream(const SVGPathByteStream& stream, String& result, PathParsingMode parsingMode, bool checkForInitialMoveTo)
@@ -119,7 +119,7 @@ bool buildStringFromByteStream(const SVGPathByteStream& stream, String& result, 
         return true;
 
     SVGPathByteStreamSource source(stream);
-    return SVGPathParser::parseToString(source, result, parsingMode, checkForInitialMoveTo);
+    return SVGPathParser<SVGPathByteStreamSource, SVGPathStringBuilder>::parseToString(source, result, parsingMode, checkForInitialMoveTo);
 }
 
 bool buildSVGPathByteStreamFromString(StringView d, SVGPathByteStream& result, PathParsingMode parsingMode)
@@ -129,7 +129,7 @@ bool buildSVGPathByteStreamFromString(StringView d, SVGPathByteStream& result, P
         return true;
 
     SVGPathStringViewSource source(d);
-    return SVGPathParser::parseToByteStream(source, result, parsingMode);
+    return SVGPathParser<SVGPathStringViewSource, SVGPathByteStreamBuilder>::parseToByteStream(source, result, parsingMode);
 }
 
 bool canBlendSVGPathByteStreams(const SVGPathByteStream& fromStream, const SVGPathByteStream& toStream)
@@ -179,7 +179,7 @@ unsigned getSVGPathSegAtLengthFromSVGPathByteStream(const SVGPathByteStream& str
     SVGPathTraversalStateBuilder builder(traversalState, length);
 
     SVGPathByteStreamSource source(stream);
-    SVGPathParser::parse(source, builder);
+    SVGPathParser<SVGPathByteStreamSource, SVGPathTraversalStateBuilder>::parse(source, builder);
     return builder.pathSegmentIndex();
 }
 
@@ -193,7 +193,7 @@ float getTotalLengthOfSVGPathByteStream(const SVGPathByteStream& stream)
     SVGPathTraversalStateBuilder builder(traversalState);
 
     SVGPathByteStreamSource source(stream);
-    SVGPathParser::parse(source, builder);
+    SVGPathParser<SVGPathByteStreamSource, SVGPathTraversalStateBuilder>::parse(source, builder);
     return builder.totalLength();
 }
 
@@ -207,7 +207,7 @@ FloatPoint getPointAtLengthOfSVGPathByteStream(const SVGPathByteStream& stream, 
     SVGPathTraversalStateBuilder builder(traversalState, length);
 
     SVGPathByteStreamSource source(stream);
-    SVGPathParser::parse(source, builder);
+    SVGPathParser<SVGPathByteStreamSource, SVGPathTraversalStateBuilder>::parse(source, builder);
     return builder.currentPoint();
 }
 
@@ -222,7 +222,7 @@ std::optional<SVGPathByteStream> convertSVGPathByteStreamToAbsoluteCoordinates(c
 
     SVGPathByteStreamSource source(stream);
 
-    if (!SVGPathParser::parse(source, converter, UnalteredParsing, false))
+    if (!SVGPathParser<SVGPathByteStreamSource, SVGPathAbsoluteConverter>::parse(source, converter, UnalteredParsing, false))
         return std::nullopt;
 
     return result;
