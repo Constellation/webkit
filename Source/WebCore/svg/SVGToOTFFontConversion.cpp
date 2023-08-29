@@ -1140,32 +1140,6 @@ public:
         m_cffData.append(rMoveTo);
     }
 
-    std::optional<FloatRect> boundingBox() const
-    {
-        return m_boundingBox;
-    }
-
-private:
-    void updateBoundingBox(FloatPoint point)
-    {
-        if (!m_boundingBox) {
-            m_boundingBox = FloatRect(point, FloatSize());
-            return;
-        }
-        m_boundingBox.value().extend(point);
-    }
-
-    void writePoint(FloatPoint destination)
-    {
-        updateBoundingBox(destination);
-
-        FloatSize delta = destination - m_current;
-        writeCFFEncodedNumber(m_cffData, delta.width());
-        writeCFFEncodedNumber(m_cffData, delta.height());
-
-        m_current = destination;
-    }
-
     void moveTo(const FloatPoint& targetPoint, bool closed, PathCoordinateMode mode) final
     {
         if (closed && !m_cffData.isEmpty())
@@ -1228,6 +1202,32 @@ private:
     void curveToQuadraticSmooth(const FloatPoint&, PathCoordinateMode) final { ASSERT_NOT_REACHED(); }
     void arcTo(float, float, float, bool, bool, const FloatPoint&, PathCoordinateMode) final { ASSERT_NOT_REACHED(); }
 
+    std::optional<FloatRect> boundingBox() const
+    {
+        return m_boundingBox;
+    }
+
+    void updateBoundingBox(FloatPoint point)
+    {
+        if (!m_boundingBox) {
+            m_boundingBox = FloatRect(point, FloatSize());
+            return;
+        }
+        m_boundingBox.value().extend(point);
+    }
+
+    void writePoint(FloatPoint destination)
+    {
+        updateBoundingBox(destination);
+
+        FloatSize delta = destination - m_current;
+        writeCFFEncodedNumber(m_cffData, delta.width());
+        writeCFFEncodedNumber(m_cffData, delta.height());
+
+        m_current = destination;
+    }
+
+private:
     Vector<char>& m_cffData;
     FloatPoint m_startingPoint;
     FloatPoint m_current;

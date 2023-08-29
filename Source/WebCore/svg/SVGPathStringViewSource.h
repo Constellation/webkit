@@ -30,7 +30,6 @@ class SVGPathStringViewSource final : public SVGPathSource {
 public:
     explicit SVGPathStringViewSource(StringView);
 
-private:
     bool hasMoreData() const final;
     bool moveToNextToken() final;
     SVGPathSegType nextCommand(SVGPathSegType previousCommand) final;
@@ -46,6 +45,7 @@ private:
     std::optional<CurveToQuadraticSmoothSegment> parseCurveToQuadraticSmoothSegment() final;
     std::optional<ArcToSegment> parseArcToSegment() final;
 
+private:
     template<typename Function> decltype(auto) parse(Function&&);
 
     bool m_is8BitSource;

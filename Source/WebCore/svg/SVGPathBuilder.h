@@ -34,7 +34,6 @@ class SVGPathBuilder final : public SVGPathConsumer {
 public:
     SVGPathBuilder(Path&);
 
-private:
     void incrementPathSegmentCount() final { }
     bool continueConsuming() final { return true; }
 
@@ -52,6 +51,7 @@ private:
     void curveToQuadraticSmooth(const FloatPoint&, PathCoordinateMode) final { ASSERT_NOT_REACHED(); }
     void arcTo(float, float, float, bool, bool, const FloatPoint&, PathCoordinateMode) final { ASSERT_NOT_REACHED(); }
 
+private:
     Path& m_path;
     FloatPoint m_current;
 };

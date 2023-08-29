@@ -25,11 +25,13 @@
 
 #include "SVGPathConsumer.h"
 #include "SVGPathSeg.h"
+#include "SVGPathStringBuilder.h"
 #include <wtf/text/WTFString.h>
 
 namespace WebCore {
 
 class SVGPathByteStream;
+class SVGPathByteStreamBuilder;
 class SVGPathSource;
 
 template<typename Source, typename Consumer>

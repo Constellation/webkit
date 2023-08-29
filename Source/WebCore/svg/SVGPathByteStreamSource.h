@@ -29,7 +29,6 @@ class SVGPathByteStreamSource final : public SVGPathSource {
 public:
     explicit SVGPathByteStreamSource(const SVGPathByteStream&);
 
-private:
     bool hasMoreData() const final;
     bool moveToNextToken() final { return true; }
     SVGPathSegType nextCommand(SVGPathSegType) final;
@@ -45,6 +44,7 @@ private:
     std::optional<CurveToQuadraticSmoothSegment> parseCurveToQuadraticSmoothSegment() final;
     std::optional<ArcToSegment> parseArcToSegment() final;
 
+private:
 #if COMPILER(MSVC)
 #pragma warning(disable: 4701)
 #endif

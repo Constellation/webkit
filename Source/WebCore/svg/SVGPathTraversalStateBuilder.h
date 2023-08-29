@@ -39,14 +39,12 @@ public:
     void incrementPathSegmentCount() final { ++m_segmentIndex; }
     bool continueConsuming() final;
 
-private:
     // Used in UnalteredParsing/NormalizedParsing modes.
     void moveTo(const FloatPoint&, bool closed, PathCoordinateMode) final;
     void lineTo(const FloatPoint&, PathCoordinateMode) final;
     void curveToCubic(const FloatPoint&, const FloatPoint&, const FloatPoint&, PathCoordinateMode) final;
     void closePath() final;
 
-private:
     // Not used for PathTraversalState.
     void lineToHorizontal(float, PathCoordinateMode) final { ASSERT_NOT_REACHED(); }
     void lineToVertical(float, PathCoordinateMode) final { ASSERT_NOT_REACHED(); }
@@ -55,6 +53,7 @@ private:
     void curveToQuadraticSmooth(const FloatPoint&, PathCoordinateMode) final { ASSERT_NOT_REACHED(); }
     void arcTo(float, float, float, bool, bool, const FloatPoint&, PathCoordinateMode) final { ASSERT_NOT_REACHED(); }
 
+private:
     PathTraversalState& m_traversalState;
     unsigned m_segmentIndex { 0 };
 };

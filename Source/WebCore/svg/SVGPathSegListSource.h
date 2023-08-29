@@ -33,7 +33,6 @@ class SVGPathSegListSource final : public SVGPathSource {
 public:
     explicit SVGPathSegListSource(const SVGPathSegList&);
 
-private:
     bool hasMoreData() const final;
     bool moveToNextToken() final { return true; }
     SVGPathSegType nextCommand(SVGPathSegType) final;
@@ -49,6 +48,7 @@ private:
     std::optional<CurveToQuadraticSmoothSegment> parseCurveToQuadraticSmoothSegment() final;
     std::optional<ArcToSegment> parseArcToSegment() final;
 
+private:
     const SVGPathSegList& m_pathSegList;
     RefPtr<SVGPathSeg> m_segment;
     size_t m_itemCurrent;

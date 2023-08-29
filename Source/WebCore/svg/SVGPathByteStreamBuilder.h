@@ -31,7 +31,6 @@ class SVGPathByteStreamBuilder final : public SVGPathConsumer {
 public:
     SVGPathByteStreamBuilder(SVGPathByteStream&);
 
-private:
     void incrementPathSegmentCount() final { }
     bool continueConsuming() final { return true; }
 
@@ -49,6 +48,7 @@ private:
     void curveToQuadraticSmooth(const FloatPoint&, PathCoordinateMode) final;
     void arcTo(float, float, float, bool largeArcFlag, bool sweepFlag, const FloatPoint&, PathCoordinateMode) final;
 
+private:
     template<typename ByteType>
     void writeType(const ByteType& type)
     {

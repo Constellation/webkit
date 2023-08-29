@@ -36,7 +36,6 @@ class SVGPathAbsoluteConverter final : public SVGPathConsumer {
 public:
     SVGPathAbsoluteConverter(SVGPathConsumer&);
 
-private:
     void incrementPathSegmentCount() final;
     bool continueConsuming() final;
 
@@ -54,6 +53,7 @@ private:
     void curveToQuadraticSmooth(const FloatPoint& targetPoint, PathCoordinateMode) final;
     void arcTo(float r1, float r2, float angle, bool largeArcFlag, bool sweepFlag, const FloatPoint& targetPoint, PathCoordinateMode) final;
 
+private:
     SVGPathConsumer& m_consumer;
     FloatPoint m_currentPoint;
     FloatPoint m_subpathPoint;
