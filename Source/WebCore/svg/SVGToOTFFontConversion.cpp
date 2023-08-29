@@ -36,7 +36,9 @@
 #include "SVGGlyphElement.h"
 #include "SVGHKernElement.h"
 #include "SVGMissingGlyphElement.h"
+#include "SVGPathByteStreamBuilder.h"
 #include "SVGPathParser.h"
+#include "SVGPathStringBuilder.h"
 #include "SVGPathStringViewSource.h"
 #include "SVGVKernElement.h"
 #include <wtf/Vector.h>

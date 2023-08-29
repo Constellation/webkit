@@ -96,7 +96,7 @@ bool SVGPathParser<Source, Consumer>::parseToString(Source& source, String& resu
 }
 
 template<typename Source, typename Consumer>
-SVGPathParser::SVGPathParser(Consumer& consumer, Source& source, PathParsingMode parsingMode)
+SVGPathParser<Source, Consumer>::SVGPathParser(Consumer& consumer, Source& source, PathParsingMode parsingMode)
     : m_source(source)
     , m_consumer(consumer)
     , m_pathParsingMode(parsingMode)
