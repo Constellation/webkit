@@ -505,7 +505,7 @@ void JITCompiler::loadConstant(LinkerIR::Constant index, GPRReg dest)
 #endif
 }
 
-void JITCompiler::loadStructureStubInfo(StructureStubInfo index, GPRReg dest)
+void JITCompiler::loadStructureStubInfo(StructureStubInfoIndex index, GPRReg dest)
 {
 #if USE(JSVALUE64)
     loadPtr(Address(GPRInfo::constantsRegister, JITData::offsetOfData() + sizeof(void*) * index.m_index), dest);
