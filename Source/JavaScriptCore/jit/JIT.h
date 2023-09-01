@@ -903,7 +903,7 @@ namespace JSC {
         void resetSP();
 
         JITConstantPool::Constant addToConstantPool(JITConstantPool::Type, void* payload = nullptr);
-        std::tuple<BaselineUnlinkedStructureStubInfo*, JITConstantPool::Constant> addUnlinkedStructureStubInfo();
+        std::tuple<BaselineUnlinkedStructureStubInfo*, StructureStubInfoIndex> addUnlinkedStructureStubInfo();
         BaselineUnlinkedCallLinkInfo* addUnlinkedCallLinkInfo();
 
         Vector<FarCallRecord> m_farCalls;
