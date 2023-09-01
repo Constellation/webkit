@@ -200,7 +200,7 @@ void JIT::emitSlow_op_instanceof(const JSInstruction*, Vector<SlowCaseEntry>::it
     using BaselineJITRegisters::Instanceof::SlowPath::stubInfoGPR;
 
     loadGlobalObject(globalObjectGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     callOperation<decltype(operationInstanceOfOptimize)>(
         Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),
         globalObjectGPR, stubInfoGPR, valueJSR, protoJSR);

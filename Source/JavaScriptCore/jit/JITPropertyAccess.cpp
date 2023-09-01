@@ -104,7 +104,7 @@ void JIT::generateGetByValSlowCase(const OpcodeType& bytecode, Vector<SlowCaseEn
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     materializePointerIntoMetadata(bytecode, OpcodeType::Metadata::offsetOfArrayProfile(), profileGPR);
 
     emitNakedNearCall(vm().getCTIStub(slow_op_get_by_val_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
@@ -201,7 +201,7 @@ void JIT::emitSlow_op_get_private_name(const JSInstruction*, Vector<SlowCaseEntr
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     emitNakedNearCall(vm().getCTIStub(slow_op_get_private_name_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
 
     static_assert(BaselineJITRegisters::GetByVal::resultJSR == returnValueJSR);
@@ -290,7 +290,7 @@ void JIT::emitSlow_op_set_private_brand(const JSInstruction* currentInstruction,
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
 
     static_assert(std::is_same<FunctionTraits<decltype(operationSetPrivateBrandOptimize)>::ArgumentTypes, FunctionTraits<decltype(operationGetPrivateNameOptimize)>::ArgumentTypes>::value);
     emitNakedNearCall(vm().getCTIStub(slow_op_get_private_name_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
@@ -337,7 +337,7 @@ void JIT::emitSlow_op_check_private_brand(const JSInstruction*, Vector<SlowCaseE
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
 
     static_assert(std::is_same<FunctionTraits<decltype(operationCheckPrivateBrandOptimize)>::ArgumentTypes, FunctionTraits<decltype(operationGetPrivateNameOptimize)>::ArgumentTypes>::value);
     emitNakedNearCall(vm().getCTIStub(slow_op_get_private_name_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
@@ -414,7 +414,7 @@ void JIT::generatePutByValSlowCase(const OpcodeType&, Vector<SlowCaseEntry>::ite
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
 
     emitNakedNearCall(vm().getCTIStub(slow_op_put_by_val_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
 
@@ -516,7 +516,7 @@ void JIT::emitSlow_op_put_private_name(const JSInstruction*, Vector<SlowCaseEntr
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
 
     emitNakedNearCall(vm().getCTIStub(slow_op_put_private_name_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
 
@@ -688,7 +688,7 @@ void JIT::emitSlow_op_del_by_id(const JSInstruction* currentInstruction, Vector<
 
     emitGetVirtualRegister(base, baseJSR);
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
     move(TrustedImm32(bytecode.m_ecmaMode.value()), ecmaModeGPR);
 
@@ -795,7 +795,7 @@ void JIT::emitSlow_op_del_by_val(const JSInstruction* currentInstruction, Vector
     emitGetVirtualRegister(base, baseJSR);
     emitGetVirtualRegister(property, propertyJSR);
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     move(TrustedImm32(bytecode.m_ecmaMode.value()), ecmaModeGPR);
 
     emitNakedNearCall(vm().getCTIStub(slow_op_del_by_val_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
@@ -888,7 +888,7 @@ void JIT::emitSlow_op_try_get_by_id(const JSInstruction* currentInstruction, Vec
     linkAllSlowCases(iter);
 
     move(JIT::TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
 
     static_assert(std::is_same<decltype(operationTryGetByIdOptimize), decltype(operationGetByIdOptimize)>::value);
@@ -943,7 +943,7 @@ void JIT::emitSlow_op_get_by_id_direct(const JSInstruction* currentInstruction, 
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
 
     static_assert(std::is_same<decltype(operationGetByIdDirectOptimize), decltype(operationGetByIdOptimize)>::value);
@@ -1010,7 +1010,7 @@ void JIT::emitSlow_op_get_by_id(const JSInstruction* currentInstruction, Vector<
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
 
     emitNakedNearCall(vm().getCTIStub(slow_op_get_by_id_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
@@ -1105,7 +1105,7 @@ void JIT::emitSlow_op_get_by_id_with_this(const JSInstruction* currentInstructio
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
 
     emitNakedNearCall(vm().getCTIStub(slow_op_get_by_id_with_this_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
@@ -1208,7 +1208,7 @@ void JIT::emitSlow_op_put_by_id(const JSInstruction* currentInstruction, Vector<
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
 
     emitNakedNearCall(vm().getCTIStub(slow_op_put_by_id_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
@@ -1297,7 +1297,7 @@ void JIT::emitSlow_op_in_by_id(const JSInstruction* currentInstruction, Vector<S
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
 
     // slow_op_get_by_id_callSlowOperationThenCheckExceptionGenerator will do exactly what we need.
@@ -1356,7 +1356,7 @@ void JIT::emitSlow_op_in_by_val(const JSInstruction* currentInstruction, Vector<
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     materializePointerIntoMetadata(bytecode, OpInByVal::Metadata::offsetOfArrayProfile(), profileGPR);
 
     // slow_op_get_by_val_callSlowOperationThenCheckExceptionGenerator will do exactly what we need.
@@ -1407,7 +1407,7 @@ void JIT::emitHasPrivateSlow(AccessType type)
     Label coldPathBegin = label();
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
 
     static_assert(std::is_same<decltype(operationHasPrivateNameOptimize), decltype(operationGetPrivateNameOptimize)>::value);
     static_assert(std::is_same<decltype(operationHasPrivateBrandOptimize), decltype(operationGetPrivateNameOptimize)>::value);
@@ -2216,7 +2216,7 @@ void JIT::emitSlow_op_get_by_val_with_this(const JSInstruction* currentInstructi
     linkAllSlowCases(iter);
 
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     materializePointerIntoMetadata(bytecode, OpGetByValWithThis::Metadata::offsetOfArrayProfile(), profileGPR);
 
     emitNakedNearCall(vm().getCTIStub(slow_op_get_by_val_with_this_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());

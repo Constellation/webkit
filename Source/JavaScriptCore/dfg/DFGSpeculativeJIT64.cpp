@@ -180,8 +180,9 @@ void SpeculativeJIT::cachedGetById(Node* node, CodeOrigin codeOrigin, GPRReg bas
 
     std::unique_ptr<SlowPathGenerator> slowPath;
     if (m_graph.m_plan.isUnlinked()) {
-        gen.generateDFGDataICFastPath(*this, stubInfoConstant.index(), baseRegs, resultRegs, stubInfoGPR, scratchGPR);
-        gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
+        StructureStubInfoIndex stubInfoIndex { stubInfoConstant.index() };
+        gen.generateDFGDataICFastPath(*this, stubInfoIndex, baseRegs, resultRegs, stubInfoGPR, scratchGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
         ASSERT(!gen.stubInfo());
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), appropriateGetByIdOptimizeFunction(type),
@@ -229,8 +230,9 @@ void SpeculativeJIT::cachedGetByIdWithThis(Node* node, CodeOrigin codeOrigin, GP
 
     std::unique_ptr<SlowPathGenerator> slowPath;
     if (m_graph.m_plan.isUnlinked()) {
-        gen.generateDFGDataICFastPath(*this, stubInfoConstant.index(), baseRegs, resultRegs, stubInfoGPR, scratchGPR);
-        gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
+        StructureStubInfoIndex stubInfoIndex { stubInfoConstant.index() };
+        gen.generateDFGDataICFastPath(*this, stubInfoIndex, baseRegs, resultRegs, stubInfoGPR, scratchGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByIdWithThisOptimize,
             DontSpill, ExceptionCheckRequirement::CheckNeeded,
@@ -2524,8 +2526,9 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
 
         std::unique_ptr<SlowPathGenerator> slowPath;
         if (m_graph.m_plan.isUnlinked()) {
-            gen.generateDFGDataICFastPath(*this, stubInfoConstant.index(), stubInfoGPR);
-            gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
+            StructureStubInfoIndex stubInfoIndex { stubInfoConstant.index() };
+            gen.generateDFGDataICFastPath(*this, stubInfoIndex, stubInfoGPR);
+            gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
             slowPath = slowPathICCall(
                 slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValOptimize,
                 resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, nullptr, baseGPR, propertyGPR);
@@ -6667,8 +6670,9 @@ void SpeculativeJIT::compileGetByValWithThis(Node* node)
 
     std::unique_ptr<SlowPathGenerator> slowPath;
     if (m_graph.m_plan.isUnlinked()) {
-        gen.generateDFGDataICFastPath(*this, stubInfoConstant.index(), stubInfoGPR);
-        gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
+        StructureStubInfoIndex stubInfoIndex { stubInfoConstant.index() };
+        gen.generateDFGDataICFastPath(*this, stubInfoIndex, stubInfoGPR);
+        gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValWithThisOptimize,
             resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, nullptr, baseGPR, propertyGPR, thisValueGPR);
@@ -6957,8 +6961,9 @@ void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
             std::unique_ptr<SlowPathGenerator> slowPath;
             auto operation = ecmaMode.isStrict() ? operationPutByValStrictOptimize : operationPutByValSloppyOptimize;
             if (m_graph.m_plan.isUnlinked()) {
-                gen.generateDFGDataICFastPath(*this, stubInfoConstant.index(), scratchGPR);
-                gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
+                StructureStubInfoIndex stubInfoIndex { stubInfoConstant.index() };
+                gen.generateDFGDataICFastPath(*this, stubInfoIndex, scratchGPR);
+                gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
                 ASSERT(!gen.stubInfo());
                 slowPath = slowPathICCall(
                     slowCases, this, stubInfoConstant, scratchGPR, Address(scratchGPR, StructureStubInfo::offsetOfSlowOperation()), operation,

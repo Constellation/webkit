@@ -508,7 +508,7 @@ void JIT::emitSlow_op_iterator_open(const JSInstruction* instruction, Vector<Slo
 
     moveValueRegs(iteratorJSR, arg2JSR);
     loadGlobalObject(globalObjectGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     callOperationWithProfile<SlowOperation>(
         bytecode,
         Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),
@@ -654,7 +654,7 @@ void JIT::emitSlow_op_iterator_next(const JSInstruction* instruction, Vector<Slo
 
         moveValueRegs(iterCallResultJSR, arg2JSR);
         loadGlobalObject(globalObjectGPR);
-        loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+        loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
         callOperationWithProfile<SlowOperation>(
             bytecode,
             Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),
@@ -689,7 +689,7 @@ void JIT::emitSlow_op_iterator_next(const JSInstruction* instruction, Vector<Slo
 
         moveValueRegs(iterCallResultJSR, arg2JSR);
         loadGlobalObject(globalObjectGPR);
-        loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+        loadStructureStubInfo(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
         callOperationWithProfile<decltype(operationGetByIdOptimize)>(
             bytecode,
             Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),

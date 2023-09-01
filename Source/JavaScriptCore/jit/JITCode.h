@@ -66,7 +66,7 @@ static_assert(WTF::getMSBSetConstexpr(static_cast<std::underlying_type_t<JITType
 
 struct StructureStubInfoIndex {
     explicit StructureStubInfoIndex(unsigned index) : m_index(index) { }
-    unsigned m_index { 0 }
+    unsigned m_index { 0 };
 };
 
 class JITCode : public ThreadSafeRefCounted<JITCode> {
