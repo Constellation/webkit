@@ -64,6 +64,11 @@ enum class JITType : uint8_t {
 static constexpr unsigned widthOfJITType = 3;
 static_assert(WTF::getMSBSetConstexpr(static_cast<std::underlying_type_t<JITType>>(JITType::FTLJIT)) + 1 == widthOfJITType);
 
+struct StructureStubInfoIndex {
+    explicit StructureStubInfoIndex(unsigned index) : m_index(index) { }
+    unsigned m_index { 0 }
+};
+
 class JITCode : public ThreadSafeRefCounted<JITCode> {
 public:
     template<PtrTag tag> using CodeRef = MacroAssemblerCodeRef<tag>;

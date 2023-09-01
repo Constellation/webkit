@@ -56,10 +56,6 @@ private:
     Bag<JITSubIC> m_subICs;
 };
 
-struct StructureStubInfoIndex {
-    unsigned m_index { 0 }
-};
-
 class JITConstantPool {
     WTF_MAKE_NONCOPYABLE(JITConstantPool);
 public:
