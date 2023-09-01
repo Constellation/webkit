@@ -505,6 +505,16 @@ ALWAYS_INLINE void JIT::loadGlobalObject(GPRReg result)
     loadGlobalObject(*this, result);
 }
 
+ALWAYS_INLINE void JIT::loadStructureStubInfo(CCallHelpers& jit, StructureStubInfoIndex index, GPRReg result)
+{
+    jit.loadPtr(Address(s_constantsGPR, BaselineJITData::offsetOfData() + static_cast<uintptr_t>(index.m_index) * sizeof(void*)), result);
+}
+
+ALWAYS_INLINE void JIT::loadStructureStubInfo(StructureStubInfoIndex index, GPRReg result)
+{
+    loadStructureStubInfo(*this, index, result);
+}
+
 ALWAYS_INLINE static void loadAddrOfCodeBlockConstantBuffer(JIT &jit, GPRReg dst)
 {
     jit.loadPtr(jit.addressFor(CallFrameSlot::codeBlock), dst);

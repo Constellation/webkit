@@ -505,6 +505,17 @@ void JITCompiler::loadConstant(LinkerIR::Constant index, GPRReg dest)
 #endif
 }
 
+void JITCompiler::loadStructureStubInfo(StructureStubInfo index, GPRReg dest)
+{
+#if USE(JSVALUE64)
+    loadPtr(Address(GPRInfo::constantsRegister, JITData::offsetOfData() + sizeof(void*) * index.m_index), dest);
+#else
+    UNUSED_PARAM(index);
+    UNUSED_PARAM(dest);
+    RELEASE_ASSERT_NOT_REACHED();
+#endif
+}
+
 void JITCompiler::loadLinkableConstant(LinkableConstant constant, GPRReg dest)
 {
     constant.materialize(*this, dest);

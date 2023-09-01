@@ -373,6 +373,7 @@ public:
     };
 
     void loadConstant(LinkerIR::Constant, GPRReg);
+    void loadStructureStubInfo(StructureStubInfo, GPRReg);
     void loadLinkableConstant(LinkableConstant, GPRReg);
     void storeLinkableConstant(LinkableConstant, Address);
 

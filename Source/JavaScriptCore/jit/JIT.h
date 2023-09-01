@@ -236,12 +236,14 @@ namespace JSC {
 
     public:
         void loadConstant(unsigned constantIndex, GPRReg);
+        void loadStructureStubInfo(StructureStubInfoIndex, GPRReg);
     private:
         void loadGlobalObject(GPRReg);
 
         // Assuming s_constantsGPR is available.
         static void loadGlobalObject(CCallHelpers&, GPRReg);
         static void loadConstant(CCallHelpers&, unsigned constantIndex, GPRReg);
+        static void loadStructureStubInfo(CCallHelpers&, StructureStubInfoIndex, GPRReg);
 
         void loadCodeBlockConstant(VirtualRegister, JSValueRegs);
         void loadCodeBlockConstantPayload(VirtualRegister, RegisterID);
