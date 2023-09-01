@@ -75,7 +75,7 @@ void JITInlineCacheGenerator::finalize(
 void JITInlineCacheGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, StructureStubInfoIndex stubInfo, GPRReg stubInfoGPR)
 {
     m_start = jit.label();
-    jit.loadStructureStubInfo(stubInfoConstant, stubInfoGPR);
+    jit.loadStructureStubInfo(stubInfo, stubInfoGPR);
     jit.farJump(CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfCodePtr()), JITStubRoutinePtrTag);
     m_done = jit.label();
 }
@@ -179,7 +179,7 @@ void JITGetByIdGenerator::generateBaselineDataICFastPath(JIT& jit, StructureStub
 void JITGetByIdGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, StructureStubInfoIndex stubInfo, JSValueRegs baseJSR, JSValueRegs resultJSR, GPRReg stubInfoGPR, GPRReg scratchGPR)
 {
     m_start = jit.label();
-    jit.loadStructureStubInfo(stubInfoConstant, stubInfoGPR);
+    jit.loadStructureStubInfo(stubInfo, stubInfoGPR);
     generateGetByIdInlineAccess(jit, stubInfoGPR, baseJSR, scratchGPR, resultJSR);
     m_done = jit.label();
 }
@@ -230,7 +230,7 @@ void JITGetByIdWithThisGenerator::generateBaselineDataICFastPath(JIT& jit, Struc
 void JITGetByIdWithThisGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, StructureStubInfoIndex stubInfo, JSValueRegs baseJSR, JSValueRegs resultJSR, GPRReg stubInfoGPR, GPRReg scratchGPR)
 {
     m_start = jit.label();
-    jit.loadStructureStubInfo(stubInfoConstant, stubInfoGPR);
+    jit.loadStructureStubInfo(stubInfo, stubInfoGPR);
     generateGetByIdInlineAccess(jit, stubInfoGPR, baseJSR, scratchGPR, resultJSR);
     m_done = jit.label();
 }
@@ -275,7 +275,7 @@ void JITPutByIdGenerator::generateBaselineDataICFastPath(JIT& jit, StructureStub
 void JITPutByIdGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, StructureStubInfoIndex stubInfo, JSValueRegs baseJSR, JSValueRegs valueJSR, GPRReg stubInfoGPR, GPRReg scratchGPR, GPRReg scratch2GPR)
 {
     m_start = jit.label();
-    jit.loadStructureStubInfo(stubInfoConstant, stubInfoGPR);
+    jit.loadStructureStubInfo(stubInfo, stubInfoGPR);
     generatePutByIdInlineAccess(jit, stubInfoGPR, baseJSR, valueJSR, scratchGPR, scratch2GPR);
     m_done = jit.label();
 }
@@ -467,7 +467,7 @@ void JITInByIdGenerator::generateBaselineDataICFastPath(JIT& jit, StructureStubI
 void JITInByIdGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, StructureStubInfoIndex stubInfo, JSValueRegs baseJSR, JSValueRegs resultJSR, GPRReg stubInfoGPR, GPRReg scratchGPR)
 {
     m_start = jit.label();
-    jit.loadStructureStubInfo(stubInfoConstant, stubInfoGPR);
+    jit.loadStructureStubInfo(stubInfo, stubInfoGPR);
     generateInByIdInlineAccess(jit, stubInfoGPR, baseJSR, scratchGPR, resultJSR);
     m_done = jit.label();
 }
