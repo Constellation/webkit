@@ -2053,7 +2053,7 @@ void JIT::emit_op_get_by_val_with_this(const JSInstruction* currentInstruction)
     emitGetVirtualRegister(thisValue, thisJSR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadConstant(stubInfoIndex, stubInfoGPR);
     materializePointerIntoMetadata(bytecode, OpGetByValWithThis::Metadata::offsetOfArrayProfile(), profileGPR);
 
     JITGetByValWithThisGenerator gen(
