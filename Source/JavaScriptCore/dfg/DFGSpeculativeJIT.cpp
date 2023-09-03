@@ -1441,7 +1441,7 @@ void SpeculativeJIT::compileDeleteById(Node* node)
         gen.generateFastPath(*this);
         slowCases.append(gen.slowPathJump());
         std::unique_ptr<SlowPathGenerator> slowPath = slowPathCall(
-            slowCases, this, operationDeleteByIdOptimize,
+            slowCases, this, operation,
             resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), CellValue(baseGPR), node->cacheableIdentifier().rawBits(), TrustedImm32(node->ecmaMode().value()));
 #endif
 

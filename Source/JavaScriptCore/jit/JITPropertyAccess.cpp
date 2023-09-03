@@ -644,20 +644,19 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_del_by_id_callSlowOperationTh
     // CallFrame::codeBlock().
     CCallHelpers jit;
 
-    using SlowOperation = decltype(operationDeleteByIdOptimize);
+    using SlowOperation = decltype(operationDeleteByIdStrictOptimize);
 
     using BaselineJITRegisters::DelById::baseJSR;
     using BaselineJITRegisters::DelById::SlowPath::globalObjectGPR;
     using BaselineJITRegisters::DelById::SlowPath::stubInfoGPR;
     using BaselineJITRegisters::DelById::SlowPath::propertyGPR;
-    using BaselineJITRegisters::DelById::SlowPath::ecmaModeGPR;
 
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, propertyGPR, ecmaModeGPR);
+    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, propertyGPR);
     static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
     jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
     jit.boxBoolean(returnValueGPR, returnValueJSR);
@@ -737,14 +736,13 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_del_by_val_callSlowOperationT
     using BaselineJITRegisters::DelByVal::propertyJSR;
     using BaselineJITRegisters::DelByVal::globalObjectGPR;
     using BaselineJITRegisters::DelByVal::stubInfoGPR;
-    using BaselineJITRegisters::DelByVal::ecmaModeGPR;
 
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, propertyJSR, ecmaModeGPR);
+    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, propertyJSR);
     static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
     jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 

@@ -3316,14 +3316,9 @@ static bool deleteById(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot&
     return couldDelete;
 }
 
-JSC_DEFINE_JIT_OPERATION(operationDeleteByIdOptimize, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier, ECMAMode ecmaMode))
+static size_t deleteByIdOptimize(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot& slot, JSValue baseValue, const Identifier& ident, ECMAMode ecmaMode)
 {
-    VM& vm = globalObject->vm();
-    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
-    ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
     auto scope = DECLARE_THROW_SCOPE(vm);
-
-    JSValue baseValue = JSValue::decode(encodedBase);
 
     DeletePropertySlot slot;
     Structure* oldStructure = baseValue.structureOrNull();
@@ -3345,7 +3340,33 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdOptimize, size_t, (JSGlobalObject* g
     return result;
 }
 
-JSC_DEFINE_JIT_OPERATION(operationDeleteByIdGaveUp, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier, ECMAMode ecmaMode))
+JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyOptimize, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier, ECMAMode ecmaMode))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
+
+    JSValue baseValue = JSValue::decode(encodedBase);
+    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    Identifier ident = Identifier::fromUid(vm, identifier.uid());
+
+    return deleteByIdOptimize(globalObject, vm, slot, baseValue, ident, ECMAMode::sloppy());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictOptimize, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
+
+    JSValue baseValue = JSValue::decode(encodedBase);
+    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    Identifier ident = Identifier::fromUid(vm, identifier.uid());
+
+    return deleteByIdOptimize(globalObject, vm, slot, baseValue, ident, ECMAMode::strict());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyGaveUp, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
@@ -3356,7 +3377,21 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdGaveUp, size_t, (JSGlobalObject* glo
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     DeletePropertySlot slot;
-    return deleteById(globalObject, vm, slot, JSValue::decode(encodedBase), ident, ecmaMode);
+    return deleteById(globalObject, vm, slot, JSValue::decode(encodedBase), ident, ECMAMode::sloppy());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictGaveUp, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
+
+    stubInfo->tookSlowPath = true;
+
+    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    Identifier ident = Identifier::fromUid(vm, identifier.uid());
+    DeletePropertySlot slot;
+    return deleteById(globalObject, vm, slot, JSValue::decode(encodedBase), ident, ECMAMode::strict());
 }
 
 JSC_DEFINE_JIT_OPERATION(operationDeleteByIdGeneric, size_t, (JSGlobalObject* globalObject, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier, ECMAMode ecmaMode))
