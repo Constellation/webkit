@@ -1240,7 +1240,6 @@ void JIT::emit_op_in_by_val(const JSInstruction* currentInstruction)
 void JIT::emitSlow_op_in_by_val(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
-    auto bytecode = currentInstruction->as<OpInByVal>();
     JITInByValGenerator& gen = m_inByVals[m_inByValIndex++];
 
     Label coldPathBegin = label();
@@ -1264,7 +1263,7 @@ void JIT::emitHasPrivate(VirtualRegister dst, VirtualRegister base, VirtualRegis
     emitGetVirtualRegister(propertyOrBrand, propertyJSR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    loadConstant(stubInfoIndex, stubInfoGPR);
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
 
@@ -2261,7 +2260,7 @@ void JIT::emit_op_enumerator_get_by_val(const JSInstruction* currentInstruction)
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
-    materializePointerIntoMetadata(bytecode, Op::Metadata::offsetOfArrayProfile(), profileGPR);
+    materializePointerIntoMetadata(bytecode, OpEnumeratorGetByVal::Metadata::offsetOfArrayProfile(), profileGPR);
 
     addSlowCase(branchIfNotCell(baseGPR));
     // This is always an int32 encoded value.
