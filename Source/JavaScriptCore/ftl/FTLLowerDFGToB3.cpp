@@ -6874,7 +6874,7 @@ IGNORE_CLANG_WARNINGS_END
                     if constexpr (kind == DelByKind::ByIdStrict)
                         return operationDeleteByIdStrictOptimize;
                     else if constexpr (kind == DelByKind::ByIdSloppy)
-                        return operationDeleteByIdStrictOptimize;
+                        return operationDeleteByIdSloppyOptimize;
                     else if constexpr (kind == DelByKind::ByValStrict)
                         return operationDeleteByValStrictOptimize;
                     else
