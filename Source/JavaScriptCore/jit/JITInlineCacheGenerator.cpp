@@ -655,7 +655,7 @@ void JITPrivateBrandAccessGenerator::generateFastPath(CCallHelpers& jit)
 
 void JITPrivateBrandAccessGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stubInfo)
 {
-    using BaselineJITRegisters::PrivateBrand::FastPath::stubInfoGPR;
+    using BaselineJITRegisters::PrivateBrand::stubInfoGPR;
     JITInlineCacheGenerator::generateBaselineDataICFastPath(jit, stubInfo, stubInfoGPR);
 }
 

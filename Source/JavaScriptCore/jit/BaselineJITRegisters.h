@@ -198,7 +198,7 @@ namespace EnumeratorGetByVal {
     static constexpr GPRReg globalObjectGPR { GetByVal::globalObjectGPR };
     static constexpr GPRReg scratch1 { GetByVal::scratchGPR };
     static constexpr GPRReg scratch2 { GPRInfo::regT5 };
-    static constexpr GPRReg scratch3 { GPRReg::regT7 };
+    static constexpr GPRReg scratch3 { GPRInfo::regT7 };
     static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, profileGPR, scratch1, scratch2, scratch3));
 }
 #endif
@@ -322,12 +322,10 @@ namespace InById {
 
 namespace InByVal {
     static constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };
-    static constexpr JSValueRegs baseJSR { JSRInfo::jsRegT10 };
-    static constexpr JSValueRegs propertyJSR { JSRInfo::jsRegT32 };
+    static constexpr JSValueRegs baseJSR { GetByVal::baseJSR };
+    static constexpr JSValueRegs propertyJSR { GetByVal::propertyJSR };
     static constexpr GPRReg stubInfoGPR { GPRInfo::regT4 };
     static constexpr GPRReg scratchGPR { GPRInfo::regT5 };
-    static_assert(baseJSR == GetByVal::baseJSR);
-    static_assert(propertyJSR == GetByVal::propertyJSR);
 }
 
 namespace DelById {
@@ -383,16 +381,8 @@ namespace DelByVal {
 namespace PrivateBrand {
     static constexpr JSValueRegs baseJSR { GetByVal::baseJSR }; // Required by shared slow path thunk
     static constexpr JSValueRegs brandJSR { GetByVal::propertyJSR }; // Required by shared slow path thunk
-
-    namespace FastPath {
-        static constexpr GPRReg stubInfoGPR { GetByVal::stubInfoGPR };
-        static_assert(noOverlap(baseJSR, brandJSR, stubInfoGPR), "Required for DataIC");
-    }
-
-    namespace SlowPath {
-        static constexpr GPRReg stubInfoGPR { GetByVal::::stubInfoGPR }; // Required by shared slow path thunk
-        static_assert(noOverlap(baseJSR, brandJSR, stubInfoGPR), "Required for call to CTI thunk");
-    }
+    static constexpr GPRReg stubInfoGPR { GetByVal::stubInfoGPR };
+    static_assert(noOverlap(baseJSR, brandJSR, stubInfoGPR), "Required for DataIC");
 }
 
 } // namespace BaselineJITRegisters
