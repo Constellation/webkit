@@ -390,6 +390,7 @@ void AssemblyHelpers::emitStoreStructureWithTypeInfo(AssemblyHelpers& jit, Trust
 
 void AssemblyHelpers::loadProperty(GPRReg object, GPRReg offset, JSValueRegs result)
 {
+    ASSERT(noOverlap(offset, result));
     Jump isInline = branch32(LessThan, offset, TrustedImm32(firstOutOfLineOffset));
 
     loadPtr(Address(object, JSObject::butterflyOffset()), result.payloadGPR());
@@ -414,6 +415,9 @@ void AssemblyHelpers::loadProperty(GPRReg object, GPRReg offset, JSValueRegs res
 
 void AssemblyHelpers::storeProperty(JSValueRegs value, GPRReg object, GPRReg offset, GPRReg scratch)
 {
+    ASSERT(noOverlap(offset, scratch));
+    ASSERT(noOverlap(object, scratch));
+    ASSERT(noOverlap(value, scratch));
     Jump isInline = branch32(LessThan, offset, TrustedImm32(firstOutOfLineOffset));
 
     loadPtr(Address(object, JSObject::butterflyOffset()), scratch);

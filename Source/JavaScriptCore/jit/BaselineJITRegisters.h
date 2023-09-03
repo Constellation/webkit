@@ -121,7 +121,15 @@ namespace GetById {
     static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
     static constexpr GPRReg scratch1GPR { globalObjectGPR };
     static constexpr JSValueRegs dontClobberJSR { JSRInfo::jsRegT54 };
+    static constexpr GPRReg inlinedThunkScratchGPR {
+#if USE(JSVALUE64)
+        resultJSR.payloadGPR() == globalObjectGPR ? GPRInfo::regT5 : globalObjectGPR,
+#elif USE(JSVALUE32_64)
+        GPRInfo::regT7
+#endif
+    };
     static_assert(noOverlap(baseJSR, propertyGPR, stubInfoGPR, globalObjectGPR, dontClobberJSR), "Required for DataIC");
+    static_assert(noOverlap(baseJSR, propertyGPR, stubInfoGPR, inlinedThunkScratchGPR, dontClobberJSR), "Required for DataIC");
 }
 
 namespace GetByIdWithThis {
@@ -135,7 +143,15 @@ namespace GetByIdWithThis {
     static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 1>() };
     static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
     static constexpr GPRReg scratch1GPR { globalObjectGPR };
+    static constexpr GPRReg inlinedThunkScratchGPR {
+#if USE(JSVALUE64)
+        resultJSR.payloadGPR() == globalObjectGPR ? GPRInfo::regT5 : globalObjectGPR,
+#elif USE(JSVALUE32_64)
+        GPRInfo::regT7
+#endif
+    };
     static_assert(noOverlap(baseJSR, thisJSR, globalObjectGPR, stubInfoGPR, propertyGPR), "Required for call to slow operation");
+    static_assert(noOverlap(baseJSR, thisJSR, inlinedThunkScratchGPR, stubInfoGPR, propertyGPR), "Required for call to slow operation");
 }
 
 namespace GetByVal {

@@ -167,10 +167,10 @@ void JITGetByIdGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stub
     using BaselineJITRegisters::GetById::baseJSR;
     using BaselineJITRegisters::GetById::resultJSR;
     using BaselineJITRegisters::GetById::stubInfoGPR;
-    using BaselineJITRegisters::GetById::scratch1GPR;
+    using BaselineJITRegisters::GetById::inlinedThunkScratchGPR;
 
     jit.loadConstant(stubInfo, stubInfoGPR);
-    generateGetByIdInlineAccess(jit, stubInfoGPR, baseJSR, scratch1GPR, resultJSR);
+    generateGetByIdInlineAccess(jit, stubInfoGPR, baseJSR, inlinedThunkScratchGPR, resultJSR);
 
     m_done = jit.label();
 }
@@ -218,10 +218,10 @@ void JITGetByIdWithThisGenerator::generateBaselineDataICFastPath(JIT& jit, unsig
     using BaselineJITRegisters::GetByIdWithThis::baseJSR;
     using BaselineJITRegisters::GetByIdWithThis::resultJSR;
     using BaselineJITRegisters::GetByIdWithThis::stubInfoGPR;
-    using BaselineJITRegisters::GetByIdWithThis::scratch1GPR;
+    using BaselineJITRegisters::GetByIdWithThis::inlinedThunkScratchGPR;
 
     jit.loadConstant(stubInfo, stubInfoGPR);
-    generateGetByIdInlineAccess(jit, stubInfoGPR, baseJSR, scratch1GPR, resultJSR);
+    generateGetByIdInlineAccess(jit, stubInfoGPR, baseJSR, inlinedThunkScratchGPR, resultJSR);
 
     m_done = jit.label();
 }
