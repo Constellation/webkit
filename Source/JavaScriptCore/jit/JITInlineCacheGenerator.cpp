@@ -534,7 +534,7 @@ void JITGetByValGenerator::generateFastPath(CCallHelpers& jit)
 
 void JITGetByValGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stubInfo)
 {
-    using BaselineJITRegisters::GetByVal::FastPath::stubInfoGPR;
+    using BaselineJITRegisters::GetByVal::stubInfoGPR;
     JITInlineCacheGenerator::generateBaselineDataICFastPath(jit, stubInfo, stubInfoGPR);
 }
 

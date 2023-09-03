@@ -579,7 +579,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         m_baseGPR = BaselineJITRegisters::GetByVal::baseJSR.payloadGPR();
         m_extraGPR = BaselineJITRegisters::GetByVal::propertyJSR.payloadGPR();
         m_valueGPR = BaselineJITRegisters::GetByVal::resultJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::GetByVal::FastPath::stubInfoGPR;
+        m_stubInfoGPR = BaselineJITRegisters::GetByVal::stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_baseTagGPR = BaselineJITRegisters::GetByVal::baseJSR.tagGPR();
         m_extraTagGPR = BaselineJITRegisters::GetByVal::propertyJSR.tagGPR();

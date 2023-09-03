@@ -56,11 +56,15 @@ void JIT::emit_op_get_by_val(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::GetByVal::baseJSR;
     using BaselineJITRegisters::GetByVal::propertyJSR;
     using BaselineJITRegisters::GetByVal::resultJSR;
-    using BaselineJITRegisters::GetByVal::FastPath::stubInfoGPR;
-    using BaselineJITRegisters::GetByVal::FastPath::scratchGPR;
+    using BaselineJITRegisters::GetByVal::stubInfoGPR;
+    using BaselineJITRegisters::GetByVal::profileGPR;
+    using BaselineJITRegisters::GetByVal::scratchGPR;
 
     emitGetVirtualRegister(base, baseJSR);
     emitGetVirtualRegister(property, propertyJSR);
+
+    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    materializePointerIntoMetadata(bytecode, OpcodeType::Metadata::offsetOfArrayProfile(), profileGPR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     JITGetByValGenerator gen(
@@ -91,21 +95,11 @@ template<typename OpcodeType>
 void JIT::generateGetByValSlowCase(const OpcodeType& bytecode, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(hasAnySlowCases(iter));
-
     ASSERT(BytecodeIndex(bytecodeOffset) == m_bytecodeIndex);
     JITGetByValGenerator& gen = m_getByVals[m_getByValIndex++];
-
-    using BaselineJITRegisters::GetByVal::SlowPath::stubInfoGPR;
-    using BaselineJITRegisters::GetByVal::SlowPath::profileGPR;
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
-
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
-    materializePointerIntoMetadata(bytecode, OpcodeType::Metadata::offsetOfArrayProfile(), profileGPR);
-
     emitNakedNearCall(vm().getCTIStub(slow_op_get_by_val_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
 
@@ -126,9 +120,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_val_callSlowOperationT
 
     using BaselineJITRegisters::GetByVal::baseJSR;
     using BaselineJITRegisters::GetByVal::propertyJSR;
-    using BaselineJITRegisters::GetByVal::SlowPath::globalObjectGPR;
-    using BaselineJITRegisters::GetByVal::SlowPath::stubInfoGPR;
-    using BaselineJITRegisters::GetByVal::SlowPath::profileGPR;
+    using BaselineJITRegisters::GetByVal::globalObjectGPR;
+    using BaselineJITRegisters::GetByVal::stubInfoGPR;
+    using BaselineJITRegisters::GetByVal::profileGPR;
 
     jit.emitCTIThunkPrologue();
 
@@ -159,7 +153,7 @@ void JIT::emit_op_get_private_name(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::GetByVal::baseJSR;
     using BaselineJITRegisters::GetByVal::propertyJSR;
     using BaselineJITRegisters::GetByVal::resultJSR;
-    using BaselineJITRegisters::GetByVal::FastPath::stubInfoGPR;
+    using BaselineJITRegisters::GetByVal::stubInfoGPR;
 
     emitGetVirtualRegister(base, baseJSR);
     emitGetVirtualRegister(property, propertyJSR);
@@ -188,7 +182,7 @@ void JIT::emitSlow_op_get_private_name(const JSInstruction*, Vector<SlowCaseEntr
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
     JITGetByValGenerator& gen = m_getByVals[m_getByValIndex++];
 
-    using BaselineJITRegisters::GetByVal::SlowPath::stubInfoGPR;
+    using BaselineJITRegisters::GetByVal::stubInfoGPR;
 
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
@@ -212,8 +206,8 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_private_name_callSlowOper
 
     using BaselineJITRegisters::GetByVal::baseJSR;
     using BaselineJITRegisters::GetByVal::propertyJSR;
-    using BaselineJITRegisters::GetByVal::SlowPath::globalObjectGPR;
-    using BaselineJITRegisters::GetByVal::SlowPath::stubInfoGPR;
+    using BaselineJITRegisters::GetByVal::globalObjectGPR;
+    using BaselineJITRegisters::GetByVal::stubInfoGPR;
 
     jit.emitCTIThunkPrologue();
 
@@ -1287,8 +1281,8 @@ void JIT::emitSlow_op_in_by_val(const JSInstruction* currentInstruction, Vector<
     auto bytecode = currentInstruction->as<OpInByVal>();
     JITInByValGenerator& gen = m_inByVals[m_inByValIndex++];
 
-    using BaselineJITRegisters::GetByVal::SlowPath::stubInfoGPR;
-    using BaselineJITRegisters::GetByVal::SlowPath::profileGPR;
+    using BaselineJITRegisters::GetByVal::stubInfoGPR;
+    using BaselineJITRegisters::GetByVal::profileGPR;
 
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
@@ -1337,7 +1331,7 @@ void JIT::emitHasPrivateSlow(AccessType type)
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
     JITInByValGenerator& gen = m_inByVals[m_inByValIndex++];
 
-    using BaselineJITRegisters::GetByVal::SlowPath::stubInfoGPR;
+    using BaselineJITRegisters::GetByVal::stubInfoGPR;
 
     Label coldPathBegin = label();
 
