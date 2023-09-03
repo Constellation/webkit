@@ -197,9 +197,9 @@ namespace EnumeratorGetByVal {
     using GetByVal::profileGPR;
     using GetByVal::globalObjectGPR;
     using GetByVal::scratchGPR;
-    static constexpr GPRReg scratch2 { GPRInfo::regT5 };
-    static constexpr GPRReg scratch3 { GPRInfo::regT7 };
-    static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, profileGPR, scratchGPR, scratch2, scratch3));
+    static constexpr GPRReg scratch2GPR { GPRInfo::regT5 };
+    static constexpr GPRReg scratch3GPR { GPRInfo::regT7 };
+    static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, profileGPR, scratchGPR, scratch2GPR, scratch3GPR));
 }
 #endif
 
