@@ -1855,7 +1855,7 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
             auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
             JITGetByValGenerator gen(
                 codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByVal, usedRegisters,
-                baseRegs, propertyRegs, resultRegs, InvalidGPRReg);
+                baseRegs, propertyRegs, resultRegs, InvalidGPRReg, InvalidGPRReg);
 
             if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecString))
                 gen.stubInfo()->propertyIsString = true;

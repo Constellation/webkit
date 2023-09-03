@@ -592,6 +592,8 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         m_extraGPR = BaselineJITRegisters::GetByVal::propertyJSR.payloadGPR();
         m_valueGPR = BaselineJITRegisters::GetByVal::resultJSR.payloadGPR();
         m_stubInfoGPR = BaselineJITRegisters::GetByVal::stubInfoGPR;
+        if (accessType == AccessType::GetByVal)
+            m_arrayProfileGPR = BaselineJITRegisters::GetByVal::profileGPR;
 #if USE(JSVALUE32_64)
         m_baseTagGPR = BaselineJITRegisters::GetByVal::baseJSR.tagGPR();
         m_extraTagGPR = BaselineJITRegisters::GetByVal::propertyJSR.tagGPR();
@@ -619,6 +621,8 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         m_extraGPR = BaselineJITRegisters::InByVal::propertyJSR.payloadGPR();
         m_valueGPR = BaselineJITRegisters::InByVal::resultJSR.payloadGPR();
         m_stubInfoGPR = BaselineJITRegisters::InByVal::stubInfoGPR;
+        if (accessType == AccessType::InByVal)
+            m_arrayProfileGPR = BaselineJITRegisters::InByVal::profileGPR;
 #if USE(JSVALUE32_64)
         m_baseTagGPR = BaselineJITRegisters::InByVal::baseJSR.tagGPR();
         m_extraTagGPR = BaselineJITRegisters::InByVal::propertyJSR.tagGPR();

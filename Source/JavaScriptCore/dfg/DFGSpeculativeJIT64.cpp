@@ -2510,7 +2510,7 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
         auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
         JITGetByValGenerator gen(
             codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByVal, usedRegisters,
-            baseRegs, propertyRegs, resultRegs, stubInfoGPR);
+            baseRegs, propertyRegs, resultRegs, InvalidGPRReg, stubInfoGPR);
 
         std::visit([&](auto* stubInfo) {
             if (m_state.forNode(m_graph.varArgChild(node, 1)).isType(SpecString))
@@ -6654,7 +6654,7 @@ void SpeculativeJIT::compileGetByValWithThis(Node* node)
     auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
     JITGetByValWithThisGenerator gen(
         codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByValWithThis, usedRegisters,
-        baseRegs, propertyRegs, thisValueRegs, resultRegs, stubInfoGPR);
+        baseRegs, propertyRegs, thisValueRegs, resultRegs, InvalidGPRReg, stubInfoGPR);
 
     std::visit([&](auto* stubInfo) {
         if (m_state.forNode(node->child3()).isType(SpecString))
