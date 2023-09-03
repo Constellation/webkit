@@ -3394,25 +3394,19 @@ static bool deleteByVal(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot
     return couldDelete;
 }
 
-JSC_DEFINE_JIT_OPERATION(operationDeleteByValOptimize, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, EncodedJSValue encodedSubscript, ECMAMode ecmaMode))
+static ALWAYS_INLINE size_t deleteByValOptimize(JSGlobalObject* globalObject, VM& vm, JSValue baseValue, JSValue subscript, StructureStubInfo* stubInfo, ECMAMode ecmaMode)
 {
-    VM& vm = globalObject->vm();
-    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
-    ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
     auto scope = DECLARE_THROW_SCOPE(vm);
-
-    JSValue baseValue = JSValue::decode(encodedBase);
-    JSValue subscript = JSValue::decode(encodedSubscript);
 
     DeletePropertySlot slot;
     Structure* oldStructure = baseValue.structureOrNull();
 
     bool result = deleteByVal(globalObject, vm, slot, baseValue, subscript, ecmaMode);
-    RETURN_IF_EXCEPTION(scope, encodedJSValue());
+    RETURN_IF_EXCEPTION(scope, { });
 
     if (baseValue.isObject() && CacheableIdentifier::isCacheableIdentifierCell(subscript)) {
         const Identifier propertyName = subscript.toPropertyKey(globalObject);
-        RETURN_IF_EXCEPTION(scope, encodedJSValue());
+        RETURN_IF_EXCEPTION(scope, { });
 
         if (subscript.isSymbol() || !parseIndex(propertyName)) {
             CodeBlock* codeBlock = callFrame->codeBlock();
@@ -3425,7 +3419,31 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByValOptimize, size_t, (JSGlobalObject* 
     return result;
 }
 
-JSC_DEFINE_JIT_OPERATION(operationDeleteByValGaveUp, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, EncodedJSValue encodedSubscript, ECMAMode ecmaMode))
+JSC_DEFINE_JIT_OPERATION(operationDeleteByValSloppyOptimize, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, EncodedJSValue encodedSubscript))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
+
+    JSValue baseValue = JSValue::decode(encodedBase);
+    JSValue subscript = JSValue::decode(encodedSubscript);
+
+    return deleteByValOptimize(globalObject, vm, baseValue, subscript, stubInfo, ECMAMode::sloppy());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationDeleteByValStrictOptimize, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, EncodedJSValue encodedSubscript))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
+
+    JSValue baseValue = JSValue::decode(encodedBase);
+    JSValue subscript = JSValue::decode(encodedSubscript);
+
+    return deleteByValOptimize(globalObject, vm, baseValue, subscript, stubInfo, ECMAMode::strict());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationDeleteByValSloppyGaveUp, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, EncodedJSValue encodedSubscript))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
@@ -3434,16 +3452,37 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByValGaveUp, size_t, (JSGlobalObject* gl
     stubInfo->tookSlowPath = true;
 
     DeletePropertySlot slot;
-    return deleteByVal(globalObject, vm, slot, JSValue::decode(encodedBase), JSValue::decode(encodedSubscript), ecmaMode);
+    return deleteByVal(globalObject, vm, slot, JSValue::decode(encodedBase), JSValue::decode(encodedSubscript), ECMAMode::sloppy());
 }
 
-JSC_DEFINE_JIT_OPERATION(operationDeleteByValGeneric, size_t, (JSGlobalObject* globalObject, EncodedJSValue encodedBase, EncodedJSValue encodedSubscript, ECMAMode ecmaMode))
+JSC_DEFINE_JIT_OPERATION(operationDeleteByValStrictGaveUp, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, EncodedJSValue encodedSubscript))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
+
+    stubInfo->tookSlowPath = true;
+
+    DeletePropertySlot slot;
+    return deleteByVal(globalObject, vm, slot, JSValue::decode(encodedBase), JSValue::decode(encodedSubscript), ECMAMode::strict());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationDeleteByValSloppyGeneric, size_t, (JSGlobalObject* globalObject, EncodedJSValue encodedBase, EncodedJSValue encodedSubscript))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
     DeletePropertySlot slot;
-    return deleteByVal(globalObject, vm, slot, JSValue::decode(encodedBase), JSValue::decode(encodedSubscript), ecmaMode);
+    return deleteByVal(globalObject, vm, slot, JSValue::decode(encodedBase), JSValue::decode(encodedSubscript), ECMAMode::sloppy());
+}
+
+JSC_DEFINE_JIT_OPERATION(operationDeleteByValStrictGeneric, size_t, (JSGlobalObject* globalObject, EncodedJSValue encodedBase, EncodedJSValue encodedSubscript))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+    DeletePropertySlot slot;
+    return deleteByVal(globalObject, vm, slot, JSValue::decode(encodedBase), JSValue::decode(encodedSubscript), ECMAMode::strict());
 }
 
 JSC_DEFINE_JIT_OPERATION(operationPushWithScope, JSCell*, (JSGlobalObject* globalObject, JSCell* currentScopeCell, EncodedJSValue objectValue))
