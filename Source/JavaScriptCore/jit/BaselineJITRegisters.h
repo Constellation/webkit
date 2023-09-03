@@ -206,26 +206,17 @@ namespace EnumeratorGetByVal {
 #if USE(JSVALUE64)
 namespace GetByValWithThis {
     // Registers used on both Fast and Slow paths
+    using SlowOperation = decltype(operationGetByValWithThisOptimize);
+
     static constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };
-    static constexpr JSValueRegs baseJSR { GPRInfo::regT0 };
-    static constexpr JSValueRegs propertyJSR { GPRInfo::regT1 };
-    static constexpr JSValueRegs thisJSR { GPRInfo::regT2 };
-
-    // Fast path only registers
-    namespace FastPath {
-        static constexpr GPRReg stubInfoGPR { GPRInfo::regT3 };
-        static constexpr GPRReg scratch1GPR { GPRInfo::regT5 };
-        static_assert(noOverlap(baseJSR, propertyJSR, thisJSR, stubInfoGPR, scratch1GPR), "Required for DataIC");
-    }
-
-    // Slow path only registers
-    namespace SlowPath {
-        static constexpr GPRReg globalObjectGPR { GPRInfo::regT3 };
-        static constexpr GPRReg stubInfoGPR { GPRInfo::regT4 };
-        static constexpr GPRReg profileGPR { GPRInfo::regT5 };
-        static_assert(noOverlap(baseJSR, propertyJSR, thisJSR, stubInfoGPR, profileGPR), "Required for call to CTI thunk");
-        static_assert(noOverlap(baseJSR, propertyJSR, thisJSR, globalObjectGPR, stubInfoGPR, profileGPR), "Required for call to slow operation");
-    }
+    static constexpr JSValueRegs baseJSR { preferredArgumentJSR<SlowOperation, 3>() };
+    static constexpr JSValueRegs propertyJSR { preferredArgumentJSR<SlowOperation, 4>() };
+    static constexpr JSValueRegs thisJSR { preferredArgumentJSR<SlowOperation, 5>() };
+    static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 1>() };
+    static constexpr GPRReg profileGPR { preferredArgumentGPR<SlowOperation, 2>() };
+    static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
+    static constexpr GPRReg scratch1GPR { globalObjectGPR };
+    static_assert(noOverlap(baseJSR, propertyJSR, thisJSR, globalObjectGPR, stubInfoGPR, profileGPR), "Required for call to slow operation");
 }
 #endif
 

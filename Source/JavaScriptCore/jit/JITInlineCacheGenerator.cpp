@@ -577,7 +577,7 @@ void JITGetByValWithThisGenerator::generateFastPath(CCallHelpers& jit)
 #if USE(JSVALUE64)
 void JITGetByValWithThisGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stubInfo)
 {
-    using BaselineJITRegisters::GetByValWithThis::FastPath::stubInfoGPR;
+    using BaselineJITRegisters::GetByValWithThis::stubInfoGPR;
     JITInlineCacheGenerator::generateBaselineDataICFastPath(jit, stubInfo, stubInfoGPR);
 }
 #endif

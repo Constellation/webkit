@@ -2044,14 +2044,18 @@ void JIT::emit_op_get_by_val_with_this(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::GetByValWithThis::propertyJSR;
     using BaselineJITRegisters::GetByValWithThis::thisJSR;
     using BaselineJITRegisters::GetByValWithThis::resultJSR;
-    using BaselineJITRegisters::GetByValWithThis::FastPath::stubInfoGPR;
-    using BaselineJITRegisters::GetByValWithThis::FastPath::scratch1GPR;
+    using BaselineJITRegisters::GetByValWithThis::stubInfoGPR;
+    using BaselineJITRegisters::GetByValWithThis::profileGPR;
+    using BaselineJITRegisters::GetByValWithThis::scratch1GPR;
 
     emitGetVirtualRegister(base, baseJSR);
     emitGetVirtualRegister(property, propertyJSR);
     emitGetVirtualRegister(thisValue, thisJSR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
+    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
+    materializePointerIntoMetadata(bytecode, OpGetByValWithThis::Metadata::offsetOfArrayProfile(), profileGPR);
+
     JITGetByValWithThisGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::GetByValWithThis, RegisterSetBuilder::stubUnavailableRegisters(),
         baseJSR, propertyJSR, thisJSR, resultJSR, stubInfoGPR);
@@ -2073,26 +2077,14 @@ void JIT::emit_op_get_by_val_with_this(const JSInstruction* currentInstruction)
     emitPutVirtualRegister(dst, resultJSR);
 }
 
-void JIT::emitSlow_op_get_by_val_with_this(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
+void JIT::emitSlow_op_get_by_val_with_this(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
-    auto bytecode = currentInstruction->as<OpGetByValWithThis>();
-
     ASSERT(hasAnySlowCases(iter));
-
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
     JITGetByValWithThisGenerator& gen = m_getByValsWithThis[m_getByValWithThisIndex++];
-
-    using BaselineJITRegisters::GetByValWithThis::SlowPath::stubInfoGPR;
-    using BaselineJITRegisters::GetByValWithThis::SlowPath::profileGPR;
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
-
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
-    materializePointerIntoMetadata(bytecode, OpGetByValWithThis::Metadata::offsetOfArrayProfile(), profileGPR);
-
     emitNakedNearCall(vm().getCTIStub(slow_op_get_by_val_with_this_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
 
@@ -2109,9 +2101,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_val_with_this_callSlow
     using BaselineJITRegisters::GetByValWithThis::baseJSR;
     using BaselineJITRegisters::GetByValWithThis::propertyJSR;
     using BaselineJITRegisters::GetByValWithThis::thisJSR;
-    using BaselineJITRegisters::GetByValWithThis::SlowPath::globalObjectGPR;
-    using BaselineJITRegisters::GetByValWithThis::SlowPath::stubInfoGPR;
-    using BaselineJITRegisters::GetByValWithThis::SlowPath::profileGPR;
+    using BaselineJITRegisters::GetByValWithThis::globalObjectGPR;
+    using BaselineJITRegisters::GetByValWithThis::stubInfoGPR;
+    using BaselineJITRegisters::GetByValWithThis::profileGPR;
 
     jit.emitCTIThunkPrologue();
 
