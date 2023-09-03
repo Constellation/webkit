@@ -498,7 +498,7 @@ void JITInstanceOfGenerator::generateFastPath(CCallHelpers& jit)
 
 void JITInstanceOfGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stubInfo)
 {
-    using BaselineJITRegisters::Instanceof::FastPath::stubInfoGPR;
+    using BaselineJITRegisters::Instanceof::stubInfoGPR;
     JITInlineCacheGenerator::generateBaselineDataICFastPath(jit, stubInfo, stubInfoGPR);
 }
 

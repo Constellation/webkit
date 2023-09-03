@@ -156,16 +156,18 @@ void JIT::emit_op_instanceof(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::Instanceof::resultJSR;
     using BaselineJITRegisters::Instanceof::valueJSR;
     using BaselineJITRegisters::Instanceof::protoJSR;
-    using BaselineJITRegisters::Instanceof::FastPath::stubInfoGPR;
+    using BaselineJITRegisters::Instanceof::stubInfoGPR;
 
     emitGetVirtualRegister(value, valueJSR);
     emitGetVirtualRegister(proto, protoJSR);
-    
+
+    auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
+    loadConstant(stubInfoIndex, stubInfoGPR);
+
     // Check that proto are cells. baseVal must be a cell - this is checked by the get_by_id for Symbol.hasInstance.
     emitJumpSlowCaseIfNotJSCell(valueJSR, value);
     emitJumpSlowCaseIfNotJSCell(protoJSR, proto);
 
-    auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     JITInstanceOfGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex),
         RegisterSetBuilder::stubUnavailableRegisters(),
@@ -193,14 +195,11 @@ void JIT::emitSlow_op_instanceof(const JSInstruction*, Vector<SlowCaseEntry>::it
     JITInstanceOfGenerator& gen = m_instanceOfs[m_instanceOfIndex++];
 
     Label coldPathBegin = label();
-
     using BaselineJITRegisters::Instanceof::valueJSR;
     using BaselineJITRegisters::Instanceof::protoJSR;
-    using BaselineJITRegisters::Instanceof::SlowPath::globalObjectGPR;
-    using BaselineJITRegisters::Instanceof::SlowPath::stubInfoGPR;
-
+    using BaselineJITRegisters::Instanceof::globalObjectGPR;
+    using BaselineJITRegisters::Instanceof::stubInfoGPR;
     loadGlobalObject(globalObjectGPR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     callOperation<decltype(operationInstanceOfOptimize)>(
         Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),
         globalObjectGPR, stubInfoGPR, valueJSR, protoJSR);

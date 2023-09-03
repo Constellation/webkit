@@ -69,19 +69,9 @@ namespace Instanceof {
     static constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };
     static constexpr JSValueRegs valueJSR { preferredArgumentJSR<SlowOperation, 2>() };
     static constexpr JSValueRegs protoJSR { preferredArgumentJSR<SlowOperation, 3>() };
-
-    // Fast path only registers
-    namespace FastPath {
-        static constexpr GPRReg stubInfoGPR { GPRInfo::argumentGPR1 };
-        static_assert(noOverlap(valueJSR, protoJSR, stubInfoGPR), "Required for DataIC");
-    }
-
-    // Slow path only registers
-    namespace SlowPath {
-        static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
-        static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 1>() };
-        static_assert(noOverlap(globalObjectGPR, stubInfoGPR, valueJSR, protoJSR), "Required for call to slow operation");
-    }
+    static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 1>() };
+    static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
+    static_assert(noOverlap(globalObjectGPR, stubInfoGPR, valueJSR, protoJSR), "Required for call to slow operation");
 }
 
 namespace JFalse {
