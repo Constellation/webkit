@@ -271,13 +271,21 @@ JSC_DECLARE_JIT_OPERATION(operationGetByValWithThisGaveUp, EncodedJSValue, (JSGl
 JSC_DECLARE_JIT_OPERATION(operationGetByValWithThisGeneric, EncodedJSValue, (JSGlobalObject*, EncodedJSValue encodedBase, EncodedJSValue encodedProperty, EncodedJSValue encodedThis));
 JSC_DECLARE_JIT_OPERATION(operationGetByValWithThisMegamorphicGeneric, EncodedJSValue, (JSGlobalObject*, EncodedJSValue encodedBase, EncodedJSValue encodedSubscript, EncodedJSValue encodedThis));
 
-JSC_DECLARE_JIT_OPERATION(operationDeleteByIdOptimize, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, uintptr_t, ECMAMode));
-JSC_DECLARE_JIT_OPERATION(operationDeleteByIdGaveUp, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, uintptr_t, ECMAMode));
-JSC_DECLARE_JIT_OPERATION(operationDeleteByIdGeneric, size_t, (JSGlobalObject*, EncodedJSValue base, uintptr_t, ECMAMode));
+JSC_DECLARE_JIT_OPERATION(operationDeleteByIdSloppyOptimize, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, uintptr_t));
+JSC_DECLARE_JIT_OPERATION(operationDeleteByIdSloppyGaveUp, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, uintptr_t));
+JSC_DECLARE_JIT_OPERATION(operationDeleteByIdSloppyGeneric, size_t, (JSGlobalObject*, EncodedJSValue base, uintptr_t));
 
-JSC_DECLARE_JIT_OPERATION(operationDeleteByValOptimize, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, EncodedJSValue target, ECMAMode));
-JSC_DECLARE_JIT_OPERATION(operationDeleteByValGaveUp, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, EncodedJSValue target, ECMAMode));
-JSC_DECLARE_JIT_OPERATION(operationDeleteByValGeneric, size_t, (JSGlobalObject*, EncodedJSValue base, EncodedJSValue target, ECMAMode));
+JSC_DECLARE_JIT_OPERATION(operationDeleteByIdStrictOptimize, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, uintptr_t));
+JSC_DECLARE_JIT_OPERATION(operationDeleteByIdStrictGaveUp, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, uintptr_t));
+JSC_DECLARE_JIT_OPERATION(operationDeleteByIdStrictGeneric, size_t, (JSGlobalObject*, EncodedJSValue base, uintptr_t));
+
+JSC_DECLARE_JIT_OPERATION(operationDeleteByValSloppyOptimize, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, EncodedJSValue target));
+JSC_DECLARE_JIT_OPERATION(operationDeleteByValSloppyGaveUp, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, EncodedJSValue target));
+JSC_DECLARE_JIT_OPERATION(operationDeleteByValSloppyGeneric, size_t, (JSGlobalObject*, EncodedJSValue base, EncodedJSValue target));
+
+JSC_DECLARE_JIT_OPERATION(operationDeleteByValStrictOptimize, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, EncodedJSValue target));
+JSC_DECLARE_JIT_OPERATION(operationDeleteByValStrictGaveUp, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, EncodedJSValue target));
+JSC_DECLARE_JIT_OPERATION(operationDeleteByValStrictGeneric, size_t, (JSGlobalObject*, EncodedJSValue base, EncodedJSValue target));
 
 JSC_DECLARE_JIT_OPERATION(operationInstanceOfOptimize, EncodedJSValue, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue value, EncodedJSValue proto));
 JSC_DECLARE_JIT_OPERATION(operationInstanceOfGaveUp, EncodedJSValue, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue value, EncodedJSValue proto));
