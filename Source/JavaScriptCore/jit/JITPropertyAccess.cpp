@@ -92,7 +92,7 @@ void JIT::emit_op_get_by_val(const JSInstruction* currentInstruction)
 }
 
 template<typename OpcodeType>
-void JIT::generateGetByValSlowCase(const OpcodeType& bytecode, Vector<SlowCaseEntry>::iterator& iter)
+void JIT::generateGetByValSlowCase(const OpcodeType&, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(hasAnySlowCases(iter));
     ASSERT(BytecodeIndex(bytecodeOffset) == m_bytecodeIndex);
@@ -282,14 +282,16 @@ void JIT::emit_op_check_private_brand(const JSInstruction* currentInstruction)
 
     using BaselineJITRegisters::PrivateBrand::baseJSR;
     using BaselineJITRegisters::PrivateBrand::brandJSR;
-    using BaselineJITRegisters::PrivateBrand::FastPath::stubInfoGPR;
+    using BaselineJITRegisters::PrivateBrand::stubInfoGPR;
 
     emitGetVirtualRegister(base, baseJSR);
     emitGetVirtualRegister(brand, brandJSR);
 
+    auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
+    loadConstant(stubInfoIndex, stubInfoGPR);
+
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
 
-    auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     JITPrivateBrandAccessGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::CheckPrivateBrand, RegisterSetBuilder::stubUnavailableRegisters(),
         baseJSR, brandJSR, stubInfoGPR);
@@ -304,17 +306,10 @@ void JIT::emitSlow_op_check_private_brand(const JSInstruction*, Vector<SlowCaseE
 {
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
     JITPrivateBrandAccessGenerator& gen = m_privateBrandAccesses[m_privateBrandAccessIndex++];
-
-    using BaselineJITRegisters::PrivateBrand::SlowPath::stubInfoGPR;
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
-
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
-
     static_assert(std::is_same<FunctionTraits<decltype(operationCheckPrivateBrandOptimize)>::ArgumentTypes, FunctionTraits<decltype(operationGetPrivateNameOptimize)>::ArgumentTypes>::value);
     emitNakedNearCall(vm().getCTIStub(slow_op_get_private_name_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
 
