@@ -2284,55 +2284,55 @@ void JIT::emit_op_enumerator_get_by_val(const JSInstruction* currentInstruction)
     constexpr GPRReg baseGPR = BaselineJITRegisters::EnumeratorGetByVal::baseJSR.payloadGPR();
     constexpr GPRReg propertyGPR = BaselineJITRegisters::EnumeratorGetByVal::propertyJSR.payloadGPR();
     using BaselineJITRegisters::EnumeratorGetByVal::stubInfoGPR;
-    using BaselineJITRegisters::EnumeratorGetByVal::scratch1;
-    using BaselineJITRegisters::EnumeratorGetByVal::scratch2;
-    using BaselineJITRegisters::EnumeratorGetByVal::scratch3;
+    using BaselineJITRegisters::EnumeratorGetByVal::scratchGPR;
+    using BaselineJITRegisters::EnumeratorGetByVal::scratch2GPR;
+    using BaselineJITRegisters::EnumeratorGetByVal::scratch3GPR;
 
     emitGetVirtualRegister(base, baseGPR);
-    emitGetVirtualRegister(mode, scratch3);
+    emitGetVirtualRegister(mode, scratch3GPR);
     emitGetVirtualRegister(propertyName, propertyGPR);
 
-    load8FromMetadata(bytecode, OpEnumeratorGetByVal::Metadata::offsetOfEnumeratorMetadata(), scratch2);
-    or32(scratch3, scratch2);
-    store8ToMetadata(scratch2, bytecode, OpEnumeratorGetByVal::Metadata::offsetOfEnumeratorMetadata());
+    load8FromMetadata(bytecode, OpEnumeratorGetByVal::Metadata::offsetOfEnumeratorMetadata(), scratch2GPR);
+    or32(scratch3GPR, scratch2GPR);
+    store8ToMetadata(scratch2GPR, bytecode, OpEnumeratorGetByVal::Metadata::offsetOfEnumeratorMetadata());
 
     addSlowCase(branchIfNotCell(baseGPR));
     // This is always an int32 encoded value.
-    Jump isNotOwnStructureMode = branchTest32(NonZero, scratch3, TrustedImm32(JSPropertyNameEnumerator::IndexedMode | JSPropertyNameEnumerator::GenericMode));
+    Jump isNotOwnStructureMode = branchTest32(NonZero, scratch3GPR, TrustedImm32(JSPropertyNameEnumerator::IndexedMode | JSPropertyNameEnumerator::GenericMode));
 
     // Check the structure
-    emitGetVirtualRegister(enumerator, scratch1);
-    load32(Address(baseGPR, JSCell::structureIDOffset()), scratch2);
-    Jump structureMismatch = branch32(NotEqual, scratch2, Address(scratch1, JSPropertyNameEnumerator::cachedStructureIDOffset()));
+    emitGetVirtualRegister(enumerator, scratchGPR);
+    load32(Address(baseGPR, JSCell::structureIDOffset()), scratch2GPR);
+    Jump structureMismatch = branch32(NotEqual, scratch2GPR, Address(scratchGPR, JSPropertyNameEnumerator::cachedStructureIDOffset()));
 
     // Compute the offset.
-    emitGetVirtualRegister(index, scratch2);
+    emitGetVirtualRegister(index, scratch2GPR);
     // If index is less than the enumerator's cached inline storage, then it's an inline access
-    Jump outOfLineAccess = branch32(AboveOrEqual, scratch2, Address(scratch1, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
-    signExtend32ToPtr(scratch2, scratch2);
-    load64(BaseIndex(baseGPR, scratch2, TimesEight, JSObject::offsetOfInlineStorage()), resultGPR);
+    Jump outOfLineAccess = branch32(AboveOrEqual, scratch2GPR, Address(scratchGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
+    signExtend32ToPtr(scratch2GPR, scratch2GPR);
+    load64(BaseIndex(baseGPR, scratch2GPR, TimesEight, JSObject::offsetOfInlineStorage()), resultGPR);
     doneCases.append(jump());
 
     // Otherwise it's out of line
     outOfLineAccess.link(this);
     loadPtr(Address(baseGPR, JSObject::butterflyOffset()), baseGPR);
-    sub32(Address(scratch1, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), scratch2);
-    neg32(scratch2);
-    signExtend32ToPtr(scratch2, scratch2);
+    sub32(Address(scratchGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), scratch2GPR);
+    neg32(scratch2GPR);
+    signExtend32ToPtr(scratch2GPR, scratch2GPR);
     constexpr intptr_t offsetOfFirstProperty = offsetInButterfly(firstOutOfLineOffset) * static_cast<intptr_t>(sizeof(EncodedJSValue));
-    load64(BaseIndex(baseGPR, scratch2, TimesEight, offsetOfFirstProperty), resultGPR);
+    load64(BaseIndex(baseGPR, scratch2GPR, TimesEight, offsetOfFirstProperty), resultGPR);
     doneCases.append(jump());
 
     structureMismatch.link(this);
     store8ToMetadata(TrustedImm32(JSPropertyNameEnumerator::HasSeenOwnStructureModeStructureMismatch), bytecode, OpEnumeratorGetByVal::Metadata::offsetOfEnumeratorMetadata());
 
     isNotOwnStructureMode.link(this);
-    Jump isNotIndexed = branchTest32(Zero, scratch3, TrustedImm32(JSPropertyNameEnumerator::IndexedMode));
+    Jump isNotIndexed = branchTest32(Zero, scratch3GPR, TrustedImm32(JSPropertyNameEnumerator::IndexedMode));
     // Replace the string with the index.
     emitGetVirtualRegister(index, propertyGPR);
 
     isNotIndexed.link(this);
-    emitArrayProfilingSiteWithCell(bytecode, baseGPR, scratch1);
+    emitArrayProfilingSiteWithCell(bytecode, baseGPR, scratchGPR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     JITGetByValGenerator gen(
@@ -2422,7 +2422,7 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     constexpr GPRReg propertyGPR = BaselineJITRegisters::EnumeratorPutByVal::propertyJSR.payloadGPR();
     using BaselineJITRegisters::EnumeratorPutByVal::profileGPR;
     using BaselineJITRegisters::EnumeratorPutByVal::stubInfoGPR;
-    using BaselineJITRegisters::EnumeratorPutByVal::scratch1;
+    using BaselineJITRegisters::EnumeratorPutByVal::scratchGPR;
 
     // These four registers need to be set up before jumping to SlowPath code.
     emitGetVirtualRegister(base, baseGPR);
@@ -2432,9 +2432,9 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
 
     emitGetVirtualRegister(mode, stubInfoGPR);
 
-    load8FromMetadata(bytecode, OpEnumeratorPutByVal::Metadata::offsetOfEnumeratorMetadata(), scratch1);
-    or32(stubInfoGPR, scratch1);
-    store8ToMetadata(scratch1, bytecode, OpEnumeratorPutByVal::Metadata::offsetOfEnumeratorMetadata());
+    load8FromMetadata(bytecode, OpEnumeratorPutByVal::Metadata::offsetOfEnumeratorMetadata(), scratchGPR);
+    or32(stubInfoGPR, scratchGPR);
+    store8ToMetadata(scratchGPR, bytecode, OpEnumeratorPutByVal::Metadata::offsetOfEnumeratorMetadata());
 
     addSlowCase(branchIfNotCell(baseGPR));
     // This is always an int32 encoded value.
@@ -2442,16 +2442,16 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
 
     // Check the structure
     JumpList structureMismatch;
-    emitGetVirtualRegister(enumerator, scratch1);
+    emitGetVirtualRegister(enumerator, scratchGPR);
     load32(Address(baseGPR, JSCell::structureIDOffset()), profileGPR);
-    structureMismatch.append(branch32(NotEqual, profileGPR, Address(scratch1, JSPropertyNameEnumerator::cachedStructureIDOffset())));
+    structureMismatch.append(branch32(NotEqual, profileGPR, Address(scratchGPR, JSPropertyNameEnumerator::cachedStructureIDOffset())));
     emitNonNullDecodeZeroExtendedStructureID(profileGPR, profileGPR);
     structureMismatch.append(branchTest32(NonZero, Address(profileGPR, Structure::bitFieldOffset()), TrustedImm32(Structure::s_isWatchingReplacementBits)));
 
     // Compute the offset.
     emitGetVirtualRegister(index, profileGPR);
     // If index is less than the enumerator's cached inline storage, then it's an inline access
-    Jump outOfLineAccess = branch32(AboveOrEqual, profileGPR, Address(scratch1, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
+    Jump outOfLineAccess = branch32(AboveOrEqual, profileGPR, Address(scratchGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
     signExtend32ToPtr(profileGPR, profileGPR);
     store64(valueGPR, BaseIndex(baseGPR, profileGPR, TimesEight, JSObject::offsetOfInlineStorage()));
     doneCases.append(jump());
@@ -2459,7 +2459,7 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     // Otherwise it's out of line
     outOfLineAccess.link(this);
     loadPtr(Address(baseGPR, JSObject::butterflyOffset()), stubInfoGPR);
-    sub32(Address(scratch1, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), profileGPR);
+    sub32(Address(scratchGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), profileGPR);
     neg32(profileGPR);
     signExtend32ToPtr(profileGPR, profileGPR);
     constexpr intptr_t offsetOfFirstProperty = offsetInButterfly(firstOutOfLineOffset) * static_cast<intptr_t>(sizeof(EncodedJSValue));
@@ -2477,7 +2477,7 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     isNotIndexed.link(this);
     // Reload profileGPR since it is used for different purpose.
     materializePointerIntoMetadata(bytecode, OpEnumeratorPutByVal::Metadata::offsetOfArrayProfile(), profileGPR);
-    emitArrayProfilingSiteWithCell(bytecode, baseGPR, scratch1);
+    emitArrayProfilingSiteWithCell(bytecode, baseGPR, scratchGPR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     ECMAMode ecmaMode = bytecode.m_ecmaMode;

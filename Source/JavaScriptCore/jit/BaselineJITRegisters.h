@@ -199,7 +199,7 @@ namespace EnumeratorGetByVal {
     using GetByVal::scratchGPR;
     static constexpr GPRReg scratch2 { GPRInfo::regT5 };
     static constexpr GPRReg scratch3 { GPRInfo::regT7 };
-    static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, profileGPR, scratch1, scratch2, scratch3));
+    static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, profileGPR, scratchGPR, scratch2, scratch3));
 }
 #endif
 
