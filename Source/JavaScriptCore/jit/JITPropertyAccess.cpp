@@ -713,7 +713,7 @@ void JIT::emit_op_del_by_val(const JSInstruction* currentInstruction)
     emitWriteBarrier(base, ShouldFilterBase);
 }
 
-void JIT::emitSlow_op_del_by_val(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
+void JIT::emitSlow_op_del_by_val(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
     JITDelByValGenerator& gen = m_delByVals[m_delByValIndex++];
@@ -731,7 +731,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_del_by_val_callSlowOperationT
     // CallFrame::codeBlock().
     CCallHelpers jit;
 
-    using SlowOperation = decltype(operationDeleteByValOptimize);
+    using SlowOperation = decltype(operationDeleteByValStrictOptimize);
 
     using BaselineJITRegisters::DelByVal::baseJSR;
     using BaselineJITRegisters::DelByVal::propertyJSR;

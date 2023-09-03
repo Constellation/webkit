@@ -3316,15 +3316,11 @@ static bool deleteById(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot&
     return couldDelete;
 }
 
-static size_t deleteByIdOptimize(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot& slot, JSValue baseValue, const Identifier& ident, ECMAMode ecmaMode)
+static ALWAYS_INLINE size_t deleteByIdOptimize(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot& slot, JSValue baseValue, const Identifier& ident, ECMAMode ecmaMode)
 {
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    DeletePropertySlot slot;
     Structure* oldStructure = baseValue.structureOrNull();
-
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
-    Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
     bool result = deleteById(globalObject, vm, slot, baseValue, ident, ecmaMode);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -3350,6 +3346,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyOptimize, size_t, (JSGlobalObj
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
+    DeletePropertySlot slot;
     return deleteByIdOptimize(globalObject, vm, slot, baseValue, ident, ECMAMode::sloppy());
 }
 
@@ -3363,6 +3360,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictOptimize, size_t, (JSGlobalObj
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
+    DeletePropertySlot slot;
     return deleteByIdOptimize(globalObject, vm, slot, baseValue, ident, ECMAMode::strict());
 }
 
