@@ -6820,20 +6820,13 @@ IGNORE_CLANG_WARNINGS_END
     void compileDelBy(LValue base, SubscriptKind subscriptValue)
     {
         PatchpointValue* patchpoint;
-        switch (kind) {
-        case DelByKind::ByIdStrict:
-        case DelByKind::ByIdSloppy: {
+        if constexpr (kind == DelByKind::ByIdStrict || kind == DelByKind::ByIdSloppy) {
             patchpoint = m_out.patchpoint(Int64);
             patchpoint->append(ConstrainedValue(base, ValueRep::SomeLateRegister));
-            break;
-        }
-        case DelByKind::ByValStrict:
-        case DelByKind::ByValSloppy: {
+        } else {
             patchpoint = m_out.patchpoint(Int64);
             patchpoint->append(ConstrainedValue(base, ValueRep::SomeLateRegister));
             patchpoint->append(ConstrainedValue(subscriptValue, ValueRep::SomeLateRegister));
-            break;
-        }
         }
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
         patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
@@ -6878,46 +6871,35 @@ IGNORE_CLANG_WARNINGS_END
                     slowCases.append(jit.branchIfNotCell(base));
 
                 constexpr auto* optimizationFunction = [&] () {
-                    switch (kind) {
-                    case DelByKind::ByIdStrict:
+                    if constexpr (kind == DelByKind::ByIdStrict)
                         return operationDeleteByIdStrictOptimize;
-                    case DelByKind::ByIdSloppy:
-                        return operationDeleteByIdSloppyOptimize;
-                    case DelByKind::ByValStrict:
+                    else if constexpr (kind == DelByKind::ByIdSloppy)
+                        return operationDeleteByIdStrictOptimize;
+                    else if constexpr (kind == DelByKind::ByValStrict)
                         return operationDeleteByValStrictOptimize;
-                    case DelByKind::ByValSloppy:
+                    else
                         return operationDeleteByValSloppyOptimize;
-                    }
-                    return operationDeleteByValSloppyOptimize;
                 }();
 
                 const auto subscript = [&] {
-                    switch (kind) {
-                    case DelByKind::ByIdStrict:
-                    case DelByKind::ByIdSloppy:
+                    if constexpr (kind == DelByKind::ByIdStrict || kind == DelByKind::ByIdSloppy)
                         return CCallHelpers::TrustedImmPtr(subscriptValue.rawBits());
-                    case DelByKind::ByValStrict:
-                    case DelByKind::ByValSloppy:
+                    else {
                         if (child2UseKind == UntypedUse)
                             slowCases.append(jit.branchIfNotCell(JSValueRegs(params[2].gpr())));
                         return JSValueRegs(params[2].gpr());
                     }
-                    return CCallHelpers::TrustedImmPtr(subscriptValue.rawBits());
                 }();
 
                 const auto generator = [&] {
-                    switch (kind) {
-                    case DelByKind::ByIdStrict:
-                    case DelByKind::ByIdSloppy: {
+                    if constexpr (kind == DelByKind::ByIdStrict || kind == DelByKind::ByIdSloppy) {
                         auto* stubInfo = state->addStructureStubInfo();
                         return Box<JITDelByIdGenerator>::create(
                             jit.codeBlock(), stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
                             kind == DelByKind::ByIdSloppy ? AccessType::DeleteByIdSloppy : AccessType::DeleteByIdStrict,
                             params.unavailableRegisters(), subscriptValue, base,
                             JSValueRegs(returnGPR), stubInfoGPR);
-                    }
-                    case DelByKind::ByValStrict:
-                    case DelByKind::ByValSloppy: {
+                    } else {
                         auto* stubInfo = state->addStructureStubInfo();
                         return Box<JITDelByValGenerator>::create(
                             jit.codeBlock(), stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
@@ -6925,8 +6907,6 @@ IGNORE_CLANG_WARNINGS_END
                             params.unavailableRegisters(), base,
                             subscript, JSValueRegs(returnGPR), stubInfoGPR);
                     }
-                    }
-                    return nullptr;
                 }();
 
                 generator->generateFastPath(jit);
@@ -6977,7 +6957,7 @@ IGNORE_CLANG_WARNINGS_END
         switch (m_node->child1().useKind()) {
         case CellUse: {
             LValue base = lowCell(m_node->child1());
-            auto ecmaMode = m_node->ecmaMode().value();
+            auto ecmaMode = m_node->ecmaMode();
             if (ecmaMode.isStrict())
                 compileDelBy<DelByKind::ByIdStrict>(base, m_node->cacheableIdentifier());
             else
