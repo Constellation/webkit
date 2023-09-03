@@ -78,7 +78,7 @@ void JIT::emit_op_get_by_val(const JSInstruction* currentInstruction)
         stubInfo->canBeMegamorphic = true;
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
-    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), scratch1GPR);
+    emitArrayProfilingSiteWithCellAndProfile(baseJSR.payloadGPR(), profileGPR, scratch1GPR);
 
     gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
 
@@ -330,8 +330,7 @@ void JIT::emit_op_put_by_val(const JSInstruction* currentInstruction)
     materializePointerIntoMetadata(bytecode, Op::Metadata::offsetOfArrayProfile(), profileGPR);
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
-
-    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), scratch1GPR);
+    emitArrayProfilingSiteWithCellAndProfile(baseJSR.payloadGPR(), profileGPR, scratch1GPR);
 
     ECMAMode ecmaMode = this->ecmaMode(bytecode);
     bool isDirect = std::is_same_v<Op, OpPutByValDirect>;
@@ -1222,7 +1221,7 @@ void JIT::emit_op_in_by_val(const JSInstruction* currentInstruction)
     materializePointerIntoMetadata(bytecode, OpInByVal::Metadata::offsetOfArrayProfile(), profileGPR);
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
-    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), scratch1GPR);
+    emitArrayProfilingSiteWithCellAndProfile(baseJSR.payloadGPR(), profileGPR, scratch1GPR);
 
     JITInByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::InByVal, RegisterSetBuilder::stubUnavailableRegisters(),
@@ -2064,7 +2063,7 @@ void JIT::emit_op_get_by_val_with_this(const JSInstruction* currentInstruction)
     gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
-    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), scratch1GPR);
+    emitArrayProfilingSiteWithCellAndProfile(baseJSR.payloadGPR(), profileGPR, scratch1GPR);
 
     gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
 
@@ -2290,7 +2289,7 @@ void JIT::emit_op_enumerator_get_by_val(const JSInstruction* currentInstruction)
     emitGetVirtualRegister(index, propertyGPR);
 
     isNotIndexed.link(this);
-    emitArrayProfilingSiteWithCell(bytecode, baseGPR, scratch1GPR);
+    emitArrayProfilingSiteWithCellAndProfile(baseGPR, profileGPR, scratch1GPR);
 
     JITGetByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::GetByVal, RegisterSetBuilder::stubUnavailableRegisters(),
@@ -2404,27 +2403,27 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     // Check the structure
     JumpList structureMismatch;
     emitGetVirtualRegister(enumerator, scratch1GPR);
-    load32(Address(baseGPR, JSCell::structureIDOffset()), profileGPR);
-    structureMismatch.append(branch32(NotEqual, profileGPR, Address(scratch1GPR, JSPropertyNameEnumerator::cachedStructureIDOffset())));
-    emitNonNullDecodeZeroExtendedStructureID(profileGPR, profileGPR);
-    structureMismatch.append(branchTest32(NonZero, Address(profileGPR, Structure::bitFieldOffset()), TrustedImm32(Structure::s_isWatchingReplacementBits)));
+    load32(Address(baseGPR, JSCell::structureIDOffset()), scratch2GPR);
+    structureMismatch.append(branch32(NotEqual, scratch2GPR, Address(scratch1GPR, JSPropertyNameEnumerator::cachedStructureIDOffset())));
+    emitNonNullDecodeZeroExtendedStructureID(scratch2GPR, scratch2GPR);
+    structureMismatch.append(branchTest32(NonZero, Address(scratch2GPR, Structure::bitFieldOffset()), TrustedImm32(Structure::s_isWatchingReplacementBits)));
 
     // Compute the offset.
-    emitGetVirtualRegister(index, profileGPR);
+    emitGetVirtualRegister(index, scratch2GPR);
     // If index is less than the enumerator's cached inline storage, then it's an inline access
-    Jump outOfLineAccess = branch32(AboveOrEqual, profileGPR, Address(scratch1GPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
-    signExtend32ToPtr(profileGPR, profileGPR);
-    store64(valueGPR, BaseIndex(baseGPR, profileGPR, TimesEight, JSObject::offsetOfInlineStorage()));
+    Jump outOfLineAccess = branch32(AboveOrEqual, scratch2GPR, Address(scratch1GPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
+    signExtend32ToPtr(scratch2GPR, scratch2GPR);
+    store64(valueGPR, BaseIndex(baseGPR, scratch2GPR, TimesEight, JSObject::offsetOfInlineStorage()));
     doneCases.append(jump());
 
     // Otherwise it's out of line
     outOfLineAccess.link(this);
     loadPtr(Address(baseGPR, JSObject::butterflyOffset()), scratch2GPR);
-    sub32(Address(scratch1GPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), profileGPR);
-    neg32(profileGPR);
-    signExtend32ToPtr(profileGPR, profileGPR);
+    sub32(Address(scratch1GPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), scratch1GPR);
+    neg32(scratch1GPR);
+    signExtend32ToPtr(scratch1GPR, scratch1GPR);
     constexpr intptr_t offsetOfFirstProperty = offsetInButterfly(firstOutOfLineOffset) * static_cast<intptr_t>(sizeof(EncodedJSValue));
-    store64(valueGPR, BaseIndex(scratch2GPR, profileGPR, TimesEight, offsetOfFirstProperty));
+    store64(valueGPR, BaseIndex(scratch2GPR, scratch1GPR, TimesEight, offsetOfFirstProperty));
     doneCases.append(jump());
 
     structureMismatch.link(this);
@@ -2436,9 +2435,7 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     emitGetVirtualRegister(index, propertyGPR);
 
     isNotIndexed.link(this);
-    // Reload profileGPR since it is used for different purpose.
-    materializePointerIntoMetadata(bytecode, OpEnumeratorPutByVal::Metadata::offsetOfArrayProfile(), profileGPR);
-    emitArrayProfilingSiteWithCell(bytecode, baseGPR, scratch1GPR);
+    emitArrayProfilingSiteWithCellAndProfile(baseGPR, profileGPR, scratch1GPR);
 
     ECMAMode ecmaMode = bytecode.m_ecmaMode;
     JITPutByValGenerator gen(

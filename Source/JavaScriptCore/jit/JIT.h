@@ -332,6 +332,8 @@ namespace JSC {
         template <typename Bytecode>
         void emitArrayProfilingSiteWithCell(const Bytecode&, ptrdiff_t, RegisterID cellGPR, RegisterID scratchGPR);
 
+        void emitArrayProfilingSiteWithCellAndProfile(RegisterID cellGPR, RegisterID profileGPR, RegisterID scratchGPR);
+
         template<typename Op>
         ECMAMode ecmaMode(Op);
 
