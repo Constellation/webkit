@@ -6832,7 +6832,7 @@ IGNORE_CLANG_WARNINGS_END
             patchpoint = m_out.patchpoint(Int64);
             patchpoint->append(ConstrainedValue(base, ValueRep::SomeLateRegister));
             patchpoint->append(ConstrainedValue(subscriptValue, ValueRep::SomeLateRegister));
-            break
+            break;
         }
         }
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
@@ -6977,7 +6977,7 @@ IGNORE_CLANG_WARNINGS_END
         switch (m_node->child1().useKind()) {
         case CellUse: {
             LValue base = lowCell(m_node->child1());
-            auto ecmaMode = node->ecmaMode().value();
+            auto ecmaMode = m_node->ecmaMode().value();
             if (ecmaMode.isStrict())
                 compileDelBy<DelByKind::ByIdStrict>(base, m_node->cacheableIdentifier());
             else
@@ -6990,7 +6990,7 @@ IGNORE_CLANG_WARNINGS_END
             // https://bugs.webkit.org/show_bug.cgi?id=209397
             JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
             LValue base = lowJSValue(m_node->child1());
-            setBoolean(m_out.notZero64(vmCall(Int64, operationDeleteByIdGeneric, weakPointer(globalObject), base, m_out.constIntPtr(m_node->cacheableIdentifier().rawBits()), m_out.constInt32(m_node->ecmaMode().value()))));
+            setBoolean(m_out.notZero64(vmCall(Int64, m_node->ecmaMode().isStrict() ? operationDeleteByIdStrictGeneric : operationDeleteByIdSloppyGeneric, weakPointer(globalObject), base, m_out.constIntPtr(m_node->cacheableIdentifier().rawBits()))));
             break;
         }
 
@@ -7021,7 +7021,7 @@ IGNORE_CLANG_WARNINGS_END
                 DFG_CRASH(m_graph, m_node, "Bad use kind");
                 return;
             }
-            if (ecmaMode.isStrict())
+            if (m_node->ecmaMode().isStrict())
                 compileDelBy<DelByKind::ByValStrict>(base, subscript);
             else
                 compileDelBy<DelByKind::ByValSloppy>(base, subscript);
@@ -7034,7 +7034,7 @@ IGNORE_CLANG_WARNINGS_END
             JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
             LValue base = lowJSValue(m_node->child1());
             LValue subscript = lowJSValue(m_node->child2());
-            setBoolean(m_out.notZero64(vmCall(Int64, operationDeleteByValGeneric, weakPointer(globalObject), base, subscript, m_out.constInt32(m_node->ecmaMode().value()))));
+            setBoolean(m_out.notZero64(vmCall(Int64, m_node->ecmaMode().isStrict() ? operationDeleteByValStrictGeneric : operationDeleteByValSloppyGeneric, weakPointer(globalObject), base, subscript)));
             return;
         }
 

@@ -1462,7 +1462,7 @@ void SpeculativeJIT::compileDeleteById(Node* node)
     flushRegisters();
     GPRFlushedCallResult result(this);
     GPRReg resultGPR = result.gpr();
-    callOperation(operationDeleteByIdGeneric, resultGPR, LinkableConstant::globalObject(*this, node), baseRegs, node->cacheableIdentifier().rawBits(), TrustedImm32(node->ecmaMode().value()));
+    callOperation(node->ecmaMode().isStrict() ? operationDeleteByIdStrictGeneric : operationDeleteByIdSloppyGeneric, resultGPR, LinkableConstant::globalObject(*this, node), baseRegs, node->cacheableIdentifier().rawBits());
     exceptionCheck();
 
     unblessedBooleanResult(resultGPR, node);
@@ -1499,7 +1499,7 @@ void SpeculativeJIT::compileDeleteByVal(Node* node)
 
         auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
         JITDelByValGenerator gen(
-            codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, node->ecmaMode.isStrict() ? AccessType::DeleteByValStrict : AccessType::DeleteByValSloppy, usedRegisters,
+            codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, node->ecmaMode().isStrict() ? AccessType::DeleteByValStrict : AccessType::DeleteByValSloppy, usedRegisters,
             JSValueRegs::payloadOnly(baseGPR), keyRegs, resultRegs, stubInfoGPR);
 
         auto* operation = node->ecmaMode().isStrict() ? operationDeleteByValStrictOptimize : operationDeleteByValSloppyOptimize;
@@ -1546,7 +1546,7 @@ void SpeculativeJIT::compileDeleteByVal(Node* node)
     flushRegisters();
     GPRFlushedCallResult result(this);
     GPRReg resultGPR = result.gpr();
-    callOperation(operationDeleteByValGeneric, resultGPR, LinkableConstant::globalObject(*this, node), baseRegs, keyRegs, TrustedImm32(node->ecmaMode().value()));
+    callOperation(node->ecmaMode().isStrict() ? operationDeleteByValStrictGeneric : operationDeleteByValSloppyGeneric, resultGPR, LinkableConstant::globalObject(*this, node), baseRegs, keyRegs);
     exceptionCheck();
 
     unblessedBooleanResult(resultGPR, node);
