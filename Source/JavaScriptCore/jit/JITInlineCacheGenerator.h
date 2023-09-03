@@ -391,10 +391,6 @@ public:
             stubInfo.m_extraGPR = InvalidGPRReg;
             stubInfo.m_valueGPR = resultRegs.payloadGPR();
             stubInfo.m_stubInfoGPR = stubInfoGPR;
-            if constexpr (!std::is_same_v<std::decay_t<StubInfo>, DFG::UnlinkedStructureStubInfo>)
-                stubInfo.m_arrayProfileGPR = arrayProfileGPR;
-            else
-                UNUSED_PARAM(arrayProfileGPR);
 #if USE(JSVALUE32_64)
             stubInfo.m_baseTagGPR = baseRegs.tagGPR();
             stubInfo.m_valueTagGPR = resultRegs.tagGPR();

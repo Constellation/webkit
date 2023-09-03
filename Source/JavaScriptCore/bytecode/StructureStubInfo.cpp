@@ -676,6 +676,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         m_extraGPR = BaselineJITRegisters::GetByValWithThis::thisJSR.payloadGPR();
         m_extra2GPR = BaselineJITRegisters::GetByValWithThis::propertyJSR.payloadGPR();
         m_stubInfoGPR = BaselineJITRegisters::GetByValWithThis::stubInfoGPR;
+        m_arrayProfileGPR = BaselineJITRegisters::GetByValWithThis::profileGPR;
 #else
         // Registers are exhausted, we cannot have this IC on 32bit.
         RELEASE_ASSERT_NOT_REACHED();
