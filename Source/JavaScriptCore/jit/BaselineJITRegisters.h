@@ -320,9 +320,8 @@ namespace DelById {
         static constexpr GPRReg globalObjectGPR { GPRInfo::regT0 };
         static constexpr GPRReg stubInfoGPR { GPRInfo::regT1 };
         static constexpr GPRReg propertyGPR { GPRInfo::regT4 };
-        static constexpr GPRReg ecmaModeGPR { GPRInfo::regT5 };
-        static_assert(noOverlap(baseJSR, stubInfoGPR, propertyGPR, ecmaModeGPR), "Required for call to CTI thunk");
-        static_assert(noOverlap(baseJSR, globalObjectGPR, stubInfoGPR, propertyGPR, ecmaModeGPR), "Required for call to slow operation");
+        static_assert(noOverlap(baseJSR, stubInfoGPR, propertyGPR), "Required for call to CTI thunk");
+        static_assert(noOverlap(baseJSR, globalObjectGPR, stubInfoGPR, propertyGPR), "Required for call to slow operation");
     }
 }
 
@@ -334,9 +333,8 @@ namespace DelByVal {
     static constexpr JSValueRegs propertyJSR { preferredArgumentJSR<SlowOperation, 3>() };
     static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 1>() };
     static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
-    static constexpr GPRReg ecmaModeGPR { preferredArgumentGPR<SlowOperation, 4>() };
     static constexpr GPRReg scratch1GPR { globalObjectGPR };
-    static_assert(noOverlap(baseJSR, propertyJSR, globalObjectGPR, stubInfoGPR, ecmaModeGPR), "Required for call to slow operation");
+    static_assert(noOverlap(baseJSR, propertyJSR, globalObjectGPR, stubInfoGPR), "Required for call to slow operation");
 }
 
 namespace PrivateBrand {

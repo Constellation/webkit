@@ -6912,6 +6912,7 @@ IGNORE_CLANG_WARNINGS_END
                         auto* stubInfo = state->addStructureStubInfo();
                         return Box<JITDelByIdGenerator>::create(
                             jit.codeBlock(), stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
+                            kind == DelByKind::ByIdSloppy ? AccessType::DeleteByIdSloppy : AccessType::DeleteByIdStrict,
                             params.unavailableRegisters(), subscriptValue, base,
                             JSValueRegs(returnGPR), stubInfoGPR);
                     }
@@ -6920,6 +6921,7 @@ IGNORE_CLANG_WARNINGS_END
                         auto* stubInfo = state->addStructureStubInfo();
                         return Box<JITDelByValGenerator>::create(
                             jit.codeBlock(), stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
+                            kind == DelByKind::ByValSloppy ? AccessType::DeleteByValSloppy : AccessType::DeleteByValStrict,
                             params.unavailableRegisters(), base,
                             subscript, JSValueRegs(returnGPR), stubInfoGPR);
                     }

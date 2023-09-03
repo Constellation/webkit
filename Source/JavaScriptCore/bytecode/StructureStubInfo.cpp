@@ -467,10 +467,14 @@ ALWAYS_INLINE void StructureStubInfo::setCacheType(const ConcurrentJSLockerBase&
 static CodePtr<OperationPtrTag> slowOperationFromUnlinkedStructureStubInfo(const UnlinkedStructureStubInfo& unlinkedStubInfo)
 {
     switch (unlinkedStubInfo.accessType) {
-    case AccessType::DeleteByVal:
-        return operationDeleteByValOptimize;
-    case AccessType::DeleteById:
-        return operationDeleteByIdOptimize;
+    case AccessType::DeleteByValStrict:
+        return operationDeleteByValStrictOptimize;
+    case AccessType::DeleteByValSloppy:
+        return operationDeleteByValSloppyOptimize;
+    case AccessType::DeleteByIdStrict:
+        return operationDeleteByIdStrictOptimize;
+    case AccessType::DeleteByIdSloppy:
+        return operationDeleteByIdSloppyOptimize;
     case AccessType::GetByVal:
         return operationGetByValOptimize;
     case AccessType::InstanceOf:
@@ -555,7 +559,8 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
     m_slowOperation = slowOperationFromUnlinkedStructureStubInfo(unlinkedStubInfo);
 
     switch (accessType) {
-    case AccessType::DeleteByVal:
+    case AccessType::DeleteByValStrict:
+    case AccessType::DeleteByValSloppy:
         hasConstantIdentifier = false;
         m_baseGPR = BaselineJITRegisters::DelByVal::baseJSR.payloadGPR();
         m_extraGPR = BaselineJITRegisters::DelByVal::propertyJSR.payloadGPR();
@@ -567,7 +572,8 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         m_valueTagGPR = BaselineJITRegisters::DelByVal::resultJSR.tagGPR();
 #endif
         break;
-    case AccessType::DeleteById:
+    case AccessType::DeleteByIdStrict:
+    case AccessType::DeleteByIdSloppy:
         hasConstantIdentifier = true;
         m_baseGPR = BaselineJITRegisters::DelById::baseJSR.payloadGPR();
         m_extraGPR = InvalidGPRReg;

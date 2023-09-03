@@ -297,15 +297,15 @@ void JITPutByIdGenerator::generateFastPath(CCallHelpers& jit, GPRReg scratch1GPR
     m_done = jit.label();
 }
 
-JITDelByValGenerator::JITDelByValGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR)
-    : Base(codeBlock, stubInfo, jitType, codeOrigin, AccessType::DeleteByVal)
+JITDelByValGenerator::JITDelByValGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSetBuilder& usedRegisters, JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR)
+    : Base(codeBlock, stubInfo, jitType, codeOrigin, accessType)
 {
     ASSERT(base.payloadGPR() != result.payloadGPR());
 #if USE(JSVALUE32_64)
     ASSERT(base.tagGPR() != result.tagGPR());
 #endif
     std::visit([&](auto* stubInfo) {
-        setUpStubInfo(*stubInfo, AccessType::DeleteByVal, codeOrigin, callSiteIndex, usedRegisters, base, property, result, stubInfoGPR);
+        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, property, result, stubInfoGPR);
     }, stubInfo);
 }
 
@@ -335,15 +335,15 @@ void JITDelByValGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
         m_stubInfo->m_codePtr = m_stubInfo->slowPathStartLocation;
 }
 
-JITDelByIdGenerator::JITDelByIdGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier, JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR)
-    : Base(codeBlock, stubInfo, jitType, codeOrigin, AccessType::DeleteById)
+JITDelByIdGenerator::JITDelByIdGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSetBuilder& usedRegisters, CacheableIdentifier, JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR)
+    : Base(codeBlock, stubInfo, jitType, codeOrigin, accessType)
 {
     ASSERT(base.payloadGPR() != result.payloadGPR());
 #if USE(JSVALUE32_64)
     ASSERT(base.tagGPR() != result.tagGPR());
 #endif
     std::visit([&](auto* stubInfo) {
-        setUpStubInfo(*stubInfo, AccessType::DeleteById, codeOrigin, callSiteIndex, usedRegisters, base, result, stubInfoGPR);
+        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, result, stubInfoGPR);
     }, stubInfo);
 }
 

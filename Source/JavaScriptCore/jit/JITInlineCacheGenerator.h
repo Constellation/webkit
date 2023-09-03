@@ -316,7 +316,7 @@ public:
     JITDelByValGenerator() = default;
 
     JITDelByValGenerator(
-        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSetBuilder& usedRegisters,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSetBuilder& usedRegisters,
         JSValueRegs base, JSValueRegs property, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const
@@ -365,7 +365,7 @@ public:
     JITDelByIdGenerator() = default;
 
     JITDelByIdGenerator(
-        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, AccessType, const RegisterSetBuilder& usedRegisters, CacheableIdentifier,
         JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR);
 
     CCallHelpers::Jump slowPathJump() const

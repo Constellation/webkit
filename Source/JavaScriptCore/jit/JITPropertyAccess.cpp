@@ -582,6 +582,7 @@ void JIT::emit_op_del_by_id(const JSInstruction* currentInstruction)
     auto bytecode = currentInstruction->as<OpDelById>();
     VirtualRegister dst = bytecode.m_dst;
     VirtualRegister base = bytecode.m_base;
+    ECMAMode ecmaMode = bytecode.m_ecmaMode;
     const Identifier* ident = &(m_unlinkedCodeBlock->identifier(bytecode.m_property));
 
     using BaselineJITRegisters::DelById::baseJSR;
@@ -592,7 +593,7 @@ void JIT::emit_op_del_by_id(const JSInstruction* currentInstruction)
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     JITDelByIdGenerator gen(
-        nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
+        nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), ecmaMode.isStrict() ? AccessType::DeleteByIdStrict : AccessType::DeleteByIdSloppy, RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident),
         baseJSR, resultJSR, stubInfoGPR);
     gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
@@ -626,15 +627,11 @@ void JIT::emitSlow_op_del_by_id(const JSInstruction* currentInstruction, Vector<
     using BaselineJITRegisters::DelById::baseJSR;
     using BaselineJITRegisters::DelById::SlowPath::stubInfoGPR;
     using BaselineJITRegisters::DelById::SlowPath::propertyGPR;
-    using BaselineJITRegisters::DelById::SlowPath::ecmaModeGPR;
 
     emitGetVirtualRegister(base, baseJSR);
     loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
     move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
-    move(TrustedImm32(bytecode.m_ecmaMode.value()), ecmaModeGPR);
-
     emitNakedNearCall(vm().getCTIStub(slow_op_del_by_id_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
     emitPutVirtualRegister(dst, returnValueJSR);
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
@@ -688,13 +685,16 @@ void JIT::emit_op_del_by_val(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::DelByVal::stubInfoGPR;
 
     emitGetVirtualRegister(base, baseJSR);
-    emitJumpSlowCaseIfNotJSCell(baseJSR, base);
     emitGetVirtualRegister(property, propertyJSR);
+    auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
+    loadConstant(stubInfoIndex, stubInfoGPR);
+
+    emitJumpSlowCaseIfNotJSCell(baseJSR, base);
     emitJumpSlowCaseIfNotJSCell(propertyJSR, property);
 
-    auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     JITDelByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
+        bytecode.m_ecmaMode.isStrict() ? AccessType::DeleteByValStrict : AccessType::DeleteByValSloppy,
         baseJSR, propertyJSR, resultJSR, stubInfoGPR);
     gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
@@ -702,6 +702,7 @@ void JIT::emit_op_del_by_val(const JSInstruction* currentInstruction)
     addSlowCase();
     m_delByVals.append(gen);
 
+    setFastPathResumePoint();
     boxBoolean(resultJSR.payloadGPR(), resultJSR);
     emitPutVirtualRegister(dst, resultJSR);
 
@@ -715,28 +716,10 @@ void JIT::emit_op_del_by_val(const JSInstruction* currentInstruction)
 void JIT::emitSlow_op_del_by_val(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
-    auto bytecode = currentInstruction->as<OpDelByVal>();
-    VirtualRegister dst = bytecode.m_dst;
-    VirtualRegister base = bytecode.m_base;
-    VirtualRegister property = bytecode.m_property;
     JITDelByValGenerator& gen = m_delByVals[m_delByValIndex++];
-
-    using BaselineJITRegisters::DelByVal::baseJSR;
-    using BaselineJITRegisters::DelByVal::propertyJSR;
-    using BaselineJITRegisters::DelByVal::stubInfoGPR;
-    using BaselineJITRegisters::DelByVal::ecmaModeGPR;
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
-
-    emitGetVirtualRegister(base, baseJSR);
-    emitGetVirtualRegister(property, propertyJSR);
-    loadConstant(gen.m_unlinkedStubInfoConstantIndex, stubInfoGPR);
-    move(TrustedImm32(bytecode.m_ecmaMode.value()), ecmaModeGPR);
-
     emitNakedNearCall(vm().getCTIStub(slow_op_del_by_val_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
-    emitPutVirtualRegister(dst, returnValueJSR);
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
 
@@ -764,7 +747,6 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_del_by_val_callSlowOperationT
     jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, propertyJSR, ecmaModeGPR);
     static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
     jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
-    jit.boxBoolean(returnValueGPR, returnValueJSR);
 
     jit.emitCTIThunkEpilogue();
 

@@ -1417,9 +1417,10 @@ void SpeculativeJIT::compileDeleteById(Node* node)
 
         auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
         JITDelByIdGenerator gen(
-            codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, node->cacheableIdentifier(),
+            codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, node->ecmaMode().isStrict() ? AccessType::DeleteByIdStrict : AccessType::DeleteByIdSloppy, usedRegisters, node->cacheableIdentifier(),
             JSValueRegs::payloadOnly(baseGPR), resultRegs, stubInfoGPR);
 
+        auto* operation = node->ecmaMode().isStrict() ? operationDeleteByIdStrictOptimize : operationDeleteByIdSloppyOptimize;
 #if USE(JSVALUE64)
         std::unique_ptr<SlowPathGenerator> slowPath;
         if (m_graph.m_plan.isUnlinked()) {
@@ -1427,14 +1428,14 @@ void SpeculativeJIT::compileDeleteById(Node* node)
             gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
             ASSERT(!gen.stubInfo());
             slowPath = slowPathICCall(
-                slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationDeleteByIdOptimize,
-                resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, JSValueRegs(baseGPR), node->cacheableIdentifier().rawBits(), TrustedImm32(node->ecmaMode().value()));
+                slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operation,
+                resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, JSValueRegs(baseGPR), node->cacheableIdentifier().rawBits());
         } else {
             gen.generateFastPath(*this);
             slowCases.append(gen.slowPathJump());
             slowPath = slowPathCall(
-                slowCases, this, operationDeleteByIdOptimize,
-                resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), JSValueRegs(baseGPR), node->cacheableIdentifier().rawBits(), TrustedImm32(node->ecmaMode().value()));
+                slowCases, this, operation,
+                resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), JSValueRegs(baseGPR), node->cacheableIdentifier().rawBits());
         }
 #else
         gen.generateFastPath(*this);
@@ -1498,8 +1499,10 @@ void SpeculativeJIT::compileDeleteByVal(Node* node)
 
         auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
         JITDelByValGenerator gen(
-            codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters,
+            codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, node->ecmaMode.isStrict() ? AccessType::DeleteByValStrict : AccessType::DeleteByValSloppy, usedRegisters,
             JSValueRegs::payloadOnly(baseGPR), keyRegs, resultRegs, stubInfoGPR);
+
+        auto* operation = node->ecmaMode().isStrict() ? operationDeleteByValStrictOptimize : operationDeleteByValSloppyOptimize;
 
 #if USE(JSVALUE64)
         std::unique_ptr<SlowPathGenerator> slowPath;
@@ -1508,21 +1511,21 @@ void SpeculativeJIT::compileDeleteByVal(Node* node)
             gen.m_unlinkedStubInfoConstantIndex = stubInfoConstant.index();
             ASSERT(!gen.stubInfo());
             slowPath = slowPathICCall(
-                slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationDeleteByValOptimize,
-                resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, JSValueRegs(baseGPR), keyRegs, TrustedImm32(node->ecmaMode().value()));
+                slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operation,
+                resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, JSValueRegs(baseGPR), keyRegs);
         } else {
             gen.generateFastPath(*this);
             slowCases.append(gen.slowPathJump());
             slowPath = slowPathCall(
-                slowCases, this, operationDeleteByValOptimize,
-                resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), JSValueRegs(baseGPR), keyRegs, TrustedImm32(node->ecmaMode().value()));
+                slowCases, this, operation,
+                resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), JSValueRegs(baseGPR), keyRegs);
         }
 #else
         gen.generateFastPath(*this);
         slowCases.append(gen.slowPathJump());
         std::unique_ptr<SlowPathGenerator> slowPath = slowPathCall(
-            slowCases, this, operationDeleteByValOptimize,
-            resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), CellValue(baseGPR), keyRegs, TrustedImm32(node->ecmaMode().value()));
+            slowCases, this, operation,
+            resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), CellValue(baseGPR), keyRegs);
 #endif
 
         addDelByVal(gen, slowPath.get());
