@@ -558,7 +558,7 @@ JITGetByValWithThisGenerator::JITGetByValWithThisGenerator(CodeBlock* codeBlock,
     , m_result(result)
 {
     std::visit([&](auto* stubInfo) {
-        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, property, thisRegs, result, profileGPR, stubInfoGPR);
+        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, property, thisRegs, result, arrayProfileGPR, stubInfoGPR);
     }, stubInfo);
 }
 

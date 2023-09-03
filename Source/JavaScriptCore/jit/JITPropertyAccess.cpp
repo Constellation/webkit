@@ -1268,7 +1268,7 @@ void JIT::emitHasPrivate(VirtualRegister dst, VirtualRegister base, VirtualRegis
 
     JITInByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), type, RegisterSetBuilder::stubUnavailableRegisters(),
-        baseJSR, propertyJSR, resultJSR, stubInfoGPR);
+        baseJSR, propertyJSR, resultJSR, InvalidGPRReg, stubInfoGPR);
     gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
     gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
