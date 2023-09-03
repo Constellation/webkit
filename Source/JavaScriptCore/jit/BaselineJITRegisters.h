@@ -136,10 +136,9 @@ namespace GetById {
     // Slow path only registers
     namespace SlowPath {
         constexpr GPRReg globalObjectGPR { GPRInfo::regT2 };
-        constexpr GPRReg bytecodeOffsetGPR { globalObjectGPR };
         constexpr GPRReg stubInfoGPR { GPRInfo::regT3 };
         constexpr GPRReg propertyGPR { GPRInfo::regT4 };
-        static_assert(noOverlap(baseJSR, bytecodeOffsetGPR, stubInfoGPR, propertyGPR), "Required for call to CTI thunk");
+        static_assert(noOverlap(baseJSR, stubInfoGPR, propertyGPR), "Required for call to CTI thunk");
         static_assert(noOverlap(baseJSR, globalObjectGPR, stubInfoGPR, propertyGPR), "Required for call to slow operation");
     }
 }
@@ -160,7 +159,6 @@ namespace GetByIdWithThis {
     // Slow path only registers
     namespace SlowPath {
         constexpr GPRReg globalObjectGPR { GPRInfo::regT4 };
-        constexpr GPRReg bytecodeOffsetGPR { globalObjectGPR };
         constexpr GPRReg stubInfoGPR { GPRInfo::regT5 };
         constexpr GPRReg propertyGPR {
 #if USE(JSVALUE64)
@@ -169,7 +167,7 @@ namespace GetByIdWithThis {
             GPRInfo::regT6
 #endif
         };
-        static_assert(noOverlap(baseJSR, thisJSR, bytecodeOffsetGPR, stubInfoGPR, propertyGPR), "Required for call to CTI thunk");
+        static_assert(noOverlap(baseJSR, thisJSR, stubInfoGPR, propertyGPR), "Required for call to CTI thunk");
         static_assert(noOverlap(baseJSR, thisJSR, globalObjectGPR, stubInfoGPR, propertyGPR), "Required for call to slow operation");
     }
 }
@@ -190,7 +188,6 @@ namespace GetByVal {
     // Slow path only registers
     namespace SlowPath {
         constexpr GPRReg globalObjectGPR { GPRInfo::regT4 };
-        constexpr GPRReg bytecodeOffsetGPR { globalObjectGPR };
         constexpr GPRReg stubInfoGPR { GPRInfo::regT5 };
         constexpr GPRReg profileGPR {
 #if USE(JSVALUE64)
@@ -199,7 +196,7 @@ namespace GetByVal {
             GPRInfo::regT6
 #endif
         };
-        static_assert(noOverlap(baseJSR, propertyJSR, bytecodeOffsetGPR, stubInfoGPR, profileGPR), "Required for call to CTI thunk");
+        static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, profileGPR), "Required for call to CTI thunk");
         static_assert(noOverlap(baseJSR, propertyJSR, globalObjectGPR, stubInfoGPR, profileGPR), "Required for call to slow operation");
     }
 }
@@ -237,10 +234,9 @@ namespace GetByValWithThis {
     // Slow path only registers
     namespace SlowPath {
         constexpr GPRReg globalObjectGPR { GPRInfo::regT3 };
-        constexpr GPRReg bytecodeOffsetGPR { globalObjectGPR };
         constexpr GPRReg stubInfoGPR { GPRInfo::regT4 };
         constexpr GPRReg profileGPR { GPRInfo::regT5 };
-        static_assert(noOverlap(baseJSR, propertyJSR, thisJSR, bytecodeOffsetGPR, stubInfoGPR, profileGPR), "Required for call to CTI thunk");
+        static_assert(noOverlap(baseJSR, propertyJSR, thisJSR, stubInfoGPR, profileGPR), "Required for call to CTI thunk");
         static_assert(noOverlap(baseJSR, propertyJSR, thisJSR, globalObjectGPR, stubInfoGPR, profileGPR), "Required for call to slow operation");
     }
 }
@@ -270,11 +266,10 @@ namespace PutById {
             GPRInfo::regT6
 #endif
         };
-        constexpr GPRReg bytecodeOffsetGPR { globalObjectGPR };
         constexpr GPRReg stubInfoGPR { GPRInfo::regT4 };
         constexpr GPRReg propertyGPR { GPRInfo::regT5 };
 
-        static_assert(noOverlap(baseJSR, valueJSR, bytecodeOffsetGPR, stubInfoGPR, propertyGPR), "Required for call to CTI thunk");
+        static_assert(noOverlap(baseJSR, valueJSR, stubInfoGPR, propertyGPR), "Required for call to CTI thunk");
         static_assert(noOverlap(baseJSR, valueJSR, globalObjectGPR, stubInfoGPR, propertyGPR), "Required for call to slow operation");
     }
 }
@@ -312,8 +307,7 @@ namespace PutByVal {
             GPRInfo::regT8
 #endif
         };
-        constexpr GPRReg bytecodeOffsetGPR { globalObjectGPR };
-        static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, profileGPR, bytecodeOffsetGPR, stubInfoGPR), "Required for call to CTI thunk");
+        static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, profileGPR, stubInfoGPR), "Required for call to CTI thunk");
         static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, profileGPR, globalObjectGPR, stubInfoGPR), "Required for call to slow operation");
     }
 }
@@ -363,11 +357,10 @@ namespace DelById {
     // Slow path only registers
     namespace SlowPath {
         constexpr GPRReg globalObjectGPR { GPRInfo::regT0 };
-        constexpr GPRReg bytecodeOffsetGPR { globalObjectGPR };
         constexpr GPRReg stubInfoGPR { GPRInfo::regT1 };
         constexpr GPRReg propertyGPR { GPRInfo::regT4 };
         constexpr GPRReg ecmaModeGPR { GPRInfo::regT5 };
-        static_assert(noOverlap(baseJSR, bytecodeOffsetGPR, stubInfoGPR, propertyGPR, ecmaModeGPR), "Required for call to CTI thunk");
+        static_assert(noOverlap(baseJSR, stubInfoGPR, propertyGPR, ecmaModeGPR), "Required for call to CTI thunk");
         static_assert(noOverlap(baseJSR, globalObjectGPR, stubInfoGPR, propertyGPR, ecmaModeGPR), "Required for call to slow operation");
     }
 }
@@ -387,7 +380,6 @@ namespace DelByVal {
     // Slow path only registers
     namespace SlowPath {
         constexpr GPRReg globalObjectGPR { GPRInfo::regT4 };
-        constexpr GPRReg bytecodeOffsetGPR { globalObjectGPR };
         constexpr GPRReg stubInfoGPR { GPRInfo::regT5 };
         constexpr GPRReg ecmaModeGPR {
 #if USE(JSVALUE64)
@@ -396,7 +388,7 @@ namespace DelByVal {
             GPRInfo::regT6
 #endif
         };
-        static_assert(noOverlap(baseJSR, propertyJSR, bytecodeOffsetGPR, stubInfoGPR, ecmaModeGPR), "Required for call to CTI thunk");
+        static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, ecmaModeGPR), "Required for call to CTI thunk");
         static_assert(noOverlap(baseJSR, propertyJSR, globalObjectGPR, stubInfoGPR, ecmaModeGPR), "Required for call to slow operation");
     }
 }
@@ -411,9 +403,8 @@ namespace PrivateBrand {
     }
 
     namespace SlowPath {
-        constexpr GPRReg bytecodeOffsetGPR { GetByVal::SlowPath::bytecodeOffsetGPR }; // Required by shared slow path thunk
         constexpr GPRReg stubInfoGPR { GetByVal::SlowPath::stubInfoGPR }; // Required by shared slow path thunk
-        static_assert(noOverlap(baseJSR, brandJSR, bytecodeOffsetGPR, stubInfoGPR), "Required for call to CTI thunk");
+        static_assert(noOverlap(baseJSR, brandJSR, stubInfoGPR), "Required for call to CTI thunk");
     }
 }
 
