@@ -58,7 +58,7 @@ void JIT::emit_op_get_by_val(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::GetByVal::resultJSR;
     using BaselineJITRegisters::GetByVal::stubInfoGPR;
     using BaselineJITRegisters::GetByVal::profileGPR;
-    using BaselineJITRegisters::GetByVal::scratchGPR;
+    using BaselineJITRegisters::GetByVal::scratch1GPR;
 
     emitGetVirtualRegister(base, baseJSR);
     emitGetVirtualRegister(property, propertyJSR);
@@ -78,7 +78,7 @@ void JIT::emit_op_get_by_val(const JSInstruction* currentInstruction)
         stubInfo->canBeMegamorphic = true;
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
-    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), scratchGPR);
+    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), scratch1GPR);
 
     gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
 
@@ -334,7 +334,7 @@ void JIT::emit_op_put_by_val(const JSInstruction* currentInstruction)
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
 
-    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), /* scratchGPR: */ stubInfoGPR);
+    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), /* scratch1GPR: */ stubInfoGPR);
 
     ECMAMode ecmaMode = this->ecmaMode(bytecode);
     bool isDirect = std::is_same_v<Op, OpPutByValDirect>;
@@ -905,18 +905,18 @@ void JIT::emit_op_get_by_id(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::GetById::baseJSR;
     using BaselineJITRegisters::GetById::resultJSR;
     using BaselineJITRegisters::GetById::FastPath::stubInfoGPR;
-    using BaselineJITRegisters::GetById::FastPath::scratchGPR;
+    using BaselineJITRegisters::GetById::FastPath::scratch1GPR;
 
     emitGetVirtualRegister(baseVReg, baseJSR);
     emitJumpSlowCaseIfNotJSCell(baseJSR, baseVReg);
 
     if (*ident == vm().propertyNames->length && shouldEmitProfiling()) {
-        load8FromMetadata(bytecode, OpGetById::Metadata::offsetOfModeMetadata() + GetByIdModeMetadata::offsetOfMode(), scratchGPR);
-        Jump notArrayLengthMode = branch32(NotEqual, TrustedImm32(static_cast<uint8_t>(GetByIdMode::ArrayLength)), scratchGPR);
+        load8FromMetadata(bytecode, OpGetById::Metadata::offsetOfModeMetadata() + GetByIdModeMetadata::offsetOfMode(), scratch1GPR);
+        Jump notArrayLengthMode = branch32(NotEqual, TrustedImm32(static_cast<uint8_t>(GetByIdMode::ArrayLength)), scratch1GPR);
         emitArrayProfilingSiteWithCell(
             bytecode,
             OpGetById::Metadata::offsetOfModeMetadata() + GetByIdModeMetadataArrayLength::offsetOfArrayProfile(),
-            baseJSR.payloadGPR(), scratchGPR);
+            baseJSR.payloadGPR(), scratch1GPR);
         notArrayLengthMode.link(this);
     }
 
@@ -1099,7 +1099,7 @@ void JIT::emit_op_put_by_id(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::PutById::baseJSR;
     using BaselineJITRegisters::PutById::valueJSR;
     using BaselineJITRegisters::PutById::FastPath::stubInfoGPR;
-    using BaselineJITRegisters::PutById::FastPath::scratchGPR;
+    using BaselineJITRegisters::PutById::FastPath::scratch1GPR;
 
     emitGetVirtualRegister(baseVReg, baseJSR);
     emitGetVirtualRegister(valueVReg, valueJSR);
@@ -1109,7 +1109,7 @@ void JIT::emit_op_put_by_id(const JSInstruction* currentInstruction)
     JITPutByIdGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident),
-        baseJSR, valueJSR, stubInfoGPR, scratchGPR, ecmaMode, direct ? (ecmaMode.isStrict() ? AccessType::PutByIdDirectStrict : AccessType::PutByIdDirectSloppy) : (ecmaMode.isStrict() ? AccessType::PutByIdStrict : AccessType::PutByIdSloppy));
+        baseJSR, valueJSR, stubInfoGPR, scratch1GPR, ecmaMode, direct ? (ecmaMode.isStrict() ? AccessType::PutByIdDirectStrict : AccessType::PutByIdDirectSloppy) : (ecmaMode.isStrict() ? AccessType::PutByIdStrict : AccessType::PutByIdSloppy));
     gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
     gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
@@ -1244,12 +1244,12 @@ void JIT::emit_op_in_by_val(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::InByVal::propertyJSR;
     using BaselineJITRegisters::InByVal::resultJSR;
     using BaselineJITRegisters::InByVal::stubInfoGPR;
-    using BaselineJITRegisters::InByVal::scratchGPR;
+    using BaselineJITRegisters::InByVal::scratch1GPR;
 
     emitGetVirtualRegister(base, baseJSR);
     emitGetVirtualRegister(property, propertyJSR);
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
-    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), scratchGPR);
+    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), scratch1GPR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     JITInByValGenerator gen(
@@ -1427,9 +1427,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::generateOpResolveScopeThunk(VM& vm)
     using BaselineJITRegisters::ResolveScope::metadataGPR; // Incoming
     using BaselineJITRegisters::ResolveScope::scopeGPR; // Incoming
     using BaselineJITRegisters::ResolveScope::bytecodeOffsetGPR; // Incoming - pass through to slow path.
-    constexpr GPRReg scratchGPR = regT5; // local temporary
+    constexpr GPRReg scratch1GPR = regT5; // local temporary
     UNUSED_PARAM(bytecodeOffsetGPR);
-    static_assert(noOverlap(metadataGPR, scopeGPR, bytecodeOffsetGPR, scratchGPR));
+    static_assert(noOverlap(metadataGPR, scopeGPR, bytecodeOffsetGPR, scratch1GPR));
     static_assert(scopeGPR == returnValueGPR); // emitResolveClosure assumes this
 
     jit.tagReturnAddress();
@@ -1440,22 +1440,22 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::generateOpResolveScopeThunk(VM& vm)
         if (!needsVarInjectionChecks)
             return;
         if (globalObjectGPR == InvalidGPRReg) {
-            globalObjectGPR = scratchGPR;
+            globalObjectGPR = scratch1GPR;
             loadGlobalObject(jit, globalObjectGPR);
         }
-        jit.loadPtr(Address(globalObjectGPR, JSGlobalObject::offsetOfVarInjectionWatchpoint()), scratchGPR);
-        slowCase.append(jit.branch8(Equal, Address(scratchGPR, WatchpointSet::offsetOfState()), TrustedImm32(IsInvalidated)));
+        jit.loadPtr(Address(globalObjectGPR, JSGlobalObject::offsetOfVarInjectionWatchpoint()), scratch1GPR);
+        slowCase.append(jit.branch8(Equal, Address(scratch1GPR, WatchpointSet::offsetOfState()), TrustedImm32(IsInvalidated)));
     };
 
     auto emitResolveClosure = [&] (bool needsVarInjectionChecks) {
         doVarInjectionCheck(needsVarInjectionChecks);
-        jit.load32(Address(metadataGPR, Metadata::offsetOfLocalScopeDepth()), scratchGPR);
+        jit.load32(Address(metadataGPR, Metadata::offsetOfLocalScopeDepth()), scratch1GPR);
         RELEASE_ASSERT(scopeGPR == returnValueGPR);
 
         Label loop = jit.label();
-        Jump done = jit.branchTest32(Zero, scratchGPR);
+        Jump done = jit.branchTest32(Zero, scratch1GPR);
         jit.loadPtr(Address(returnValueGPR, JSScope::offsetOfNext()), returnValueGPR);
-        jit.sub32(TrustedImm32(1), scratchGPR);
+        jit.sub32(TrustedImm32(1), scratch1GPR);
         jit.jump().linkTo(loop, &jit);
         done.link(&jit);
     };
@@ -1467,8 +1467,8 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::generateOpResolveScopeThunk(VM& vm)
             // JSScope::constantScopeForCodeBlock() loads codeBlock->globalObject().
             loadGlobalObject(jit, returnValueGPR);
             doVarInjectionCheck(needsVarInjectionChecks(resolveType), returnValueGPR);
-            jit.load32(Address(metadataGPR, Metadata::offsetOfGlobalLexicalBindingEpoch()), scratchGPR);
-            slowCase.append(jit.branch32(NotEqual, Address(returnValueGPR, JSGlobalObject::offsetOfGlobalLexicalBindingEpoch()), scratchGPR));
+            jit.load32(Address(metadataGPR, Metadata::offsetOfGlobalLexicalBindingEpoch()), scratch1GPR);
+            slowCase.append(jit.branch32(NotEqual, Address(returnValueGPR, JSGlobalObject::offsetOfGlobalLexicalBindingEpoch()), scratch1GPR));
             break;
         }
 
@@ -1559,19 +1559,19 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_resolve_scopeGenerator(VM& vm
 
     using BaselineJITRegisters::ResolveScope::bytecodeOffsetGPR; // Incoming
 
-    constexpr GPRReg scratchGPR = regT2;
+    constexpr GPRReg scratch1GPR = regT2;
     constexpr GPRReg globalObjectGPR = argumentGPR0;
     constexpr GPRReg instructionGPR = argumentGPR1;
-    static_assert(noOverlap(bytecodeOffsetGPR, scratchGPR , globalObjectGPR, instructionGPR));
+    static_assert(noOverlap(bytecodeOffsetGPR, scratch1GPR , globalObjectGPR, instructionGPR));
 
     jit.emitCTIThunkPrologue(/* returnAddressAlreadyTagged: */ true); // Return address tagged in 'generateOpResolveScopeThunk'
 
     // Call slow operation
     jit.store32(bytecodeOffsetGPR, tagFor(CallFrameSlot::argumentCountIncludingThis));
     jit.prepareCallOperation(vm);
-    jit.loadPtr(addressFor(CallFrameSlot::codeBlock), scratchGPR);
-    jit.loadPtr(Address(scratchGPR, CodeBlock::offsetOfGlobalObject()), globalObjectGPR);
-    jit.loadPtr(Address(scratchGPR, CodeBlock::offsetOfInstructionsRawPointer()), instructionGPR);
+    jit.loadPtr(addressFor(CallFrameSlot::codeBlock), scratch1GPR);
+    jit.loadPtr(Address(scratch1GPR, CodeBlock::offsetOfGlobalObject()), globalObjectGPR);
+    jit.loadPtr(Address(scratch1GPR, CodeBlock::offsetOfInstructionsRawPointer()), instructionGPR);
     jit.addPtr(bytecodeOffsetGPR, instructionGPR);
     jit.setupArguments<decltype(operationResolveScopeForBaseline)>(globalObjectGPR, instructionGPR);
     Call operation = jit.call(OperationPtrTag);
@@ -1643,9 +1643,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::generateOpGetFromScopeThunk(VM& vm)
     using BaselineJITRegisters::GetFromScope::metadataGPR; // Incoming
     using BaselineJITRegisters::GetFromScope::scopeGPR; // Incoming
     using BaselineJITRegisters::GetFromScope::bytecodeOffsetGPR; // Incoming - pass through to slow path.
-    constexpr GPRReg scratchGPR = regT5;
+    constexpr GPRReg scratch1GPR = regT5;
     UNUSED_PARAM(bytecodeOffsetGPR);
-    static_assert(noOverlap(returnValueJSR, metadataGPR, scopeGPR, bytecodeOffsetGPR, scratchGPR));
+    static_assert(noOverlap(returnValueJSR, metadataGPR, scopeGPR, bytecodeOffsetGPR, scratch1GPR));
 
     CCallHelpers jit;
 
@@ -1656,9 +1656,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::generateOpGetFromScopeThunk(VM& vm)
     auto doVarInjectionCheck = [&] (bool needsVarInjectionChecks) {
         if (!needsVarInjectionChecks)
             return;
-        loadGlobalObject(jit, scratchGPR);
-        jit.loadPtr(Address(scratchGPR, JSGlobalObject::offsetOfVarInjectionWatchpoint()), scratchGPR);
-        slowCase.append(jit.branch8(Equal, Address(scratchGPR, WatchpointSet::offsetOfState()), TrustedImm32(IsInvalidated)));
+        loadGlobalObject(jit, scratch1GPR);
+        jit.loadPtr(Address(scratch1GPR, JSGlobalObject::offsetOfVarInjectionWatchpoint()), scratch1GPR);
+        slowCase.append(jit.branch8(Equal, Address(scratch1GPR, WatchpointSet::offsetOfState()), TrustedImm32(IsInvalidated)));
     };
 
     auto emitCode = [&] (ResolveType resolveType) {
@@ -1666,27 +1666,27 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::generateOpGetFromScopeThunk(VM& vm)
         case GlobalProperty:
         case GlobalPropertyWithVarInjectionChecks: {
             // Structure check covers var injection since we don't cache structures for anything but the GlobalObject. Additionally, resolve_scope handles checking for the var injection.
-            jit.loadPtr(Address(metadataGPR, OpGetFromScope::Metadata::offsetOfStructure()), scratchGPR);
-            slowCase.append(jit.branchTestPtr(Zero, scratchGPR));
-            jit.emitEncodeStructureID(scratchGPR, scratchGPR);
-            slowCase.append(jit.branch32(NotEqual, Address(scopeGPR, JSCell::structureIDOffset()), scratchGPR));
+            jit.loadPtr(Address(metadataGPR, OpGetFromScope::Metadata::offsetOfStructure()), scratch1GPR);
+            slowCase.append(jit.branchTestPtr(Zero, scratch1GPR));
+            jit.emitEncodeStructureID(scratch1GPR, scratch1GPR);
+            slowCase.append(jit.branch32(NotEqual, Address(scopeGPR, JSCell::structureIDOffset()), scratch1GPR));
 
             jit.jitAssert(scopedLambda<Jump(void)>([&] () -> Jump {
-                loadGlobalObject(jit, scratchGPR);
-                return jit.branchPtr(Equal, scopeGPR, scratchGPR);
+                loadGlobalObject(jit, scratch1GPR);
+                return jit.branchPtr(Equal, scopeGPR, scratch1GPR);
             }));
 
-            jit.loadPtr(Address(metadataGPR, Metadata::offsetOfOperand()), scratchGPR);
+            jit.loadPtr(Address(metadataGPR, Metadata::offsetOfOperand()), scratch1GPR);
 
             if (ASSERT_ENABLED) {
-                Jump isOutOfLine = jit.branch32(GreaterThanOrEqual, scratchGPR, TrustedImm32(firstOutOfLineOffset));
+                Jump isOutOfLine = jit.branch32(GreaterThanOrEqual, scratch1GPR, TrustedImm32(firstOutOfLineOffset));
                 jit.abortWithReason(JITOffsetIsNotOutOfLine);
                 isOutOfLine.link(&jit);
             }
 
             jit.loadPtr(Address(scopeGPR, JSObject::butterflyOffset()), scopeGPR);
-            jit.negPtr(scratchGPR);
-            jit.loadValue(BaseIndex(scopeGPR, scratchGPR, TimesEight, (firstOutOfLineOffset - 2) * sizeof(EncodedJSValue)), returnValueJSR);
+            jit.negPtr(scratch1GPR);
+            jit.loadValue(BaseIndex(scopeGPR, scratch1GPR, TimesEight, (firstOutOfLineOffset - 2) * sizeof(EncodedJSValue)), returnValueJSR);
             break;
         }
         case GlobalVar:
@@ -1694,16 +1694,16 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::generateOpGetFromScopeThunk(VM& vm)
         case GlobalLexicalVar:
         case GlobalLexicalVarWithVarInjectionChecks:
             doVarInjectionCheck(needsVarInjectionChecks(resolveType));
-            jit.loadPtr(Address(metadataGPR, Metadata::offsetOfOperand()), scratchGPR);
-            jit.loadValue(Address(scratchGPR), returnValueJSR);
+            jit.loadPtr(Address(metadataGPR, Metadata::offsetOfOperand()), scratch1GPR);
+            jit.loadValue(Address(scratch1GPR), returnValueJSR);
             if (resolveType == GlobalLexicalVar || resolveType == GlobalLexicalVarWithVarInjectionChecks) // TDZ check.
                 slowCase.append(jit.branchIfEmpty(returnValueJSR));
             break;
         case ClosureVar:
         case ClosureVarWithVarInjectionChecks:
             doVarInjectionCheck(needsVarInjectionChecks(resolveType));
-            jit.loadPtr(Address(metadataGPR,  Metadata::offsetOfOperand()), scratchGPR);
-            jit.loadValue(BaseIndex(scopeGPR, scratchGPR, TimesEight, JSLexicalEnvironment::offsetOfVariables()), returnValueJSR);
+            jit.loadPtr(Address(metadataGPR,  Metadata::offsetOfOperand()), scratch1GPR);
+            jit.loadValue(BaseIndex(scopeGPR, scratch1GPR, TimesEight, JSLexicalEnvironment::offsetOfVariables()), returnValueJSR);
             break;
         case Dynamic:
             slowCase.append(jit.jump());
@@ -1720,11 +1720,11 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::generateOpGetFromScopeThunk(VM& vm)
         emitCode(profiledResolveType);
     else {
         JumpList skipToEnd;
-        jit.load32(Address(metadataGPR, Metadata::offsetOfGetPutInfo()), scratchGPR);
-        jit.and32(TrustedImm32(GetPutInfo::typeBits), scratchGPR); // Load ResolveType into scratchGPR
+        jit.load32(Address(metadataGPR, Metadata::offsetOfGetPutInfo()), scratch1GPR);
+        jit.and32(TrustedImm32(GetPutInfo::typeBits), scratch1GPR); // Load ResolveType into scratch1GPR
 
         auto emitCaseWithoutCheck = [&] (ResolveType resolveType) {
-            Jump notCase = jit.branch32(NotEqual, scratchGPR, TrustedImm32(resolveType));
+            Jump notCase = jit.branch32(NotEqual, scratch1GPR, TrustedImm32(resolveType));
             emitCode(resolveType);
             skipToEnd.append(jit.jump());
             notCase.link(&jit);
@@ -1830,26 +1830,26 @@ void JIT::emit_op_put_to_scope(const JSInstruction* currentInstruction)
             // Additionally, resolve_scope handles checking for the var injection.
             constexpr JSValueRegs valueJSR = jsRegT10;
             constexpr GPRReg scopeGPR = regT2;
-            constexpr GPRReg scratchGPR1 = regT3;
-            constexpr GPRReg scratchGPR2 = regT4;
-            static_assert(noOverlap(valueJSR, scopeGPR, scratchGPR1, scratchGPR2));
-            loadPtrFromMetadata(bytecode, OpPutToScope::Metadata::offsetOfStructure(), scratchGPR1);
+            constexpr GPRReg scratch1GPR1 = regT3;
+            constexpr GPRReg scratch1GPR2 = regT4;
+            static_assert(noOverlap(valueJSR, scopeGPR, scratch1GPR1, scratch1GPR2));
+            loadPtrFromMetadata(bytecode, OpPutToScope::Metadata::offsetOfStructure(), scratch1GPR1);
             emitGetVirtualRegisterPayload(scope, scopeGPR);
-            addSlowCase(branchTestPtr(Zero, scratchGPR1));
-            emitEncodeStructureID(scratchGPR1, scratchGPR1);
-            addSlowCase(branch32(NotEqual, Address(scopeGPR, JSCell::structureIDOffset()), scratchGPR1));
+            addSlowCase(branchTestPtr(Zero, scratch1GPR1));
+            emitEncodeStructureID(scratch1GPR1, scratch1GPR1);
+            addSlowCase(branch32(NotEqual, Address(scopeGPR, JSCell::structureIDOffset()), scratch1GPR1));
 
             emitGetVirtualRegister(value, valueJSR);
 
             jitAssert(scopedLambda<Jump(void)>([&] () -> Jump {
-                loadGlobalObject(scratchGPR2);
-                return branchPtr(Equal, scopeGPR, scratchGPR2);
+                loadGlobalObject(scratch1GPR2);
+                return branchPtr(Equal, scopeGPR, scratch1GPR2);
             }));
 
-            loadPtr(Address(scopeGPR, JSObject::butterflyOffset()), scratchGPR2);
-            loadPtrFromMetadata(bytecode, OpPutToScope::Metadata::offsetOfOperand(), scratchGPR1);
-            negPtr(scratchGPR1);
-            storeValue(valueJSR, BaseIndex(scratchGPR2, scratchGPR1, TimesEight, (firstOutOfLineOffset - 2) * sizeof(EncodedJSValue)));
+            loadPtr(Address(scopeGPR, JSObject::butterflyOffset()), scratch1GPR2);
+            loadPtrFromMetadata(bytecode, OpPutToScope::Metadata::offsetOfOperand(), scratch1GPR1);
+            negPtr(scratch1GPR1);
+            storeValue(valueJSR, BaseIndex(scratch1GPR2, scratch1GPR1, TimesEight, (firstOutOfLineOffset - 2) * sizeof(EncodedJSValue)));
             emitWriteBarrier(scope, value, ShouldFilterValue);
             break;
         }
@@ -2084,7 +2084,7 @@ void JIT::emit_op_get_by_val_with_this(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::GetByValWithThis::thisJSR;
     using BaselineJITRegisters::GetByValWithThis::resultJSR;
     using BaselineJITRegisters::GetByValWithThis::FastPath::stubInfoGPR;
-    using BaselineJITRegisters::GetByValWithThis::FastPath::scratchGPR;
+    using BaselineJITRegisters::GetByValWithThis::FastPath::scratch1GPR;
 
     emitGetVirtualRegister(base, baseJSR);
     emitGetVirtualRegister(property, propertyJSR);
@@ -2099,7 +2099,7 @@ void JIT::emit_op_get_by_val_with_this(const JSInstruction* currentInstruction)
     gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
-    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), scratchGPR);
+    emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), scratch1GPR);
 
     gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
 
@@ -2225,14 +2225,14 @@ void JIT::emit_op_enumerator_next(const JSInstruction* currentInstruction)
     // This is the most common mode set we tend to see, so special case it if we profile it in the LLInt.
     if (bytecode.metadata(m_profiledCodeBlock).m_enumeratorMetadata == JSPropertyNameEnumerator::OwnStructureMode) {
         GPRReg enumeratorGPR = regT3;
-        GPRReg scratchGPR = regT4;
+        GPRReg scratch1GPR = regT4;
         emitGetVirtualRegister(enumerator, enumeratorGPR);
         operationCases.append(branchTest32(NonZero, Address(enumeratorGPR, JSPropertyNameEnumerator::flagsOffset()), TrustedImm32((~JSPropertyNameEnumerator::OwnStructureMode) & JSPropertyNameEnumerator::enumerationModeMask)));
         emitGetVirtualRegister(base, baseGPR);
 
-        load8FromMetadata(bytecode, OpEnumeratorNext::Metadata::offsetOfEnumeratorMetadata(), scratchGPR);
-        or32(TrustedImm32(JSPropertyNameEnumerator::OwnStructureMode), scratchGPR);
-        store8ToMetadata(scratchGPR, bytecode, OpEnumeratorNext::Metadata::offsetOfEnumeratorMetadata());
+        load8FromMetadata(bytecode, OpEnumeratorNext::Metadata::offsetOfEnumeratorMetadata(), scratch1GPR);
+        or32(TrustedImm32(JSPropertyNameEnumerator::OwnStructureMode), scratch1GPR);
+        store8ToMetadata(scratch1GPR, bytecode, OpEnumeratorNext::Metadata::offsetOfEnumeratorMetadata());
 
         load32(Address(enumeratorGPR, JSPropertyNameEnumerator::cachedStructureIDOffset()), indexGPR);
         operationCases.append(branch32(NotEqual, indexGPR, Address(baseGPR, JSCell::structureIDOffset())));
@@ -2284,7 +2284,7 @@ void JIT::emit_op_enumerator_get_by_val(const JSInstruction* currentInstruction)
     constexpr GPRReg baseGPR = BaselineJITRegisters::EnumeratorGetByVal::baseJSR.payloadGPR();
     constexpr GPRReg propertyGPR = BaselineJITRegisters::EnumeratorGetByVal::propertyJSR.payloadGPR();
     using BaselineJITRegisters::EnumeratorGetByVal::stubInfoGPR;
-    using BaselineJITRegisters::EnumeratorGetByVal::scratchGPR;
+    using BaselineJITRegisters::EnumeratorGetByVal::scratch1GPR;
     using BaselineJITRegisters::EnumeratorGetByVal::scratch2GPR;
     using BaselineJITRegisters::EnumeratorGetByVal::scratch3GPR;
 
@@ -2301,14 +2301,14 @@ void JIT::emit_op_enumerator_get_by_val(const JSInstruction* currentInstruction)
     Jump isNotOwnStructureMode = branchTest32(NonZero, scratch3GPR, TrustedImm32(JSPropertyNameEnumerator::IndexedMode | JSPropertyNameEnumerator::GenericMode));
 
     // Check the structure
-    emitGetVirtualRegister(enumerator, scratchGPR);
+    emitGetVirtualRegister(enumerator, scratch1GPR);
     load32(Address(baseGPR, JSCell::structureIDOffset()), scratch2GPR);
-    Jump structureMismatch = branch32(NotEqual, scratch2GPR, Address(scratchGPR, JSPropertyNameEnumerator::cachedStructureIDOffset()));
+    Jump structureMismatch = branch32(NotEqual, scratch2GPR, Address(scratch1GPR, JSPropertyNameEnumerator::cachedStructureIDOffset()));
 
     // Compute the offset.
     emitGetVirtualRegister(index, scratch2GPR);
     // If index is less than the enumerator's cached inline storage, then it's an inline access
-    Jump outOfLineAccess = branch32(AboveOrEqual, scratch2GPR, Address(scratchGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
+    Jump outOfLineAccess = branch32(AboveOrEqual, scratch2GPR, Address(scratch1GPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
     signExtend32ToPtr(scratch2GPR, scratch2GPR);
     load64(BaseIndex(baseGPR, scratch2GPR, TimesEight, JSObject::offsetOfInlineStorage()), resultGPR);
     doneCases.append(jump());
@@ -2316,7 +2316,7 @@ void JIT::emit_op_enumerator_get_by_val(const JSInstruction* currentInstruction)
     // Otherwise it's out of line
     outOfLineAccess.link(this);
     loadPtr(Address(baseGPR, JSObject::butterflyOffset()), baseGPR);
-    sub32(Address(scratchGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), scratch2GPR);
+    sub32(Address(scratch1GPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), scratch2GPR);
     neg32(scratch2GPR);
     signExtend32ToPtr(scratch2GPR, scratch2GPR);
     constexpr intptr_t offsetOfFirstProperty = offsetInButterfly(firstOutOfLineOffset) * static_cast<intptr_t>(sizeof(EncodedJSValue));
@@ -2332,7 +2332,7 @@ void JIT::emit_op_enumerator_get_by_val(const JSInstruction* currentInstruction)
     emitGetVirtualRegister(index, propertyGPR);
 
     isNotIndexed.link(this);
-    emitArrayProfilingSiteWithCell(bytecode, baseGPR, scratchGPR);
+    emitArrayProfilingSiteWithCell(bytecode, baseGPR, scratch1GPR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     JITGetByValGenerator gen(
@@ -2422,7 +2422,7 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     constexpr GPRReg propertyGPR = BaselineJITRegisters::EnumeratorPutByVal::propertyJSR.payloadGPR();
     using BaselineJITRegisters::EnumeratorPutByVal::profileGPR;
     using BaselineJITRegisters::EnumeratorPutByVal::stubInfoGPR;
-    using BaselineJITRegisters::EnumeratorPutByVal::scratchGPR;
+    using BaselineJITRegisters::EnumeratorPutByVal::scratch1GPR;
 
     // These four registers need to be set up before jumping to SlowPath code.
     emitGetVirtualRegister(base, baseGPR);
@@ -2432,9 +2432,9 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
 
     emitGetVirtualRegister(mode, stubInfoGPR);
 
-    load8FromMetadata(bytecode, OpEnumeratorPutByVal::Metadata::offsetOfEnumeratorMetadata(), scratchGPR);
-    or32(stubInfoGPR, scratchGPR);
-    store8ToMetadata(scratchGPR, bytecode, OpEnumeratorPutByVal::Metadata::offsetOfEnumeratorMetadata());
+    load8FromMetadata(bytecode, OpEnumeratorPutByVal::Metadata::offsetOfEnumeratorMetadata(), scratch1GPR);
+    or32(stubInfoGPR, scratch1GPR);
+    store8ToMetadata(scratch1GPR, bytecode, OpEnumeratorPutByVal::Metadata::offsetOfEnumeratorMetadata());
 
     addSlowCase(branchIfNotCell(baseGPR));
     // This is always an int32 encoded value.
@@ -2442,16 +2442,16 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
 
     // Check the structure
     JumpList structureMismatch;
-    emitGetVirtualRegister(enumerator, scratchGPR);
+    emitGetVirtualRegister(enumerator, scratch1GPR);
     load32(Address(baseGPR, JSCell::structureIDOffset()), profileGPR);
-    structureMismatch.append(branch32(NotEqual, profileGPR, Address(scratchGPR, JSPropertyNameEnumerator::cachedStructureIDOffset())));
+    structureMismatch.append(branch32(NotEqual, profileGPR, Address(scratch1GPR, JSPropertyNameEnumerator::cachedStructureIDOffset())));
     emitNonNullDecodeZeroExtendedStructureID(profileGPR, profileGPR);
     structureMismatch.append(branchTest32(NonZero, Address(profileGPR, Structure::bitFieldOffset()), TrustedImm32(Structure::s_isWatchingReplacementBits)));
 
     // Compute the offset.
     emitGetVirtualRegister(index, profileGPR);
     // If index is less than the enumerator's cached inline storage, then it's an inline access
-    Jump outOfLineAccess = branch32(AboveOrEqual, profileGPR, Address(scratchGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
+    Jump outOfLineAccess = branch32(AboveOrEqual, profileGPR, Address(scratch1GPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()));
     signExtend32ToPtr(profileGPR, profileGPR);
     store64(valueGPR, BaseIndex(baseGPR, profileGPR, TimesEight, JSObject::offsetOfInlineStorage()));
     doneCases.append(jump());
@@ -2459,7 +2459,7 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     // Otherwise it's out of line
     outOfLineAccess.link(this);
     loadPtr(Address(baseGPR, JSObject::butterflyOffset()), stubInfoGPR);
-    sub32(Address(scratchGPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), profileGPR);
+    sub32(Address(scratch1GPR, JSPropertyNameEnumerator::cachedInlineCapacityOffset()), profileGPR);
     neg32(profileGPR);
     signExtend32ToPtr(profileGPR, profileGPR);
     constexpr intptr_t offsetOfFirstProperty = offsetInButterfly(firstOutOfLineOffset) * static_cast<intptr_t>(sizeof(EncodedJSValue));
@@ -2477,7 +2477,7 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     isNotIndexed.link(this);
     // Reload profileGPR since it is used for different purpose.
     materializePointerIntoMetadata(bytecode, OpEnumeratorPutByVal::Metadata::offsetOfArrayProfile(), profileGPR);
-    emitArrayProfilingSiteWithCell(bytecode, baseGPR, scratchGPR);
+    emitArrayProfilingSiteWithCell(bytecode, baseGPR, scratch1GPR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     ECMAMode ecmaMode = bytecode.m_ecmaMode;
@@ -2619,14 +2619,14 @@ void JIT::emitWriteBarrier(GPRReg owner)
     ownerIsRememberedOrInEden.link(this);
 }
 
-void JIT::emitVarInjectionCheck(bool needsVarInjectionChecks, GPRReg scratchGPR)
+void JIT::emitVarInjectionCheck(bool needsVarInjectionChecks, GPRReg scratch1GPR)
 {
     if (!needsVarInjectionChecks)
         return;
 
-    loadGlobalObject(scratchGPR);
-    loadPtr(Address(scratchGPR, JSGlobalObject::offsetOfVarInjectionWatchpoint()), scratchGPR);
-    addSlowCase(branch8(Equal, Address(scratchGPR, WatchpointSet::offsetOfState()), TrustedImm32(IsInvalidated)));
+    loadGlobalObject(scratch1GPR);
+    loadPtr(Address(scratch1GPR, JSGlobalObject::offsetOfVarInjectionWatchpoint()), scratch1GPR);
+    addSlowCase(branch8(Equal, Address(scratch1GPR, WatchpointSet::offsetOfState()), TrustedImm32(IsInvalidated)));
 }
 
 } // namespace JSC

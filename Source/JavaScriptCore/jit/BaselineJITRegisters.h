@@ -128,9 +128,9 @@ namespace GetById {
     // Fast path only registers
     namespace FastPath {
         static constexpr GPRReg stubInfoGPR { GPRInfo::regT2 };
-        static constexpr GPRReg scratchGPR { GPRInfo::regT3 };
+        static constexpr GPRReg scratch1GPR { GPRInfo::regT3 };
         static constexpr JSValueRegs dontClobberJSR { JSRInfo::jsRegT54 };
-        static_assert(noOverlap(baseJSR, stubInfoGPR, scratchGPR, dontClobberJSR), "Required for DataIC");
+        static_assert(noOverlap(baseJSR, stubInfoGPR, scratch1GPR, dontClobberJSR), "Required for DataIC");
     }
 
     // Slow path only registers
@@ -152,8 +152,8 @@ namespace GetByIdWithThis {
     // Fast path only registers
     namespace FastPath {
         static constexpr GPRReg stubInfoGPR { GPRInfo::regT4 };
-        static constexpr GPRReg scratchGPR { GPRInfo::regT5 };
-        static_assert(noOverlap(baseJSR, thisJSR, stubInfoGPR, scratchGPR), "Required for DataIC");
+        static constexpr GPRReg scratch1GPR { GPRInfo::regT5 };
+        static_assert(noOverlap(baseJSR, thisJSR, stubInfoGPR, scratch1GPR), "Required for DataIC");
     }
 
     // Slow path only registers
@@ -182,7 +182,7 @@ namespace GetByVal {
     static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 1>() };
     static constexpr GPRReg profileGPR { preferredArgumentGPR<SlowOperation, 2>() };
     static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
-    static constexpr GPRReg scratchGPR { globalObjectGPR };
+    static constexpr GPRReg scratch1GPR { globalObjectGPR };
     static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, profileGPR, globalObjectGPR), "Required for DataIC");
 }
 
@@ -196,10 +196,10 @@ namespace EnumeratorGetByVal {
     using GetByVal::stubInfoGPR;
     using GetByVal::profileGPR;
     using GetByVal::globalObjectGPR;
-    using GetByVal::scratchGPR;
+    using GetByVal::scratch1GPR;
     static constexpr GPRReg scratch2GPR { GPRInfo::regT5 };
     static constexpr GPRReg scratch3GPR { GPRInfo::regT7 };
-    static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, profileGPR, scratchGPR, scratch2GPR, scratch3GPR));
+    static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, profileGPR, scratch1GPR, scratch2GPR, scratch3GPR));
 }
 #endif
 
@@ -214,8 +214,8 @@ namespace GetByValWithThis {
     // Fast path only registers
     namespace FastPath {
         static constexpr GPRReg stubInfoGPR { GPRInfo::regT3 };
-        static constexpr GPRReg scratchGPR { GPRInfo::regT5 };
-        static_assert(noOverlap(baseJSR, propertyJSR, thisJSR, stubInfoGPR, scratchGPR), "Required for DataIC");
+        static constexpr GPRReg scratch1GPR { GPRInfo::regT5 };
+        static_assert(noOverlap(baseJSR, propertyJSR, thisJSR, stubInfoGPR, scratch1GPR), "Required for DataIC");
     }
 
     // Slow path only registers
@@ -237,11 +237,11 @@ namespace PutById {
     // Fast path only registers
     namespace FastPath {
         static constexpr GPRReg stubInfoGPR { GPRInfo::regT4 };
-        static constexpr GPRReg scratchGPR { GPRInfo::regT5 };
+        static constexpr GPRReg scratch1GPR { GPRInfo::regT5 };
         // Fine to use regT1, which also yields better code size on ARM_THUMB2
         static constexpr GPRReg scratch2GPR { GPRInfo::regT1 };
-        static_assert(noOverlap(baseJSR, valueJSR, stubInfoGPR, scratchGPR), "Required for DataIC");
-        static_assert(noOverlap(baseJSR.payloadGPR(), valueJSR, stubInfoGPR, scratchGPR, scratch2GPR), "Required for DataIC");
+        static_assert(noOverlap(baseJSR, valueJSR, stubInfoGPR, scratch1GPR), "Required for DataIC");
+        static_assert(noOverlap(baseJSR.payloadGPR(), valueJSR, stubInfoGPR, scratch1GPR, scratch2GPR), "Required for DataIC");
     }
 
     // Slow path only registers
@@ -308,8 +308,8 @@ namespace EnumeratorPutByVal {
     static constexpr JSValueRegs valueJSR { PutByVal::valueJSR };
     static constexpr GPRReg profileGPR { PutByVal::profileGPR };
     static constexpr GPRReg stubInfoGPR { PutByVal::stubInfoGPR };
-    static constexpr GPRReg scratch1 { GPRInfo::regT5 };
-    static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, stubInfoGPR, scratch1));
+    static constexpr GPRReg scratch1GPR { GPRInfo::regT5 };
+    static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, stubInfoGPR, scratch1GPR));
 }
 #endif
 
@@ -317,7 +317,7 @@ namespace InById {
     static constexpr JSValueRegs baseJSR { GetById::baseJSR };
     static constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };
     static constexpr GPRReg stubInfoGPR { GetById::FastPath::stubInfoGPR };
-    static constexpr GPRReg scratchGPR { GetById::FastPath::scratchGPR };
+    static constexpr GPRReg scratch1GPR { GetById::FastPath::scratch1GPR };
 }
 
 namespace InByVal {
@@ -327,7 +327,7 @@ namespace InByVal {
     using GetByVal::stubInfoGPR;
     using GetByVal::profileGPR;
     using GetByVal::globalObjectGPR;
-    using GetByVal::scratchGPR;
+    using GetByVal::scratch1GPR;
 }
 
 namespace DelById {
@@ -385,7 +385,7 @@ namespace PrivateBrand {
     using GetByVal::propertyJSR;
     using GetByVal::stubInfoGPR;
     using GetByVal::globalObjectGPR;
-    using GetByVal::scratchGPR;
+    using GetByVal::scratch1GPR;
     static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR), "Required for DataIC");
 }
 
