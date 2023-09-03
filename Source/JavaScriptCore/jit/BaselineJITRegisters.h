@@ -283,7 +283,8 @@ namespace EnumeratorPutByVal {
     using PutByVal::profileGPR;
     using PutByVal::stubInfoGPR;
     using PutByVal::scratch1GPR;
-    static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, stubInfoGPR, scratch1GPR));
+    static constexpr GPRReg scratch2GPR { GPRInfo::regT7 };
+    static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, stubInfoGPR, scratch1GPR, scratch2GPR));
 }
 #endif
 
