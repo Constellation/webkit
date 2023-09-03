@@ -3316,12 +3316,14 @@ static bool deleteById(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot&
     return couldDelete;
 }
 
-static ALWAYS_INLINE size_t deleteByIdOptimize(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot& slot, JSValue baseValue, const Identifier& ident, ECMAMode ecmaMode)
+static ALWAYS_INLINE size_t deleteByIdOptimize(JSGlobalObject* globalObject, VM& vm, CallFrame* callFrame, JSValue baseValue, CacheableIdentifier identifier, ECMAMode ecmaMode)
 {
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    Identifier ident = Identifier::fromUid(vm, identifier.uid());
     Structure* oldStructure = baseValue.structureOrNull();
 
+    DeletePropertySlot slot;
     bool result = deleteById(globalObject, vm, slot, baseValue, ident, ecmaMode);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
 
@@ -3344,10 +3346,8 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyOptimize, size_t, (JSGlobalObj
 
     JSValue baseValue = JSValue::decode(encodedBase);
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
-    Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
-    DeletePropertySlot slot;
-    return deleteByIdOptimize(globalObject, vm, slot, baseValue, ident, ECMAMode::sloppy());
+    return deleteByIdOptimize(globalObject, vm, callFrame, baseValue, identifier, ECMAMode::sloppy());
 }
 
 JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictOptimize, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
@@ -3358,10 +3358,8 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictOptimize, size_t, (JSGlobalObj
 
     JSValue baseValue = JSValue::decode(encodedBase);
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
-    Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
-    DeletePropertySlot slot;
-    return deleteByIdOptimize(globalObject, vm, slot, baseValue, ident, ECMAMode::strict());
+    return deleteByIdOptimize(globalObject, vm, callFrame, baseValue, identifier, ECMAMode::strict());
 }
 
 JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyGaveUp, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
