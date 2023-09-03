@@ -77,7 +77,7 @@ enum class AccessType : int8_t {
     HasPrivateName,
     HasPrivateBrand,
     InstanceOf,
-    DeleteByID,
+    DeleteById,
     DeleteByVal,
     GetPrivateName,
     GetPrivateNameById,

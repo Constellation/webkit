@@ -1287,10 +1287,20 @@ void repatchDeleteBy(JSGlobalObject* globalObject, CodeBlock* codeBlock, DeleteP
 
     if (tryCacheDeleteBy(globalObject, codeBlock, slot, baseValue, oldStructure, propertyName, stubInfo, kind, ecmaMode) == GiveUpOnCache) {
         LOG_IC((ICEvent::DelByReplaceWithGeneric, baseValue.classInfoOrNull(), Identifier::fromUid(globalObject->vm(), propertyName.uid())));
-        if (kind == DelByKind::ById)
-            repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByIdGaveUp);
-        else
-            repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByValGaveUp);
+        switch (kind) {
+        case DelByKind::ByIdStrict:
+            repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByIdStrictGaveUp);
+            break;
+        case DelByKind::ByIdSloppy:
+            repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByIdSloppyGaveUp);
+            break;
+        case DelByKind::ByValStrict:
+            repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByValStrictGaveUp);
+            break;
+        case DelByKind::ByValSloppy:
+            repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByValSloppyGaveUp);
+            break;
+        }
     }
 }
 
@@ -2155,10 +2165,20 @@ void resetPutBy(CodeBlock* codeBlock, StructureStubInfo& stubInfo, PutByKind kin
 
 void resetDelBy(CodeBlock* codeBlock, StructureStubInfo& stubInfo, DelByKind kind)
 {
-    if (kind == DelByKind::ById)
-        repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByIdOptimize);
-    else
-        repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByValOptimize);
+    switch (kind) {
+    case DelByKind::ByIdStrict:
+        repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByIdStrictOptimize);
+        break;
+    case DelByKind::ByIdSloppy:
+        repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByIdSloppyOptimize);
+        break;
+    case DelByKind::ByValStrict:
+        repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByValStrictOptimize);
+        break;
+    case DelByKind::ByValSloppy:
+        repatchSlowPathCall(codeBlock, stubInfo, operationDeleteByValSloppyOptimize);
+        break;
+    }
     InlineAccess::resetStubAsJumpInAccessNotUsingInlineAccess(codeBlock, stubInfo);
 }
 

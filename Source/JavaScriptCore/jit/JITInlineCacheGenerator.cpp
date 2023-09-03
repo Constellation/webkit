@@ -336,14 +336,14 @@ void JITDelByValGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
 }
 
 JITDelByIdGenerator::JITDelByIdGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier, JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR)
-    : Base(codeBlock, stubInfo, jitType, codeOrigin, AccessType::DeleteByID)
+    : Base(codeBlock, stubInfo, jitType, codeOrigin, AccessType::DeleteById)
 {
     ASSERT(base.payloadGPR() != result.payloadGPR());
 #if USE(JSVALUE32_64)
     ASSERT(base.tagGPR() != result.tagGPR());
 #endif
     std::visit([&](auto* stubInfo) {
-        setUpStubInfo(*stubInfo, AccessType::DeleteByID, codeOrigin, callSiteIndex, usedRegisters, base, result, stubInfoGPR);
+        setUpStubInfo(*stubInfo, AccessType::DeleteById, codeOrigin, callSiteIndex, usedRegisters, base, result, stubInfoGPR);
     }, stubInfo);
 }
 

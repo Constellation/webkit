@@ -319,11 +319,17 @@ void StructureStubInfo::reset(const ConcurrentJSLockerBase& locker, CodeBlock* c
     case AccessType::InstanceOf:
         resetInstanceOf(codeBlock, *this);
         break;
-    case AccessType::DeleteByID:
-        resetDelBy(codeBlock, *this, DelByKind::ById);
+    case AccessType::DeleteByIdStrict:
+        resetDelBy(codeBlock, *this, DelByKind::ByIdStrict);
         break;
-    case AccessType::DeleteByVal:
-        resetDelBy(codeBlock, *this, DelByKind::ByVal);
+    case AccessType::DeleteByIdSloppy:
+        resetDelBy(codeBlock, *this, DelByKind::ByIdSloppy);
+        break;
+    case AccessType::DeleteByValStrict:
+        resetDelBy(codeBlock, *this, DelByKind::ByValStrict);
+        break;
+    case AccessType::DeleteByValSloppy:
+        resetDelBy(codeBlock, *this, DelByKind::ByValSloppy);
         break;
     case AccessType::CheckPrivateBrand:
         resetCheckPrivateBrand(codeBlock, *this);
@@ -463,7 +469,7 @@ static CodePtr<OperationPtrTag> slowOperationFromUnlinkedStructureStubInfo(const
     switch (unlinkedStubInfo.accessType) {
     case AccessType::DeleteByVal:
         return operationDeleteByValOptimize;
-    case AccessType::DeleteByID:
+    case AccessType::DeleteById:
         return operationDeleteByIdOptimize;
     case AccessType::GetByVal:
         return operationGetByValOptimize;
@@ -561,7 +567,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         m_valueTagGPR = BaselineJITRegisters::DelByVal::resultJSR.tagGPR();
 #endif
         break;
-    case AccessType::DeleteByID:
+    case AccessType::DeleteById:
         hasConstantIdentifier = true;
         m_baseGPR = BaselineJITRegisters::DelById::baseJSR.payloadGPR();
         m_extraGPR = InvalidGPRReg;

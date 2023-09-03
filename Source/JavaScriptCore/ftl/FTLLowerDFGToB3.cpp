@@ -6820,13 +6820,20 @@ IGNORE_CLANG_WARNINGS_END
     void compileDelBy(LValue base, SubscriptKind subscriptValue)
     {
         PatchpointValue* patchpoint;
-        if constexpr (kind == DelByKind::ById) {
+        switch (kind) {
+        case DelByKind::ByIdStrict:
+        case DelByKind::ByIdSloppy: {
             patchpoint = m_out.patchpoint(Int64);
             patchpoint->append(ConstrainedValue(base, ValueRep::SomeLateRegister));
-        } else {
+            break;
+        }
+        case DelByKind::ByValStrict:
+        case DelByKind::ByValSloppy: {
             patchpoint = m_out.patchpoint(Int64);
             patchpoint->append(ConstrainedValue(base, ValueRep::SomeLateRegister));
             patchpoint->append(ConstrainedValue(subscriptValue, ValueRep::SomeLateRegister));
+            break
+        }
         }
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
         patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
@@ -6841,9 +6848,15 @@ IGNORE_CLANG_WARNINGS_END
         CodeOrigin nodeSemanticOrigin = node->origin.semantic;
         UseKind child1UseKind = node->child1().useKind();
         UseKind child2UseKind = UntypedUse;
-        if constexpr (kind != DelByKind::ById)
+        switch (kind) {
+        case DelByKind::ByIdStrict:
+        case DelByKind::ByIdSloppy:
+            break;
+        case DelByKind::ByValStrict:
+        case DelByKind::ByValSloppy:
             child2UseKind = node->child2().useKind();
-        auto ecmaMode = node->ecmaMode().value();
+            break;
+        }
         patchpoint->setGenerator(
             [=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
                 JIT_COMMENT(jit, "DelBy");
@@ -6864,37 +6877,54 @@ IGNORE_CLANG_WARNINGS_END
                 if (child1UseKind)
                     slowCases.append(jit.branchIfNotCell(base));
 
-                constexpr auto optimizationFunction = [&] () {
-                    if constexpr (kind == DelByKind::ById)
-                        return operationDeleteByIdOptimize;
-                    else
-                        return operationDeleteByValOptimize;
+                constexpr auto* optimizationFunction = [&] () {
+                    switch (kind) {
+                    case DelByKind::ByIdStrict:
+                        return operationDeleteByIdStrictOptimize;
+                    case DelByKind::ByIdSloppy:
+                        return operationDeleteByIdSloppyOptimize;
+                    case DelByKind::ByValStrict:
+                        return operationDeleteByValStrictOptimize;
+                    case DelByKind::ByValSloppy:
+                        return operationDeleteByValSloppyOptimize;
+                    }
+                    return operationDeleteByValSloppyOptimize;
                 }();
 
                 const auto subscript = [&] {
-                    if constexpr (kind == DelByKind::ById)
+                    switch (kind) {
+                    case DelByKind::ByIdStrict:
+                    case DelByKind::ByIdSloppy:
                         return CCallHelpers::TrustedImmPtr(subscriptValue.rawBits());
-                    else {
+                    case DelByKind::ByValStrict:
+                    case DelByKind::ByValSloppy:
                         if (child2UseKind == UntypedUse)
                             slowCases.append(jit.branchIfNotCell(JSValueRegs(params[2].gpr())));
                         return JSValueRegs(params[2].gpr());
                     }
+                    return CCallHelpers::TrustedImmPtr(subscriptValue.rawBits());
                 }();
 
                 const auto generator = [&] {
-                    if constexpr (kind == DelByKind::ById) {
+                    switch (kind) {
+                    case DelByKind::ByIdStrict:
+                    case DelByKind::ByIdSloppy: {
                         auto* stubInfo = state->addStructureStubInfo();
                         return Box<JITDelByIdGenerator>::create(
                             jit.codeBlock(), stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
                             params.unavailableRegisters(), subscriptValue, base,
                             JSValueRegs(returnGPR), stubInfoGPR);
-                    } else {
+                    }
+                    case DelByKind::ByValStrict:
+                    case DelByKind::ByValSloppy: {
                         auto* stubInfo = state->addStructureStubInfo();
                         return Box<JITDelByValGenerator>::create(
                             jit.codeBlock(), stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex,
                             params.unavailableRegisters(), base,
                             subscript, JSValueRegs(returnGPR), stubInfoGPR);
                     }
+                    }
+                    return nullptr;
                 }();
 
                 generator->generateFastPath(jit);
@@ -6917,14 +6947,14 @@ IGNORE_CLANG_WARNINGS_END
                                 exceptions.get(), CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), returnGPR,
                                 CCallHelpers::TrustedImmPtr(jit.codeBlock()->globalObjectFor(nodeSemanticOrigin)),
                                 stubInfoGPR, base,
-                                subscript, CCallHelpers::TrustedImm32(ecmaMode)).call();
+                                subscript).call();
                         } else {
                             slowPathCall = callOperation(
                                 *state, params.unavailableRegisters(), jit, nodeSemanticOrigin,
                                 exceptions.get(), optimizationFunction, returnGPR,
                                 CCallHelpers::TrustedImmPtr(jit.codeBlock()->globalObjectFor(nodeSemanticOrigin)),
                                 CCallHelpers::TrustedImmPtr(generator->stubInfo()), base,
-                                subscript, CCallHelpers::TrustedImm32(ecmaMode)).call();
+                                subscript).call();
                         }
                         jit.jump().linkTo(done, &jit);
 
@@ -6945,7 +6975,11 @@ IGNORE_CLANG_WARNINGS_END
         switch (m_node->child1().useKind()) {
         case CellUse: {
             LValue base = lowCell(m_node->child1());
-            compileDelBy<DelByKind::ById>(base, m_node->cacheableIdentifier());
+            auto ecmaMode = node->ecmaMode().value();
+            if (ecmaMode.isStrict())
+                compileDelBy<DelByKind::ByIdStrict>(base, m_node->cacheableIdentifier());
+            else
+                compileDelBy<DelByKind::ByIdSloppy>(base, m_node->cacheableIdentifier());
             break;
         }
 
@@ -6985,7 +7019,10 @@ IGNORE_CLANG_WARNINGS_END
                 DFG_CRASH(m_graph, m_node, "Bad use kind");
                 return;
             }
-            compileDelBy<DelByKind::ByVal>(base, subscript);
+            if (ecmaMode.isStrict())
+                compileDelBy<DelByKind::ByValStrict>(base, subscript);
+            else
+                compileDelBy<DelByKind::ByValSloppy>(base, subscript);
             return;
         }
 
