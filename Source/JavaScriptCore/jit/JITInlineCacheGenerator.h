@@ -79,7 +79,6 @@ public:
 #endif
 
     UnlinkedStructureStubInfo* m_unlinkedStubInfo { nullptr };
-    unsigned m_unlinkedStubInfoConstantIndex { std::numeric_limits<unsigned>::max() };
 
     template<typename StubInfo>
     static void setUpStubInfoImpl(StubInfo& stubInfo, AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters)
@@ -98,7 +97,7 @@ public:
     }
 
 protected:
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant, GPRReg stubInfoGPR);
+    void generateBaselineDataICFastPath(JIT&, GPRReg stubInfoGPR);
 
     StructureStubInfo* m_stubInfo { nullptr };
     AccessType m_accessType;
@@ -172,7 +171,7 @@ public:
         JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, AccessType);
     
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 #if ENABLE(DFG_JIT)
     void generateDFGDataICFastPath(DFG::JITCompiler&, unsigned stubInfoConstant, JSValueRegs baseJSR, JSValueRegs resultJSR, GPRReg stubInfoGPR, GPRReg scratchGPR);
 #endif
@@ -198,7 +197,7 @@ public:
         JSValueRegs value, JSValueRegs base, JSValueRegs thisRegs, GPRReg stubInfoGPR);
 
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 #if ENABLE(DFG_JIT)
     void generateDFGDataICFastPath(DFG::JITCompiler&, unsigned stubInfoConstant, JSValueRegs baseJSR, JSValueRegs resultJSR, GPRReg stubInfoGPR, GPRReg scratchGPR);
 #endif
@@ -228,7 +227,7 @@ public:
         JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, GPRReg scratch, ECMAMode, AccessType);
     
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR, GPRReg scratch2GPR);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 #if ENABLE(DFG_JIT)
     void generateDFGDataICFastPath(DFG::JITCompiler&, unsigned stubInfoConstant, JSValueRegs baseJSR, JSValueRegs valueJSR, GPRReg stubInfoGPR, GPRReg scratchGPR, GPRReg scratch2GPR);
 #endif
@@ -268,7 +267,7 @@ public:
     void finalize(LinkBuffer& fastPathLinkBuffer, LinkBuffer& slowPathLinkBuffer);
 
     void generateFastPath(CCallHelpers&);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 
     template<typename StubInfo>
     static void setUpStubInfo(StubInfo& stubInfo,
@@ -329,7 +328,7 @@ public:
         LinkBuffer& fastPathLinkBuffer, LinkBuffer& slowPathLinkBuffer);
 
     void generateFastPath(CCallHelpers&);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 
     template<typename StubInfo>
     static void setUpStubInfo(StubInfo& stubInfo,
@@ -378,7 +377,7 @@ public:
         LinkBuffer& fastPathLinkBuffer, LinkBuffer& slowPathLinkBuffer);
 
     void generateFastPath(CCallHelpers&);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 
     template<typename StubInfo>
     static void setUpStubInfo(StubInfo& stubInfo,
@@ -426,7 +425,7 @@ public:
         LinkBuffer& fastPathLinkBuffer, LinkBuffer& slowPathLinkBuffer);
 
     void generateFastPath(CCallHelpers&);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 
     template<typename StubInfo>
     static void setUpStubInfo(StubInfo& stubInfo,
@@ -469,7 +468,7 @@ public:
         JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR);
 
     void generateFastPath(CCallHelpers&, GPRReg scratchGPR);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 #if ENABLE(DFG_JIT)
     void generateDFGDataICFastPath(DFG::JITCompiler&, unsigned stubInfoConstant, JSValueRegs baseJSR, JSValueRegs resultJSR, GPRReg stubInfoGPR, GPRReg scratchGPR);
 #endif
@@ -494,7 +493,7 @@ public:
         bool prototypeIsKnownObject = false);
     
     void generateFastPath(CCallHelpers&);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 
     CCallHelpers::Jump slowPathJump() const
     {
@@ -553,7 +552,7 @@ public:
         LinkBuffer& fastPathLinkBuffer, LinkBuffer& slowPathLinkBuffer);
     
     void generateFastPath(CCallHelpers&);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 
     void generateEmptyPath(CCallHelpers&);
 
@@ -610,7 +609,7 @@ public:
     void finalize(LinkBuffer& fastPathLinkBuffer, LinkBuffer& slowPathLinkBuffer);
 
     void generateFastPath(CCallHelpers&);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 
     void generateEmptyPath(CCallHelpers&);
 
@@ -671,7 +670,7 @@ public:
         LinkBuffer& fastPathLinkBuffer, LinkBuffer& slowPathLinkBuffer);
     
     void generateFastPath(CCallHelpers&);
-    void generateBaselineDataICFastPath(JIT&, unsigned stubInfoConstant);
+    void generateBaselineDataICFastPath(JIT&);
 
     template<typename StubInfo>
     static void setUpStubInfo(StubInfo& stubInfo,

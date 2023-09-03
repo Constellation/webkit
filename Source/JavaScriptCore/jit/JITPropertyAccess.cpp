@@ -72,7 +72,6 @@ void JIT::emit_op_get_by_val(const JSInstruction* currentInstruction)
         baseJSR, propertyJSR, resultJSR, profileGPR, stubInfoGPR);
     if (isOperandConstantInt(property))
         stubInfo->propertyIsInt32 = true;
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
     if (bytecode.metadata(m_profiledCodeBlock).m_seenIdentifiers.count() > Options::getByValICMaxNumberOfIdentifiers())
         stubInfo->canBeMegamorphic = true;
@@ -80,7 +79,7 @@ void JIT::emit_op_get_by_val(const JSInstruction* currentInstruction)
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
     emitArrayProfilingSiteWithCellAndProfile(baseJSR.payloadGPR(), profileGPR, scratch1GPR);
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
 
     addSlowCase();
     m_getByVals.append(gen);
@@ -166,9 +165,8 @@ void JIT::emit_op_get_private_name(const JSInstruction* currentInstruction)
     JITGetByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::GetPrivateName,
         RegisterSetBuilder::stubUnavailableRegisters(), baseJSR, propertyJSR, resultJSR, InvalidGPRReg, stubInfoGPR);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     addSlowCase();
     m_getByVals.append(gen);
 
@@ -242,9 +240,8 @@ void JIT::emit_op_set_private_brand(const JSInstruction* currentInstruction)
     JITPrivateBrandAccessGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::SetPrivateBrand, RegisterSetBuilder::stubUnavailableRegisters(),
         baseJSR, propertyJSR, stubInfoGPR);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     addSlowCase();
     m_privateBrandAccesses.append(gen);
 
@@ -288,9 +285,8 @@ void JIT::emit_op_check_private_brand(const JSInstruction* currentInstruction)
     JITPrivateBrandAccessGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::CheckPrivateBrand, RegisterSetBuilder::stubUnavailableRegisters(),
         baseJSR, propertyJSR, stubInfoGPR);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     addSlowCase();
     m_privateBrandAccesses.append(gen);
 }
@@ -341,9 +337,8 @@ void JIT::emit_op_put_by_val(const JSInstruction* currentInstruction)
         baseJSR, propertyJSR, valueJSR, profileGPR, stubInfoGPR, ecmaMode);
     if (isOperandConstantInt(property))
         stubInfo->propertyIsInt32 = true;
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     resetSP(); // We might OSR exit here, so we need to conservatively reset SP
     addSlowCase();
     m_putByVals.append(gen);
@@ -443,9 +438,8 @@ void JIT::emit_op_put_private_name(const JSInstruction* currentInstruction)
     JITPutByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), bytecode.m_putKind.isDefine() ? AccessType::DefinePrivateNameByVal : AccessType::SetPrivateNameByVal, RegisterSetBuilder::stubUnavailableRegisters(),
         baseJSR, propertyJSR, valueJSR, InvalidGPRReg, stubInfoGPR, ECMAMode::sloppy());
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     addSlowCase();
     m_putByVals.append(gen);
 
@@ -599,9 +593,8 @@ void JIT::emit_op_del_by_id(const JSInstruction* currentInstruction)
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), ecmaMode.isStrict() ? AccessType::DeleteByIdStrict : AccessType::DeleteByIdSloppy, RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident),
         baseJSR, resultJSR, stubInfoGPR);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     addSlowCase();
     m_delByIds.append(gen);
 
@@ -694,9 +687,8 @@ void JIT::emit_op_del_by_val(const JSInstruction* currentInstruction)
         bytecode.m_ecmaMode.isStrict() ? AccessType::DeleteByValStrict : AccessType::DeleteByValSloppy,
         RegisterSetBuilder::stubUnavailableRegisters(),
         baseJSR, propertyJSR, resultJSR, stubInfoGPR);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     addSlowCase();
     m_delByVals.append(gen);
 
@@ -776,9 +768,8 @@ void JIT::emit_op_try_get_by_id(const JSInstruction* currentInstruction)
     JITGetByIdGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident), baseJSR, resultJSR, stubInfoGPR, AccessType::TryGetById);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     addSlowCase();
     m_getByIds.append(gen);
 
@@ -829,9 +820,8 @@ void JIT::emit_op_get_by_id_direct(const JSInstruction* currentInstruction)
     JITGetByIdGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident), baseJSR, resultJSR, stubInfoGPR, AccessType::GetByIdDirect);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     addSlowCase();
     m_getByIds.append(gen);
 
@@ -893,9 +883,8 @@ void JIT::emit_op_get_by_id(const JSInstruction* currentInstruction)
     JITGetByIdGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident), baseJSR, resultJSR, stubInfoGPR, AccessType::GetById);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     resetSP(); // We might OSR exit here, so we need to conservatively reset SP
     addSlowCase();
     m_getByIds.append(gen);
@@ -984,9 +973,8 @@ void JIT::emit_op_get_by_id_with_this(const JSInstruction* currentInstruction)
     JITGetByIdWithThisGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident), resultJSR, baseJSR, thisJSR, stubInfoGPR);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     resetSP(); // We might OSR exit here, so we need to conservatively reset SP
     addSlowCase();
     m_getByIdsWithThis.append(gen);
@@ -1082,9 +1070,8 @@ void JIT::emit_op_put_by_id(const JSInstruction* currentInstruction)
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident),
         baseJSR, valueJSR, stubInfoGPR, scratch1GPR, ecmaMode, direct ? (ecmaMode.isStrict() ? AccessType::PutByIdDirectStrict : AccessType::PutByIdDirectSloppy) : (ecmaMode.isStrict() ? AccessType::PutByIdStrict : AccessType::PutByIdSloppy));
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     resetSP(); // We might OSR exit here, so we need to conservatively reset SP
     addSlowCase();
     m_putByIds.append(gen);
@@ -1170,9 +1157,8 @@ void JIT::emit_op_in_by_id(const JSInstruction* currentInstruction)
     JITInByIdGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident), baseJSR, resultJSR, stubInfoGPR);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     addSlowCase();
     m_inByIds.append(gen);
 
@@ -1230,9 +1216,8 @@ void JIT::emit_op_in_by_val(const JSInstruction* currentInstruction)
     JITInByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::InByVal, RegisterSetBuilder::stubUnavailableRegisters(),
         baseJSR, propertyJSR, resultJSR, profileGPR, stubInfoGPR);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     addSlowCase();
     m_inByVals.append(gen);
 
@@ -1273,9 +1258,8 @@ void JIT::emitHasPrivate(VirtualRegister dst, VirtualRegister base, VirtualRegis
     JITInByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), type, RegisterSetBuilder::stubUnavailableRegisters(),
         baseJSR, propertyJSR, resultJSR, InvalidGPRReg, stubInfoGPR);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     addSlowCase();
     m_inByVals.append(gen);
 
@@ -2064,12 +2048,11 @@ void JIT::emit_op_get_by_val_with_this(const JSInstruction* currentInstruction)
         baseJSR, propertyJSR, thisJSR, resultJSR, profileGPR, stubInfoGPR);
     if (isOperandConstantInt(property))
         stubInfo->propertyIsInt32 = true;
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
     emitArrayProfilingSiteWithCellAndProfile(baseJSR.payloadGPR(), profileGPR, scratch1GPR);
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
 
     addSlowCase();
     m_getByValsWithThis.append(gen);
@@ -2298,10 +2281,9 @@ void JIT::emit_op_enumerator_get_by_val(const JSInstruction* currentInstruction)
     JITGetByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::GetByVal, RegisterSetBuilder::stubUnavailableRegisters(),
         JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(resultGPR), profileGPR, stubInfoGPR);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
     stubInfo->isEnumerator = true;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     resetSP(); // We might OSR exit here, so we need to conservatively reset SP
     addSlowCase();
     m_getByVals.append(gen);
@@ -2445,10 +2427,9 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     JITPutByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), ecmaMode.isStrict() ? AccessType::PutByValStrict : AccessType::PutByValSloppy, RegisterSetBuilder::stubUnavailableRegisters(),
         JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(valueGPR), profileGPR, stubInfoGPR, ecmaMode);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
     stubInfo->isEnumerator = true;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
     resetSP(); // We might OSR exit here, so we need to conservatively reset SP
     addSlowCase();
     m_putByVals.append(gen);

@@ -175,9 +175,8 @@ void JIT::emit_op_instanceof(const JSInstruction* currentInstruction)
         valueJSR.payloadGPR(),
         protoJSR.payloadGPR(),
         stubInfoGPR);
-    gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
-    gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
+    gen.generateBaselineDataICFastPath(*this);
 #if USE(JSVALUE32_64)
     boxBoolean(resultJSR.payloadGPR(), resultJSR);
 #endif
