@@ -323,7 +323,7 @@ void JITDelByValGenerator::generateFastPath(CCallHelpers& jit)
 
 void JITDelByValGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stubInfo)
 {
-    using BaselineJITRegisters::DelByVal::FastPath::stubInfoGPR;
+    using BaselineJITRegisters::DelByVal::stubInfoGPR;
     JITInlineCacheGenerator::generateBaselineDataICFastPath(jit, stubInfo, stubInfoGPR);
 }
 

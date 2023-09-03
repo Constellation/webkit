@@ -553,12 +553,12 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         hasConstantIdentifier = false;
         m_baseGPR = BaselineJITRegisters::DelByVal::baseJSR.payloadGPR();
         m_extraGPR = BaselineJITRegisters::DelByVal::propertyJSR.payloadGPR();
-        m_valueGPR = BaselineJITRegisters::DelByVal::FastPath::resultJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::DelByVal::FastPath::stubInfoGPR;
+        m_valueGPR = BaselineJITRegisters::DelByVal::resultJSR.payloadGPR();
+        m_stubInfoGPR = BaselineJITRegisters::DelByVal::stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_baseTagGPR = BaselineJITRegisters::DelByVal::baseJSR.tagGPR();
         m_extraTagGPR = BaselineJITRegisters::DelByVal::propertyJSR.tagGPR();
-        m_valueTagGPR = BaselineJITRegisters::DelByVal::FastPath::resultJSR.tagGPR();
+        m_valueTagGPR = BaselineJITRegisters::DelByVal::resultJSR.tagGPR();
 #endif
         break;
     case AccessType::DeleteByID:

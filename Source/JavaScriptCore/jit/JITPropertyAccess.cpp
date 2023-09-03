@@ -684,8 +684,8 @@ void JIT::emit_op_del_by_val(const JSInstruction* currentInstruction)
 
     using BaselineJITRegisters::DelByVal::baseJSR;
     using BaselineJITRegisters::DelByVal::propertyJSR;
-    using BaselineJITRegisters::DelByVal::FastPath::resultJSR;
-    using BaselineJITRegisters::DelByVal::FastPath::stubInfoGPR;
+    using BaselineJITRegisters::DelByVal::resultJSR;
+    using BaselineJITRegisters::DelByVal::stubInfoGPR;
 
     emitGetVirtualRegister(base, baseJSR);
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
@@ -723,8 +723,8 @@ void JIT::emitSlow_op_del_by_val(const JSInstruction* currentInstruction, Vector
 
     using BaselineJITRegisters::DelByVal::baseJSR;
     using BaselineJITRegisters::DelByVal::propertyJSR;
-    using BaselineJITRegisters::DelByVal::SlowPath::stubInfoGPR;
-    using BaselineJITRegisters::DelByVal::SlowPath::ecmaModeGPR;
+    using BaselineJITRegisters::DelByVal::stubInfoGPR;
+    using BaselineJITRegisters::DelByVal::ecmaModeGPR;
 
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
@@ -752,9 +752,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_del_by_val_callSlowOperationT
 
     using BaselineJITRegisters::DelByVal::baseJSR;
     using BaselineJITRegisters::DelByVal::propertyJSR;
-    using BaselineJITRegisters::DelByVal::SlowPath::globalObjectGPR;
-    using BaselineJITRegisters::DelByVal::SlowPath::stubInfoGPR;
-    using BaselineJITRegisters::DelByVal::SlowPath::ecmaModeGPR;
+    using BaselineJITRegisters::DelByVal::globalObjectGPR;
+    using BaselineJITRegisters::DelByVal::stubInfoGPR;
+    using BaselineJITRegisters::DelByVal::ecmaModeGPR;
 
     jit.emitCTIThunkPrologue();
 

@@ -328,30 +328,15 @@ namespace DelById {
 
 namespace DelByVal {
     // Registers used on both Fast and Slow paths
-    static constexpr JSValueRegs baseJSR { JSRInfo::jsRegT32 };
-    static constexpr JSValueRegs propertyJSR { JSRInfo::jsRegT10 };
-
-    // Fast path only registers
-    namespace FastPath {
-        static constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };
-        static constexpr GPRReg stubInfoGPR { GPRInfo::regT4 };
-        static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR), "Required for DataIC");
-    }
-
-    // Slow path only registers
-    namespace SlowPath {
-        static constexpr GPRReg globalObjectGPR { GPRInfo::regT4 };
-        static constexpr GPRReg stubInfoGPR { GPRInfo::regT5 };
-        static constexpr GPRReg ecmaModeGPR {
-#if USE(JSVALUE64)
-            GPRInfo::regT1
-#elif USE(JSVALUE32_64)
-            GPRInfo::regT6
-#endif
-        };
-        static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, ecmaModeGPR), "Required for call to CTI thunk");
-        static_assert(noOverlap(baseJSR, propertyJSR, globalObjectGPR, stubInfoGPR, ecmaModeGPR), "Required for call to slow operation");
-    }
+    using SlowOperation = decltype(operationPutByValStrictOptimize);
+    static constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };
+    static constexpr JSValueRegs baseJSR { preferredArgumentJSR<SlowOperation, 2>() };
+    static constexpr JSValueRegs propertyJSR { preferredArgumentJSR<SlowOperation, 3>() };
+    static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 1>() };
+    static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
+    static constexpr GPRReg ecmaModeGPR { preferredArgumentGPR<SlowOperation, 4>() };
+    static constexpr GPRReg scratch1GPR { globalObjectGPR };
+    static_assert(noOverlap(baseJSR, propertyJSR, globalObjectGPR, stubInfoGPR, ecmaModeGPR), "Required for call to slow operation");
 }
 
 namespace PrivateBrand {
