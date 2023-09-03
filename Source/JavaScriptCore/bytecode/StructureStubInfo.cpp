@@ -552,7 +552,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
     auto usedJSRs = RegisterSetBuilder::stubUnavailableRegisters();
     if (accessType == AccessType::GetById && unlinkedStubInfo.bytecodeIndex.checkpoint()) {
         // For iterator_next, we can't clobber the "dontClobberJSR" register either.
-        usedJSRs.add(BaselineJITRegisters::GetById::FastPath::dontClobberJSR, IgnoreVectors);
+        usedJSRs.add(BaselineJITRegisters::GetById::dontClobberJSR, IgnoreVectors);
     }
     usedRegisters = usedJSRs.buildScalarRegisterSet();
 
@@ -577,12 +577,12 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         hasConstantIdentifier = true;
         m_baseGPR = BaselineJITRegisters::DelById::baseJSR.payloadGPR();
         m_extraGPR = InvalidGPRReg;
-        m_valueGPR = BaselineJITRegisters::DelById::FastPath::resultJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::DelById::FastPath::stubInfoGPR;
+        m_valueGPR = BaselineJITRegisters::DelById::resultJSR.payloadGPR();
+        m_stubInfoGPR = BaselineJITRegisters::DelById::stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_baseTagGPR = BaselineJITRegisters::DelById::baseJSR.tagGPR();
         m_extraTagGPR = InvalidGPRReg;
-        m_valueTagGPR = BaselineJITRegisters::DelById::FastPath::resultJSR.tagGPR();
+        m_valueTagGPR = BaselineJITRegisters::DelById::resultJSR.tagGPR();
 #endif
         break;
     case AccessType::GetByVal:
@@ -649,7 +649,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         m_extraGPR = InvalidGPRReg;
         m_baseGPR = BaselineJITRegisters::GetById::baseJSR.payloadGPR();
         m_valueGPR = BaselineJITRegisters::GetById::resultJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::GetById::FastPath::stubInfoGPR;
+        m_stubInfoGPR = BaselineJITRegisters::GetById::stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_extraTagGPR = InvalidGPRReg;
         m_baseTagGPR = BaselineJITRegisters::GetById::baseJSR.tagGPR();
@@ -661,7 +661,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         m_baseGPR = BaselineJITRegisters::GetByIdWithThis::baseJSR.payloadGPR();
         m_valueGPR = BaselineJITRegisters::GetByIdWithThis::resultJSR.payloadGPR();
         m_extraGPR = BaselineJITRegisters::GetByIdWithThis::thisJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::GetByIdWithThis::FastPath::stubInfoGPR;
+        m_stubInfoGPR = BaselineJITRegisters::GetByIdWithThis::stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_baseTagGPR = BaselineJITRegisters::GetByIdWithThis::baseJSR.tagGPR();
         m_valueTagGPR = BaselineJITRegisters::GetByIdWithThis::resultJSR.tagGPR();
@@ -692,7 +692,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         m_extraGPR = InvalidGPRReg;
         m_baseGPR = BaselineJITRegisters::PutById::baseJSR.payloadGPR();
         m_valueGPR = BaselineJITRegisters::PutById::valueJSR.payloadGPR();
-        m_stubInfoGPR = BaselineJITRegisters::PutById::FastPath::stubInfoGPR;
+        m_stubInfoGPR = BaselineJITRegisters::PutById::stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_extraTagGPR = InvalidGPRReg;
         m_baseTagGPR = BaselineJITRegisters::PutById::baseJSR.tagGPR();

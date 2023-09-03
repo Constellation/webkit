@@ -166,8 +166,8 @@ void JITGetByIdGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stub
 
     using BaselineJITRegisters::GetById::baseJSR;
     using BaselineJITRegisters::GetById::resultJSR;
-    using BaselineJITRegisters::GetById::FastPath::stubInfoGPR;
-    using BaselineJITRegisters::GetById::FastPath::scratch1GPR;
+    using BaselineJITRegisters::GetById::stubInfoGPR;
+    using BaselineJITRegisters::GetById::scratch1GPR;
 
     jit.loadConstant(stubInfo, stubInfoGPR);
     generateGetByIdInlineAccess(jit, stubInfoGPR, baseJSR, scratch1GPR, resultJSR);
@@ -217,8 +217,8 @@ void JITGetByIdWithThisGenerator::generateBaselineDataICFastPath(JIT& jit, unsig
 
     using BaselineJITRegisters::GetByIdWithThis::baseJSR;
     using BaselineJITRegisters::GetByIdWithThis::resultJSR;
-    using BaselineJITRegisters::GetByIdWithThis::FastPath::stubInfoGPR;
-    using BaselineJITRegisters::GetByIdWithThis::FastPath::scratch1GPR;
+    using BaselineJITRegisters::GetByIdWithThis::stubInfoGPR;
+    using BaselineJITRegisters::GetByIdWithThis::scratch1GPR;
 
     jit.loadConstant(stubInfo, stubInfoGPR);
     generateGetByIdInlineAccess(jit, stubInfoGPR, baseJSR, scratch1GPR, resultJSR);
@@ -261,9 +261,9 @@ void JITPutByIdGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stub
 {
     using BaselineJITRegisters::PutById::baseJSR;
     using BaselineJITRegisters::PutById::valueJSR;
-    using BaselineJITRegisters::PutById::FastPath::stubInfoGPR;
-    using BaselineJITRegisters::PutById::FastPath::scratch1GPR;
-    using BaselineJITRegisters::PutById::FastPath::scratch2GPR;
+    using BaselineJITRegisters::PutById::stubInfoGPR;
+    using BaselineJITRegisters::PutById::scratch1GPR;
+    using BaselineJITRegisters::PutById::scratch2GPR;
 
     m_start = jit.label();
     jit.loadConstant(stubInfo, stubInfoGPR);
@@ -361,7 +361,7 @@ void JITDelByIdGenerator::generateFastPath(CCallHelpers& jit)
 
 void JITDelByIdGenerator::generateBaselineDataICFastPath(JIT& jit, unsigned stubInfo)
 {
-    using BaselineJITRegisters::DelById::FastPath::stubInfoGPR;
+    using BaselineJITRegisters::DelById::stubInfoGPR;
     JITInlineCacheGenerator::generateBaselineDataICFastPath(jit, stubInfo, stubInfoGPR);
 }
 
