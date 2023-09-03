@@ -234,18 +234,18 @@ void JIT::emit_op_set_private_brand(const JSInstruction* currentInstruction)
     VirtualRegister brand = bytecode.m_brand;
 
     using BaselineJITRegisters::PrivateBrand::baseJSR;
-    using BaselineJITRegisters::PrivateBrand::brandJSR;
+    using BaselineJITRegisters::PrivateBrand::propertyJSR;
     using BaselineJITRegisters::PrivateBrand::stubInfoGPR;
 
     emitGetVirtualRegister(base, baseJSR);
-    emitGetVirtualRegister(brand, brandJSR);
+    emitGetVirtualRegister(brand, propertyJSR);
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
     emitJumpSlowCaseIfNotJSCell(baseJSR, base);
     JITPrivateBrandAccessGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::SetPrivateBrand, RegisterSetBuilder::stubUnavailableRegisters(),
-        baseJSR, brandJSR, stubInfoGPR);
+        baseJSR, propertyJSR, stubInfoGPR);
     gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
     gen.generateBaselineDataICFastPath(*this, stubInfoIndex);
@@ -281,11 +281,11 @@ void JIT::emit_op_check_private_brand(const JSInstruction* currentInstruction)
     VirtualRegister brand = bytecode.m_brand;
 
     using BaselineJITRegisters::PrivateBrand::baseJSR;
-    using BaselineJITRegisters::PrivateBrand::brandJSR;
+    using BaselineJITRegisters::PrivateBrand::propertyJSR;
     using BaselineJITRegisters::PrivateBrand::stubInfoGPR;
 
     emitGetVirtualRegister(base, baseJSR);
-    emitGetVirtualRegister(brand, brandJSR);
+    emitGetVirtualRegister(brand, propertyJSR);
 
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
@@ -294,7 +294,7 @@ void JIT::emit_op_check_private_brand(const JSInstruction* currentInstruction)
 
     JITPrivateBrandAccessGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::CheckPrivateBrand, RegisterSetBuilder::stubUnavailableRegisters(),
-        baseJSR, brandJSR, stubInfoGPR);
+        baseJSR, propertyJSR, stubInfoGPR);
     gen.m_unlinkedStubInfoConstantIndex = stubInfoIndex;
 
     gen.generateBaselineDataICFastPath(*this, stubInfoIndex);

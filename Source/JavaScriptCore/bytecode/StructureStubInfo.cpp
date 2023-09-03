@@ -706,12 +706,12 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
         hasConstantIdentifier = false;
         m_valueGPR = InvalidGPRReg;
         m_baseGPR = BaselineJITRegisters::PrivateBrand::baseJSR.payloadGPR();
-        m_extraGPR = BaselineJITRegisters::PrivateBrand::brandJSR.payloadGPR();
+        m_extraGPR = BaselineJITRegisters::PrivateBrand::propertyJSR.payloadGPR();
         m_stubInfoGPR = BaselineJITRegisters::PrivateBrand::stubInfoGPR;
 #if USE(JSVALUE32_64)
         m_valueTagGPR = InvalidGPRReg;
         m_baseTagGPR = BaselineJITRegisters::PrivateBrand::baseJSR.tagGPR();
-        m_extraTagGPR = BaselineJITRegisters::PrivateBrand::brandJSR.tagGPR();
+        m_extraTagGPR = BaselineJITRegisters::PrivateBrand::propertyJSR.tagGPR();
 #endif
         break;
     }

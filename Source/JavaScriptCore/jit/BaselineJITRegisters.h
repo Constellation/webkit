@@ -190,13 +190,13 @@ namespace GetByVal {
 namespace EnumeratorGetByVal {
     // We rely on using the same registers when linking a CodeBlock and initializing registers
     // for a GetByVal StubInfo.
-    static constexpr JSValueRegs resultJSR { GetByVal::resultJSR };
-    static constexpr JSValueRegs baseJSR { GetByVal::baseJSR };
-    static constexpr JSValueRegs propertyJSR { GetByVal::propertyJSR };
-    static constexpr GPRReg stubInfoGPR { GetByVal::stubInfoGPR };
-    static constexpr GPRReg profileGPR { GetByVal::profileGPR };
-    static constexpr GPRReg globalObjectGPR { GetByVal::globalObjectGPR };
-    static constexpr GPRReg scratch1 { GetByVal::scratchGPR };
+    using GetByVal::resultJSR;
+    using GetByVal::baseJSR;
+    using GetByVal::propertyJSR;
+    using GetByVal::stubInfoGPR;
+    using GetByVal::profileGPR;
+    using GetByVal::globalObjectGPR;
+    using GetByVal::scratchGPR;
     static constexpr GPRReg scratch2 { GPRInfo::regT5 };
     static constexpr GPRReg scratch3 { GPRInfo::regT7 };
     static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR, profileGPR, scratch1, scratch2, scratch3));
@@ -321,11 +321,13 @@ namespace InById {
 }
 
 namespace InByVal {
-    static constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };
-    static constexpr JSValueRegs baseJSR { GetByVal::baseJSR };
-    static constexpr JSValueRegs propertyJSR { GetByVal::propertyJSR };
-    static constexpr GPRReg stubInfoGPR { GPRInfo::regT4 };
-    static constexpr GPRReg scratchGPR { GPRInfo::regT5 };
+    using GetByVal::resultJSR;
+    using GetByVal::baseJSR;
+    using GetByVal::propertyJSR;
+    using GetByVal::stubInfoGPR;
+    using GetByVal::profileGPR;
+    using GetByVal::globalObjectGPR;
+    using GetByVal::scratchGPR;
 }
 
 namespace DelById {
@@ -379,10 +381,12 @@ namespace DelByVal {
 }
 
 namespace PrivateBrand {
-    static constexpr JSValueRegs baseJSR { GetByVal::baseJSR }; // Required by shared slow path thunk
-    static constexpr JSValueRegs brandJSR { GetByVal::propertyJSR }; // Required by shared slow path thunk
-    static constexpr GPRReg stubInfoGPR { GetByVal::stubInfoGPR };
-    static_assert(noOverlap(baseJSR, brandJSR, stubInfoGPR), "Required for DataIC");
+    using GetByVal::baseJSR;
+    using GetByVal::propertyJSR;
+    using GetByVal::stubInfoGPR;
+    using GetByVal::globalObjectGPR;
+    using GetByVal::scratchGPR;
+    static_assert(noOverlap(baseJSR, propertyJSR, stubInfoGPR), "Required for DataIC");
 }
 
 } // namespace BaselineJITRegisters
