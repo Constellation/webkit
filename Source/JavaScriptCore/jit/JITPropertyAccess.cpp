@@ -180,12 +180,8 @@ void JIT::emit_op_get_private_name(const JSInstruction* currentInstruction)
 void JIT::emitSlow_op_get_private_name(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(hasAnySlowCases(iter));
-
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
     JITGetByValGenerator& gen = m_getByVals[m_getByValIndex++];
-
-    using BaselineJITRegisters::GetByVal::stubInfoGPR;
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
     emitNakedNearCall(vm().getCTIStub(slow_op_get_private_name_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
@@ -262,15 +258,12 @@ void JIT::emit_op_set_private_brand(const JSInstruction* currentInstruction)
 void JIT::emitSlow_op_set_private_brand(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
 {
     UNUSED_PARAM(currentInstruction);
-
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
     JITPrivateBrandAccessGenerator& gen = m_privateBrandAccesses[m_privateBrandAccessIndex++];
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
     static_assert(std::is_same<FunctionTraits<decltype(operationSetPrivateBrandOptimize)>::ArgumentTypes, FunctionTraits<decltype(operationGetPrivateNameOptimize)>::ArgumentTypes>::value);
     emitNakedNearCall(vm().getCTIStub(slow_op_get_private_name_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
 
