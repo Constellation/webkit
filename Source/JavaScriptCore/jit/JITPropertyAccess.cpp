@@ -95,7 +95,7 @@ template<typename OpcodeType>
 void JIT::generateGetByValSlowCase(const OpcodeType&, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(hasAnySlowCases(iter));
-    ASSERT(BytecodeIndex(bytecodeOffset) == m_bytecodeIndex);
+    ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
     JITGetByValGenerator& gen = m_getByVals[m_getByValIndex++];
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
