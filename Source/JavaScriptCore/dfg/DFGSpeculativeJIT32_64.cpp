@@ -218,12 +218,11 @@ void SpeculativeJIT::cachedGetById(
         slowPath = slowPathCall(
             slowCases, this, appropriateGetByIdOptimizeFunction(type),
             JSValueRegs(resultTagGPR, resultPayloadGPR), LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()),
-            CellValue(basePayloadGPR),
-            identifier.rawBits());
+            CellValue(basePayloadGPR));
     } else {
         slowPath = slowPathCall(
             slowCases, this, appropriateGetByIdOptimizeFunction(type),
-            JSValueRegs(resultTagGPR, resultPayloadGPR), LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), JSValueRegs(baseTagGPROrNone, basePayloadGPR), identifier.rawBits());
+            JSValueRegs(resultTagGPR, resultPayloadGPR), LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), JSValueRegs(baseTagGPROrNone, basePayloadGPR));
     }
 
     addGetById(gen, slowPath.get());
@@ -256,15 +255,14 @@ void SpeculativeJIT::cachedGetByIdWithThis(Node* node,
             slowCases, this, operationGetByIdWithThisOptimize,
             JSValueRegs(resultTagGPR, resultPayloadGPR), LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()),
             CellValue(basePayloadGPR),
-            CellValue(thisPayloadGPR),
-            identifier.rawBits());
+            CellValue(thisPayloadGPR));
     } else {
         ASSERT(baseTagGPROrNone != InvalidGPRReg);
         ASSERT(thisTagGPR != InvalidGPRReg);
         
         slowPath = slowPathCall(
             slowCases, this, operationGetByIdWithThisOptimize,
-            JSValueRegs(resultTagGPR, resultPayloadGPR), LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), JSValueRegs(baseTagGPROrNone, basePayloadGPR), JSValueRegs(thisTagGPR, thisPayloadGPR), identifier.rawBits());
+            JSValueRegs(resultTagGPR, resultPayloadGPR), LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), JSValueRegs(baseTagGPROrNone, basePayloadGPR), JSValueRegs(thisTagGPR, thisPayloadGPR));
     }
 
     addGetByIdWithThis(gen, slowPath.get());

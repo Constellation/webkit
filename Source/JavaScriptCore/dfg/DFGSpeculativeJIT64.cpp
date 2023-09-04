@@ -185,14 +185,14 @@ void SpeculativeJIT::cachedGetById(Node* node, CodeOrigin codeOrigin, GPRReg bas
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), appropriateGetByIdOptimizeFunction(type),
             spillMode, ExceptionCheckRequirement::CheckNeeded,
-            resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, baseGPR, identifier.rawBits());
+            resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, baseGPR);
     } else {
         gen.generateFastPath(*this, scratchGPR);
         slowCases.append(gen.slowPathJump());
         slowPath = slowPathCall(
             slowCases, this, appropriateGetByIdOptimizeFunction(type),
             spillMode, ExceptionCheckRequirement::CheckNeeded,
-            resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), baseGPR, identifier.rawBits());
+            resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), baseGPR);
     }
     
     addGetById(gen, slowPath.get());
@@ -232,14 +232,14 @@ void SpeculativeJIT::cachedGetByIdWithThis(Node* node, CodeOrigin codeOrigin, GP
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByIdWithThisOptimize,
             DontSpill, ExceptionCheckRequirement::CheckNeeded,
-            resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, baseGPR, thisGPR, identifier.rawBits());
+            resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, baseGPR, thisGPR);
     } else {
         gen.generateFastPath(*this, scratchGPR);
         slowCases.append(gen.slowPathJump());
         slowPath = slowPathCall(
             slowCases, this, operationGetByIdWithThisOptimize,
             DontSpill, ExceptionCheckRequirement::CheckNeeded,
-            resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), baseGPR, thisGPR, identifier.rawBits());
+            resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), baseGPR, thisGPR);
     }
     
     addGetByIdWithThis(gen, slowPath.get());
