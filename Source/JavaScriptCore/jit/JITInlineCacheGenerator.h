@@ -114,7 +114,7 @@ protected:
     JITByIdGenerator() = default;
 
     JITByIdGenerator(
-        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, AccessType, CacheableIdentifier,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, AccessType,
         JSValueRegs base, JSValueRegs value);
 
 public:
