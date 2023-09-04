@@ -609,21 +609,12 @@ void JIT::emit_op_del_by_id(const JSInstruction* currentInstruction)
     emitWriteBarrier(base, ShouldFilterBase);
 }
 
-void JIT::emitSlow_op_del_by_id(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
+void JIT::emitSlow_op_del_by_id(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
-    auto bytecode = currentInstruction->as<OpDelById>();
-    const Identifier* ident = &(m_unlinkedCodeBlock->identifier(bytecode.m_property));
     JITDelByIdGenerator& gen = m_delByIds[m_delByIdIndex++];
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
-
-    using BaselineJITRegisters::DelById::baseJSR;
-    using BaselineJITRegisters::DelById::stubInfoGPR;
-    using BaselineJITRegisters::DelById::propertyGPR;
-
-    move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
     emitNakedNearCall(vm().getCTIStub(slow_op_del_by_id_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
@@ -641,14 +632,13 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_del_by_id_callSlowOperationTh
     using BaselineJITRegisters::DelById::baseJSR;
     using BaselineJITRegisters::DelById::globalObjectGPR;
     using BaselineJITRegisters::DelById::stubInfoGPR;
-    using BaselineJITRegisters::DelById::propertyGPR;
 
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, propertyGPR);
+    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR);
     static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
     jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
@@ -778,23 +768,14 @@ void JIT::emit_op_try_get_by_id(const JSInstruction* currentInstruction)
     emitPutVirtualRegister(resultVReg, resultJSR);
 }
 
-void JIT::emitSlow_op_try_get_by_id(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
+void JIT::emitSlow_op_try_get_by_id(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
-    auto bytecode = currentInstruction->as<OpTryGetById>();
-    const Identifier* ident = &(m_unlinkedCodeBlock->identifier(bytecode.m_property));
     JITGetByIdGenerator& gen = m_getByIds[m_getByIdIndex++];
-
-    using BaselineJITRegisters::GetById::propertyGPR;
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
-
-    move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
-
     static_assert(std::is_same<decltype(operationTryGetByIdOptimize), decltype(operationGetByIdOptimize)>::value);
     emitNakedNearCall(vm().getCTIStub(slow_op_get_by_id_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
     static_assert(BaselineJITRegisters::GetById::resultJSR == returnValueJSR);
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
@@ -830,23 +811,14 @@ void JIT::emit_op_get_by_id_direct(const JSInstruction* currentInstruction)
     emitPutVirtualRegister(resultVReg, resultJSR);
 }
 
-void JIT::emitSlow_op_get_by_id_direct(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
+void JIT::emitSlow_op_get_by_id_direct(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
-    auto bytecode = currentInstruction->as<OpGetByIdDirect>();
-    const Identifier* ident = &(m_unlinkedCodeBlock->identifier(bytecode.m_property));
     JITGetByIdGenerator& gen = m_getByIds[m_getByIdIndex++];
-
-    using BaselineJITRegisters::GetById::propertyGPR;
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
-
-    move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
-
     static_assert(std::is_same<decltype(operationGetByIdDirectOptimize), decltype(operationGetByIdOptimize)>::value);
     emitNakedNearCall(vm().getCTIStub(slow_op_get_by_id_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
     static_assert(BaselineJITRegisters::GetById::resultJSR == returnValueJSR);
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
@@ -894,22 +866,13 @@ void JIT::emit_op_get_by_id(const JSInstruction* currentInstruction)
     emitPutVirtualRegister(resultVReg, resultJSR);
 }
 
-void JIT::emitSlow_op_get_by_id(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
+void JIT::emitSlow_op_get_by_id(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
-    auto bytecode = currentInstruction->as<OpGetById>();
-    const Identifier* ident = &(m_unlinkedCodeBlock->identifier(bytecode.m_property));
     JITGetByIdGenerator& gen = m_getByIds[m_getByIdIndex++];
-
-    using BaselineJITRegisters::GetById::propertyGPR;
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
-
-    move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
-
     emitNakedNearCall(vm().getCTIStub(slow_op_get_by_id_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
     static_assert(BaselineJITRegisters::GetById::resultJSR == returnValueJSR);
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
@@ -927,14 +890,13 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_id_callSlowOperationTh
     using BaselineJITRegisters::GetById::baseJSR;
     using BaselineJITRegisters::GetById::globalObjectGPR;
     using BaselineJITRegisters::GetById::stubInfoGPR;
-    using BaselineJITRegisters::GetById::propertyGPR;
 
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, propertyGPR);
+    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR);
     static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
     jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
@@ -984,23 +946,13 @@ void JIT::emit_op_get_by_id_with_this(const JSInstruction* currentInstruction)
     emitPutVirtualRegister(resultVReg, resultJSR);
 }
 
-void JIT::emitSlow_op_get_by_id_with_this(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
+void JIT::emitSlow_op_get_by_id_with_this(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
-    auto bytecode = currentInstruction->as<OpGetByIdWithThis>();
-    const Identifier* ident = &(m_unlinkedCodeBlock->identifier(bytecode.m_property));
     JITGetByIdWithThisGenerator& gen = m_getByIdsWithThis[m_getByIdWithThisIndex++];
-
-    using BaselineJITRegisters::GetByIdWithThis::stubInfoGPR;
-    using BaselineJITRegisters::GetByIdWithThis::propertyGPR;
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
-
-    move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
-
     emitNakedNearCall(vm().getCTIStub(slow_op_get_by_id_with_this_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
     static_assert(BaselineJITRegisters::GetByIdWithThis::resultJSR == returnValueJSR);
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
@@ -1019,14 +971,13 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_id_with_this_callSlowO
     using BaselineJITRegisters::GetByIdWithThis::thisJSR;
     using BaselineJITRegisters::GetByIdWithThis::globalObjectGPR;
     using BaselineJITRegisters::GetByIdWithThis::stubInfoGPR;
-    using BaselineJITRegisters::GetByIdWithThis::propertyGPR;
 
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, thisJSR, propertyGPR);
+    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, thisJSR);
     static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
     jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
@@ -1082,22 +1033,13 @@ void JIT::emit_op_put_by_id(const JSInstruction* currentInstruction)
     emitWriteBarrier(baseVReg, ShouldFilterBase);
 }
 
-void JIT::emitSlow_op_put_by_id(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
+void JIT::emitSlow_op_put_by_id(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
-    auto bytecode = currentInstruction->as<OpPutById>();
-    const Identifier* ident = &(m_unlinkedCodeBlock->identifier(bytecode.m_property));
     JITPutByIdGenerator& gen = m_putByIds[m_putByIdIndex++];
-
-    using BaselineJITRegisters::PutById::propertyGPR;
-
     linkAllSlowCases(iter);
     Label coldPathBegin(this);
-
-    move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
-
     emitNakedNearCall(vm().getCTIStub(slow_op_put_by_id_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
     gen.reportSlowPathCall(coldPathBegin, Call());
 }
 
@@ -1115,14 +1057,13 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_put_by_id_callSlowOperationTh
     using BaselineJITRegisters::PutById::valueJSR;
     using BaselineJITRegisters::PutById::globalObjectGPR;
     using BaselineJITRegisters::PutById::stubInfoGPR;
-    using BaselineJITRegisters::PutById::propertyGPR;
 
     jit.emitCTIThunkPrologue();
 
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, valueJSR, baseJSR, propertyGPR);
+    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, valueJSR, baseJSR);
     static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
     jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
@@ -1166,25 +1107,16 @@ void JIT::emit_op_in_by_id(const JSInstruction* currentInstruction)
     emitPutVirtualRegister(resultVReg, resultJSR);
 }
 
-void JIT::emitSlow_op_in_by_id(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
+void JIT::emitSlow_op_in_by_id(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
     ASSERT(BytecodeIndex(m_bytecodeIndex.offset()) == m_bytecodeIndex);
-    auto bytecode = currentInstruction->as<OpInById>();
-    const Identifier* ident = &(m_unlinkedCodeBlock->identifier(bytecode.m_property));
     JITInByIdGenerator& gen = m_inByIds[m_inByIdIndex++];
-
-    using BaselineJITRegisters::InById::propertyGPR;
-
     Label coldPathBegin = label();
     linkAllSlowCases(iter);
-
-    move(TrustedImmPtr(CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident).rawBits()), propertyGPR);
-
     // slow_op_get_by_id_callSlowOperationThenCheckExceptionGenerator will do exactly what we need.
     // So, there's no point in creating a duplicate thunk just to give it a different name.
     static_assert(std::is_same<decltype(operationInByIdOptimize), decltype(operationGetByIdOptimize)>::value);
     emitNakedNearCall(vm().getCTIStub(slow_op_get_by_id_callSlowOperationThenCheckExceptionGenerator).retaggedCode<NoPtrTag>());
-
     static_assert(BaselineJITRegisters::InById::resultJSR == returnValueJSR);
     gen.reportSlowPathCall(coldPathBegin, Call());
 }

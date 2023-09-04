@@ -499,7 +499,6 @@ void JIT::emitSlow_op_iterator_open(const JSInstruction* instruction, Vector<Slo
     notObject.append(branchIfNotObject(baseJSR.payloadGPR()));
 
     VirtualRegister nextVReg = bytecode.m_next;
-    UniquedStringImpl* ident = vm().propertyNames->next.impl();
 
     JITGetByIdGenerator& gen = m_getByIds[m_getByIdIndex++];
 
@@ -511,8 +510,7 @@ void JIT::emitSlow_op_iterator_open(const JSInstruction* instruction, Vector<Slo
         bytecode,
         Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),
         nextVReg,
-        globalObjectGPR, stubInfoGPR, baseJSR,
-        CacheableIdentifier::createFromImmortalIdentifier(ident).rawBits());
+        globalObjectGPR, stubInfoGPR, baseJSR);
     gen.reportSlowPathCall(coldPathBegin, Call());
 
     auto done = jump();
@@ -642,7 +640,6 @@ void JIT::emitSlow_op_iterator_next(const JSInstruction* instruction, Vector<Slo
         JumpList notObject;
         notObject.append(branchIfNotCell(baseJSR));
 
-        UniquedStringImpl* ident = vm().propertyNames->done.impl();
         JITGetByIdGenerator& gen = m_getByIds[m_getByIdIndex++];
         
         Label coldPathBegin = label();
@@ -655,8 +652,7 @@ void JIT::emitSlow_op_iterator_next(const JSInstruction* instruction, Vector<Slo
             bytecode,
             Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),
             doneVReg,
-            globalObjectGPR, stubInfoGPR, baseJSR,
-            CacheableIdentifier::createFromImmortalIdentifier(ident).rawBits());
+            globalObjectGPR, stubInfoGPR, baseJSR);
         gen.reportSlowPathCall(coldPathBegin, Call());
 
         emitGetVirtualRegister(bytecode.m_value, iterCallResultJSR);
@@ -671,7 +667,6 @@ void JIT::emitSlow_op_iterator_next(const JSInstruction* instruction, Vector<Slo
         linkAllSlowCases(iter);
         VirtualRegister valueVReg = bytecode.m_value;
 
-        UniquedStringImpl* ident = vm().propertyNames->value.impl();
         JITGetByIdGenerator& gen = m_getByIds[m_getByIdIndex++];
 
         Label coldPathBegin = label();
@@ -682,8 +677,7 @@ void JIT::emitSlow_op_iterator_next(const JSInstruction* instruction, Vector<Slo
             bytecode,
             Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),
             valueVReg,
-            globalObjectGPR, stubInfoGPR, baseJSR,
-            CacheableIdentifier::createFromImmortalIdentifier(ident).rawBits());
+            globalObjectGPR, stubInfoGPR, baseJSR);
         gen.reportSlowPathCall(coldPathBegin, Call());
     }
 }
