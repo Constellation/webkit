@@ -409,8 +409,8 @@ public:
     PropertyOffset byIdSelfOffset;
     WriteBarrierStructureID m_inlineAccessBaseStructureID;
     std::unique_ptr<PolymorphicAccess> m_stub;
-private:
     CacheableIdentifier m_identifier;
+private:
     // Represents those structures that already have buffered AccessCases in the PolymorphicAccess.
     // Note that it's always safe to clear this. If we clear it prematurely, then if we see the same
     // structure again during this buffering countdown, we will create an AccessCase object for it.
