@@ -146,22 +146,7 @@ public:
     
     static StubInfoSummary summary(VM&, const StructureStubInfo*);
 
-    CacheableIdentifier identifier()
-    {
-        switch (m_cacheType) {
-        case CacheType::Unset:
-        case CacheType::ArrayLength:
-        case CacheType::StringLength:
-        case CacheType::Stub:
-            RELEASE_ASSERT_NOT_REACHED();
-            break;
-        case CacheType::PutByIdReplace:
-        case CacheType::InByIdSelf:
-        case CacheType::GetByIdSelf:
-            break;
-        }
-        return m_identifier;
-    }
+    CacheableIdentifier identifier() const { return m_identifier; }
 
     bool containsPC(void* pc) const;
 
