@@ -17011,7 +17011,7 @@ IGNORE_CLANG_WARNINGS_END
                                 *state, params.unavailableRegisters(), jit, semanticNodeOrigin,
                                 exceptions.get(), CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), params[0].gpr(),
                                 CCallHelpers::TrustedImmPtr(jit.codeBlock()->globalObjectFor(semanticNodeOrigin)),
-                                stubInfoGPR, params[1].gpr()).call();
+                                stubInfoGPR, params[1].gpr(), params[2].gpr()).call();
                         } else {
                             slowPathCall = callOperation(
                                 *state, params.unavailableRegisters(), jit, semanticNodeOrigin,

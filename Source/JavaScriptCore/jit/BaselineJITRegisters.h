@@ -137,7 +137,7 @@ namespace GetByIdWithThis {
 
     static constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };
     static constexpr JSValueRegs baseJSR { preferredArgumentJSR<SlowOperation, 2>() };
-    static constexpr JSValueRegs thisJSR { preferredArgumentGPR<SlowOperation, 3>() };
+    static constexpr JSValueRegs thisJSR { preferredArgumentJSR<SlowOperation, 3>() };
     static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 1>() };
     static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
     static constexpr GPRReg scratch1GPR { globalObjectGPR };
