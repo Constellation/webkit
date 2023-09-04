@@ -65,7 +65,6 @@ void JITInlineCacheGenerator::finalize(
     ASSERT(m_stubInfo);
     m_stubInfo->startLocation = start;
     m_stubInfo->doneLocation = fastPath.locationOf<JSInternalPtrTag>(m_done);
-    m_stubInfo->m_identifier = identifier();
 
     if (!m_stubInfo->useDataIC)
         m_stubInfo->m_slowPathCallLocation = slowPath.locationOf<JSInternalPtrTag>(m_slowPathCall);

@@ -29,6 +29,7 @@
 
 #include "AssemblyHelpers.h"
 #include "CCallHelpers.h"
+#include "CacheableIdentifier.h"
 #include "CodeOrigin.h"
 #include "JITOperationValidation.h"
 #include "JITOperations.h"
@@ -41,7 +42,6 @@ class JITCompiler;
 struct UnlinkedStructureStubInfo;
 }
 
-class CacheableIdentifier;
 class CallSiteIndex;
 class CodeBlock;
 class JIT;
