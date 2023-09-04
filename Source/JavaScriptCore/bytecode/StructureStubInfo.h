@@ -117,11 +117,11 @@ public:
 
     ~StructureStubInfo();
 
-    void initGetByIdSelf(const ConcurrentJSLockerBase&, CodeBlock*, Structure* inlineAccessBaseStructure, PropertyOffset, CacheableIdentifier);
+    void initGetByIdSelf(const ConcurrentJSLockerBase&, CodeBlock*, Structure* inlineAccessBaseStructure, PropertyOffset);
     void initArrayLength(const ConcurrentJSLockerBase&);
     void initStringLength(const ConcurrentJSLockerBase&);
-    void initPutByIdReplace(const ConcurrentJSLockerBase&, CodeBlock*, Structure* inlineAccessBaseStructure, PropertyOffset, CacheableIdentifier);
-    void initInByIdSelf(const ConcurrentJSLockerBase&, CodeBlock*, Structure* inlineAccessBaseStructure, PropertyOffset, CacheableIdentifier);
+    void initPutByIdReplace(const ConcurrentJSLockerBase&, CodeBlock*, Structure* inlineAccessBaseStructure, PropertyOffset);
+    void initInByIdSelf(const ConcurrentJSLockerBase&, CodeBlock*, Structure* inlineAccessBaseStructure, PropertyOffset);
 
     AccessGenerationResult addAccessCase(const GCSafeConcurrentJSLocker&, JSGlobalObject*, CodeBlock*, ECMAMode, CacheableIdentifier, RefPtr<AccessCase>);
 
@@ -549,6 +549,7 @@ struct UnlinkedStructureStubInfo {
     bool prototypeIsKnownObject : 1 { false };
     bool canBeMegamorphic : 1 { false };
     bool isEnumerator : 1 { false };
+    CacheableIdentifier m_identifier; // This only comes from already marked one. Thus, we do not mark it via GC.
     CodeLocationLabel<JSInternalPtrTag> doneLocation;
     CodeLocationLabel<JITStubRoutinePtrTag> slowPathStartLocation;
 };

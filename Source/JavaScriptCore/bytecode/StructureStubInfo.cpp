@@ -42,12 +42,11 @@ static constexpr bool verbose = false;
 
 StructureStubInfo::~StructureStubInfo() = default;
 
-void StructureStubInfo::initGetByIdSelf(const ConcurrentJSLockerBase& locker, CodeBlock* codeBlock, Structure* inlineAccessBaseStructure, PropertyOffset offset, CacheableIdentifier identifier)
+void StructureStubInfo::initGetByIdSelf(const ConcurrentJSLockerBase& locker, CodeBlock* codeBlock, Structure* inlineAccessBaseStructure, PropertyOffset offset)
 {
     ASSERT(m_cacheType == CacheType::Unset);
     ASSERT(hasConstantIdentifier);
     setCacheType(locker, CacheType::GetByIdSelf);
-    m_identifier = identifier;
     m_inlineAccessBaseStructureID.set(codeBlock->vm(), codeBlock, inlineAccessBaseStructure);
     byIdSelfOffset = offset;
 }
@@ -64,20 +63,20 @@ void StructureStubInfo::initStringLength(const ConcurrentJSLockerBase& locker)
     setCacheType(locker, CacheType::StringLength);
 }
 
-void StructureStubInfo::initPutByIdReplace(const ConcurrentJSLockerBase& locker, CodeBlock* codeBlock, Structure* inlineAccessBaseStructure, PropertyOffset offset, CacheableIdentifier identifier)
+void StructureStubInfo::initPutByIdReplace(const ConcurrentJSLockerBase& locker, CodeBlock* codeBlock, Structure* inlineAccessBaseStructure, PropertyOffset offset)
 {
     ASSERT(m_cacheType == CacheType::Unset);
+    ASSERT(hasConstantIdentifier);
     setCacheType(locker, CacheType::PutByIdReplace);
-    m_identifier = identifier;
     m_inlineAccessBaseStructureID.set(codeBlock->vm(), codeBlock, inlineAccessBaseStructure);
     byIdSelfOffset = offset;
 }
 
-void StructureStubInfo::initInByIdSelf(const ConcurrentJSLockerBase& locker, CodeBlock* codeBlock, Structure* inlineAccessBaseStructure, PropertyOffset offset, CacheableIdentifier identifier)
+void StructureStubInfo::initInByIdSelf(const ConcurrentJSLockerBase& locker, CodeBlock* codeBlock, Structure* inlineAccessBaseStructure, PropertyOffset offset)
 {
     ASSERT(m_cacheType == CacheType::Unset);
+    ASSERT(hasConstantIdentifier);
     setCacheType(locker, CacheType::InByIdSelf);
-    m_identifier = identifier;
     m_inlineAccessBaseStructureID.set(codeBlock->vm(), codeBlock, inlineAccessBaseStructure);
     byIdSelfOffset = offset;
 }
@@ -216,7 +215,6 @@ AccessGenerationResult StructureStubInfo::addAccessCase(
         // m_inlineAccessBaseStructureID. The reason we don't clear m_inlineAccessBaseStructureID while
         // we're buffered is because we rely on it to reset during GC if m_inlineAccessBaseStructureID
         // is collected.
-        m_identifier = nullptr;
         m_inlineAccessBaseStructureID.clear();
         
         // If we generated some code then we don't want to attempt to repatch in the future until we
@@ -231,7 +229,6 @@ AccessGenerationResult StructureStubInfo::addAccessCase(
 void StructureStubInfo::reset(const ConcurrentJSLockerBase& locker, CodeBlock* codeBlock)
 {
     clearBufferedStructures();
-    m_identifier = nullptr;
     m_inlineAccessBaseStructureID.clear();
 
     if (m_cacheType == CacheType::Unset)
@@ -538,6 +535,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(const BaselineUn
     accessType = unlinkedStubInfo.accessType;
     doneLocation = unlinkedStubInfo.doneLocation;
     slowPathStartLocation = unlinkedStubInfo.slowPathStartLocation;
+    m_identifier = unlinkedStubInfo.m_identifier;
     callSiteIndex = CallSiteIndex(BytecodeIndex(unlinkedStubInfo.bytecodeIndex.offset()));
     codeOrigin = CodeOrigin(unlinkedStubInfo.bytecodeIndex);
     m_codePtr = slowPathStartLocation;
@@ -740,6 +738,7 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(const DFG::Un
     accessType = unlinkedStubInfo.accessType;
     doneLocation = unlinkedStubInfo.doneLocation;
     slowPathStartLocation = unlinkedStubInfo.slowPathStartLocation;
+    m_identifier = unlinkedStubInfo.m_identifier;
     callSiteIndex = unlinkedStubInfo.callSiteIndex;
     codeOrigin = unlinkedStubInfo.codeOrigin;
     m_codePtr = slowPathStartLocation;

@@ -959,6 +959,7 @@ RefPtr<BaselineJITCode> JIT::link(LinkBuffer& patchBuffer)
         for (auto& gen : generators) {
             gen.m_unlinkedStubInfo->doneLocation = patchBuffer.locationOf<JSInternalPtrTag>(gen.m_done);
             gen.m_unlinkedStubInfo->slowPathStartLocation = patchBuffer.locationOf<JITStubRoutinePtrTag>(gen.m_slowPathBegin);
+            gen.m_unlinkedStubInfo->m_identifier = gen.identifier();
         }
     };
 

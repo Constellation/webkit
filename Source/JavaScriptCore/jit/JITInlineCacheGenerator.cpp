@@ -65,6 +65,7 @@ void JITInlineCacheGenerator::finalize(
     ASSERT(m_stubInfo);
     m_stubInfo->startLocation = start;
     m_stubInfo->doneLocation = fastPath.locationOf<JSInternalPtrTag>(m_done);
+    m_stubInfo->m_identifier = identifier();
 
     if (!m_stubInfo->useDataIC)
         m_stubInfo->m_slowPathCallLocation = slowPath.locationOf<JSInternalPtrTag>(m_slowPathCall);
@@ -130,7 +131,7 @@ JITGetByIdGenerator::JITGetByIdGenerator(
 {
     RELEASE_ASSERT(base.payloadGPR() != value.tagGPR());
     std::visit([&](auto* stubInfo) {
-        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSite, usedRegisters, base, value, stubInfoGPR);
+        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSite, usedRegisters, propertyName, base, value, stubInfoGPR);
     }, stubInfo);
 }
 
@@ -185,12 +186,12 @@ void JITGetByIdGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, unsig
 
 JITGetByIdWithThisGenerator::JITGetByIdWithThisGenerator(
     CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSetBuilder& usedRegisters,
-    CacheableIdentifier, JSValueRegs value, JSValueRegs base, JSValueRegs thisRegs, GPRReg stubInfoGPR)
+    CacheableIdentifier propertyName, JSValueRegs value, JSValueRegs base, JSValueRegs thisRegs, GPRReg stubInfoGPR)
     : JITByIdGenerator(codeBlock, stubInfo, jitType, codeOrigin, AccessType::GetByIdWithThis, base, value)
 {
     RELEASE_ASSERT(thisRegs.payloadGPR() != thisRegs.tagGPR());
     std::visit([&](auto* stubInfo) {
-        setUpStubInfo(*stubInfo, AccessType::GetByIdWithThis, codeOrigin, callSite, usedRegisters, value, base, thisRegs, stubInfoGPR);
+        setUpStubInfo(*stubInfo, AccessType::GetByIdWithThis, codeOrigin, callSite, usedRegisters, propertyName, value, base, thisRegs, stubInfoGPR);
     }, stubInfo);
 }
 
@@ -234,13 +235,13 @@ void JITGetByIdWithThisGenerator::generateDFGDataICFastPath(DFG::JITCompiler& ji
 #endif
 
 JITPutByIdGenerator::JITPutByIdGenerator(
-    CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSetBuilder& usedRegisters, CacheableIdentifier,
-    JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, GPRReg scratch, 
+    CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSetBuilder& usedRegisters, CacheableIdentifier propertyName,
+    JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, GPRReg scratch,
     ECMAMode ecmaMode, AccessType accessType)
         : JITByIdGenerator(codeBlock, stubInfo, jitType, codeOrigin, accessType, base, value)
 {
     std::visit([&](auto* stubInfo) {
-        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSite, usedRegisters, base, value, stubInfoGPR, scratch, ecmaMode);
+        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSite, usedRegisters, propertyName, base, value, stubInfoGPR, scratch, ecmaMode);
     }, stubInfo);
 }
 
@@ -331,7 +332,7 @@ void JITDelByValGenerator::finalize(LinkBuffer& fastPath, LinkBuffer& slowPath)
         m_stubInfo->m_codePtr = m_stubInfo->slowPathStartLocation;
 }
 
-JITDelByIdGenerator::JITDelByIdGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSetBuilder& usedRegisters, CacheableIdentifier, JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR)
+JITDelByIdGenerator::JITDelByIdGenerator(CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, AccessType accessType, const RegisterSetBuilder& usedRegisters, CacheableIdentifier propertyName, JSValueRegs base, JSValueRegs result, GPRReg stubInfoGPR)
     : Base(codeBlock, stubInfo, jitType, codeOrigin, accessType)
 {
     ASSERT(base.payloadGPR() != result.payloadGPR());
@@ -339,7 +340,7 @@ JITDelByIdGenerator::JITDelByIdGenerator(CodeBlock* codeBlock, CompileTimeStruct
     ASSERT(base.tagGPR() != result.tagGPR());
 #endif
     std::visit([&](auto* stubInfo) {
-        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, base, result, stubInfoGPR);
+        setUpStubInfo(*stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, propertyName, base, result, stubInfoGPR);
     }, stubInfo);
 }
 
@@ -410,11 +411,9 @@ JITInByIdGenerator::JITInByIdGenerator(
     CacheableIdentifier propertyName, JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR)
     : JITByIdGenerator(codeBlock, stubInfo, jitType, codeOrigin, AccessType::InById, base, value)
 {
-    // FIXME: We are not supporting fast path for "length" property.
-    UNUSED_PARAM(propertyName);
     RELEASE_ASSERT(base.payloadGPR() != value.tagGPR());
     std::visit([&](auto* stubInfo) {
-        setUpStubInfo(*stubInfo, AccessType::InById, codeOrigin, callSite, usedRegisters, base, value, stubInfoGPR);
+        setUpStubInfo(*stubInfo, AccessType::InById, codeOrigin, callSite, usedRegisters, propertyName, base, value, stubInfoGPR);
     }, stubInfo);
 }
 

@@ -114,7 +114,7 @@ protected:
     JITByIdGenerator() = default;
 
     JITByIdGenerator(
-        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, AccessType,
+        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, AccessType, CacheableIdentifier,
         JSValueRegs base, JSValueRegs value);
 
 public:
@@ -129,10 +129,11 @@ public:
 
     template<typename StubInfo>
     static void setUpStubInfoImpl(StubInfo& stubInfo,
-        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters,
+        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier propertyName,
         JSValueRegs baseRegs, JSValueRegs valueRegs, GPRReg stubInfoGPR)
     {
         JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
+        stubInfo.m_identifier = propertyName;
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
             stubInfo.m_baseGPR = baseRegs.payloadGPR();
             stubInfo.m_valueGPR = valueRegs.payloadGPR();
@@ -178,10 +179,10 @@ public:
 
     template<typename StubInfo>
     static void setUpStubInfo(StubInfo& stubInfo,
-        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters,
+        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier propertyName,
         JSValueRegs baseRegs, JSValueRegs valueRegs, GPRReg stubInfoGPR)
     {
-        JITByIdGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, baseRegs, valueRegs, stubInfoGPR);
+        JITByIdGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, propertyName, baseRegs, valueRegs, stubInfoGPR);
     }
 
 private:
@@ -204,10 +205,10 @@ public:
 
     template<typename StubInfo>
     static void setUpStubInfo(StubInfo& stubInfo,
-        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters,
+        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier propertyName,
         JSValueRegs valueRegs, JSValueRegs baseRegs, JSValueRegs thisRegs, GPRReg stubInfoGPR)
     {
-        JITByIdGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, baseRegs, valueRegs, stubInfoGPR);
+        JITByIdGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, propertyName, baseRegs, valueRegs, stubInfoGPR);
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
             stubInfo.m_extraGPR = thisRegs.payloadGPR();
 #if USE(JSVALUE32_64)
@@ -234,10 +235,10 @@ public:
 
     template<typename StubInfo>
     static void setUpStubInfo(StubInfo& stubInfo,
-        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters,
+        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier propertyName,
         JSValueRegs baseRegs, JSValueRegs valueRegs, GPRReg stubInfoGPR, GPRReg scratchGPR, ECMAMode ecmaMode)
     {
-        JITByIdGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, baseRegs, valueRegs, stubInfoGPR);
+        JITByIdGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, propertyName, baseRegs, valueRegs, stubInfoGPR);
         if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>)
             stubInfo.usedRegisters.remove(scratchGPR);
         else
@@ -381,26 +382,10 @@ public:
 
     template<typename StubInfo>
     static void setUpStubInfo(StubInfo& stubInfo,
-        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters,
+        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier propertyName,
         JSValueRegs baseRegs, JSValueRegs resultRegs, GPRReg stubInfoGPR)
     {
-        JITInlineCacheGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters);
-        if constexpr (!std::is_same_v<std::decay_t<StubInfo>, BaselineUnlinkedStructureStubInfo>) {
-            stubInfo.m_baseGPR = baseRegs.payloadGPR();
-            stubInfo.m_extraGPR = InvalidGPRReg;
-            stubInfo.m_valueGPR = resultRegs.payloadGPR();
-            stubInfo.m_stubInfoGPR = stubInfoGPR;
-#if USE(JSVALUE32_64)
-            stubInfo.m_baseTagGPR = baseRegs.tagGPR();
-            stubInfo.m_valueTagGPR = resultRegs.tagGPR();
-            stubInfo.m_extraTagGPR = InvalidGPRReg;
-#endif
-            stubInfo.hasConstantIdentifier = true;
-        } else {
-            UNUSED_PARAM(baseRegs);
-            UNUSED_PARAM(resultRegs);
-            UNUSED_PARAM(stubInfoGPR);
-        }
+        JITByIdGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, propertyName, baseRegs, resultRegs, stubInfoGPR);
     }
 
     CCallHelpers::PatchableJump m_slowPathJump;
@@ -475,10 +460,10 @@ public:
 
     template<typename StubInfo>
     static void setUpStubInfo(StubInfo& stubInfo,
-        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters,
+        AccessType accessType, CodeOrigin codeOrigin, CallSiteIndex callSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier propertyName,
         JSValueRegs baseRegs, JSValueRegs valueRegs, GPRReg stubInfoGPR)
     {
-        JITByIdGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, baseRegs, valueRegs, stubInfoGPR);
+        JITByIdGenerator::setUpStubInfoImpl(stubInfo, accessType, codeOrigin, callSiteIndex, usedRegisters, propertyName, baseRegs, valueRegs, stubInfoGPR);
     }
 };
 

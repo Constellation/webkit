@@ -402,7 +402,7 @@ static InlineCacheAction tryCacheGetBy(JSGlobalObject* globalObject, CodeBlock* 
                     LOG_IC((ICEvent::GetBySelfPatch, structure->classInfoForCells(), Identifier::fromUid(vm, propertyName.uid()), slot.slotBase() == baseValue));
                     structure->startWatchingPropertyForReplacements(vm, slot.cachedOffset());
                     repatchSlowPathCall(codeBlock, stubInfo, appropriateGetByOptimizeFunction(kind));
-                    stubInfo.initGetByIdSelf(locker, codeBlock, structure, slot.cachedOffset(), propertyName);
+                    stubInfo.initGetByIdSelf(locker, codeBlock, structure, slot.cachedOffset());
                     return RetryCacheLater;
                 }
             }
@@ -903,7 +903,7 @@ static InlineCacheAction tryCachePutBy(JSGlobalObject* globalObject, CodeBlock* 
                     if (generatedCodeInline) {
                         LOG_IC((ICEvent::PutBySelfPatch, oldStructure->classInfoForCells(), ident, slot.base() == baseValue));
                         repatchSlowPathCall(codeBlock, stubInfo, appropriatePutByOptimizeFunction(putByKind));
-                        stubInfo.initPutByIdReplace(locker, codeBlock, oldStructure, slot.cachedOffset(), propertyName);
+                        stubInfo.initPutByIdReplace(locker, codeBlock, oldStructure, slot.cachedOffset());
                         return RetryCacheLater;
                     }
                 }
@@ -1373,7 +1373,7 @@ static InlineCacheAction tryCacheInBy(
                     LOG_IC((ICEvent::InBySelfPatch, structure->classInfoForCells(), ident, slot.slotBase() == base));
                     structure->startWatchingPropertyForReplacements(vm, slot.cachedOffset());
                     repatchSlowPathCall(codeBlock, stubInfo, operationInByIdOptimize);
-                    stubInfo.initInByIdSelf(locker, codeBlock, structure, slot.cachedOffset(), propertyName);
+                    stubInfo.initInByIdSelf(locker, codeBlock, structure, slot.cachedOffset());
                     return RetryCacheLater;
                 }
             }
