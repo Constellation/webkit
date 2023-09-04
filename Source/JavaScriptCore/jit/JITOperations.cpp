@@ -256,7 +256,7 @@ JSC_DEFINE_JIT_OPERATION(operationThrowIteratorResultIsNotObject, void, (JSGloba
     throwTypeError(globalObject, scope, "Iterator result interface is not an object."_s);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationTryGetByIdGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationTryGetByIdGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
@@ -264,7 +264,7 @@ JSC_DEFINE_JIT_OPERATION(operationTryGetByIdGaveUp, EncodedJSValue, (JSGlobalObj
 
     stubInfo->tookSlowPath = true;
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
     JSValue baseValue = JSValue::decode(base);
@@ -289,14 +289,14 @@ JSC_DEFINE_JIT_OPERATION(operationTryGetByIdGeneric, EncodedJSValue, (JSGlobalOb
     return JSValue::encode(slot.getPureResult());
 }
 
-JSC_DEFINE_JIT_OPERATION(operationTryGetByIdOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationTryGetByIdOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
     JSValue baseValue = JSValue::decode(base);
@@ -312,7 +312,7 @@ JSC_DEFINE_JIT_OPERATION(operationTryGetByIdOptimize, EncodedJSValue, (JSGlobalO
     return JSValue::encode(slot.getPureResult());
 }
 
-JSC_DEFINE_JIT_OPERATION(operationGetByIdDirectGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationGetByIdDirectGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
@@ -321,7 +321,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdDirectGaveUp, EncodedJSValue, (JSGlobal
 
     stubInfo->tookSlowPath = true;
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
     JSValue baseValue = JSValue::decode(base);
@@ -339,6 +339,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdDirectGeneric, EncodedJSValue, (JSGloba
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
     auto scope = DECLARE_THROW_SCOPE(vm);
+
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
@@ -351,14 +352,14 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdDirectGeneric, EncodedJSValue, (JSGloba
     RELEASE_AND_RETURN(scope, JSValue::encode(found ? slot.getValue(globalObject, ident) : jsUndefined()));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationGetByIdDirectOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationGetByIdDirectOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
     JSValue baseValue = JSValue::decode(base);
@@ -439,14 +440,16 @@ static ALWAYS_INLINE JSValue getByIdMegamorphic(JSGlobalObject* globalObject, VM
     }
 }
 
-JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
 
     JSValue baseValue = JSValue::decode(base);
-    return JSValue::encode(getByIdMegamorphic(globalObject, vm, callFrame, stubInfo, baseValue, baseValue, CacheableIdentifier::createFromRawBits(rawCacheableIdentifier), GetByKind::ById));
+    CacheableIdentifier identifier = stubInfo->identifier();
+
+    return JSValue::encode(getByIdMegamorphic(globalObject, vm, callFrame, stubInfo, baseValue, baseValue, identifier, GetByKind::ById));
 }
 
 JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphicGeneric, EncodedJSValue, (JSGlobalObject* globalObject, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
@@ -454,11 +457,14 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphicGeneric, EncodedJSValue, (JS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
     JSValue baseValue = JSValue::decode(base);
-    return JSValue::encode(getByIdMegamorphic(globalObject, vm, callFrame, nullptr, baseValue, baseValue, CacheableIdentifier::createFromRawBits(rawCacheableIdentifier), GetByKind::ById));
+    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+
+    return JSValue::encode(getByIdMegamorphic(globalObject, vm, callFrame, nullptr, baseValue, baseValue, identifier, GetByKind::ById));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationGetByIdGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationGetByIdGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base))
 {
     SuperSamplerScope superSamplerScope(false);
     
@@ -470,7 +476,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdGaveUp, EncodedJSValue, (JSGlobalObject
     
     JSValue baseValue = JSValue::decode(base);
     PropertySlot slot(baseValue, PropertySlot::InternalMethodType::Get);
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     JSValue result = baseValue.get(globalObject, ident, slot);
 
@@ -498,7 +504,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdGeneric, EncodedJSValue, (JSGlobalObjec
     return JSValue::encode(result);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationGetByIdOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationGetByIdOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base))
 {
     SuperSamplerScope superSamplerScope(false);
     
@@ -506,7 +512,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdOptimize, EncodedJSValue, (JSGlobalObje
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
     JSValue baseValue = JSValue::decode(base);
@@ -522,7 +528,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdOptimize, EncodedJSValue, (JSGlobalObje
     }));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, EncodedJSValue thisEncoded, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, EncodedJSValue thisEncoded))
 {
     SuperSamplerScope superSamplerScope(false);
 
@@ -532,7 +538,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisGaveUp, EncodedJSValue, (JSGlob
 
     stubInfo->tookSlowPath = true;
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
     JSValue baseValue = JSValue::decode(base);
@@ -549,6 +555,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisGeneric, EncodedJSValue, (JSGlo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
@@ -559,7 +566,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisGeneric, EncodedJSValue, (JSGlo
     return JSValue::encode(baseValue.get(globalObject, ident, slot));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, EncodedJSValue thisEncoded, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, EncodedJSValue thisEncoded))
 {
     SuperSamplerScope superSamplerScope(false);
     
@@ -567,7 +574,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisOptimize, EncodedJSValue, (JSGl
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
     JSValue baseValue = JSValue::decode(base);
@@ -584,13 +591,15 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisOptimize, EncodedJSValue, (JSGl
     }));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisMegamorphic, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, EncodedJSValue encodedThis, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisMegamorphic, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, EncodedJSValue encodedThis))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
 
-    return JSValue::encode(getByIdMegamorphic(globalObject, vm, callFrame, stubInfo, JSValue::decode(base), JSValue::decode(encodedThis), CacheableIdentifier::createFromRawBits(rawCacheableIdentifier), GetByKind::ByIdWithThis));
+    CacheableIdentifier identifier = stubInfo->identifier();
+
+    return JSValue::encode(getByIdMegamorphic(globalObject, vm, callFrame, stubInfo, JSValue::decode(base), JSValue::decode(encodedThis), identifier, GetByKind::ByIdWithThis));
 }
 
 JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisMegamorphicGeneric, EncodedJSValue, (JSGlobalObject* globalObject, EncodedJSValue base, EncodedJSValue encodedThis, uintptr_t rawCacheableIdentifier))
@@ -598,10 +607,13 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisMegamorphicGeneric, EncodedJSVa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    return JSValue::encode(getByIdMegamorphic(globalObject, vm, callFrame, nullptr, JSValue::decode(base), JSValue::decode(encodedThis), CacheableIdentifier::createFromRawBits(rawCacheableIdentifier), GetByKind::ByIdWithThis));
+
+    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+
+    return JSValue::encode(getByIdMegamorphic(globalObject, vm, callFrame, nullptr, JSValue::decode(base), JSValue::decode(encodedThis), identifier, GetByKind::ByIdWithThis));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationInByIdGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationInByIdGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base))
 {
     SuperSamplerScope superSamplerScope(false);
 
@@ -612,7 +624,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByIdGaveUp, EncodedJSValue, (JSGlobalObject*
 
     stubInfo->tookSlowPath = true;
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
     JSValue baseValue = JSValue::decode(base);
@@ -629,7 +641,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByIdGaveUp, EncodedJSValue, (JSGlobalObject*
     return JSValue::encode(jsBoolean(baseObject->getPropertySlot(globalObject, ident, slot)));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationInByIdOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationInByIdOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base))
 {
     SuperSamplerScope superSamplerScope(false);
 
@@ -638,7 +650,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByIdOptimize, EncodedJSValue, (JSGlobalObjec
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
 
     JSValue baseValue = JSValue::decode(base);
@@ -822,7 +834,7 @@ JSC_DEFINE_JIT_OPERATION(operationHasPrivateBrandGaveUp, EncodedJSValue, (JSGlob
     return JSValue::encode(jsBoolean(asObject(baseValue)->hasPrivateBrand(globalObject, JSValue::decode(encodedBrand))));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
     
@@ -833,7 +845,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictGaveUp, void, (JSGlobalObject* gl
     stubInfo->tookSlowPath = true;
     
     JSValue baseValue = JSValue::decode(encodedBase);
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     PutPropertySlot slot(baseValue, true, callFrame->codeBlock()->putByIdContext());
     baseValue.putInline(globalObject, ident, JSValue::decode(encodedValue), slot);
@@ -841,7 +853,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictGaveUp, void, (JSGlobalObject* gl
     LOG_IC((ICEvent::OperationPutByIdStrict, baseValue.classInfoOrNull(), ident, slot.base() == baseValue));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
     
@@ -852,7 +864,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyGaveUp, void, (JSGlobalObject* gl
     stubInfo->tookSlowPath = true;
     
     JSValue baseValue = JSValue::decode(encodedBase);
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     PutPropertySlot slot(baseValue, false, callFrame->codeBlock()->putByIdContext());
     baseValue.putInline(globalObject, ident, JSValue::decode(encodedValue), slot);
@@ -942,7 +954,7 @@ ALWAYS_INLINE static void putByIdMegamorphic(JSGlobalObject* globalObject, VM& v
     }
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictMegamorphic, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictMegamorphic, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
 
@@ -952,7 +964,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictMegamorphic, void, (JSGlobalObjec
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue value = JSValue::decode(encodedValue);
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
 
     putByIdMegamorphic(globalObject, vm, callFrame, stubInfo, baseValue, value, identifier, PutByKind::ByIdStrict);
 }
@@ -972,7 +984,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictMegamorphicGeneric, void, (JSGlob
     putByIdMegamorphic(globalObject, vm, callFrame, nullptr, baseValue, value, identifier, PutByKind::ByIdStrict);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyMegamorphic, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyMegamorphic, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
 
@@ -982,7 +994,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyMegamorphic, void, (JSGlobalObjec
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue value = JSValue::decode(encodedValue);
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
 
     putByIdMegamorphic(globalObject, vm, callFrame, stubInfo, baseValue, value, identifier, PutByKind::ByIdSloppy);
 }
@@ -1002,7 +1014,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyMegamorphicGeneric, void, (JSGlob
     putByIdMegamorphic(globalObject, vm, callFrame, nullptr, baseValue, value, identifier, PutByKind::ByIdSloppy);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectStrictGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectStrictGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
     
@@ -1013,7 +1025,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectStrictGaveUp, void, (JSGlobalObje
     stubInfo->tookSlowPath = true;
     
     JSValue baseValue = JSValue::decode(encodedBase);
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     PutPropertySlot slot(baseValue, true, callFrame->codeBlock()->putByIdContext());
     CommonSlowPaths::putDirectWithReify(vm, globalObject, asObject(baseValue), ident, JSValue::decode(encodedValue), slot);
@@ -1021,7 +1033,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectStrictGaveUp, void, (JSGlobalObje
     LOG_IC((ICEvent::OperationPutByIdDirectStrict, baseValue.classInfoOrNull(), ident, slot.base() == baseValue));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectSloppyGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectSloppyGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
     
@@ -1032,7 +1044,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectSloppyGaveUp, void, (JSGlobalObje
     stubInfo->tookSlowPath = true;
     
     JSValue baseValue = JSValue::decode(encodedBase);
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     PutPropertySlot slot(baseValue, false, callFrame->codeBlock()->putByIdContext());
     CommonSlowPaths::putDirectWithReify(vm, globalObject, asObject(baseValue), ident, JSValue::decode(encodedValue), slot);
@@ -1040,7 +1052,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectSloppyGaveUp, void, (JSGlobalObje
     LOG_IC((ICEvent::OperationPutByIdDirectSloppy, baseValue.classInfoOrNull(), ident, slot.base() == baseValue));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
     
@@ -1049,7 +1061,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictOptimize, void, (JSGlobalObject* 
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
 
@@ -1072,7 +1084,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictOptimize, void, (JSGlobalObject* 
         repatchPutBy(globalObject, codeBlock, baseValue, structure, identifier, slot, *stubInfo, PutByKind::ByIdStrict);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
     
@@ -1081,7 +1093,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyOptimize, void, (JSGlobalObject* 
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
 
@@ -1104,7 +1116,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyOptimize, void, (JSGlobalObject* 
         repatchPutBy(globalObject, codeBlock, baseValue, structure, identifier, slot, *stubInfo, PutByKind::ByIdSloppy);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectStrictOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectStrictOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
     
@@ -1113,7 +1125,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectStrictOptimize, void, (JSGlobalOb
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
     auto scope = DECLARE_THROW_SCOPE(vm);
     
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
 
@@ -1135,7 +1147,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectStrictOptimize, void, (JSGlobalOb
         repatchPutBy(globalObject, codeBlock, baseObject, structure, identifier, slot, *stubInfo, PutByKind::ByIdDirectStrict);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectSloppyOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectSloppyOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
     
@@ -1144,7 +1156,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectSloppyOptimize, void, (JSGlobalOb
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
     auto scope = DECLARE_THROW_SCOPE(vm);
     
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
 
@@ -1206,7 +1218,7 @@ ALWAYS_INLINE static void definePrivateField(VM& vm, JSGlobalObject* globalObjec
     callback(vm, codeBlock, oldStructure, putSlot, ident);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdDefinePrivateFieldStrictGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdDefinePrivateFieldStrictGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
@@ -1214,21 +1226,21 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDefinePrivateFieldStrictGaveUp, void, (
 
     stubInfo->tookSlowPath = true;
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     JSValue value = JSValue::decode(encodedValue);
     JSValue baseValue = JSValue::decode(encodedBase);
 
     definePrivateField(vm, globalObject, callFrame, baseValue, identifier, value, [](VM&, CodeBlock*, Structure*, PutPropertySlot&, const Identifier&) { });
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdDefinePrivateFieldStrictOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdDefinePrivateFieldStrictOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
     JSValue value = JSValue::decode(encodedValue);
     JSValue baseValue = JSValue::decode(encodedBase);
@@ -1244,7 +1256,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDefinePrivateFieldStrictOptimize, void,
     });
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdSetPrivateFieldStrictGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdSetPrivateFieldStrictGaveUp, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
@@ -1252,21 +1264,21 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSetPrivateFieldStrictGaveUp, void, (JSG
 
     stubInfo->tookSlowPath = true;
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     JSValue value = JSValue::decode(encodedValue);
     JSValue baseValue = JSValue::decode(encodedBase);
 
     setPrivateField(vm, globalObject, callFrame, baseValue, identifier, value, [](VM&, CodeBlock*, Structure*, PutPropertySlot&, const Identifier&) { });
 }
 
-JSC_DEFINE_JIT_OPERATION(operationPutByIdSetPrivateFieldStrictOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationPutByIdSetPrivateFieldStrictOptimize, void, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedValue, EncodedJSValue encodedBase))
 {
     SuperSamplerScope superSamplerScope(false);
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
     JSValue value = JSValue::decode(encodedValue);
     JSValue baseValue = JSValue::decode(encodedBase);
@@ -3229,7 +3241,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameGeneric, EncodedJSValue, (JSGlob
     return JSValue::encode(getPrivateName(globalObject, callFrame, baseValue, fieldNameValue));
 }
 
-JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameByIdGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameByIdGaveUp, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base))
 {
     SuperSamplerScope superSamplerScope(false);
 
@@ -3240,7 +3252,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameByIdGaveUp, EncodedJSValue, (JSG
     stubInfo->tookSlowPath = true;
 
     JSValue baseValue = JSValue::decode(base);
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier fieldName = Identifier::fromUid(vm, identifier.uid());
 
     JSValue result = getPrivateName(globalObject, callFrame, baseValue, fieldName);
@@ -3250,7 +3262,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameByIdGaveUp, EncodedJSValue, (JSG
     return JSValue::encode(result);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameByIdOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameByIdOptimize, EncodedJSValue, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue base))
 {
     SuperSamplerScope superSamplerScope(false);
 
@@ -3259,7 +3271,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameByIdOptimize, EncodedJSValue, (J
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
 
     JSValue baseValue = JSValue::decode(base);
     auto fieldName = Identifier::fromUid(vm, identifier.uid());
@@ -3338,31 +3350,31 @@ static ALWAYS_INLINE size_t deleteByIdOptimize(JSGlobalObject* globalObject, VM&
     return result;
 }
 
-JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyOptimize, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyOptimize, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
 
     JSValue baseValue = JSValue::decode(encodedBase);
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
 
     return deleteByIdOptimize(globalObject, vm, callFrame, stubInfo, baseValue, identifier, ECMAMode::sloppy());
 }
 
-JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictOptimize, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictOptimize, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
 
     JSValue baseValue = JSValue::decode(encodedBase);
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
 
     return deleteByIdOptimize(globalObject, vm, callFrame, stubInfo, baseValue, identifier, ECMAMode::strict());
 }
 
-JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyGaveUp, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyGaveUp, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
@@ -3370,13 +3382,13 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyGaveUp, size_t, (JSGlobalObjec
 
     stubInfo->tookSlowPath = true;
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     DeletePropertySlot slot;
     return deleteById(globalObject, vm, slot, JSValue::decode(encodedBase), ident, ECMAMode::sloppy());
 }
 
-JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictGaveUp, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase, uintptr_t rawCacheableIdentifier))
+JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictGaveUp, size_t, (JSGlobalObject* globalObject, StructureStubInfo* stubInfo, EncodedJSValue encodedBase))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
@@ -3384,7 +3396,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictGaveUp, size_t, (JSGlobalObjec
 
     stubInfo->tookSlowPath = true;
 
-    CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
+    CacheableIdentifier identifier = stubInfo->identifier();
     Identifier ident = Identifier::fromUid(vm, identifier.uid());
     DeletePropertySlot slot;
     return deleteById(globalObject, vm, slot, JSValue::decode(encodedBase), ident, ECMAMode::strict());
