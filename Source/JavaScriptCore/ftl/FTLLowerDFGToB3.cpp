@@ -4081,7 +4081,7 @@ private:
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
         patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
         patchpoint->clobber(RegisterSetBuilder::macroClobberedGPRs());
-        patchpoint->numGPScratchRegisters = 4;
+        patchpoint->numGPScratchRegisters = 3;
 
         RefPtr<PatchpointExceptionHandle> exceptionHandle = preparePatchpointForExceptions(patchpoint);
 
@@ -4108,9 +4108,8 @@ private:
             GPRReg scratch1GPR = params.gpScratch(0);
             GPRReg scratch2GPR = params.gpScratch(1);
             GPRReg scratch3GPR = params.gpScratch(2);
-            GPRReg scratch4GPR = params.gpScratch(3);
 
-            CCallHelpers::JumpList slowCases = jit.loadMegamorphicProperty(state->vm(), baseGPR, InvalidGPRReg, uid, resultGPR, scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR);
+            CCallHelpers::JumpList slowCases = jit.loadMegamorphicProperty(state->vm(), baseGPR, InvalidGPRReg, uid, resultGPR, scratch1GPR, scratch2GPR, scratch3GPR);
             CCallHelpers::Label doneForSlow = jit.label();
 
             params.addLatePath([=](CCallHelpers& jit) {
@@ -4140,7 +4139,7 @@ private:
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
         patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
         patchpoint->clobber(RegisterSetBuilder::macroClobberedGPRs());
-        patchpoint->numGPScratchRegisters = 5;
+        patchpoint->numGPScratchRegisters = 4;
 
         RefPtr<PatchpointExceptionHandle> exceptionHandle = preparePatchpointForExceptions(patchpoint);
 
@@ -4167,15 +4166,14 @@ private:
             GPRReg scratch2GPR = params.gpScratch(1);
             GPRReg scratch3GPR = params.gpScratch(2);
             GPRReg scratch4GPR = params.gpScratch(3);
-            GPRReg scratch5GPR = params.gpScratch(4);
 
             CCallHelpers::JumpList slowCases;
 
-            jit.loadPtr(CCallHelpers::Address(subscriptGPR, JSString::offsetOfValue()), scratch5GPR);
-            slowCases.append(jit.branchIfRopeStringImpl(scratch5GPR));
-            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch5GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
+            jit.loadPtr(CCallHelpers::Address(subscriptGPR, JSString::offsetOfValue()), scratch4GPR);
+            slowCases.append(jit.branchIfRopeStringImpl(scratch4GPR));
+            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
 
-            slowCases.append(jit.loadMegamorphicProperty(state->vm(), baseGPR, scratch5GPR, nullptr, resultGPR, scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR));
+            slowCases.append(jit.loadMegamorphicProperty(state->vm(), baseGPR, scratch4GPR, nullptr, resultGPR, scratch1GPR, scratch2GPR, scratch3GPR));
             CCallHelpers::Label doneForSlow = jit.label();
 
             params.addLatePath([=](CCallHelpers& jit) {
@@ -4244,7 +4242,7 @@ private:
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
         patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
         patchpoint->clobber(RegisterSetBuilder::macroClobberedGPRs());
-        patchpoint->numGPScratchRegisters = 4;
+        patchpoint->numGPScratchRegisters = 3;
 
         RefPtr<PatchpointExceptionHandle> exceptionHandle = preparePatchpointForExceptions(patchpoint);
 
@@ -4271,9 +4269,8 @@ private:
             GPRReg scratch1GPR = params.gpScratch(0);
             GPRReg scratch2GPR = params.gpScratch(1);
             GPRReg scratch3GPR = params.gpScratch(2);
-            GPRReg scratch4GPR = params.gpScratch(3);
 
-            CCallHelpers::JumpList slowCases = jit.loadMegamorphicProperty(state->vm(), baseGPR, InvalidGPRReg, uid, resultGPR, scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR);
+            CCallHelpers::JumpList slowCases = jit.loadMegamorphicProperty(state->vm(), baseGPR, InvalidGPRReg, uid, resultGPR, scratch1GPR, scratch2GPR, scratch3GPR);
             CCallHelpers::Label doneForSlow = jit.label();
 
             params.addLatePath([=](CCallHelpers& jit) {
@@ -4414,7 +4411,7 @@ private:
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
         patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
         patchpoint->clobber(RegisterSetBuilder::macroClobberedGPRs());
-        patchpoint->numGPScratchRegisters = 5;
+        patchpoint->numGPScratchRegisters = 4;
 
         RefPtr<PatchpointExceptionHandle> exceptionHandle = preparePatchpointForExceptions(patchpoint);
 
@@ -4441,17 +4438,16 @@ private:
             GPRReg scratch2GPR = params.gpScratch(1);
             GPRReg scratch3GPR = params.gpScratch(2);
             GPRReg scratch4GPR = params.gpScratch(3);
-            GPRReg scratch5GPR = params.gpScratch(4);
 
             CCallHelpers::JumpList slowCases;
 
             slowCases.append(jit.branchIfNotCell(subscriptGPR));
             slowCases.append(jit.branchIfNotString(subscriptGPR));
-            jit.loadPtr(CCallHelpers::Address(subscriptGPR, JSString::offsetOfValue()), scratch5GPR);
-            slowCases.append(jit.branchIfRopeStringImpl(scratch5GPR));
-            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch5GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
+            jit.loadPtr(CCallHelpers::Address(subscriptGPR, JSString::offsetOfValue()), scratch4GPR);
+            slowCases.append(jit.branchIfRopeStringImpl(scratch4GPR));
+            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
 
-            slowCases.append(jit.loadMegamorphicProperty(state->vm(), baseGPR, scratch5GPR, nullptr, resultGPR, scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR));
+            slowCases.append(jit.loadMegamorphicProperty(state->vm(), baseGPR, scratch4GPR, nullptr, resultGPR, scratch1GPR, scratch2GPR, scratch3GPR));
             CCallHelpers::Label doneForSlow = jit.label();
 
             params.addLatePath([=](CCallHelpers& jit) {
@@ -4756,7 +4752,7 @@ private:
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
         patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
         patchpoint->clobber(RegisterSetBuilder::macroClobberedGPRs());
-        patchpoint->numGPScratchRegisters = 5;
+        patchpoint->numGPScratchRegisters = 4;
 
         RefPtr<PatchpointExceptionHandle> exceptionHandle = preparePatchpointForExceptions(patchpoint);
 
@@ -4783,15 +4779,14 @@ private:
             GPRReg scratch2GPR = params.gpScratch(1);
             GPRReg scratch3GPR = params.gpScratch(2);
             GPRReg scratch4GPR = params.gpScratch(3);
-            GPRReg scratch5GPR = params.gpScratch(4);
 
             CCallHelpers::JumpList slowCases;
 
-            jit.loadPtr(CCallHelpers::Address(subscriptGPR, JSString::offsetOfValue()), scratch5GPR);
-            slowCases.append(jit.branchIfRopeStringImpl(scratch5GPR));
-            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch5GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
+            jit.loadPtr(CCallHelpers::Address(subscriptGPR, JSString::offsetOfValue()), scratch4GPR);
+            slowCases.append(jit.branchIfRopeStringImpl(scratch4GPR));
+            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
 
-            slowCases.append(jit.storeMegamorphicProperty(state->vm(), baseGPR, scratch5GPR, nullptr, valueGPR, scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR));
+            slowCases.append(jit.storeMegamorphicProperty(state->vm(), baseGPR, scratch4GPR, nullptr, valueGPR, scratch1GPR, scratch2GPR, scratch3GPR));
             CCallHelpers::Label doneForSlow = jit.label();
 
             params.addLatePath([=](CCallHelpers& jit) {
@@ -5303,7 +5298,7 @@ private:
         patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
         patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
         patchpoint->clobber(RegisterSetBuilder::macroClobberedGPRs());
-        patchpoint->numGPScratchRegisters = 4;
+        patchpoint->numGPScratchRegisters = 3;
 
         RefPtr<PatchpointExceptionHandle> exceptionHandle = preparePatchpointForExceptions(patchpoint);
 
@@ -5330,9 +5325,8 @@ private:
             GPRReg scratch1GPR = params.gpScratch(0);
             GPRReg scratch2GPR = params.gpScratch(1);
             GPRReg scratch3GPR = params.gpScratch(2);
-            GPRReg scratch4GPR = params.gpScratch(3);
 
-            CCallHelpers::JumpList slowCases = jit.storeMegamorphicProperty(state->vm(), baseGPR, InvalidGPRReg, uid, valueGPR, scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR);
+            CCallHelpers::JumpList slowCases = jit.storeMegamorphicProperty(state->vm(), baseGPR, InvalidGPRReg, uid, valueGPR, scratch1GPR, scratch2GPR, scratch3GPR);
             CCallHelpers::Label doneForSlow = jit.label();
 
             params.addLatePath([=](CCallHelpers& jit) {

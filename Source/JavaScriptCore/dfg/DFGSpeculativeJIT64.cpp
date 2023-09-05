@@ -6688,16 +6688,14 @@ void SpeculativeJIT::compileGetByIdMegamorphic(Node* node)
     GPRTemporary scratch1(this);
     GPRTemporary scratch2(this);
     GPRTemporary scratch3(this);
-    GPRTemporary scratch4(this);
 
     GPRReg baseGPR = base.gpr();
     GPRReg scratch1GPR = scratch1.gpr();
     GPRReg scratch2GPR = scratch2.gpr();
     GPRReg scratch3GPR = scratch3.gpr();
-    GPRReg scratch4GPR = scratch4.gpr();
 
     UniquedStringImpl* uid = node->cacheableIdentifier().uid();
-    JumpList slowCases = loadMegamorphicProperty(vm(), baseGPR, InvalidGPRReg, uid, scratch3GPR, scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR);
+    JumpList slowCases = loadMegamorphicProperty(vm(), baseGPR, InvalidGPRReg, uid, scratch3GPR, scratch1GPR, scratch2GPR, scratch3GPR);
     addSlowPathGenerator(slowPathCall(slowCases, this, operationGetByIdMegamorphicGeneric, scratch3GPR, LinkableConstant::globalObject(*this, node), baseGPR, node->cacheableIdentifier().rawBits()));
     jsValueResult(scratch3GPR, node);
 }
@@ -6709,17 +6707,15 @@ void SpeculativeJIT::compileGetByIdWithThisMegamorphic(Node* node)
     GPRTemporary scratch1(this);
     GPRTemporary scratch2(this);
     GPRTemporary scratch3(this);
-    GPRTemporary scratch4(this);
 
     GPRReg baseGPR = base.gpr();
     JSValueRegs thisValueRegs = thisValue.jsValueRegs();
     GPRReg scratch1GPR = scratch1.gpr();
     GPRReg scratch2GPR = scratch2.gpr();
     GPRReg scratch3GPR = scratch3.gpr();
-    GPRReg scratch4GPR = scratch4.gpr();
 
     UniquedStringImpl* uid = node->cacheableIdentifier().uid();
-    JumpList slowCases = loadMegamorphicProperty(vm(), baseGPR, InvalidGPRReg, uid, scratch3GPR, scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR);
+    JumpList slowCases = loadMegamorphicProperty(vm(), baseGPR, InvalidGPRReg, uid, scratch3GPR, scratch1GPR, scratch2GPR, scratch3GPR);
     addSlowPathGenerator(slowPathCall(slowCases, this, operationGetByIdWithThisMegamorphicGeneric, scratch3GPR, LinkableConstant::globalObject(*this, node), baseGPR, thisValueRegs, node->cacheableIdentifier().rawBits()));
     jsValueResult(scratch3GPR, node);
 }
@@ -6732,7 +6728,6 @@ void SpeculativeJIT::compileGetByValMegamorphic(Node* node)
     GPRTemporary scratch2(this);
     GPRTemporary scratch3(this);
     GPRTemporary scratch4(this);
-    GPRTemporary scratch5(this);
 
     GPRReg baseGPR = base.gpr();
     GPRReg subscriptGPR = subscript.gpr();
@@ -6740,18 +6735,17 @@ void SpeculativeJIT::compileGetByValMegamorphic(Node* node)
     GPRReg scratch2GPR = scratch2.gpr();
     GPRReg scratch3GPR = scratch3.gpr();
     GPRReg scratch4GPR = scratch4.gpr();
-    GPRReg scratch5GPR = scratch5.gpr();
 
     speculateObject(m_graph.child(node, 0), baseGPR);
     speculateString(m_graph.child(node, 1), subscriptGPR);
 
     JumpList slowCases;
 
-    loadPtr(Address(subscriptGPR, JSString::offsetOfValue()), scratch5GPR);
-    slowCases.append(branchIfRopeStringImpl(scratch5GPR));
-    slowCases.append(branchTest32(Zero, Address(scratch5GPR, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
+    loadPtr(Address(subscriptGPR, JSString::offsetOfValue()), scratch4GPR);
+    slowCases.append(branchIfRopeStringImpl(scratch4GPR));
+    slowCases.append(branchTest32(Zero, Address(scratch4GPR, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
 
-    slowCases.append(loadMegamorphicProperty(vm(), baseGPR, scratch5GPR, nullptr, scratch3GPR, scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR));
+    slowCases.append(loadMegamorphicProperty(vm(), baseGPR, scratch4GPR, nullptr, scratch3GPR, scratch1GPR, scratch2GPR, scratch3GPR));
     addSlowPathGenerator(slowPathCall(slowCases, this, operationGetByValMegamorphicGeneric, scratch3GPR, LinkableConstant::globalObject(*this, node), baseGPR, subscriptGPR));
     jsValueResult(scratch3GPR, node);
 }
@@ -6765,7 +6759,6 @@ void SpeculativeJIT::compileGetByValWithThisMegamorphic(Node* node)
     GPRTemporary scratch2(this);
     GPRTemporary scratch3(this);
     GPRTemporary scratch4(this);
-    GPRTemporary scratch5(this);
 
     GPRReg baseGPR = base.gpr();
     JSValueRegs subscriptRegs = subscript.jsValueRegs();
@@ -6774,17 +6767,16 @@ void SpeculativeJIT::compileGetByValWithThisMegamorphic(Node* node)
     GPRReg scratch2GPR = scratch2.gpr();
     GPRReg scratch3GPR = scratch3.gpr();
     GPRReg scratch4GPR = scratch4.gpr();
-    GPRReg scratch5GPR = scratch5.gpr();
 
     JumpList slowCases;
 
     slowCases.append(branchIfNotCell(subscriptRegs));
     slowCases.append(branchIfNotString(subscriptRegs.payloadGPR()));
-    loadPtr(Address(subscriptRegs.payloadGPR(), JSString::offsetOfValue()), scratch5GPR);
-    slowCases.append(branchIfRopeStringImpl(scratch5GPR));
-    slowCases.append(branchTest32(Zero, Address(scratch5GPR, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
+    loadPtr(Address(subscriptRegs.payloadGPR(), JSString::offsetOfValue()), scratch4GPR);
+    slowCases.append(branchIfRopeStringImpl(scratch4GPR));
+    slowCases.append(branchTest32(Zero, Address(scratch4GPR, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
 
-    slowCases.append(loadMegamorphicProperty(vm(), baseGPR, scratch5GPR, nullptr, scratch3GPR, scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR));
+    slowCases.append(loadMegamorphicProperty(vm(), baseGPR, scratch4GPR, nullptr, scratch3GPR, scratch1GPR, scratch2GPR, scratch3GPR));
     addSlowPathGenerator(slowPathCall(slowCases, this, operationGetByValWithThisMegamorphicGeneric, scratch3GPR, LinkableConstant::globalObject(*this, node), baseGPR, subscriptRegs, thisValueRegs));
     jsValueResult(scratch3GPR, node);
 }
@@ -6999,17 +6991,15 @@ void SpeculativeJIT::compilePutByIdMegamorphic(Node* node)
     GPRTemporary scratch1(this);
     GPRTemporary scratch2(this);
     GPRTemporary scratch3(this);
-    GPRTemporary scratch4(this);
 
     GPRReg baseGPR = base.gpr();
     JSValueRegs valueRegs = value.jsValueRegs();
     GPRReg scratch1GPR = scratch1.gpr();
     GPRReg scratch2GPR = scratch2.gpr();
     GPRReg scratch3GPR = scratch3.gpr();
-    GPRReg scratch4GPR = scratch4.gpr();
 
     UniquedStringImpl* uid = node->cacheableIdentifier().uid();
-    JumpList slowCases = storeMegamorphicProperty(vm(), baseGPR, InvalidGPRReg, uid, valueRegs.payloadGPR(), scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR);
+    JumpList slowCases = storeMegamorphicProperty(vm(), baseGPR, InvalidGPRReg, uid, valueRegs.payloadGPR(), scratch1GPR, scratch2GPR, scratch3GPR);
     addSlowPathGenerator(slowPathCall(slowCases, this, node->ecmaMode().isStrict() ? operationPutByIdStrictMegamorphicGeneric : operationPutByIdSloppyMegamorphicGeneric, NoResult, LinkableConstant::globalObject(*this, node), valueRegs, baseGPR, node->cacheableIdentifier().rawBits()));
     noResult(node);
 }
@@ -7023,7 +7013,6 @@ void SpeculativeJIT::compilePutByValMegamorphic(Node* node)
     GPRTemporary scratch2(this);
     GPRTemporary scratch3(this);
     GPRTemporary scratch4(this);
-    GPRTemporary scratch5(this);
 
     GPRReg baseGPR = base.gpr();
     GPRReg subscriptGPR = subscript.gpr();
@@ -7032,17 +7021,16 @@ void SpeculativeJIT::compilePutByValMegamorphic(Node* node)
     GPRReg scratch2GPR = scratch2.gpr();
     GPRReg scratch3GPR = scratch3.gpr();
     GPRReg scratch4GPR = scratch4.gpr();
-    GPRReg scratch5GPR = scratch5.gpr();
 
     speculateString(m_graph.child(node, 1), subscriptGPR);
 
     JumpList slowCases;
 
-    loadPtr(Address(subscriptGPR, JSString::offsetOfValue()), scratch5GPR);
-    slowCases.append(branchIfRopeStringImpl(scratch5GPR));
-    slowCases.append(branchTest32(Zero, Address(scratch5GPR, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
+    loadPtr(Address(subscriptGPR, JSString::offsetOfValue()), scratch4GPR);
+    slowCases.append(branchIfRopeStringImpl(scratch4GPR));
+    slowCases.append(branchTest32(Zero, Address(scratch4GPR, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
 
-    slowCases.append(storeMegamorphicProperty(vm(), baseGPR, scratch5GPR, nullptr, valueRegs.payloadGPR(), scratch1GPR, scratch2GPR, scratch3GPR, scratch4GPR));
+    slowCases.append(storeMegamorphicProperty(vm(), baseGPR, scratch4GPR, nullptr, valueRegs.payloadGPR(), scratch1GPR, scratch2GPR, scratch3GPR));
     addSlowPathGenerator(slowPathCall(slowCases, this, node->ecmaMode().isStrict() ? operationPutByValStrictMegamorphicGeneric : operationPutByValSloppyMegamorphicGeneric, NoResult, LinkableConstant::globalObject(*this, node), baseGPR, subscriptGPR, valueRegs));
     noResult(node);
 }

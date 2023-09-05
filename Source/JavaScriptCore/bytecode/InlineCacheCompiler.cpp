@@ -1283,7 +1283,6 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
         GPRReg scratch2GPR = allocator.allocateScratchGPR();
         GPRReg scratch3GPR = allocator.allocateScratchGPR();
         GPRReg scratch4GPR = allocator.allocateScratchGPR();
-        GPRReg scratch5GPR = allocator.allocateScratchGPR();
 
         ScratchRegisterAllocator::PreservedState preservedState = allocator.preserveReusedRegistersByPushing(jit, ScratchRegisterAllocator::ExtraStackSpace::NoExtraSpace);
 
@@ -1294,11 +1293,11 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
             slowCases.append(jit.branchIfNotString(propertyGPR));
         }
 
-        jit.loadPtr(CCallHelpers::Address(propertyGPR, JSString::offsetOfValue()), scratch5GPR);
-        slowCases.append(jit.branchIfRopeStringImpl(scratch5GPR));
-        slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch5GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
+        jit.loadPtr(CCallHelpers::Address(propertyGPR, JSString::offsetOfValue()), scratch4GPR);
+        slowCases.append(jit.branchIfRopeStringImpl(scratch4GPR));
+        slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
 
-        slowCases.append(jit.loadMegamorphicProperty(vm, baseGPR, scratch5GPR, nullptr, valueRegs.payloadGPR(), scratchGPR, scratch2GPR, scratch3GPR, scratch4GPR));
+        slowCases.append(jit.loadMegamorphicProperty(vm, baseGPR, scratch4GPR, nullptr, valueRegs.payloadGPR(), scratchGPR, scratch2GPR, scratch3GPR));
 
         allocator.restoreReusedRegistersByPopping(jit, preservedState);
         succeed();
@@ -1322,11 +1321,10 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
         auto allocator = makeDefaultScratchAllocator(scratchGPR);
         GPRReg scratch2GPR = allocator.allocateScratchGPR();
         GPRReg scratch3GPR = allocator.allocateScratchGPR();
-        GPRReg scratch4GPR = allocator.allocateScratchGPR();
 
         ScratchRegisterAllocator::PreservedState preservedState = allocator.preserveReusedRegistersByPushing(jit, ScratchRegisterAllocator::ExtraStackSpace::NoExtraSpace);
 
-        auto slowCases = jit.loadMegamorphicProperty(vm, baseGPR, InvalidGPRReg, uid, valueRegs.payloadGPR(), scratchGPR, scratch2GPR, scratch3GPR, scratch4GPR);
+        auto slowCases = jit.loadMegamorphicProperty(vm, baseGPR, InvalidGPRReg, uid, valueRegs.payloadGPR(), scratchGPR, scratch2GPR, scratch3GPR);
 
         allocator.restoreReusedRegistersByPopping(jit, preservedState);
         succeed();
@@ -1350,11 +1348,10 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
         auto allocator = makeDefaultScratchAllocator(scratchGPR);
         GPRReg scratch2GPR = allocator.allocateScratchGPR();
         GPRReg scratch3GPR = allocator.allocateScratchGPR();
-        GPRReg scratch4GPR = allocator.allocateScratchGPR();
 
         ScratchRegisterAllocator::PreservedState preservedState = allocator.preserveReusedRegistersByPushing(jit, ScratchRegisterAllocator::ExtraStackSpace::NoExtraSpace);
 
-        auto slowCases = jit.storeMegamorphicProperty(vm, baseGPR, InvalidGPRReg, uid, valueRegs.payloadGPR(), scratchGPR, scratch2GPR, scratch3GPR, scratch4GPR);
+        auto slowCases = jit.storeMegamorphicProperty(vm, baseGPR, InvalidGPRReg, uid, valueRegs.payloadGPR(), scratchGPR, scratch2GPR, scratch3GPR);
 
         allocator.restoreReusedRegistersByPopping(jit, preservedState);
         succeed();
@@ -1379,7 +1376,6 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
         GPRReg scratch2GPR = allocator.allocateScratchGPR();
         GPRReg scratch3GPR = allocator.allocateScratchGPR();
         GPRReg scratch4GPR = allocator.allocateScratchGPR();
-        GPRReg scratch5GPR = allocator.allocateScratchGPR();
 
         ScratchRegisterAllocator::PreservedState preservedState = allocator.preserveReusedRegistersByPushing(jit, ScratchRegisterAllocator::ExtraStackSpace::NoExtraSpace);
 
@@ -1390,11 +1386,11 @@ void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers
             slowCases.append(jit.branchIfNotString(propertyGPR));
         }
 
-        jit.loadPtr(CCallHelpers::Address(propertyGPR, JSString::offsetOfValue()), scratch5GPR);
-        slowCases.append(jit.branchIfRopeStringImpl(scratch5GPR));
-        slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch5GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
+        jit.loadPtr(CCallHelpers::Address(propertyGPR, JSString::offsetOfValue()), scratch4GPR);
+        slowCases.append(jit.branchIfRopeStringImpl(scratch4GPR));
+        slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
 
-        slowCases.append(jit.storeMegamorphicProperty(vm, baseGPR, scratch5GPR, nullptr, valueRegs.payloadGPR(), scratchGPR, scratch2GPR, scratch3GPR, scratch4GPR));
+        slowCases.append(jit.storeMegamorphicProperty(vm, baseGPR, scratch4GPR, nullptr, valueRegs.payloadGPR(), scratchGPR, scratch2GPR, scratch3GPR));
 
         allocator.restoreReusedRegistersByPopping(jit, preservedState);
         succeed();
