@@ -369,10 +369,10 @@ public:
     static constexpr GPRReg returnValueGPR2 = X86Registers::edx; // regT1
     static constexpr GPRReg nonPreservedNonReturnGPR = X86Registers::ecx;
 
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
-        ASSERT(index < numberOfRegisters);
-        static const GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5 };
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfRegisters);
+        constexpr GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5 };
         return registerForIndex[index];
     }
 
@@ -490,13 +490,13 @@ public:
     // if we instead had a more explicit way of saying that we don't have a scratch register.
     static constexpr GPRReg patchpointScratchRegister = MacroAssembler::s_scratchRegister;
 
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
-        ASSERT(index < numberOfRegisters);
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfRegisters);
 #if !OS(WINDOWS)
-        static const GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regCS0, regCS1 };
+        constexpr GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regCS0, regCS1 };
 #else
-        static const GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regCS0, regCS1, regCS2, regCS3 };
+        constexpr GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regCS0, regCS1, regCS2, regCS3 };
 #endif
         return registerForIndex[index];
     }
@@ -590,10 +590,10 @@ public:
     static constexpr GPRReg wasmBaseMemoryPointer = InvalidGPRReg;
     static constexpr GPRReg wasmBoundsCheckingSizeRegister = InvalidGPRReg;
 
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
-        ASSERT(index < numberOfRegisters);
-        static const GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regCS0, regCS1 };
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfRegisters);
+        constexpr GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regCS0, regCS1 };
         return registerForIndex[index];
     }
 
@@ -713,9 +713,9 @@ public:
     static_assert(ARM64Registers::q13 == 13);
     static_assert(ARM64Registers::q14 == 14);
     static_assert(ARM64Registers::q15 == 15);
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
-        return (GPRReg)index;
+        return static_cast<GPRReg>(index);
     }
     static unsigned toIndex(GPRReg reg)
     {
@@ -791,10 +791,10 @@ public:
     static constexpr GPRReg regCS0 = MIPSRegisters::s0;
     static constexpr GPRReg regCS1 = MIPSRegisters::s1; // constants
 
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
-        ASSERT(index < numberOfRegisters);
-        static const GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regT8, regT9, regT10 };
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfRegisters);
+        constexpr GPRReg registerForIndex[numberOfRegisters] = { regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7, regT8, regT9, regT10 };
         return registerForIndex[index];
     }
 
@@ -898,10 +898,10 @@ public:
 
     static constexpr GPRReg patchpointScratchRegister = RISCV64Registers::x30; // Should match dataTempRegister
 
-    static GPRReg toRegister(unsigned index)
+    static constexpr GPRReg toRegister(unsigned index)
     {
-        ASSERT(index < numberOfRegisters);
-        static const GPRReg registerForIndex[numberOfRegisters] = {
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(index < numberOfRegisters);
+        constexpr GPRReg registerForIndex[numberOfRegisters] = {
             regT0, regT1, regT2, regT3, regT4, regT5, regT6, regT7,
             regT8, regT9, regT10, regT11, regT12,
         };

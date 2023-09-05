@@ -230,7 +230,7 @@ namespace PutByVal {
     static constexpr GPRReg profileGPR { preferredArgumentGPR<SlowOperation, 5>() };
     static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
     static constexpr GPRReg scratch1GPR { globalObjectGPR };
-    static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, profileGPR, globalObjectGPR, stubInfoGPR), "Required for call to slow operation");
+    static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, stubInfoGPR, profileGPR, globalObjectGPR), "Required for call to slow operation");
 }
 
 #if USE(JSVALUE64)
@@ -243,8 +243,15 @@ namespace EnumeratorPutByVal {
     using PutByVal::profileGPR;
     using PutByVal::stubInfoGPR;
     using PutByVal::scratch1GPR;
-    static constexpr GPRReg scratch2GPR { GPRInfo::regT7 };
-    static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, stubInfoGPR, scratch1GPR, scratch2GPR));
+    using PutByVal::globalObjectGPR;
+    static constexpr GPRReg scratch2GPR {
+#if CPU(X86_64)
+        GPRInfo::regT0
+#else
+        GPRInfo::regT7
+#endif
+    };
+    static_assert(noOverlap(baseJSR, propertyJSR, valueJSR, stubInfoGPR, profileGPR, globalObjectGPR, scratch2GPR));
 }
 #endif
 
