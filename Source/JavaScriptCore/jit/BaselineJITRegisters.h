@@ -204,7 +204,6 @@ namespace PutById {
     // Registers used on both Fast and Slow paths
     using SlowOperation = decltype(operationPutByIdStrictOptimize);
 
-    static constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };
     static constexpr JSValueRegs baseJSR { preferredArgumentJSR<SlowOperation, 3>() };
     static constexpr JSValueRegs valueJSR { preferredArgumentJSR<SlowOperation, 2>() };
     static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 1>() };
