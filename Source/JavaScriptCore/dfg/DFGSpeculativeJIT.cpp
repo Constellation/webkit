@@ -1639,14 +1639,14 @@ void SpeculativeJIT::compileInByVal(Node* node)
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationInByValOptimize,
             NeedToSpill, ExceptionCheckRequirement::CheckNeeded,
-            resultRegs, nullptr, CellValue(baseGPR), keyRegs, LinkableConstant::globalObject(*this, node), stubInfoGPR);
+            resultRegs, CellValue(baseGPR), keyRegs, LinkableConstant::globalObject(*this, node), stubInfoGPR, nullptr);
     } else {
         gen.generateFastPath(*this);
         slowCases.append(gen.slowPathJump());
         slowPath = slowPathCall(
             slowCases, this, operationInByValOptimize,
             NeedToSpill, ExceptionCheckRequirement::CheckNeeded,
-            resultRegs, nullptr, CellValue(baseGPR), keyRegs, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()));
+            resultRegs, CellValue(baseGPR), keyRegs, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), nullptr);
     }
 
     addInByVal(gen, slowPath.get());

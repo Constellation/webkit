@@ -400,8 +400,8 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_put_by_val_callSlowOperationT
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArgumentsForIndirectCall<SlowOperatoin>(stubInfoGPR, baseJSR, propertyJSR, valueJSR, globalObjectGPR, stubInfoGPR, profileGPR);
-    jit.call(Address(nonArgGPR0, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
+    jit.setupArguments<SlowOperatoin>(baseJSR, propertyJSR, valueJSR, globalObjectGPR, stubInfoGPR, profileGPR);
+    jit.call(Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
 
@@ -483,11 +483,8 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_put_private_name_callSlowOper
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    // Loading nullptr to this register is necessary for setupArgumentsForIndirectCall
-    // to not clobber globalObjectGPR on ARM_THUMB2, and is otherwise harmless.
-    jit.move(TrustedImmPtr(nullptr), profileGPR);
-    jit.setupArgumentsForIndirectCall<SlowOperation>(stubInfoGPR, baseJSR, propertyJSR, valueJSR, globalObjectGPR, stubInfoGPR, profileGPR);
-    jit.call(Address(nonArgGPR0, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
+    jit.setupArguments<SlowOperation>(baseJSR, propertyJSR, valueJSR, globalObjectGPR, stubInfoGPR, profileGPR);
+    jit.call(Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
 
