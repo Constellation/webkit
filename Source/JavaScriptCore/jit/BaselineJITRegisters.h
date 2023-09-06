@@ -290,7 +290,7 @@ namespace DelById {
     static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
     static constexpr GPRReg scratch1GPR { globalObjectGPR };
     static_assert(noOverlap(baseJSR, globalObjectGPR, stubInfoGPR), "Required for call to slow operation");
-    static_assert(noOverlap(resultJSR, stubInfoGPR));
+    static_assert(noOverlap(resultJSR.payloadGPR(), stubInfoGPR));
 }
 
 namespace DelByVal {
@@ -303,7 +303,7 @@ namespace DelByVal {
     static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
     static constexpr GPRReg scratch1GPR { globalObjectGPR };
     static_assert(noOverlap(baseJSR, propertyJSR, globalObjectGPR, stubInfoGPR), "Required for call to slow operation");
-    static_assert(noOverlap(resultJSR, stubInfoGPR));
+    static_assert(noOverlap(resultJSR.payloadGPR(), stubInfoGPR));
 }
 
 namespace PrivateBrand {
