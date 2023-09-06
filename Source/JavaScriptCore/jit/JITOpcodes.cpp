@@ -199,9 +199,7 @@ void JIT::emitSlow_op_instanceof(const JSInstruction*, Vector<SlowCaseEntry>::it
     using BaselineJITRegisters::Instanceof::globalObjectGPR;
     using BaselineJITRegisters::Instanceof::stubInfoGPR;
     loadGlobalObject(globalObjectGPR);
-    callOperation<decltype(operationInstanceOfOptimize)>(
-        Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),
-        globalObjectGPR, stubInfoGPR, valueJSR, protoJSR);
+    callOperation<decltype(operationInstanceOfOptimize)>(Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), valueJSR, protoJSR, globalObjectGPR, stubInfoGPR);
     static_assert(BaselineJITRegisters::Instanceof::resultJSR == returnValueJSR);
     gen.reportSlowPathCall(coldPathBegin, Call());
 }

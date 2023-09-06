@@ -287,8 +287,8 @@ JSC_DECLARE_JIT_OPERATION(operationDeleteByValStrictOptimize, size_t, (JSGlobalO
 JSC_DECLARE_JIT_OPERATION(operationDeleteByValStrictGaveUp, size_t, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue base, EncodedJSValue target));
 JSC_DECLARE_JIT_OPERATION(operationDeleteByValStrictGeneric, size_t, (JSGlobalObject*, EncodedJSValue base, EncodedJSValue target));
 
-JSC_DECLARE_JIT_OPERATION(operationInstanceOfOptimize, EncodedJSValue, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue value, EncodedJSValue proto));
-JSC_DECLARE_JIT_OPERATION(operationInstanceOfGaveUp, EncodedJSValue, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue value, EncodedJSValue proto));
+JSC_DECLARE_JIT_OPERATION(operationInstanceOfOptimize, EncodedJSValue, (EncodedJSValue value, EncodedJSValue proto, JSGlobalObject*, StructureStubInfo*));
+JSC_DECLARE_JIT_OPERATION(operationInstanceOfGaveUp, EncodedJSValue, (EncodedJSValue value, EncodedJSValue proto, JSGlobalObject*, StructureStubInfo*));
 
 JSC_DECLARE_JIT_OPERATION(operationGetPrivateNameOptimize, EncodedJSValue, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue encodedBase, EncodedJSValue encodedFieldName));
 JSC_DECLARE_JIT_OPERATION(operationGetPrivateNameGaveUp, EncodedJSValue, (JSGlobalObject*, StructureStubInfo*, EncodedJSValue encodedBase, EncodedJSValue encodedFieldName));

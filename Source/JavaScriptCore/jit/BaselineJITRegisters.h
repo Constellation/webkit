@@ -67,10 +67,10 @@ namespace Instanceof {
 
     // Registers used on both Fast and Slow paths
     static constexpr JSValueRegs resultJSR { JSRInfo::returnValueJSR };
-    static constexpr JSValueRegs valueJSR { preferredArgumentJSR<SlowOperation, 2>() };
-    static constexpr JSValueRegs protoJSR { preferredArgumentJSR<SlowOperation, 3>() };
-    static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 1>() };
-    static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 0>() };
+    static constexpr JSValueRegs valueJSR { preferredArgumentJSR<SlowOperation, 0>() };
+    static constexpr JSValueRegs protoJSR { preferredArgumentJSR<SlowOperation, 1>() };
+    static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 2>() };
+    static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 3>() };
     static_assert(noOverlap(globalObjectGPR, stubInfoGPR, valueJSR, protoJSR), "Required for call to slow operation");
     static_assert(noOverlap(resultJSR, stubInfoGPR));
 }
