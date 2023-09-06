@@ -1147,17 +1147,19 @@ public:
 #endif
 #elif USE(JSVALUE32_64)
 #if CPU(ARM_THUMB2)
-        // The last register is guaranteed to be pushed onto the stack for calls, so we can use
-        // the link register as a temporary.
         return pickJSR<OperationType, ArgNum>(
-            GPRInfo::argumentGPR0, GPRInfo::argumentGPR1, GPRInfo::argumentGPR2,
-            GPRInfo::argumentGPR3, GPRInfo::regT4,        GPRInfo::regT5,
-            GPRInfo::regT6,        GPRInfo::regT7,        ARMRegisters::lr);
+            GPRInfo::argumentGPR0, GPRInfo::argumentGPR1,
+            GPRInfo::argumentGPR2, GPRInfo::argumentGPR3,
+            GPRInfo::regT4,        GPRInfo::regT5,
+            GPRInfo::regT6,        GPRInfo::regT7,
+            GPRInfo::regCS0,       GPRInfo::regCS1);
 #elif CPU(MIPS)
         return pickJSR<OperationType, ArgNum>(
-            GPRInfo::argumentGPR0, GPRInfo::argumentGPR1, GPRInfo::argumentGPR2,
-            GPRInfo::argumentGPR3, GPRInfo::regT2,        GPRInfo::regT3,
-            GPRInfo::regT4,        GPRInfo::regT5,        GPRInfo::regT6);
+            GPRInfo::argumentGPR0, GPRInfo::argumentGPR1,
+            GPRInfo::argumentGPR2, GPRInfo::argumentGPR3,
+            GPRInfo::regT2,        GPRInfo::regT3,
+            GPRInfo::regT4,        GPRInfo::regT5,
+            GPRInfo::regT6,        GPRInfo::regT7);
 #endif
 #endif
     }
@@ -1167,7 +1169,7 @@ public:
     preferredArgumentGPR()
     {
 #if USE(JSVALUE32_64)
-        static_assert(sizeOfArg<OperationType, ArgNum>() <= 4, "Argument does not fit in GPR");
+        static_assert(sizeOfArg<OperationType, ArgNum>() <= 5, "Argument does not fit in GPR");
 #endif
         return preferredArgumentJSR<OperationType, ArgNum>().payloadGPR();
     }
