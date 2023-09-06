@@ -128,9 +128,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_val_callSlowOperationT
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, profileGPR, baseJSR, propertyJSR);
-    static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
-    jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
+    jit.setupArguments<SlowOperation>(baseJSR, propertyJSR, globalObjectGPR, stubInfoGPR, profileGPR);
+    static_assert(preferredArgumentGPR<SlowOperation, 3>() == stubInfoGPR, "Needed for branch to slow operation via StubInfo");
+    jit.call(Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
 
@@ -207,9 +207,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_private_name_callSlowOper
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, propertyJSR);
-    static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
-    jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
+    jit.setupArguments<SlowOperation>(baseJSR, propertyJSR, globalObjectGPR, stubInfoGPR);
+    static_assert(preferredArgumentGPR<SlowOperation, 3>() == stubInfoGPR, "Needed for branch to slow operation via StubInfo");
+    jit.call(Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
 
@@ -400,8 +400,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_put_by_val_callSlowOperationT
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArgumentsForIndirectCall<SlowOperatoin>(stubInfoGPR,
-        globalObjectGPR, baseJSR, propertyJSR, valueJSR, stubInfoGPR, profileGPR);
+    jit.setupArgumentsForIndirectCall<SlowOperatoin>(stubInfoGPR, baseJSR, propertyJSR, valueJSR, globalObjectGPR, stubInfoGPR, profileGPR);
     jit.call(Address(nonArgGPR0, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
@@ -487,8 +486,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_put_private_name_callSlowOper
     // Loading nullptr to this register is necessary for setupArgumentsForIndirectCall
     // to not clobber globalObjectGPR on ARM_THUMB2, and is otherwise harmless.
     jit.move(TrustedImmPtr(nullptr), profileGPR);
-    jit.setupArgumentsForIndirectCall<SlowOperation>(stubInfoGPR,
-        globalObjectGPR, baseJSR, propertyJSR, valueJSR, stubInfoGPR, profileGPR);
+    jit.setupArgumentsForIndirectCall<SlowOperation>(stubInfoGPR, baseJSR, propertyJSR, valueJSR, globalObjectGPR, stubInfoGPR, profileGPR);
     jit.call(Address(nonArgGPR0, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
@@ -638,9 +636,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_del_by_id_callSlowOperationTh
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR);
-    static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
-    jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
+    jit.setupArguments<SlowOperation>(baseJSR, globalObjectGPR, stubInfoGPR);
+    static_assert(preferredArgumentGPR<SlowOperation, 2>() == stubInfoGPR, "Needed for branch to slow operation via StubInfo");
+    jit.call(Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
 
@@ -723,9 +721,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_del_by_val_callSlowOperationT
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, propertyJSR);
-    static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
-    jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
+    jit.setupArguments<SlowOperation>(baseJSR, propertyJSR, globalObjectGPR, stubInfoGPR);
+    static_assert(preferredArgumentGPR<SlowOperation, 3>() == stubInfoGPR, "Needed for branch to slow operation via StubInfo");
+    jit.call(Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
 
@@ -896,9 +894,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_id_callSlowOperationTh
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR);
-    static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
-    jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
+    jit.setupArguments<SlowOperation>(baseJSR, globalObjectGPR, stubInfoGPR);
+    static_assert(preferredArgumentGPR<SlowOperation, 2>() == stubInfoGPR, "Needed for branch to slow operation via StubInfo");
+    jit.call(Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
 
@@ -977,9 +975,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_id_with_this_callSlowO
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, baseJSR, thisJSR);
-    static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
-    jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
+    jit.setupArguments<SlowOperation>(baseJSR, thisJSR, globalObjectGPR, stubInfoGPR);
+    static_assert(preferredArgumentGPR<SlowOperation, 3>() == stubInfoGPR, "Needed for branch to slow operation via StubInfo");
+    jit.call(Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
 
@@ -1063,9 +1061,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_put_by_id_callSlowOperationTh
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, valueJSR, baseJSR);
-    static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
-    jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
+    jit.setupArguments<SlowOperation>(valueJSR, baseJSR, globalObjectGPR, stubInfoGPR);
+    static_assert(preferredArgumentGPR<SlowOperation, 3>() == stubInfoGPR, "Needed for branch to slow operation via StubInfo");
+    jit.call(Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
 
@@ -2028,9 +2026,9 @@ MacroAssemblerCodeRef<JITThunkPtrTag> JIT::slow_op_get_by_val_with_this_callSlow
     // Call slow operation
     jit.prepareCallOperation(vm);
     loadGlobalObject(jit, globalObjectGPR);
-    jit.setupArguments<SlowOperation>(globalObjectGPR, stubInfoGPR, profileGPR, baseJSR, propertyJSR, thisJSR);
-    static_assert(preferredArgumentGPR<SlowOperation, 1>() == argumentGPR1, "Needed for branch to slow operation via StubInfo");
-    jit.call(Address(argumentGPR1, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
+    jit.setupArguments<SlowOperation>(baseJSR, propertyJSR, thisJSR, globalObjectGPR, stubInfoGPR, profileGPR);
+    static_assert(preferredArgumentGPR<SlowOperation, 4>() == stubInfoGPR, "Needed for branch to slow operation via StubInfo");
+    jit.call(Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), OperationPtrTag);
 
     jit.emitCTIThunkEpilogue();
 

@@ -185,14 +185,14 @@ void SpeculativeJIT::cachedGetById(Node* node, CodeOrigin codeOrigin, GPRReg bas
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), appropriateGetByIdOptimizeFunction(type),
             spillMode, ExceptionCheckRequirement::CheckNeeded,
-            resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, baseGPR);
+            resultGPR, baseGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR);
     } else {
         gen.generateFastPath(*this, scratchGPR);
         slowCases.append(gen.slowPathJump());
         slowPath = slowPathCall(
             slowCases, this, appropriateGetByIdOptimizeFunction(type),
             spillMode, ExceptionCheckRequirement::CheckNeeded,
-            resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), baseGPR);
+            resultGPR, baseGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()));
     }
     
     addGetById(gen, slowPath.get());
@@ -232,14 +232,14 @@ void SpeculativeJIT::cachedGetByIdWithThis(Node* node, CodeOrigin codeOrigin, GP
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByIdWithThisOptimize,
             DontSpill, ExceptionCheckRequirement::CheckNeeded,
-            resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, baseGPR, thisGPR);
+            resultGPR, baseGPR, thisGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR);
     } else {
         gen.generateFastPath(*this, scratchGPR);
         slowCases.append(gen.slowPathJump());
         slowPath = slowPathCall(
             slowCases, this, operationGetByIdWithThisOptimize,
             DontSpill, ExceptionCheckRequirement::CheckNeeded,
-            resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), baseGPR, thisGPR);
+            resultGPR, baseGPR, thisGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()));
     }
     
     addGetByIdWithThis(gen, slowPath.get());
@@ -2525,13 +2525,13 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
             gen.generateDFGDataICFastPath(*this, stubInfoConstant.index(), stubInfoGPR);
             slowPath = slowPathICCall(
                 slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValOptimize,
-                resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, nullptr, baseGPR, propertyGPR);
+                resultGPR, baseGPR, propertyGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, nullptr);
         } else {
             gen.generateFastPath(*this);
             slowCases.append(gen.slowPathJump());
             slowPath = slowPathCall(
                 slowCases, this, operationGetByValOptimize,
-                resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), nullptr, baseGPR, propertyGPR);
+                resultGPR, baseGPR, propertyGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), nullptr);
         }
 
         addGetByVal(gen, slowPath.get());
@@ -6667,13 +6667,13 @@ void SpeculativeJIT::compileGetByValWithThis(Node* node)
         gen.generateDFGDataICFastPath(*this, stubInfoConstant.index(), stubInfoGPR);
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValWithThisOptimize,
-            resultGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, nullptr, baseGPR, propertyGPR, thisValueGPR);
+            resultGPR, baseGPR, propertyGPR, thisValueGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, nullptr);
     } else {
         gen.generateFastPath(*this);
         slowCases.append(gen.slowPathJump());
         slowPath = slowPathCall(
             slowCases, this, operationGetByValWithThisOptimize,
-            resultGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), nullptr, baseGPR, propertyGPR, thisValueGPR);
+            resultGPR, baseGPR, propertyGPR, thisValueGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), nullptr);
     }
 
     addGetByValWithThis(gen, slowPath.get());
@@ -6949,13 +6949,13 @@ void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
                 ASSERT(!gen.stubInfo());
                 slowPath = slowPathICCall(
                     slowCases, this, stubInfoConstant, scratchGPR, Address(scratchGPR, StructureStubInfo::offsetOfSlowOperation()), operation,
-                    NoResult, LinkableConstant::globalObject(*this, node), baseRegs, propertyRegs, valueRegs, scratchGPR, nullptr);
+                    NoResult, baseRegs, propertyRegs, valueRegs, LinkableConstant::globalObject(*this, node), scratchGPR, nullptr);
             } else {
                 gen.generateFastPath(*this);
                 slowCases.append(gen.slowPathJump());
                 slowPath = slowPathCall(
                     slowCases, this, operation,
-                    NoResult, LinkableConstant::globalObject(*this, node), baseRegs, propertyRegs, valueRegs, TrustedImmPtr(gen.stubInfo()), nullptr);
+                    NoResult, baseRegs, propertyRegs, valueRegs, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), nullptr);
             }
 
             addPutByVal(gen, slowPath.get());

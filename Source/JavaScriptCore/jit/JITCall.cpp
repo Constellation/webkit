@@ -510,7 +510,7 @@ void JIT::emitSlow_op_iterator_open(const JSInstruction* instruction, Vector<Slo
         bytecode,
         Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),
         nextVReg,
-        globalObjectGPR, stubInfoGPR, baseJSR);
+        baseJSR, globalObjectGPR, stubInfoGPR);
     gen.reportSlowPathCall(coldPathBegin, Call());
 
     auto done = jump();
@@ -652,7 +652,7 @@ void JIT::emitSlow_op_iterator_next(const JSInstruction* instruction, Vector<Slo
             bytecode,
             Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),
             doneVReg,
-            globalObjectGPR, stubInfoGPR, baseJSR);
+            baseJSR, globalObjectGPR, stubInfoGPR);
         gen.reportSlowPathCall(coldPathBegin, Call());
 
         emitGetVirtualRegister(bytecode.m_value, iterCallResultJSR);
@@ -677,7 +677,7 @@ void JIT::emitSlow_op_iterator_next(const JSInstruction* instruction, Vector<Slo
             bytecode,
             Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()),
             valueVReg,
-            globalObjectGPR, stubInfoGPR, baseJSR);
+            baseJSR, globalObjectGPR, stubInfoGPR);
         gen.reportSlowPathCall(coldPathBegin, Call());
     }
 }
