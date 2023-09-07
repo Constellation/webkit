@@ -28,13 +28,14 @@
 
 mask64 = 2**64 - 1
 mask32 = 2**32 - 1
+superFastHashThreshold = 48
 secret = [11562461410679940143, 16646288086500911323, 10285213230658275043, 6384245875588680899]
 
 
 def stringHash(str, isMac):
     strLen = len(str)
     if isMac:
-        if strLen <= 48:
+        if strLen <= superFastHashThreshold:
             return superFastHash(str)
         return wyhash(str)
     else:

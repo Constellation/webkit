@@ -31,6 +31,7 @@ use Math::BigInt;
 
 my $mask64 = 2**64 - 1;
 my $mask32 = 2**32 - 1;
+my $superFastHashThreshold = 48;
 
 sub leftShift($$) {
     my ($value, $distance) = @_;
@@ -247,7 +248,7 @@ sub GenerateHashValue($$) {
     my @chars = split(/ */, $string);
     my $charCount = scalar @chars;
     if ($isMac) {
-        if ($charCount <= 48) {
+        if ($charCount <= $superFastHashThreshold) {
             return superFastHash(@chars);
         }
         return wyhash(@chars);
