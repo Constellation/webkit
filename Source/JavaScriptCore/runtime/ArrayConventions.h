@@ -85,7 +85,7 @@ static_assert(MAX_STORAGE_VECTOR_INDEX <= MAX_ARRAY_INDEX, "MAX_STORAGE_VECTOR_I
 // is added.
 #define FIRST_ARRAY_STORAGE_VECTOR_GROW 4U
 
-#define MIN_BEYOND_LENGTH_SPARSE_INDEX 1000
+#define MIN_BEYOND_LENGTH_SPARSE_INDEX 10000
 
 // Our policy for when to use a vector and when to use a sparse map.
 // For all array indices under MIN_SPARSE_ARRAY_INDEX, we always use a vector.

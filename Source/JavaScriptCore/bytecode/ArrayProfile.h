@@ -262,9 +262,8 @@ public:
 
     void update(ArrayProfile& arrayProfile)
     {
-        ArrayModes newModes = arrayProfile.m_observedArrayModes | m_observedArrayModes;
-        m_observedArrayModes = newModes;
-        arrayProfile.m_observedArrayModes = newModes;
+        m_observedArrayModes |= arrayProfile.m_observedArrayModes;
+        arrayProfile.m_observedArrayModes |= (m_observedArrayModes & ~(asArrayModesIgnoringTypedArrays(NonArrayWithArrayStorage) | asArrayModesIgnoringTypedArrays(NonArrayWithSlowPutArrayStorage) | asArrayModesIgnoringTypedArrays(ArrayWithArrayStorage) | asArrayModesIgnoringTypedArrays(ArrayWithSlowPutArrayStorage)));
 
         arrayProfile.m_arrayProfileFlags.add(m_arrayProfileFlags);
         auto unlinkedArrayProfileFlags = arrayProfile.m_arrayProfileFlags;
