@@ -226,7 +226,7 @@ void ContentChangeObserver::completeDurationBasedContentObservation()
     adjustObservedState(Event::EndedFixedObservationTimeWindow);
 }
 
-static bool isObservedPropertyForTransition(AnimatableProperty property)
+static bool isObservedPropertyForTransition(const AnimatableProperty& property)
 {
     return WTF::switchOn(property,
         [] (CSSPropertyID propertyId) {

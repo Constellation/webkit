@@ -1574,7 +1574,7 @@ ExceptionOr<void> WebAnimation::commitStyles()
 
     auto& keyframeStack = styledElement.ensureKeyframeEffectStack(PseudoId::None);
 
-    auto commitProperty = [&](AnimatableProperty property) {
+    auto commitProperty = [&](const AnimatableProperty& property) {
         // 1. Let partialEffectStack be a copy of the effect stack for property on target.
         // 2. If animation's replace state is removed, add all animation effects associated with animation whose effect target is target and which include
         // property as a target property to partialEffectStack.
@@ -1613,17 +1613,25 @@ ExceptionOr<void> WebAnimation::commitStyles()
 
     // 2.4 Let targeted properties be the set of physical longhand properties that are a target property for at least one
     // animation effect associated with animation whose effect target is target.
-    HashSet<AnimatableProperty> targetedProperties;
-    for (auto property : effect->animatedProperties()) {
-        if (std::holds_alternative<CSSPropertyID>(property)) {
-            for (auto longhand : shorthandForProperty(std::get<CSSPropertyID>(property)))
-                targetedProperties.add(longhand);
-        }
-        targetedProperties.add(property);
+    AnimatablePropertiesSet targetedProperties;
+    for (auto& property : effect->animatedProperties()) {
+        WTF::switchOn(property,
+            [&](CSSPropertyID propertyId) {
+                for (auto longhand : shorthandForProperty(propertyId))
+                    targetedProperties.m_properties.set(longhand);
+                targetedProperties.m_properties.set(propertyId);
+            },
+            [&](const AtomString& customProperty) {
+                targetedProperties.m_customProperties.add(customProperty);
+            }
+        );
     }
     // 2.5 For each property, property, in targeted properties:
     auto didMutate = false;
-    for (auto property : targetedProperties)
+    targetedProperties.m_properties.forEachSetBit([&](size_t rawPropertyID) ALWAYS_INLINE_LAMBDA {
+        didMutate = commitProperty(static_cast<CSSPropertyID>(rawPropertyID)) || didMutate;
+    });
+    for (const auto& property : targetedProperties.m_customProperties)
         didMutate = commitProperty(property) || didMutate;
 
     if (didMutate)

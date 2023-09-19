@@ -245,14 +245,14 @@ IGNORE_GCC_WARNINGS_BEGIN("dangling-reference")
     }();
 IGNORE_GCC_WARNINGS_END
 
-    auto resolvedProperty = [&] (AnimatableProperty property) -> AnimatableProperty {
+    auto resolvedProperty = [&] (const AnimatableProperty& property) -> AnimatableProperty {
         if (std::holds_alternative<CSSPropertyID>(property))
             return CSSProperty::resolveDirectionAwareProperty(std::get<CSSPropertyID>(property), style.direction(), style.writingMode());
         return property;
     };
 
     HashSet<AnimatableProperty> propertiesToMatch;
-    for (auto property : keyframeEffect.animatedProperties())
+    for (auto& property : keyframeEffect.animatedProperties())
         propertiesToMatch.add(resolvedProperty(property));
 
     auto protectedAnimations = [&]() -> Vector<RefPtr<WebAnimation>> {
@@ -270,7 +270,7 @@ IGNORE_GCC_WARNINGS_END
 
         if (animationWithHigherCompositeOrder && animationWithHigherCompositeOrder->isReplaceable()) {
             if (auto* keyframeEffectWithHigherCompositeOrder = dynamicDowncast<KeyframeEffect>(animationWithHigherCompositeOrder->effect())) {
-                for (auto property : keyframeEffectWithHigherCompositeOrder->animatedProperties()) {
+                for (auto& property : keyframeEffectWithHigherCompositeOrder->animatedProperties()) {
                     if (propertiesToMatch.remove(resolvedProperty(property)) && propertiesToMatch.isEmpty())
                         break;
                 }

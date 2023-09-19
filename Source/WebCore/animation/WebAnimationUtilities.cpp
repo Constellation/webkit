@@ -332,7 +332,7 @@ ExceptionOr<PseudoId> pseudoIdFromString(const String& pseudoElement)
     return CSSSelector::pseudoId(pseudoType);
 }
 
-AtomString animatablePropertyAsString(AnimatableProperty property)
+AtomString animatablePropertyAsString(const AnimatableProperty& property)
 {
     return WTF::switchOn(property,
         [] (CSSPropertyID propertyId) {

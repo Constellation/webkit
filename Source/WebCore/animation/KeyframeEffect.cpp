@@ -1493,7 +1493,7 @@ void KeyframeEffect::setAnimatedPropertiesInStyle(RenderStyle& targetStyle, doub
     KeyframeValue propertySpecificKeyframeWithZeroOffset(0, RenderStyle::clonePtr(targetStyle));
     KeyframeValue propertySpecificKeyframeWithOneOffset(1, RenderStyle::clonePtr(targetStyle));
 
-    auto blendProperty = [&](AnimatableProperty property) {
+    auto blendProperty = [&](const AnimatableProperty& property) {
         // 1. If iteration progress is unresolved abort this procedure.
         // 2. Let target property be the longhand property for which the effect value is to be calculated.
         // 3. If animation type of the target property is not animatable abort this procedure since the effect cannot be applied.
@@ -1663,7 +1663,7 @@ void KeyframeEffect::setAnimatedPropertiesInStyle(RenderStyle& targetStyle, doub
         CSSPropertyAnimation::blendProperty(*this, property, targetStyle, startKeyframeStyle, endKeyframeStyle, transformedDistance, CompositeOperation::Replace, iterationCompositeOperation, currentIteration);
     };
 
-    for (auto property : properties)
+    for (auto& property : properties)
         blendProperty(property);
 
     // In case one of the animated properties has its value set to "inherit" in one of the keyframes,
@@ -2703,7 +2703,7 @@ KeyframeEffect::CanBeAcceleratedMutationScope::~CanBeAcceleratedMutationScope()
 }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-static bool acceleratedPropertyDidChange(AnimatableProperty property, const RenderStyle& previousStyle, const RenderStyle& currentStyle, const Settings& settings)
+static bool acceleratedPropertyDidChange(const AnimatableProperty& property, const RenderStyle& previousStyle, const RenderStyle& currentStyle, const Settings& settings)
 {
 #if ASSERT_ENABLED
     ASSERT(CSSPropertyAnimation::animationOfPropertyIsAccelerated(property, settings));

@@ -435,7 +435,7 @@ static bool transitionMatchesProperty(const Animation& transition, const Animata
     return false;
 }
 
-static void compileTransitionPropertiesInStyle(const RenderStyle& style, HashSet<AnimatableProperty>& transitionProperties, bool& transitionPropertiesContainAll)
+static void compileTransitionPropertiesInStyle(const RenderStyle& style, AnimatablePropertiesSet& transitionProperties, bool& transitionPropertiesContainAll)
 {
     if (transitionPropertiesContainAll)
         return;
@@ -462,12 +462,12 @@ static void compileTransitionPropertiesInStyle(const RenderStyle& style, HashSet
                     auto resolvedPropertyId = CSSProperty::resolveDirectionAwareProperty(propertyId, style.direction(), style.writingMode());
                     if (isShorthand(resolvedPropertyId)) {
                         for (auto longhand : shorthandForProperty(resolvedPropertyId))
-                            transitionProperties.add(longhand);
+                            transitionProperties.m_properties.set(longhand);
                     } else if (resolvedPropertyId != CSSPropertyInvalid)
-                        transitionProperties.add(resolvedPropertyId);
+                        transitionProperties.m_properties.set(resolvedPropertyId);
                 },
                 [&] (const AtomString& customProperty) {
-                    transitionProperties.add(customProperty);
+                    transitionProperties.m_customProperties.add(customProperty);
                 }
             );
         }
@@ -678,7 +678,7 @@ void Styleable::updateCSSTransitions(const RenderStyle& currentStyle, const Rend
 
     // First, let's compile the list of all CSS properties found in the current style and the after-change style.
     bool transitionPropertiesContainAll = false;
-    HashSet<AnimatableProperty> transitionProperties;
+    AnimatablePropertiesSet transitionProperties;
     compileTransitionPropertiesInStyle(currentStyle, transitionProperties, transitionPropertiesContainAll);
     compileTransitionPropertiesInStyle(newStyle, transitionProperties, transitionPropertiesContainAll);
 
@@ -695,7 +695,7 @@ void Styleable::updateCSSTransitions(const RenderStyle& currentStyle, const Rend
         HashSet<AtomString> animatableCustomProperties;
         auto gatherAnimatableCustomProperties = [&](const StyleCustomPropertyData& customPropertyData) {
             customPropertyData.forEach([&](auto& customPropertyAndValuePair) {
-                auto [customProperty, customPropertyValue] = customPropertyAndValuePair;
+                auto& [customProperty, customPropertyValue] = customPropertyAndValuePair;
                 auto& variantValue = customPropertyValue->value();
                 if (std::holds_alternative<CSSCustomPropertyValue::SyntaxValue>(variantValue)
                     || std::holds_alternative<CSSCustomPropertyValue::SyntaxValueList>(variantValue))
@@ -712,7 +712,10 @@ void Styleable::updateCSSTransitions(const RenderStyle& currentStyle, const Rend
         return;
     }
 
-    for (auto& property : transitionProperties)
+    transitionProperties.m_properties.forEachSetBit([&](size_t rawPropertyID) ALWAYS_INLINE_LAMBDA {
+        updateCSSTransitionsForStyleableAndProperty(*this, static_cast<CSSPropertyID>(rawPropertyID), currentStyle, newStyle, generationTime);
+    });
+    for (const auto& property : transitionProperties.m_customProperties)
         updateCSSTransitionsForStyleableAndProperty(*this, property, currentStyle, newStyle, generationTime);
 }
 
