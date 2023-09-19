@@ -3961,21 +3961,32 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         }
 
         m_failAndRepatch.append(fallThrough);
-
     } else {
         JIT_COMMENT(jit, "Cases start (allGuardedByStructureCheck)");
         jit.load32(
             CCallHelpers::Address(m_stubInfo->m_baseGPR, JSCell::structureIDOffset()),
             m_scratchGPR);
 
-        Vector<int64_t> caseValues(cases.size());
-        for (unsigned i = 0; i < cases.size(); ++i)
-            caseValues[i] = bitwise_cast<int32_t>(cases[i]->structure()->id());
+        if (JITCode::isBaselineCode(codeBlock->jitType())) {
+            // Cascade through the list, preferring newer entries.
+            CCallHelpers::JumpList fallThrough;
+            for (unsigned i = cases.size(); i--;) {
+                fallThrough.link(&jit);
+                fallThrough.clear();
+                fallThrough.append(jit.branch32(CCallHelpers::NotEqual, m_scratchGPR, CCallHelpers::TrustedImm32(cases[i]->structure()->id().bits())));
+                generate(*cases[i]);
+            }
+            m_failAndRepatch.append(fallThrough);
+        } else {
+            Vector<int64_t> caseValues(cases.size());
+            for (unsigned i = 0; i < cases.size(); ++i)
+                caseValues[i] = bitwise_cast<int32_t>(cases[i]->structure()->id());
 
-        BinarySwitch binarySwitch(m_scratchGPR, caseValues, BinarySwitch::Int32);
-        while (binarySwitch.advance(jit))
-            generate(*cases[binarySwitch.caseIndex()]);
-        m_failAndRepatch.append(binarySwitch.fallThrough());
+            BinarySwitch binarySwitch(m_scratchGPR, caseValues, BinarySwitch::Int32);
+            while (binarySwitch.advance(jit))
+                generate(*cases[binarySwitch.caseIndex()]);
+            m_failAndRepatch.append(binarySwitch.fallThrough());
+        }
     }
 
     if (!m_failAndIgnore.empty()) {
@@ -4011,7 +4022,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         m_failAndRepatch.link(&jit);
         restoreScratch();
     } else
-        failure = m_failAndRepatch;
+        failure = WTFMove(m_failAndRepatch);
     failure.append(jit.jump());
 
     CodeBlock* codeBlockThatOwnsExceptionHandlers = nullptr;
