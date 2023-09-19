@@ -83,7 +83,7 @@ ALWAYS_INLINE bool objectAssignFast(JSGlobalObject* globalObject, JSObject* targ
     auto scope = DECLARE_THROW_SCOPE(vm);
     properties.resize(0);
     values.clear();
-    bool canUseFastPath = source->fastForEachPropertyWithSideEffectFreeFunctor(vm, [&](const PropertyTableEntry& entry) -> bool {
+    bool canUseFastPath = source->fastForEachPropertyWithSideEffectFreeFunctor(vm, [&](const PropertyTableEntry& entry) ALWAYS_INLINE_LAMBDA {
         if (entry.attributes() & PropertyAttribute::DontEnum)
             return true;
 

@@ -350,7 +350,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorAssign, (JSGlobalObject* globalObject,
             for (unsigned i = 1; i < argsCount; ++i) {
                 JSValue sourceValue = callFrame->uncheckedArgument(i);
                 JSObject* source = asObject(sourceValue);
-                source->structure()->forEachProperty(vm, [&](const PropertyTableEntry& entry) -> bool {
+                source->structure()->forEachProperty(vm, [&](const PropertyTableEntry& entry) ALWAYS_INLINE_LAMBDA {
                     if (entry.attributes() & PropertyAttribute::DontEnum)
                         return true;
 
