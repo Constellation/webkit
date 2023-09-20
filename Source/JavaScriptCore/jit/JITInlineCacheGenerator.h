@@ -96,6 +96,8 @@ public:
         }
     }
 
+    AccessType accessType() const { return m_accessType; }
+
 protected:
     void generateBaselineDataICFastPath(JIT&, GPRReg stubInfoGPR);
 
