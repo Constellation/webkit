@@ -481,11 +481,11 @@ ALWAYS_INLINE void JIT::emitJumpSlowCaseIfNotInt(JSValueRegs jsr)
     addSlowCase(branchIfNotInt32(jsr));
 }
 
-ALWAYS_INLINE void JIT::emitNakedNearJumpIfNotJSCell(JSValueRegs jsReg, VirtualRegister vReg, CodePtr<JITThunkPtrTag> target)
+ALWAYS_INLINE void JIT::emitJumpIfNotJSCell(JSValueRegs jsReg, VirtualRegister vReg, JumpList& jumps)
 {
     if (isKnownCell(vReg))
         return;
-    m_nearJumps.append(NearJumpRecord(branchIfNotCell(jsReg), CodeLocationLabel { target }));
+    jumps.append(branchIfNotCell(jsReg));
 }
 
 ALWAYS_INLINE void JIT::emitJumpSlowCaseIfNotJSCell(JSValueRegs reg)

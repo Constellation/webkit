@@ -167,8 +167,8 @@ void JIT::emit_op_instanceof(const JSInstruction* currentInstruction)
     loadConstant(stubInfoIndex, stubInfoGPR);
 
     // Check that proto are cells. baseVal must be a cell - this is checked by the get_by_id for Symbol.hasInstance.
-    emitNakedNearJumpIfNotJSCell(valueJSR, value, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::InstanceOf).code());
-    emitNakedNearJumpIfNotJSCell(protoJSR, proto, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::InstanceOf).code());
+    emitJumpIfNotJSCell(valueJSR, value, m_slowInstanceOf);
+    emitJumpIfNotJSCell(protoJSR, proto, m_slowInstanceOf);
 
     JITInstanceOfGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex),

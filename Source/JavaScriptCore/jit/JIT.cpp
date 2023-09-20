@@ -618,6 +618,47 @@ void JIT::privateCompileSlowCases()
     // Reset this, in order to guard its use with ASSERTs.
     m_bytecodeIndex = BytecodeIndex();
 #endif
+
+    if (!m_slowInstanceOf.empty()) {
+        m_slowInstanceOf.link(this);
+        emitNakedNearJump(InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::InstanceOf).code());
+    }
+    if (!m_slowPrivateBrand.empty()) {
+        m_slowPrivateBrand.link(this);
+        emitNakedNearJump(InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetPrivateName).code());
+    }
+    if (!m_slowGetById.empty()) {
+        m_slowGetById.link(this);
+        emitNakedNearJump(InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetById).code());
+    }
+    if (!m_slowGetByVal.empty()) {
+        m_slowGetByVal.link(this);
+        emitNakedNearJump(InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetByVal).code());
+    }
+    if (!m_slowGetByIdWithThis.empty()) {
+        m_slowGetByIdWithThis.link(this);
+        emitNakedNearJump(InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetByIdWithThis).code());
+    }
+    if (!m_slowGetByValWithThis.empty()) {
+        m_slowGetByValWithThis.link(this);
+        emitNakedNearJump(InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetByValWithThis).code());
+    }
+    if (!m_slowPutById.empty()) {
+        m_slowPutById.link(this);
+        emitNakedNearJump(InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::PutByIdStrict).code());
+    }
+    if (!m_slowPutByVal.empty()) {
+        m_slowPutByVal.link(this);
+        emitNakedNearJump(InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::PutByValStrict).code());
+    }
+    if (!m_slowDelById.empty()) {
+        m_slowDelById.link(this);
+        emitNakedNearJump(InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::DeleteByIdStrict).code());
+    }
+    if (!m_slowDelByVal.empty()) {
+        m_slowDelByVal.link(this);
+        emitNakedNearJump(InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::DeleteByValStrict).code());
+    }
 }
 
 void JIT::emitMaterializeMetadataAndConstantPoolRegisters()

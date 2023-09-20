@@ -69,7 +69,7 @@ void JIT::emit_op_get_by_val(const JSInstruction* currentInstruction)
     loadConstant(stubInfoIndex, stubInfoGPR);
     materializePointerIntoMetadata(bytecode, OpGetByVal::Metadata::offsetOfArrayProfile(), profileGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetByVal).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowGetByVal);
 
     JITGetByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::GetByVal, RegisterSetBuilder::stubUnavailableRegisters(),
@@ -111,7 +111,7 @@ void JIT::emit_op_get_private_name(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetPrivateName).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowGetByVal);
 
     JITGetByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::GetPrivateName,
@@ -141,7 +141,7 @@ void JIT::emit_op_set_private_brand(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::SetPrivateBrand).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowPrivateBrand);
 
     JITPrivateBrandAccessGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::SetPrivateBrand, RegisterSetBuilder::stubUnavailableRegisters(),
@@ -175,7 +175,7 @@ void JIT::emit_op_check_private_brand(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::CheckPrivateBrand).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowPrivateBrand);
 
     JITPrivateBrandAccessGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), AccessType::CheckPrivateBrand, RegisterSetBuilder::stubUnavailableRegisters(),
@@ -213,7 +213,7 @@ void JIT::emit_op_put_by_val(const JSInstruction* currentInstruction)
     loadConstant(stubInfoIndex, stubInfoGPR);
     materializePointerIntoMetadata(bytecode, Op::Metadata::offsetOfArrayProfile(), profileGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), accessType).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowPutByVal);
 
     emitArrayProfilingSiteWithCellAndProfile(baseJSR.payloadGPR(), profileGPR, scratch1GPR);
 
@@ -266,7 +266,7 @@ void JIT::emit_op_put_private_name(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), accessType).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowPutByVal);
 
     JITPutByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), accessType, RegisterSetBuilder::stubUnavailableRegisters(),
@@ -384,7 +384,7 @@ void JIT::emit_op_del_by_id(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), accessType).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowDelById);
 
     JITDelByIdGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), accessType, RegisterSetBuilder::stubUnavailableRegisters(),
@@ -424,8 +424,8 @@ void JIT::emit_op_del_by_val(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), accessType).code());
-    emitNakedNearJumpIfNotJSCell(propertyJSR, property, InlineCacheCompiler::generateSlowPathCode(vm(), accessType).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowDelByVal);
+    emitJumpIfNotJSCell(propertyJSR, property, m_slowDelByVal);
 
     JITDelByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), accessType, RegisterSetBuilder::stubUnavailableRegisters(),
@@ -460,7 +460,7 @@ void JIT::emit_op_try_get_by_id(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::TryGetById).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowGetById);
 
     JITGetByIdGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
@@ -489,7 +489,7 @@ void JIT::emit_op_get_by_id_direct(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetByIdDirect).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowGetById);
 
     JITGetByIdGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
@@ -519,7 +519,7 @@ void JIT::emit_op_get_by_id(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetById).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowGetById);
 
     if (*ident == vm().propertyNames->length && shouldEmitProfiling()) {
         load8FromMetadata(bytecode, OpGetById::Metadata::offsetOfModeMetadata() + GetByIdModeMetadata::offsetOfMode(), scratch1GPR);
@@ -564,8 +564,8 @@ void JIT::emit_op_get_by_id_with_this(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, baseVReg, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetByIdWithThis).code());
-    emitNakedNearJumpIfNotJSCell(thisJSR, thisVReg, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetByIdWithThis).code());
+    emitJumpIfNotJSCell(baseJSR, baseVReg, m_slowGetByIdWithThis);
+    emitJumpIfNotJSCell(thisJSR, thisVReg, m_slowGetByIdWithThis);
 
     JITGetByIdWithThisGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
@@ -606,7 +606,7 @@ void JIT::emit_op_put_by_id(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, baseVReg, InlineCacheCompiler::generateSlowPathCode(vm(), accessType).code());
+    emitJumpIfNotJSCell(baseJSR, baseVReg, m_slowPutById);
 
     JITPutByIdGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
@@ -639,7 +639,7 @@ void JIT::emit_op_in_by_id(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, baseVReg, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::InById).code());
+    emitJumpIfNotJSCell(baseJSR, baseVReg, m_slowGetById);
 
     JITInByIdGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
@@ -674,7 +674,7 @@ void JIT::emit_op_in_by_val(const JSInstruction* currentInstruction)
     loadConstant(stubInfoIndex, stubInfoGPR);
     materializePointerIntoMetadata(bytecode, OpInByVal::Metadata::offsetOfArrayProfile(), profileGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::InByVal).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowGetByVal);
     emitArrayProfilingSiteWithCellAndProfile(baseJSR.payloadGPR(), profileGPR, scratch1GPR);
 
     JITInByValGenerator gen(
@@ -702,7 +702,7 @@ void JIT::emitHasPrivate(VirtualRegister dst, VirtualRegister base, VirtualRegis
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), type).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowGetByVal);
 
     JITInByValGenerator gen(
         nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), type, RegisterSetBuilder::stubUnavailableRegisters(),
@@ -1491,7 +1491,7 @@ void JIT::emit_op_get_by_val_with_this(const JSInstruction* currentInstruction)
     if (isOperandConstantInt(property))
         stubInfo->propertyIsInt32 = true;
 
-    emitNakedNearJumpIfNotJSCell(baseJSR, base, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetByValWithThis).code());
+    emitJumpIfNotJSCell(baseJSR, base, m_slowGetByValWithThis);
     emitArrayProfilingSiteWithCellAndProfile(baseJSR.payloadGPR(), profileGPR, scratch1GPR);
 
     gen.generateBaselineDataICFastPath(*this);
@@ -1688,7 +1688,7 @@ void JIT::emit_op_enumerator_get_by_val(const JSInstruction* currentInstruction)
     loadConstant(stubInfoIndex, stubInfoGPR);
     materializePointerIntoMetadata(bytecode, OpEnumeratorGetByVal::Metadata::offsetOfArrayProfile(), profileGPR);
 
-    emitNakedNearJumpIfNotJSCell(JSValueRegs { baseGPR }, base, InlineCacheCompiler::generateSlowPathCode(vm(), AccessType::GetByVal).code());
+    emitJumpIfNotJSCell(JSValueRegs { baseGPR }, base, m_slowGetByVal);
 
     // This is always an int32 encoded value.
     Jump isNotOwnStructureMode = branchTest32(NonZero, scratch3GPR, TrustedImm32(JSPropertyNameEnumerator::IndexedMode | JSPropertyNameEnumerator::GenericMode));
@@ -1780,7 +1780,7 @@ void JIT::emit_op_enumerator_put_by_val(const JSInstruction* currentInstruction)
     auto [ stubInfo, stubInfoIndex ] = addUnlinkedStructureStubInfo();
     loadConstant(stubInfoIndex, stubInfoGPR);
 
-    emitNakedNearJumpIfNotJSCell(JSValueRegs { baseGPR }, base, InlineCacheCompiler::generateSlowPathCode(vm(), accessType).code());
+    emitJumpIfNotJSCell(JSValueRegs { baseGPR }, base, m_slowPutByVal);
 
     // This is always an int32 encoded value.
     Jump isNotOwnStructureMode = branchTest32(NonZero, scratch2GPR, TrustedImm32(JSPropertyNameEnumerator::IndexedMode | JSPropertyNameEnumerator::GenericMode));

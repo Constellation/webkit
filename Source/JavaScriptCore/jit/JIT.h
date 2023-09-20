@@ -356,7 +356,7 @@ namespace JSC {
         void emitJumpSlowCaseIfNotInt(RegisterID);
 #endif
 
-        void emitNakedNearJumpIfNotJSCell(JSValueRegs, VirtualRegister, CodePtr<JITThunkPtrTag>);
+        void emitJumpIfNotJSCell(JSValueRegs, VirtualRegister, JumpList&);
 
         void emitJumpSlowCaseIfNotInt(JSValueRegs);
 
@@ -894,6 +894,17 @@ namespace JSC {
         Vector<JITPrivateBrandAccessGenerator> m_privateBrandAccesses;
         Vector<CallCompilationInfo> m_callCompilationInfo;
         Vector<JumpTable> m_jmpTable;
+
+        JumpList m_slowInstanceOf;
+        JumpList m_slowPrivateBrand;
+        JumpList m_slowGetById;
+        JumpList m_slowGetByVal;
+        JumpList m_slowGetByIdWithThis;
+        JumpList m_slowGetByValWithThis;
+        JumpList m_slowPutById;
+        JumpList m_slowPutByVal;
+        JumpList m_slowDelById;
+        JumpList m_slowDelByVal;
 
         BytecodeIndex m_bytecodeIndex;
         Vector<SlowCaseEntry> m_slowCases;
