@@ -562,6 +562,7 @@ public:
     KeyframeEffectStack& ensureKeyframeEffectStack(PseudoId);
     bool hasKeyframeEffects(PseudoId) const;
 
+    bool hasAnimations() const;
     const AnimationCollection* animations(PseudoId) const;
     bool hasCompletedTransitionForProperty(PseudoId, const AnimatableProperty&) const;
     bool hasRunningTransitionForProperty(PseudoId, const AnimatableProperty&) const;

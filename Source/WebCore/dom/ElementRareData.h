@@ -109,6 +109,7 @@ public:
     IntPoint savedLayerScrollPosition() const { return m_savedLayerScrollPosition; }
     void setSavedLayerScrollPosition(IntPoint position) { m_savedLayerScrollPosition = position; }
 
+    bool hasAnimations() const { return !m_animationRareData.isEmpty(); }
     ElementAnimationRareData* animationRareData(PseudoId) const;
     ElementAnimationRareData& ensureAnimationRareData(PseudoId);
 

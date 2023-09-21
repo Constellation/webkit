@@ -4510,6 +4510,13 @@ bool Element::hasKeyframeEffects(PseudoId pseudoId) const
     return false;
 }
 
+bool Element::hasAnimations() const
+{
+    if (!hasRareData())
+        return false;
+    return elementRareData()->hasAnimations();
+}
+
 const AnimationCollection* Element::animations(PseudoId pseudoId) const
 {
     if (auto* animationData = animationRareData(pseudoId))
