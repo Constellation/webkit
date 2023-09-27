@@ -60,9 +60,9 @@
 #include "StyleRule.h"
 #include "StyleRuleImport.h"
 #include "StyleSheetContents.h"
-#include <bitset>
 #include <memory>
 #include <optional>
+#include <wtf/BitSet.h>
 
 namespace WebCore {
 
@@ -100,7 +100,7 @@ CSSParser::ParseResult CSSParserImpl::parseCustomPropertyValue(MutableStylePrope
     return declaration->addParsedProperties(parser.topContext().m_parsedProperties) ? CSSParser::ParseResult::Changed : CSSParser::ParseResult::Unchanged;
 }
 
-static inline void filterProperties(bool important, const ParsedPropertyVector& input, ParsedPropertyVector& output, size_t& unusedEntries, std::bitset<numCSSProperties>& seenProperties, HashSet<AtomString>& seenCustomProperties)
+static inline void filterProperties(bool important, const ParsedPropertyVector& input, ParsedPropertyVector& output, size_t& unusedEntries, WTF::BitSet<numCSSProperties>& seenProperties, HashSet<AtomString>& seenCustomProperties)
 {
     // Add properties in reverse order so that highest priority definitions are reached first. Duplicate definitions can then be ignored when found.
     for (size_t i = input.size(); i--; ) {
@@ -117,10 +117,9 @@ static inline void filterProperties(bool important, const ParsedPropertyVector& 
             continue;
         }
 
-        auto seenPropertyBit = seenProperties[propertyIDIndex];
-        if (seenPropertyBit)
+        if (seenProperties.get(propertyIDIndex))
             continue;
-        seenPropertyBit = true;
+        seenProperties.set(propertyIDIndex);
 
         output[--unusedEntries] = property;
     }
@@ -128,7 +127,7 @@ static inline void filterProperties(bool important, const ParsedPropertyVector& 
 
 static Ref<ImmutableStyleProperties> createStyleProperties(ParsedPropertyVector& parsedProperties, CSSParserMode mode)
 {
-    std::bitset<numCSSProperties> seenProperties;
+    WTF::BitSet<numCSSProperties> seenProperties;
     size_t unusedEntries = parsedProperties.size();
     ParsedPropertyVector results(unusedEntries);
     HashSet<AtomString> seenCustomProperties;
@@ -159,7 +158,7 @@ bool CSSParserImpl::parseDeclarationList(MutableStyleProperties* declaration, co
     if (parser.topContext().m_parsedProperties.isEmpty())
         return false;
 
-    std::bitset<numCSSProperties> seenProperties;
+    WTF::BitSet<numCSSProperties> seenProperties;
     size_t unusedEntries = parser.topContext().m_parsedProperties.size();
     ParsedPropertyVector results(unusedEntries);
     HashSet<AtomString> seenCustomProperties;

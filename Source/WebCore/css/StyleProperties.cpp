@@ -36,7 +36,7 @@
 #include "ShorthandSerializer.h"
 #include "StylePropertiesInlines.h"
 #include "StylePropertyShorthand.h"
-#include <bitset>
+#include <wtf/BitSet.h>
 #include <wtf/text/StringBuilder.h>
 
 #ifndef NDEBUG
@@ -273,8 +273,8 @@ StringBuilder StyleProperties::asTextInternal() const
     StringBuilder result;
 
     constexpr unsigned shorthandPropertyCount = lastShorthandProperty - firstShorthandProperty + 1;
-    std::bitset<shorthandPropertyCount> shorthandPropertyUsed;
-    std::bitset<shorthandPropertyCount> shorthandPropertyAppeared;
+    WTF::BitSet<shorthandPropertyCount> shorthandPropertyUsed;
+    WTF::BitSet<shorthandPropertyCount> shorthandPropertyAppeared;
 
     unsigned numDecls = 0;
     for (auto property : *this) {
@@ -299,11 +299,11 @@ StringBuilder StyleProperties::asTextInternal() const
             unsigned shorthandPropertyIndex = shorthandPropertyID - firstShorthandProperty;
 
             ASSERT(shorthandPropertyIndex < shorthandPropertyUsed.size());
-            if (shorthandPropertyUsed[shorthandPropertyIndex]) {
+            if (shorthandPropertyUsed.get(shorthandPropertyIndex)) {
                 alreadyUsedShorthand = true;
                 break;
             }
-            if (shorthandPropertyAppeared[shorthandPropertyIndex])
+            if (shorthandPropertyAppeared.get(shorthandPropertyIndex))
                 continue;
             shorthandPropertyAppeared.set(shorthandPropertyIndex);
 

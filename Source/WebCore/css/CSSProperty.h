@@ -89,7 +89,13 @@ public:
         return colorProperties.get(propertyId);
     }
 
+    static bool isVisitedLinkColorSupportProperty(CSSPropertyID propertyId)
+    {
+        return visitedLinkColorSupportProperties.get(propertyId);
+    }
+
     static const WEBCORE_EXPORT WTF::BitSet<numCSSProperties> colorProperties;
+    static const WEBCORE_EXPORT WTF::BitSet<numCSSProperties> visitedLinkColorSupportProperties;
     static const WEBCORE_EXPORT WTF::BitSet<numCSSProperties> physicalProperties;
 
     bool operator==(const CSSProperty& other) const

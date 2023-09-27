@@ -54,33 +54,6 @@ namespace Style {
 
 static const CSSPropertyID firstLowPriorityProperty = static_cast<CSSPropertyID>(lastHighPriorityProperty + 1);
 
-inline bool isValidVisitedLinkProperty(CSSPropertyID id)
-{
-    switch (id) {
-    case CSSPropertyBackgroundColor:
-    case CSSPropertyBorderLeftColor:
-    case CSSPropertyBorderRightColor:
-    case CSSPropertyBorderTopColor:
-    case CSSPropertyBorderBottomColor:
-    case CSSPropertyCaretColor:
-    case CSSPropertyColor:
-    case CSSPropertyOutlineColor:
-    case CSSPropertyColumnRuleColor:
-    case CSSPropertyTextDecorationColor:
-    case CSSPropertyTextEmphasisColor:
-    case CSSPropertyWebkitTextFillColor:
-    case CSSPropertyWebkitTextStrokeColor:
-    case CSSPropertyFill:
-    case CSSPropertyStroke:
-    case CSSPropertyStrokeColor:
-        return true;
-    default:
-        break;
-    }
-
-    return false;
-}
-
 Builder::Builder(RenderStyle& style, BuilderContext&& context, const MatchResult& matchResult, CascadeLevel cascadeLevel, OptionSet<PropertyCascade::PropertyType> includedProperties, const HashSet<AnimatableProperty>* animatedPropertes)
     : m_cascade(matchResult, cascadeLevel, includedProperties, animatedPropertes)
     , m_state(*this, style, WTFMove(context))
@@ -149,7 +122,7 @@ inline void Builder::applyPropertiesImpl(int firstProperty, int lastProperty)
         ASSERT(propertyID != CSSPropertyCustom);
         auto& property = m_cascade.normalProperty(propertyID);
 
-        if (trackCycles == CustomPropertyCycleTracking::Enabled) {
+        if constexpr (trackCycles == CustomPropertyCycleTracking::Enabled) {
             m_state.m_inProgressProperties.set(propertyID);
             applyCascadeProperty(property);
             m_state.m_inProgressProperties.clear(propertyID);
@@ -232,34 +205,20 @@ void Builder::applyCustomPropertyImpl(const AtomString& name, const PropertyCasc
 inline void Builder::applyCascadeProperty(const PropertyCascade::Property& property)
 {
     SetForScope levelScope(m_state.m_currentProperty, &property);
-
-    auto applyWithLinkMatch = [&](SelectorChecker::LinkMatchMask linkMatch) {
+    constexpr SelectorChecker::LinkMatchMask linkMatchMasks[] = {
+        SelectorChecker::MatchDefault,
+        SelectorChecker::MatchLink,
+        SelectorChecker::MatchVisited,
+    };
+    for (auto linkMatch : linkMatchMasks) {
+        if (linkMatch != SelectorChecker::MatchDefault && m_state.style().insideLink() == InsideLink::NotInside)
+            break;
         if (property.cssValue[linkMatch]) {
             SetForScope scopedLinkMatchMutation(m_state.m_linkMatch, linkMatch);
             applyProperty(property.id, *property.cssValue[linkMatch], linkMatch);
         }
-    };
-
-    applyWithLinkMatch(SelectorChecker::MatchDefault);
-
-    if (m_state.style().insideLink() == InsideLink::NotInside)
-        return;
-
-    applyWithLinkMatch(SelectorChecker::MatchLink);
-    applyWithLinkMatch(SelectorChecker::MatchVisited);
-
+    }
     m_state.m_linkMatch = SelectorChecker::MatchDefault;
-}
-
-void Builder::applyRollbackCascadeProperty(const PropertyCascade::Property& property, SelectorChecker::LinkMatchMask linkMatchMask)
-{
-    auto* value = property.cssValue[linkMatchMask];
-    if (!value)
-        return;
-
-    SetForScope levelScope(m_state.m_currentProperty, &property);
-
-    applyProperty(property.id, *value, linkMatchMask);
 }
 
 void Builder::applyProperty(CSSPropertyID id, CSSValue& value, SelectorChecker::LinkMatchMask linkMatchMask)
@@ -295,6 +254,14 @@ void Builder::applyProperty(CSSPropertyID id, CSSValue& value, SelectorChecker::
     bool isRevert = valueID == CSSValueRevert;
     bool isRevertLayer = valueID == CSSValueRevertLayer;
 
+    auto applyRollbackCascadeProperty = [&](const PropertyCascade::Property& property) {
+        auto* value = property.cssValue[linkMatchMask];
+        if (!value)
+            return;
+        SetForScope levelScope(m_state.m_currentProperty, &property);
+        applyProperty(property.id, *value, linkMatchMask);
+    };
+
     if (isRevert || isRevertLayer) {
         // In @keyframes, 'revert-layer' rolls back the cascaded value to the author level.
         // We can just not apply the property in order to keep the value from the base style.
@@ -310,18 +277,18 @@ void Builder::applyProperty(CSSPropertyID id, CSSValue& value, SelectorChecker::
                 if (registeredCustomProperty && registeredCustomProperty->inherits) {
                     auto iterator = rollbackCascade->customProperties().find(customPropertyValue->name());
                     if (iterator != rollbackCascade->customProperties().end()) {
-                        applyRollbackCascadeProperty(iterator->value, linkMatchMask);
+                        applyRollbackCascadeProperty(iterator->value);
                         return;
                     }
                 }
             } else if (id < firstDeferredProperty) {
                 if (rollbackCascade->hasNormalProperty(id)) {
                     auto& property = rollbackCascade->normalProperty(id);
-                    applyRollbackCascadeProperty(property, linkMatchMask);
+                    applyRollbackCascadeProperty(property);
                     return;
                 }
             } else if (auto* property = rollbackCascade->lastDeferredPropertyResolvingRelated(id, style.direction(), style.writingMode())) {
-                applyRollbackCascadeProperty(*property, linkMatchMask);
+                applyRollbackCascadeProperty(*property);
                 return;
             }
         }
@@ -344,7 +311,7 @@ void Builder::applyProperty(CSSPropertyID id, CSSValue& value, SelectorChecker::
 
     ASSERT(!isInherit || !isInitial); // isInherit -> !isInitial && isInitial -> !isInherit
 
-    if (m_state.applyPropertyToVisitedLinkStyle() && !isValidVisitedLinkProperty(id)) {
+    if (m_state.applyPropertyToVisitedLinkStyle() && !CSSProperty::isVisitedLinkColorSupportProperty(id)) {
         // Limit the properties that can be applied to only the ones honored by :visited.
         return;
     }

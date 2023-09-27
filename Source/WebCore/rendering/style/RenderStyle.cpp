@@ -1467,9 +1467,9 @@ void RenderStyle::conservativelyCollectChangedAnimatableProperties(const RenderS
         }
 
         // insideLink changes visited / non-visited colors.
-        // Thus we need to list up all color properties.
+        // Thus we need to list up all color properties supporting visited-link-color.
         if (first.insideLink != second.insideLink)
-            changingProperties.m_properties.merge(CSSProperty::colorProperties);
+            changingProperties.m_properties.merge(CSSProperty::visitedLinkColorSupportProperties);
 
         // Non animated styles are followings.
         // cursorVisibility

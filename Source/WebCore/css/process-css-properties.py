@@ -2857,6 +2857,12 @@ class GenerateCSSPropertyNames:
                 iterable=(p for p in self.properties_and_descriptors.style_properties.all if p.codegen_properties.color_property)
             )
 
+            self.generation_context.generate_property_id_bit_set(
+                to=writer,
+                name="CSSProperty::visitedLinkColorSupportProperties",
+                iterable=(p for p in self.properties_and_descriptors.style_properties.all if p.codegen_properties.visited_link_color_support)
+            )
+
             physical_properties = []
             for _, property_group in sorted(self.generation_context.properties_and_descriptors.style_properties.logical_property_groups.items(), key=lambda x: x[0]):
                 kind = property_group["kind"]
