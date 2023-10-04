@@ -15,12 +15,12 @@ layer at (0,0) size 480x360
       RenderSVGText {text} at (30,16) size 386x18 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 386x18
           chunk 1 text run 1 at (30.00,30.00) startOffset 0 endOffset 59 width 385.63: "Bounding box relative coordinates (percentage and fraction)"
-      RenderSVGContainer {g} at (30,40) size 133x60 [transform={m=((1.00,0.00)(0.00,1.00)) t=(30.00,40.00)}]
+      RenderSVGContainer {g} at (29,40) size 134x60 [transform={m=((1.00,0.00)(0.00,1.00)) t=(30.00,40.00)}]
         RenderSVGRect {rect} at (30,40) size 50x20 [fill={[type=LINEAR-GRADIENT] [id="linearBoundingBoxPercentage"]}] [x=0.00] [y=0.00] [width=50.00] [height=20.00]
         RenderSVGRect {rect} at (30,60) size 50x20 [transform={m=((1.00,0.00)(0.00,1.00)) t=(0.00,20.00)}] [fill={[type=LINEAR-GRADIENT] [id="linearBoundingBoxFraction"]}] [x=0.00] [y=0.00] [width=50.00] [height=20.00]
         RenderSVGRect {rect} at (30,80) size 50x20 [transform={m=((1.00,0.00)(0.00,1.00)) t=(0.00,40.00)}] [fill={[type=LINEAR-GRADIENT] [id="linearUserSpace"]}] [x=0.00] [y=0.00] [width=50.00] [height=20.00]
-        RenderSVGPath {line} at (30,59) size 50x2 [stroke={[type=SOLID] [color=#CCCCCC]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=20.00] [x2=50.00] [y2=20.00]
-        RenderSVGPath {line} at (30,79) size 50x2 [stroke={[type=SOLID] [color=#CCCCCC]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=40.00] [x2=50.00] [y2=40.00]
+        RenderSVGPath {line} at (29,59) size 52x2 [stroke={[type=SOLID] [color=#CCCCCC]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=20.00] [x2=50.00] [y2=20.00]
+        RenderSVGPath {line} at (29,79) size 52x2 [stroke={[type=SOLID] [color=#CCCCCC]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=40.00] [x2=50.00] [y2=40.00]
         RenderSVGText {text} at (60,1) size 71x18 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 71x18
             chunk 1 text run 1 at (60.00,15.00) startOffset 0 endOffset 10 width 70.18: "Percentage"

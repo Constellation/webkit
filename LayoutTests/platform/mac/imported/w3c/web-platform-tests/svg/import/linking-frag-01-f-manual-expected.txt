@@ -3,15 +3,15 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (65,44) size 245x458
-      RenderSVGContainer {a} at (65,44) size 245x125
-        RenderSVGPath {path} at (65,44) size 245x125 [stroke={[type=SOLID] [color=#0000FF]}] [fill={[type=SOLID] [color=#00FF00]}] [data="M 185 40 L 85 40 L 85 28 L 40 64 L 85 100 L 85 88 L 185 88 Z"]
-      RenderSVGContainer {g} at (65,211) size 245x125 [transform={m=((1.00,0.00)(0.00,1.00)) t=(0.00,100.00)}]
-        RenderSVGContainer {a} at (65,211) size 245x125
-          RenderSVGPath {path} at (65,211) size 245x125 [stroke={[type=SOLID] [color=#0000FF]}] [fill={[type=SOLID] [color=#0000FF]}] [data="M 185 40 L 85 40 L 85 28 L 40 64 L 85 100 L 85 88 L 185 88 Z"]
-      RenderSVGContainer {g} at (65,378) size 245x124 [transform={m=((1.00,0.00)(0.00,1.00)) t=(0.00,200.00)}]
-        RenderSVGContainer {a} at (65,378) size 245x124
-          RenderSVGPath {path} at (65,378) size 245x124 [stroke={[type=SOLID] [color=#00FF00]}] [fill={[type=SOLID] [color=#800080]}] [data="M 185 40 L 85 40 L 85 28 L 40 64 L 85 100 L 85 88 L 185 88 Z"]
+    RenderSVGContainer {g} at (63,43) size 249x461
+      RenderSVGContainer {a} at (63,43) size 249x127
+        RenderSVGPath {path} at (63,43) size 249x127 [stroke={[type=SOLID] [color=#0000FF]}] [fill={[type=SOLID] [color=#00FF00]}] [data="M 185 40 L 85 40 L 85 28 L 40 64 L 85 100 L 85 88 L 185 88 Z"]
+      RenderSVGContainer {g} at (63,210) size 249x127 [transform={m=((1.00,0.00)(0.00,1.00)) t=(0.00,100.00)}]
+        RenderSVGContainer {a} at (63,210) size 249x127
+          RenderSVGPath {path} at (63,210) size 249x127 [stroke={[type=SOLID] [color=#0000FF]}] [fill={[type=SOLID] [color=#0000FF]}] [data="M 185 40 L 85 40 L 85 28 L 40 64 L 85 100 L 85 88 L 185 88 Z"]
+      RenderSVGContainer {g} at (63,376) size 249x128 [transform={m=((1.00,0.00)(0.00,1.00)) t=(0.00,200.00)}]
+        RenderSVGContainer {a} at (63,376) size 249x128
+          RenderSVGPath {path} at (63,376) size 249x128 [stroke={[type=SOLID] [color=#00FF00]}] [fill={[type=SOLID] [color=#800080]}] [data="M 185 40 L 85 40 L 85 28 L 40 64 L 85 100 L 85 88 L 185 88 Z"]
     RenderSVGContainer {g} at (16,517) size 384x62
       RenderSVGText {text} at (10,310) size 230x38 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 230x37

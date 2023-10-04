@@ -52,22 +52,22 @@ layer at (0,0) size 800x600
         RenderSVGContainer {use} at (86,286) size 255x242 [transform={m=((1.00,0.00)(0.00,1.00)) t=(-252.00,148.00)}]
           [filter="usou3"] RenderSVGResourceFilter {filter} at (223.91,23.82) size 152.17x144.72
           RenderSVGPath {polygon} at (149,346) size 128x122 [fill={[type=SOLID] [color=#00FF00]}] [points="300 60 311.755 83.819 338.042 87.639 319.021 106.18 323.511 132.36 300 120 276.488 132.36 280.978 106.18 261.957 87.639 288.244 83.819 300 60 311.755 83.819"]
-        RenderSVGContainer {use} at (149,346) size 135x128 [transform={m=((1.00,0.00)(0.00,1.00)) t=(-250.00,150.00)}]
-          RenderSVGPath {polygon} at (149,346) size 135x128 [stroke={[type=SOLID] [color=#00FF00] [stroke width=2.00]}] [points="300 60 311.755 83.819 338.042 87.639 319.021 106.18 323.511 132.36 300 120 276.488 132.36 280.978 106.18 261.957 87.639 288.244 83.819 300 60 311.755 83.819"]
+        RenderSVGContainer {use} at (146,343) size 141x135 [transform={m=((1.00,0.00)(0.00,1.00)) t=(-250.00,150.00)}]
+          RenderSVGPath {polygon} at (146,343) size 141x135 [stroke={[type=SOLID] [color=#00FF00] [stroke width=2.00]}] [points="300 60 311.755 83.819 338.042 87.639 319.021 106.18 323.511 132.36 300 120 276.488 132.36 280.978 106.18 261.957 87.639 288.244 83.819 300 60 311.755 83.819"]
         RenderSVGContainer {use} at (319,350) size 128x121 [transform={m=((1.00,0.00)(0.00,1.00)) t=(-150.00,150.00)}]
           RenderSVGPath {polygon} at (319,350) size 128x121 [fill={[type=SOLID] [color=#FF0000]}] [points="300 60 311.755 83.819 338.042 87.639 319.021 106.18 323.511 132.36 300 120 276.488 132.36 280.978 106.18 261.957 87.639 288.244 83.819 300 60 311.755 83.819"]
         RenderSVGContainer {use} at (0,0) size 800x600 [transform={m=((1.00,0.00)(0.00,1.00)) t=(-302.00,5.10)}]
           [filter="obb3"] RenderSVGResourceFilter {filter} at (-240,-180) size 960x720
           RenderSVGPath {polygon} at (66,108) size 128x122 [fill={[type=SOLID] [color=#00FF00]}] [points="300 60 311.755 83.819 338.042 87.639 319.021 106.18 323.511 132.36 300 120 276.488 132.36 280.978 106.18 261.957 87.639 288.244 83.819 300 60 311.755 83.819"]
-        RenderSVGContainer {use} at (316,346) size 135x128 [transform={m=((1.00,0.00)(0.00,1.00)) t=(-150.00,150.00)}]
-          RenderSVGPath {polygon} at (316,346) size 135x128 [stroke={[type=SOLID] [color=#00FF00] [stroke width=2.00]}] [points="300 60 311.755 83.819 338.042 87.639 319.021 106.18 323.511 132.36 300 120 276.488 132.36 280.978 106.18 261.957 87.639 288.244 83.819 300 60 311.755 83.819"]
+        RenderSVGContainer {use} at (313,343) size 141x135 [transform={m=((1.00,0.00)(0.00,1.00)) t=(-150.00,150.00)}]
+          RenderSVGPath {polygon} at (313,343) size 141x135 [stroke={[type=SOLID] [color=#00FF00] [stroke width=2.00]}] [points="300 60 311.755 83.819 338.042 87.639 319.021 106.18 323.511 132.36 300 120 276.488 132.36 280.978 106.18 261.957 87.639 288.244 83.819 300 60 311.755 83.819"]
         RenderSVGContainer {use} at (486,350) size 128x121 [transform={m=((1.00,0.00)(0.00,1.00)) t=(-50.00,150.00)}]
           RenderSVGPath {polygon} at (486,350) size 128x121 [fill={[type=SOLID] [color=#FF0000]}] [points="300 60 311.755 83.819 338.042 87.639 319.021 106.18 323.511 132.36 300 120 276.488 132.36 280.978 106.18 261.957 87.639 288.244 83.819 300 60 311.755 83.819"]
         RenderSVGContainer {use} at (419,286) size 255x242 [transform={m=((1.00,0.00)(0.00,1.00)) t=(-52.00,148.00)}]
           [filter="default3"] RenderSVGResourceFilter {filter} at (223.91,23.82) size 152.17x144.72
           RenderSVGPath {polygon} at (483,346) size 128x122 [fill={[type=SOLID] [color=#00FF00]}] [points="300 60 311.755 83.819 338.042 87.639 319.021 106.18 323.511 132.36 300 120 276.488 132.36 280.978 106.18 261.957 87.639 288.244 83.819 300 60 311.755 83.819"]
-        RenderSVGContainer {use} at (483,346) size 134x128 [transform={m=((1.00,0.00)(0.00,1.00)) t=(-50.00,150.00)}]
-          RenderSVGPath {polygon} at (483,346) size 134x128 [stroke={[type=SOLID] [color=#00FF00] [stroke width=2.00]}] [points="300 60 311.755 83.819 338.042 87.639 319.021 106.18 323.511 132.36 300 120 276.488 132.36 280.978 106.18 261.957 87.639 288.244 83.819 300 60 311.755 83.819"]
+        RenderSVGContainer {use} at (479,343) size 142x135 [transform={m=((1.00,0.00)(0.00,1.00)) t=(-50.00,150.00)}]
+          RenderSVGPath {polygon} at (479,343) size 142x135 [stroke={[type=SOLID] [color=#00FF00] [stroke width=2.00]}] [points="300 60 311.755 83.819 338.042 87.639 319.021 106.18 323.511 132.36 300 120 276.488 132.36 280.978 106.18 261.957 87.639 288.244 83.819 300 60 311.755 83.819"]
     RenderSVGContainer {g} at (16,517) size 384x62
       RenderSVGText {text} at (10,310) size 230x38 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 230x37

@@ -15,8 +15,8 @@ layer at (0,0) size 800x600
         RenderSVGRect {rect} at (134,184) size 499x299 [stroke={[type=SOLID] [color=#0000FF]}] [fill={[type=SOLID] [color=#888888]}] [x=1.00] [y=1.00] [width=198.00] [height=118.00]
         RenderSVGContainer {g} at (133,183) size 501x301
           [filter="MyFilter"] RenderSVGResourceFilter {filter} at (0,0) size 200x120
-          RenderSVGContainer {g} at (116,245) size 534x176
-            RenderSVGPath {path} at (116,245) size 534x176 [stroke={[type=SOLID] [color=#00D900] [stroke width=10.00]}] [data="M 50 90 C 0 90 0 30 50 30 L 150 30 C 200 30 200 90 150 90 Z"]
+          RenderSVGContainer {g} at (114,208) size 539x251
+            RenderSVGPath {path} at (114,208) size 539x251 [stroke={[type=SOLID] [color=#00D900] [stroke width=10.00]}] [data="M 50 90 C 0 90 0 30 50 30 L 150 30 C 200 30 200 90 150 90 Z"]
             RenderSVGPath {path} at (227,283) size 313x101 [fill={[type=SOLID] [color=#00D900]}] [data="M 60 80 C 30 80 30 40 60 40 L 140 40 C 170 40 170 80 140 80 Z"]
             RenderSVGContainer {g} at (260,257) size 247x143
               RenderSVGText {text} at (52,30) size 97x56 contains 1 chunk(s)

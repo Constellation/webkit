@@ -11,7 +11,7 @@ layer at (0,0) size 800x600
         RenderSVGText {text} at (48,61) size 262x43 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 262x42
             chunk 1 text run 1 at (48.00,95.00) startOffset 0 endOffset 16 width 261.88: "'mpath' element."
-        RenderSVGPath {path} at (146,277) size 507x157 [stroke={[type=SOLID] [color=#000000] [stroke width=6.00]}] [data="M 90 258 C 90 258 216 120 390 198"]
+        RenderSVGPath {path} at (130,270) size 540x180 [stroke={[type=SOLID] [color=#000000] [stroke width=6.00]}] [data="M 90 258 C 90 258 216 120 390 198"]
         RenderSVGRect {rect} at (95,325) size 110x110 [stroke={[type=SOLID] [color=#000000] [stroke width=6.00]}] [fill={[type=SOLID] [color=#FFCCCC]}] [x=60.00] [y=198.00] [width=60.00] [height=60.00]
         RenderSVGText {text} at (41,266) size 98x43 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 97x42
@@ -20,7 +20,7 @@ layer at (0,0) size 800x600
         RenderSVGText {text} at (331,206) size 118x43 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 118x42
             chunk 1 (middle anchor) text run 1 at (331.46,240.00) startOffset 0 endOffset 7 width 117.07: "6+ sec."
-        RenderSVGPath {path} at (91,318) size 118x117 [transform={m=((1.00,0.00)(0.00,1.00)) t=(90.00,258.00)}] [stroke={[type=SOLID] [color=#008000] [stroke width=6.00]}] [fill={[type=SOLID] [color=#0000FF]}] [data="M -30 0 L 0 -60 L 30 0 Z"]
+        RenderSVGPath {path} at (80,310) size 140x140 [transform={m=((1.00,0.00)(0.00,1.00)) t=(90.00,258.00)}] [stroke={[type=SOLID] [color=#008000] [stroke width=6.00]}] [fill={[type=SOLID] [color=#0000FF]}] [data="M -30 0 L 0 -60 L 30 0 Z"]
     RenderSVGContainer {g} at (16,516) size 384x64
       RenderSVGText {text} at (10,310) size 230x38 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 230x38

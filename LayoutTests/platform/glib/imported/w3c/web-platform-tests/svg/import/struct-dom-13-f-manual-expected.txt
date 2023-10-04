@@ -9,7 +9,7 @@ layer at (0,0) size 800x600
         RenderSVGEllipse {circle} at (49,49) size 36x36 [stroke={[type=SOLID] [color=#00FF00]}] [fill={[type=SOLID] [color=#0000FF]}] [cx=40.00] [cy=40.00] [r=10.00]
         RenderSVGEllipse {circle} at (0,65) size 35x36 [stroke={[type=SOLID] [color=#00FF00]}] [fill={[type=SOLID] [color=#FF0000]}] [cx=10.00] [cy=50.00] [r=10.00]
         RenderSVGEllipse {circle} at (0,0) size 68x68 [stroke={[type=SOLID] [color=#00FF00]}] [fill={[type=SOLID] [color=#008000]}] [cx=20.00] [cy=20.00] [r=20.00]
-        RenderSVGPath {line} at (8,7) size 59x28 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.00] [y1=5.00] [x2=40.00] [y2=20.00]
+        RenderSVGPath {line} at (7,7) size 61x28 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.00] [y1=5.00] [x2=40.00] [y2=20.00]
         RenderSVGPath {line} at (32,32) size 36x19 [stroke={[type=SOLID] [color=#FF0000]}] [fill={[type=SOLID] [color=#000000]}] [x1=20.00] [y1=20.00] [x2=40.00] [y2=30.00]
         RenderSVGRect {rect} at (15,15) size 86x86 [stroke={[type=SOLID] [color=#FF0000]}] [x=10.00] [y=10.00] [width=50.00] [height=50.00]
         RenderSVGEllipse {circle} at (116,66) size 34x34 [fill={[type=SOLID] [color=#FFFF00]}] [cx=80.00] [cy=50.00] [r=10.00]

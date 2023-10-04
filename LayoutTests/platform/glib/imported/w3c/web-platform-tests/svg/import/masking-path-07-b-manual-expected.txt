@@ -39,8 +39,8 @@ layer at (0,0) size 800x600
       RenderSVGText {text} at (106,19) size 268x21 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 267x21
           chunk 1 (middle anchor) text run 1 at (106.90,36.00) startOffset 0 endOffset 34 width 266.20: "Test clip unions and intersections"
-      RenderSVGContainer {g} at (49,132) size 701x318 [transform={m=((1.00,0.00)(0.00,1.00)) t=(20.00,70.00)}]
-        RenderSVGContainer {g} at (49,132) size 236x236
+      RenderSVGContainer {g} at (46,130) size 704x320 [transform={m=((1.00,0.00)(0.00,1.00)) t=(20.00,70.00)}]
+        RenderSVGContainer {g} at (46,130) size 239x238
           RenderSVGContainer {use} at (50,133) size 167x167
             RenderSVGPath {path} at (50,133) size 167x167 [fill={[type=SOLID] [color=#FF0000] [fill rule=EVEN-ODD]}] [clip rule=EVEN-ODD] [data="M 10 10 L 110 10 L 110 110 L 10 110 Z M 50 50 L 90 50 L 90 90 L 50 90 Z"]
           RenderSVGContainer {use} at (200,283) size 84x84
@@ -57,8 +57,8 @@ layer at (0,0) size 800x600
           RenderSVGContainer {use} at (200,283) size 85x85
             [clipPath="clipCircle2"] RenderSVGResourceClipper {clipPath} at (100,100) size 100x100
             RenderSVGEllipse {circle} at (115,199) size 170x169 [stroke={[type=SOLID] [color=#000000]}] [cx=100.00] [cy=100.00] [r=50.00]
-          RenderSVGContainer {use} at (49,132) size 169x169
-            RenderSVGPath {path} at (49,132) size 169x169 [stroke={[type=SOLID] [color=#000000]}] [clip rule=EVEN-ODD] [data="M 10 10 L 110 10 L 110 110 L 10 110 Z M 50 50 L 90 50 L 90 90 L 50 90 Z"]
+          RenderSVGContainer {use} at (46,130) size 174x174
+            RenderSVGPath {path} at (46,130) size 174x174 [stroke={[type=SOLID] [color=#000000]}] [clip rule=EVEN-ODD] [data="M 10 10 L 110 10 L 110 110 L 10 110 Z M 50 50 L 90 50 L 90 90 L 50 90 Z"]
         RenderSVGContainer {g} at (433,133) size 317x317 [transform={m=((1.00,0.00)(0.00,1.00)) t=(230.00,0.00)}]
           RenderSVGContainer {g} at (500,200) size 167x167
             [clipPath="clipCircle1"] RenderSVGResourceClipper {clipPath} at (50,50) size 100x100

@@ -3,10 +3,10 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (33,6) size 747x494
-      RenderSVGContainer {g} at (33,6) size 747x494
-        RenderSVGPath {line} at (313,75) size 7x425 [stroke={[type=SOLID] [color=#880000] [stroke width=4.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=190.00] [y1=45.00] [x2=190.00] [y2=300.00]
-        RenderSVGPath {line} at (763,75) size 7x425 [stroke={[type=SOLID] [color=#880000] [stroke width=4.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=460.00] [y1=45.00] [x2=460.00] [y2=300.00]
+    RenderSVGContainer {g} at (33,6) size 747x498
+      RenderSVGContainer {g} at (33,6) size 747x498
+        RenderSVGPath {line} at (313,71) size 7x433 [stroke={[type=SOLID] [color=#880000] [stroke width=4.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=190.00] [y1=45.00] [x2=190.00] [y2=300.00]
+        RenderSVGPath {line} at (763,71) size 7x433 [stroke={[type=SOLID] [color=#880000] [stroke width=4.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=460.00] [y1=45.00] [x2=460.00] [y2=300.00]
         RenderSVGText {text} at (156,4) size 107x35 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 107x35
             chunk 1 text run 1 at (156.00,32.00) startOffset 0 endOffset 8 width 106.71: "0-2 sec."

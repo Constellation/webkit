@@ -2,7 +2,7 @@ layer at (0,0) size 480x360
   RenderView at (0,0) size 480x360
 layer at (0,0) size 480x360
   RenderSVGRoot {svg} at (0,0) size 480x360
-    RenderSVGContainer {g} at (30,15) size 250x257
+    RenderSVGContainer {g} at (30,15) size 250x258
       RenderSVGText {text} at (30,15) size 250x19 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 250x18
           chunk 1 text run 1 at (30.00,30.00) startOffset 0 endOffset 42 width 249.73: "Default entities: amp, lt, gt, apos, quot:"
@@ -30,8 +30,8 @@ layer at (0,0) size 480x360
       RenderSVGText {text} at (178,213) size 54x19 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 53x18
           chunk 1 (middle anchor) text run 1 at (178.78,228.00) startOffset 0 endOffset 8 width 52.44: "outlined"
-      RenderSVGContainer {g} at (189,234) size 38x38 [transform={m=((0.20,0.00)(0.00,0.20)) t=(190.00,235.00)}]
-        RenderSVGPath {path} at (189,234) size 38x38 [stroke={[type=SOLID] [color=#808080] [stroke width=5.00]}] [data="M 60 0 L 120 0 L 180 60 L 180 120 L 120 180 L 60 180 L 0 120 L 0 60 Z"]
+      RenderSVGContainer {g} at (188,233) size 40x40 [transform={m=((0.20,0.00)(0.00,0.20)) t=(190.00,235.00)}]
+        RenderSVGPath {path} at (188,233) size 40x40 [stroke={[type=SOLID] [color=#808080] [stroke width=5.00]}] [data="M 60 0 L 120 0 L 180 60 L 180 120 L 120 180 L 60 180 L 0 120 L 0 60 Z"]
     RenderSVGText {text} at (10,304) size 264x45 contains 1 chunk(s)
       RenderSVGInlineText {#text} at (0,0) size 264x45
         chunk 1 text run 1 at (10.00,340.00) startOffset 0 endOffset 16 width 263.34: "$Revision: 1.9 $"

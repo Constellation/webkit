@@ -3,8 +3,8 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (1,32) size 739x427
-      RenderSVGContainer {g} at (1,32) size 739x427
+    RenderSVGContainer {g} at (0,32) size 740x427
+      RenderSVGContainer {g} at (0,32) size 740x427
         RenderSVGText {text} at (60,19) size 360x20 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 360x20
             chunk 1 text run 1 at (60.00,35.00) startOffset 0 endOffset 45 width 359.38: "CSS pixel coordinate to user space conversion"
@@ -32,12 +32,12 @@ layer at (0,0) size 800x600
         RenderSVGText {text} at (140,249) size 302x20 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 302x20
             chunk 1 text run 1 at (140.00,265.00) startOffset 0 endOffset 36 width 301.61: "CSS and percentage length conversion"
-        RenderSVGContainer {g} at (1,408) size 241x51 [transform={m=((4.00,0.00)(4.00,4.00)) t=(30.00,260.00)}]
+        RenderSVGContainer {g} at (0,408) size 244x51 [transform={m=((4.00,0.00)(4.00,4.00)) t=(30.00,260.00)}]
           RenderSVGEllipse {circle} at (2,409) size 96x48 [fill={[type=SOLID] [color=#000000]}] [cx=0.00] [cy=0.00] [r=3.54]
           RenderSVGEllipse {circle} at (69,409) size 95x48 [fill={[type=SOLID] [color=#FF00FF]}] [cx=10.00] [cy=0.00] [r=3.54]
           RenderSVGEllipse {circle} at (136,409) size 95x48 [fill={[type=SOLID] [color=#008000]}] [cx=20.00] [cy=0.00] [r=3.54]
-          RenderSVGPath {line} at (1,408) size 194x4 [stroke={[type=SOLID] [color=#CCCCCC] [stroke width=0.50]}] [x1=-3.54] [y1=-3.54] [x2=25.00] [y2=-3.54]
-          RenderSVGPath {line} at (48,455) size 194x4 [stroke={[type=SOLID] [color=#CCCCCC] [stroke width=0.50]}] [x1=-3.54] [y1=3.54] [x2=25.00] [y2=3.54]
+          RenderSVGPath {line} at (0,408) size 197x4 [stroke={[type=SOLID] [color=#CCCCCC] [stroke width=0.50]}] [x1=-3.54] [y1=-3.54] [x2=25.00] [y2=-3.54]
+          RenderSVGPath {line} at (46,455) size 198x4 [stroke={[type=SOLID] [color=#CCCCCC] [stroke width=0.50]}] [x1=-3.54] [y1=3.54] [x2=25.00] [y2=3.54]
     RenderSVGContainer {g} at (16,517) size 384x62
       RenderSVGText {text} at (10,310) size 230x38 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 230x37

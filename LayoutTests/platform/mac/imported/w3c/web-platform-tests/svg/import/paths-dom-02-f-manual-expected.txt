@@ -3,8 +3,8 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (258,138) size 284x324
-      RenderSVGPath {path} at (258,138) size 284x324 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#0000FF]}] [data="M 255 205.981 C 240 300 240 300 225 205.981 C 136.077 240 136.077 240 210 180 C 136.077 120 136.077 120 225 154.019 C 240 60 240 60 255 154.019 C 343.923 120 343.923 120 270 180 C 343.923 240 343.923 240 255 205.981 Z"]
+    RenderSVGContainer {g} at (257,135) size 286x330
+      RenderSVGPath {path} at (257,135) size 286x330 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#0000FF]}] [data="M 255 205.981 C 240 300 240 300 225 205.981 C 136.077 240 136.077 240 210 180 C 136.077 120 136.077 120 225 154.019 C 240 60 240 60 255 154.019 C 343.923 120 343.923 120 270 180 C 343.923 240 343.923 240 255 205.981 Z"]
     RenderSVGContainer {g} at (16,517) size 384x62
       RenderSVGText {text} at (10,310) size 230x38 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 230x37

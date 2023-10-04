@@ -50,13 +50,13 @@ layer at (0,0) size 480x360
           RenderSVGRect {rect} at (220,60) size 8x6 [stroke={[type=SOLID] [color=#847542]}] [fill={[type=SOLID] [color=#FFDF7B]}] [x=595.00] [y=192.00] [width=100.00] [height=36.00]
           RenderSVGRect {rect} at (217,61) size 17x10 [stroke={[type=SOLID] [color=#847542]}] [fill={[type=SOLID] [color=#FFDF7B]}] [x=507.00] [y=246.00] [width=276.00] [height=36.00]
           RenderSVGRect {rect} at (223,66) size 8x6 [stroke={[type=SOLID] [color=#847542]}] [fill={[type=SOLID] [color=#FFDF7B]}] [x=592.00] [y=300.00] [width=106.00] [height=36.00]
-        RenderSVGContainer {g} at (197,59) size 28x23
+        RenderSVGContainer {g} at (197,58) size 28x25
           RenderSVGPath {path} at (197,63) size 15x12 [stroke={[type=SOLID] [color=#5A59CE]}] [data="M 201 193 C 212 170 215 158 240 143 C 279 122 377 112 428 107"]
           RenderSVGPath {path} at (199,66) size 13x9 [stroke={[type=SOLID] [color=#5A59CE]}] [data="M 216 200 C 224 196 232 193 240 191 C 311 174 390 165 423 161"]
-          RenderSVGPath {path} at (201,64) size 21x11 [stroke={[type=SOLID] [color=#5A59CE]}] [data="M 221 210 C 295 210 497 210 595 210"]
-          RenderSVGPath {path} at (201,64) size 21x11 [stroke={[type=SOLID] [color=#5A59CE]}] [data="M 221 210 C 295 210 497 210 595 210"]
-          RenderSVGPath {path} at (201,67) size 17x11 [stroke={[type=SOLID] [color=#5A59CE]}] [data="M 216 220 C 224 224 232 227 240 229 C 334 252 444 261 506 264"]
-          RenderSVGPath {path} at (200,65) size 25x17 [stroke={[type=SOLID] [color=#5A59CE]}] [data="M 201 227 C 212 253 215 265 240 280 C 352 344 508 337 592 325"]
+          RenderSVGPath {path} at (200,64) size 22x11 [stroke={[type=SOLID] [color=#5A59CE]}] [data="M 221 210 C 295 210 497 210 595 210"]
+          RenderSVGPath {path} at (200,64) size 22x11 [stroke={[type=SOLID] [color=#5A59CE]}] [data="M 221 210 C 295 210 497 210 595 210"]
+          RenderSVGPath {path} at (200,67) size 19x11 [stroke={[type=SOLID] [color=#5A59CE]}] [data="M 216 220 C 224 224 232 227 240 229 C 334 252 444 261 506 264"]
+          RenderSVGPath {path} at (200,65) size 25x18 [stroke={[type=SOLID] [color=#5A59CE]}] [data="M 201 227 C 212 253 215 265 240 280 C 352 344 508 337 592 325"]
         RenderSVGContainer {g} at (208,58) size 17x18
           RenderSVGPath {polygon} at (209,63) size 1x1 [fill={[type=SOLID] [color=#5A59CE]}] [points="433 107 425 111 425 103"]
           RenderSVGPath {polygon} at (210,66) size 1x1 [fill={[type=SOLID] [color=#5A59CE]}] [points="428 160 421 165 420 157"]

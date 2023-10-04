@@ -3,10 +3,10 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (16,0) size 768x509
-      RenderSVGContainer {g} at (16,0) size 768x509
-        RenderSVGPath {path} at (16,199) size 768x2 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 10 120 L 470 120"]
-        RenderSVGPath {path} at (16,399) size 768x2 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 10 240 L 470 240"]
+    RenderSVGContainer {g} at (15,0) size 770x509
+      RenderSVGContainer {g} at (15,0) size 770x509
+        RenderSVGPath {path} at (15,199) size 770x2 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 10 120 L 470 120"]
+        RenderSVGPath {path} at (15,399) size 770x2 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 10 240 L 470 240"]
         RenderSVGText {text} at (152,-1) size 176x186 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 175x186
             chunk 1 (middle anchor) text run 1 at (152.57,120.00) startOffset 0 endOffset 4 width 174.86 RTL: "\x{622}\x{644}\x{627}\x{62A}"

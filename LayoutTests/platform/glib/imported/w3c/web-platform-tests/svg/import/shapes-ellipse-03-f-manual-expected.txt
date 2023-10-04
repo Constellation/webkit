@@ -3,14 +3,14 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (83,22) size 717x456
-      RenderSVGContainer {g} at (83,83) size 334x334 [transform={m=((1.00,0.00)(0.00,1.00)) t=(150.00,150.00)}]
-        RenderSVGPath {line} at (249,83) size 2x334 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=-100.00] [x2=0.00] [y2=100.00]
-        RenderSVGPath {line} at (83,249) size 334x2 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#000000]}] [x1=-100.00] [y1=0.00] [x2=100.00] [y2=0.00]
+    RenderSVGContainer {g} at (82,21) size 718x458
+      RenderSVGContainer {g} at (82,82) size 336x336 [transform={m=((1.00,0.00)(0.00,1.00)) t=(150.00,150.00)}]
+        RenderSVGPath {line} at (249,82) size 2x336 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=-100.00] [x2=0.00] [y2=100.00]
+        RenderSVGPath {line} at (82,249) size 336x2 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#000000]}] [x1=-100.00] [y1=0.00] [x2=100.00] [y2=0.00]
         RenderSVGEllipse {ellipse} at (115,165) size 270x170 [stroke={[type=SOLID] [color=#000000]}] [cx=0.00] [cy=0.00] [rx=80.00] [ry=50.00]
-      RenderSVGContainer {g} at (355,22) size 445x456 [transform={m=((0.87,-0.50)(0.50,0.87)) t=(350.00,150.00)}]
-        RenderSVGPath {line} at (499,105) size 169x290 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=-100.00] [x2=0.00] [y2=100.00]
-        RenderSVGPath {line} at (438,165) size 291x170 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#000000]}] [x1=-100.00] [y1=0.00] [x2=100.00] [y2=0.00]
+      RenderSVGContainer {g} at (354,21) size 446x458 [transform={m=((0.87,-0.50)(0.50,0.87)) t=(350.00,150.00)}]
+        RenderSVGPath {line} at (498,104) size 170x292 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=-100.00] [x2=0.00] [y2=100.00]
+        RenderSVGPath {line} at (437,165) size 292x170 [stroke={[type=SOLID] [color=#000000]}] [fill={[type=SOLID] [color=#000000]}] [x1=-100.00] [y1=0.00] [x2=100.00] [y2=0.00]
         RenderSVGEllipse {ellipse} at (425,110) size 317x280 [stroke={[type=SOLID] [color=#000000]}] [cx=0.00] [cy=0.00] [rx=80.00] [ry=50.00]
     RenderSVGContainer {g} at (16,518) size 388x60
       RenderSVGText {text} at (10,311) size 233x36 contains 1 chunk(s)

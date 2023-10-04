@@ -3,11 +3,11 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (150,166) size 200x151
-      RenderSVGPath {path} at (150,166) size 34x134 [stroke={[type=SOLID] [color=#FFA500] [stroke width=20.00] [dash array={10.00, 20.00, 20.00}]}] [data="M 100 100 L 100 190"]
-      RenderSVGPath {path} at (150,183) size 34x134 [stroke={[type=SOLID] [color=#000000] [stroke width=20.00] [dash array={10.00, 20.00, 20.00}]}] [data="M 100 190 L 100 100"]
-      RenderSVGPath {path} at (316,166) size 34x143 [stroke={[type=SOLID] [color=#FFA500] [stroke width=20.00] [dash offset=5.00] [dash array={10.00, 10.00, 10.00}]}] [data="M 200 100 L 200 190"]
-      RenderSVGPath {path} at (316,175) size 34x142 [stroke={[type=SOLID] [color=#000000] [stroke width=20.00] [dash offset=5.00] [dash array={10.00, 10.00, 10.00}]}] [data="M 200 190 L 200 100"]
+    RenderSVGContainer {g} at (150,150) size 200x184
+      RenderSVGPath {path} at (150,150) size 34x184 [stroke={[type=SOLID] [color=#FFA500] [stroke width=20.00] [dash array={10.00, 20.00, 20.00}]}] [data="M 100 100 L 100 190"]
+      RenderSVGPath {path} at (150,150) size 34x184 [stroke={[type=SOLID] [color=#000000] [stroke width=20.00] [dash array={10.00, 20.00, 20.00}]}] [data="M 100 190 L 100 100"]
+      RenderSVGPath {path} at (316,150) size 34x184 [stroke={[type=SOLID] [color=#FFA500] [stroke width=20.00] [dash offset=5.00] [dash array={10.00, 10.00, 10.00}]}] [data="M 200 100 L 200 190"]
+      RenderSVGPath {path} at (316,150) size 34x184 [stroke={[type=SOLID] [color=#000000] [stroke width=20.00] [dash offset=5.00] [dash array={10.00, 10.00, 10.00}]}] [data="M 200 190 L 200 100"]
     RenderSVGContainer {g} at (16,517) size 384x62
       RenderSVGText {text} at (10,310) size 230x38 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 230x37

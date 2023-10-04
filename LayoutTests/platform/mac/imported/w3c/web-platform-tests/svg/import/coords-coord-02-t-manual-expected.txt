@@ -4,9 +4,9 @@ layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
     RenderSVGContainer {g} at (0,0) size 275x275
-      RenderSVGContainer {g} at (0,0) size 250x250
-        RenderSVGPath {line} at (0,0) size 250x5 [stroke={[type=SOLID] [color=#000000] [stroke width=5.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=0.00] [x2=150.00] [y2=0.00]
-        RenderSVGPath {line} at (0,0) size 5x250 [stroke={[type=SOLID] [color=#000000] [stroke width=5.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=0.00] [x2=0.00] [y2=150.00]
+      RenderSVGContainer {g} at (0,0) size 255x255
+        RenderSVGPath {line} at (0,0) size 255x5 [stroke={[type=SOLID] [color=#000000] [stroke width=5.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=0.00] [x2=150.00] [y2=0.00]
+        RenderSVGPath {line} at (0,0) size 5x255 [stroke={[type=SOLID] [color=#000000] [stroke width=5.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=0.00] [y1=0.00] [x2=0.00] [y2=150.00]
       RenderSVGContainer {g} at (0,0) size 275x275
         RenderSVGRect {rect} at (0,0) size 25x25 [fill={[type=SOLID] [color=#0000FF]}] [x=0.00] [y=0.00] [width=15.00] [height=15.00]
         RenderSVGRect {rect} at (250,0) size 25x25 [fill={[type=SOLID] [color=#0000FF]}] [x=150.00] [y=0.00] [width=15.00] [height=15.00]

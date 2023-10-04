@@ -43,7 +43,7 @@ layer at (0,0) size 800x600
             chunk 1 text run 1 at (340.00,140.00) startOffset 0 endOffset 15 width 69.60: "Stroke Property"
         RenderSVGPath {path} at (434,84) size 116x116 [stroke={[type=SOLID] [color=#000000] [stroke width=4.00]}] [start marker=marker2] [middle marker=marker2] [end marker=marker2] [data="M 270 60 L 320 60 L 320 110 Z"]
         RenderSVGContainer {g} at (636,86) size 111x111 [transform={m=((1.00,0.00)(0.00,1.00)) t=(120.00,0.00)}]
-          RenderSVGPath {path} at (641,96) size 96x96 [stroke={[type=SOLID] [color=#000000] [stroke width=4.00]}] [data="M 270 60 L 320 60 L 320 110 Z"]
+          RenderSVGPath {path} at (636,86) size 111x111 [stroke={[type=SOLID] [color=#000000] [stroke width=4.00]}] [data="M 270 60 L 320 60 L 320 110 Z"]
           RenderSVGContainer {g} at (636,86) size 28x28 [transform={m=((4.00,0.00)(0.00,4.00)) t=(262.00,52.00)}]
             RenderSVGContainer {g} at (636,86) size 28x28
               [clipPath="overflowHiddenClip"] RenderSVGResourceClipper {clipPath} at (0,0) size 4x4
@@ -70,7 +70,7 @@ layer at (0,0) size 800x600
             chunk 1 text run 1 at (90.00,270.00) startOffset 0 endOffset 16 width 75.00: "Mixed Properties"
         RenderSVGPath {path} at (31,298) size 121x121 [stroke={[type=SOLID] [color=#800080] [stroke width=4.00]}] [fill={[type=SOLID] [color=#FF0000]}] [start marker=marker3] [middle marker=marker3] [end marker=marker3] [data="M 30 190 L 80 190 L 80 240 Z"]
         RenderSVGContainer {g} at (236,303) size 111x111 [transform={m=((1.00,0.00)(0.00,1.00)) t=(120.00,0.00)}]
-          RenderSVGPath {path} at (241,313) size 96x96 [stroke={[type=SOLID] [color=#800080] [stroke width=4.00]}] [fill={[type=SOLID] [color=#FF0000]}] [data="M 30 190 L 80 190 L 80 240 Z"]
+          RenderSVGPath {path} at (236,303) size 111x111 [stroke={[type=SOLID] [color=#800080] [stroke width=4.00]}] [fill={[type=SOLID] [color=#FF0000]}] [data="M 30 190 L 80 190 L 80 240 Z"]
           RenderSVGContainer {g} at (236,303) size 111x111
             RenderSVGContainer {g} at (236,303) size 28x27 [transform={m=((4.00,0.00)(0.00,4.00)) t=(22.00,182.00)}]
               RenderSVGContainer {g} at (236,303) size 28x27
@@ -93,7 +93,7 @@ layer at (0,0) size 800x600
             chunk 1 text run 1 at (340.00,270.00) startOffset 0 endOffset 16 width 75.00: "Mixed Properties"
         RenderSVGPath {path} at (431,298) size 121x121 [stroke={[type=SOLID] [color=#800080] [stroke width=4.00]}] [fill={[type=SOLID] [color=#FF0000]}] [start marker=marker4] [middle marker=marker4] [end marker=marker4] [data="M 270 190 L 320 190 L 320 240 Z"]
         RenderSVGContainer {g} at (636,303) size 111x111 [transform={m=((1.00,0.00)(0.00,1.00)) t=(120.00,0.00)}]
-          RenderSVGPath {path} at (641,313) size 96x96 [stroke={[type=SOLID] [color=#800080] [stroke width=4.00]}] [fill={[type=SOLID] [color=#FF0000]}] [data="M 270 190 L 320 190 L 320 240 Z"]
+          RenderSVGPath {path} at (636,303) size 111x111 [stroke={[type=SOLID] [color=#800080] [stroke width=4.00]}] [fill={[type=SOLID] [color=#FF0000]}] [data="M 270 190 L 320 190 L 320 240 Z"]
           RenderSVGContainer {g} at (636,303) size 111x111
             RenderSVGContainer {g} at (636,303) size 28x27 [transform={m=((4.00,0.00)(0.00,4.00)) t=(262.00,182.00)}]
               RenderSVGContainer {g} at (636,303) size 28x27

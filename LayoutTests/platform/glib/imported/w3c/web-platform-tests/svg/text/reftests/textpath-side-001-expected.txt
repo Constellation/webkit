@@ -7,8 +7,8 @@ layer at (0,0) size 800x600
       RenderSVGPath {path} at (150,201) size 500x98 [fill={[type=SOLID] [color=#000000]}] [data="M 90 150 C 190 50 290 250 390 150"]
     RenderSVGContainer {g} at (125,165) size 533x392
       RenderSVGContainer {g} at (125,165) size 533x142
-        RenderSVGContainer {use} at (149,201) size 502x98
-          RenderSVGPath {path} at (149,201) size 502x98 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 90 150 C 190 50 290 250 390 150"]
+        RenderSVGContainer {use} at (146,198) size 508x104
+          RenderSVGPath {path} at (146,198) size 508x104 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 90 150 C 190 50 290 250 390 150"]
         RenderSVGText {text} at (75,99) size 320x86 contains 1 chunk(s)
           RenderSVGTextPath {textPath} at (0,0) size 320x85
             RenderSVGInlineText {#text} at (0,0) size 320x85
@@ -45,8 +45,8 @@ layer at (0,0) size 800x600
               chunk 1 text run 31 at (386.85,153.05) startOffset 30 endOffset 31 width 12.60: "n"
           RenderSVGInlineText {#text} at (0,0) size 0x0
       RenderSVGContainer {g} at (125,290) size 533x142 [transform={m=((1.00,0.00)(0.00,1.00)) t=(0.00,75.00)}]
-        RenderSVGContainer {use} at (149,326) size 502x98
-          RenderSVGPath {path} at (149,326) size 502x98 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 90 150 C 190 50 290 250 390 150"]
+        RenderSVGContainer {use} at (146,323) size 508x104
+          RenderSVGPath {path} at (146,323) size 508x104 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 90 150 C 190 50 290 250 390 150"]
         RenderSVGText {text} at (75,99) size 320x86 contains 1 chunk(s)
           RenderSVGTextPath {textPath} at (0,0) size 320x85
             RenderSVGInlineText {#text} at (0,0) size 320x85
@@ -83,8 +83,8 @@ layer at (0,0) size 800x600
               chunk 1 text run 31 at (386.85,153.05) startOffset 30 endOffset 31 width 12.60: "n"
           RenderSVGInlineText {#text} at (0,0) size 0x0
       RenderSVGContainer {g} at (125,415) size 533x142 [transform={m=((1.00,0.00)(0.00,1.00)) t=(0.00,150.00)}]
-        RenderSVGContainer {use} at (149,451) size 502x98
-          RenderSVGPath {path} at (149,451) size 502x98 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 90 150 C 190 50 290 250 390 150"]
+        RenderSVGContainer {use} at (146,448) size 508x104
+          RenderSVGPath {path} at (146,448) size 508x104 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 90 150 C 190 50 290 250 390 150"]
         RenderSVGText {text} at (75,99) size 320x86 contains 1 chunk(s)
           RenderSVGTextPath {textPath} at (0,0) size 320x85
             RenderSVGInlineText {#text} at (0,0) size 320x85

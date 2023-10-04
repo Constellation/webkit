@@ -2,18 +2,18 @@ layer at (0,0) size 800x600
   RenderView at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
-    RenderSVGContainer {g} at (58,16) size 715x509
+    RenderSVGContainer {g} at (58,7) size 715x541
       RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-      RenderSVGContainer {g} at (58,16) size 715x509 [transform={m=((1.80,0.00)(0.00,1.80)) t=(0.00,0.00)}]
+      RenderSVGContainer {g} at (58,7) size 715x541 [transform={m=((1.80,0.00)(0.00,1.80)) t=(0.00,0.00)}]
         RenderSVGRect {rect} at (60,30) size 690x465 [fill={[type=SOLID] [color=#C0C0C0]}] [x=20.00] [y=10.00] [width=230.00] [height=155.00]
-        RenderSVGPath {line} at (97,30) size 46x495 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=40.00] [y1=10.00] [x2=40.00] [y2=175.00]
-        RenderSVGPath {line} at (187,30) size 46x495 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=70.00] [y1=10.00] [x2=70.00] [y2=175.00]
-        RenderSVGPath {line} at (277,30) size 46x495 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=100.00] [y1=10.00] [x2=100.00] [y2=175.00]
-        RenderSVGPath {line} at (367,30) size 46x495 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=130.00] [y1=10.00] [x2=130.00] [y2=175.00]
-        RenderSVGPath {line} at (457,30) size 46x495 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=160.00] [y1=10.00] [x2=160.00] [y2=175.00]
-        RenderSVGPath {line} at (547,30) size 46x495 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=190.00] [y1=10.00] [x2=190.00] [y2=175.00]
-        RenderSVGPath {line} at (637,30) size 46x495 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=220.00] [y1=10.00] [x2=220.00] [y2=175.00]
-        RenderSVGPath {line} at (727,30) size 46x495 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=250.00] [y1=10.00] [x2=250.00] [y2=175.00]
+        RenderSVGPath {line} at (97,7) size 46x541 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=40.00] [y1=10.00] [x2=40.00] [y2=175.00]
+        RenderSVGPath {line} at (187,7) size 46x541 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=70.00] [y1=10.00] [x2=70.00] [y2=175.00]
+        RenderSVGPath {line} at (277,7) size 46x541 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=100.00] [y1=10.00] [x2=100.00] [y2=175.00]
+        RenderSVGPath {line} at (367,7) size 46x541 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=130.00] [y1=10.00] [x2=130.00] [y2=175.00]
+        RenderSVGPath {line} at (457,7) size 46x541 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=160.00] [y1=10.00] [x2=160.00] [y2=175.00]
+        RenderSVGPath {line} at (547,7) size 46x541 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=190.00] [y1=10.00] [x2=190.00] [y2=175.00]
+        RenderSVGPath {line} at (637,7) size 46x541 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=220.00] [y1=10.00] [x2=220.00] [y2=175.00]
+        RenderSVGPath {line} at (727,7) size 46x541 [stroke={[type=SOLID] [color=#FFFFFF] [stroke width=15.00]}] [fill={[type=SOLID] [color=#000000]}] [x1=250.00] [y1=10.00] [x2=250.00] [y2=175.00]
         RenderSVGRect {rect} at (58,28) size 694x469 [stroke={[type=SOLID] [color=#000000]}] [x=20.00] [y=10.00] [width=230.00] [height=155.00]
         RenderSVGContainer {g} at (90,16) size 636x449 [opacity=0.50]
           RenderSVGText {text} at (30,5) size 138x121 contains 1 chunk(s)

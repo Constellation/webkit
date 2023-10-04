@@ -13,8 +13,8 @@ layer at (0,0) size 450x500
       RenderSVGText {text} at (55,36) size 340x18 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 340x18
           chunk 1 (middle anchor) text run 1 at (55.33,50.00) startOffset 0 endOffset 47 width 339.33: "Text Alignment, Geometry, References, and Spans"
-      RenderSVGContainer {g} at (114,70) size 226x70
-        RenderSVGPath {line} at (224,70) size 2x70 [stroke={[type=SOLID] [color=#808080]}] [fill={[type=SOLID] [color=#000000]}] [x1=225.00] [y1=70.00] [x2=225.00] [y2=140.00]
+      RenderSVGContainer {g} at (114,69) size 226x72
+        RenderSVGPath {line} at (224,69) size 2x72 [stroke={[type=SOLID] [color=#808080]}] [fill={[type=SOLID] [color=#000000]}] [x1=225.00] [y1=70.00] [x2=225.00] [y2=140.00]
         RenderSVGText {text} at (225,76) size 115x18 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 115x17
             chunk 1 text run 1 at (225.00,90.00) startOffset 0 endOffset 19 width 114.83: "text-anchor=\"start\""

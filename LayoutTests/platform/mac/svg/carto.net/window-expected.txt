@@ -147,10 +147,10 @@ layer at (0,0) size 800x600
                   RenderSVGContainer {use} at (223,198) size 10x10 [transform={m=((1.00,0.00)(0.00,1.00)) t=(191.50,8.50)}]
                     RenderSVGViewportContainer {svg} at (223,198) size 10x10
                       RenderSVGRect {rect} at (223,198) size 10x10 [stroke={[type=SOLID] [color=#696969]}] [x=-5.50] [y=-5.50] [width=11.00] [height=11.00]
-                  RenderSVGContainer {use} at (210,198) size 9x10 [transform={m=((1.00,0.00)(0.00,1.00)) t=(174.50,8.50)}]
-                    RenderSVGViewportContainer {svg} at (210,198) size 9x10
+                  RenderSVGContainer {use} at (209,198) size 11x10 [transform={m=((1.00,0.00)(0.00,1.00)) t=(174.50,8.50)}]
+                    RenderSVGViewportContainer {svg} at (209,198) size 11x10
                       RenderSVGRect {rect} at (210,198) size 9x10 [x=-5.50] [y=-5.50] [width=11.00] [height=11.00]
-                      RenderSVGPath {line} at (210,206) size 9x2 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.50] [y1=5.50] [x2=-5.50] [y2=5.50]
+                      RenderSVGPath {line} at (209,206) size 11x2 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.50] [y1=5.50] [x2=-5.50] [y2=5.50]
               RenderSVGContainer {g} at (249,344) size 143x64 [transform={m=((1.00,0.00)(0.00,1.00)) t=(220.00,207.00)}]
                 RenderSVGContainer {g} at (249,344) size 143x64
                   RenderSVGRect {rect} at (249,344) size 143x64 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#F0F8FF]}] [x=0.00] [y=0.00] [width=180.00] [height=80.00]
@@ -172,20 +172,20 @@ layer at (0,0) size 800x600
                   RenderSVGContainer {use} at (376,346) size 11x10 [transform={m=((1.00,0.00)(0.00,1.00)) t=(168.50,8.50)}]
                     RenderSVGViewportContainer {svg} at (376,346) size 11x10
                       RenderSVGRect {rect} at (376,346) size 11x10 [stroke={[type=SOLID] [color=#696969]}] [x=-5.50] [y=-5.50] [width=11.00] [height=11.00]
-                  RenderSVGContainer {use} at (364,346) size 9x10 [transform={m=((1.00,0.00)(0.00,1.00)) t=(151.50,8.50)}]
-                    RenderSVGViewportContainer {svg} at (364,346) size 9x10
+                  RenderSVGContainer {use} at (363,346) size 11x10 [transform={m=((1.00,0.00)(0.00,1.00)) t=(151.50,8.50)}]
+                    RenderSVGViewportContainer {svg} at (363,346) size 11x10
                       RenderSVGRect {rect} at (364,346) size 9x10 [x=-5.50] [y=-5.50] [width=11.00] [height=11.00]
-                      RenderSVGPath {line} at (364,355) size 9x1 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.50] [y1=5.50] [x2=-5.50] [y2=5.50]
+                      RenderSVGPath {line} at (363,355) size 11x1 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.50] [y1=5.50] [x2=-5.50] [y2=5.50]
             RenderSVGContainer {g} at (77,182) size 315x15
               RenderSVGRect {rect} at (77,182) size 315x15 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#DCDCDC]}] [x=0.00] [y=0.00] [width=400.00] [height=17.00]
               RenderSVGText {text} at (3,1) size 169x16 contains 1 chunk(s)
                 RenderSVGInlineText {#text} at (0,0) size 169x16
                   chunk 1 text run 1 at (3.00,14.00) startOffset 0 endOffset 24 width 168.07: "Nested middlesize Window"
-              RenderSVGContainer {use} at (377,184) size 10x11 [transform={m=((1.00,0.00)(0.00,1.00)) t=(388.50,8.50)}]
-                RenderSVGViewportContainer {svg} at (377,184) size 10x11
+              RenderSVGContainer {use} at (376,184) size 11x11 [transform={m=((1.00,0.00)(0.00,1.00)) t=(388.50,8.50)}]
+                RenderSVGViewportContainer {svg} at (376,184) size 11x11
                   RenderSVGRect {rect} at (377,185) size 9x9 [x=-5.50] [y=-5.50] [width=11.00] [height=11.00]
-                  RenderSVGPath {line} at (377,184) size 10x11 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=-5.50] [y1=-5.50] [x2=5.50] [y2=5.50]
-                  RenderSVGPath {line} at (377,184) size 10x11 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.50] [y1=-5.50] [x2=-5.50] [y2=5.50]
+                  RenderSVGPath {line} at (376,184) size 11x11 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=-5.50] [y1=-5.50] [x2=5.50] [y2=5.50]
+                  RenderSVGPath {line} at (376,184) size 11x11 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.50] [y1=-5.50] [x2=-5.50] [y2=5.50]
               RenderSVGContainer {use} at (363,184) size 11x11 [transform={m=((1.00,0.00)(0.00,1.00)) t=(371.50,8.50)}]
                 RenderSVGViewportContainer {svg} at (363,184) size 11x11
                   RenderSVGRect {rect} at (363,184) size 11x11 [stroke={[type=SOLID] [color=#696969]}] [x=-5.50] [y=-5.50] [width=11.00] [height=11.00]
@@ -252,15 +252,15 @@ layer at (0,0) size 800x600
           RenderSVGText {text} at (3,1) size 74x16 contains 1 chunk(s)
             RenderSVGInlineText {#text} at (0,0) size 74x16
               chunk 1 text run 1 at (3.00,14.00) startOffset 0 endOffset 10 width 73.92: "Big Window"
-          RenderSVGContainer {use} at (572,145) size 10x10 [transform={m=((1.00,0.00)(0.00,1.00)) t=(688.50,8.50)}]
-            RenderSVGViewportContainer {svg} at (572,145) size 10x10
+          RenderSVGContainer {use} at (572,145) size 10x11 [transform={m=((1.00,0.00)(0.00,1.00)) t=(688.50,8.50)}]
+            RenderSVGViewportContainer {svg} at (572,145) size 10x11
               RenderSVGRect {rect} at (572,146) size 10x9 [x=-5.50] [y=-5.50] [width=11.00] [height=11.00]
-              RenderSVGPath {line} at (572,145) size 10x10 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=-5.50] [y1=-5.50] [x2=5.50] [y2=5.50]
-              RenderSVGPath {line} at (572,145) size 10x10 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.50] [y1=-5.50] [x2=-5.50] [y2=5.50]
+              RenderSVGPath {line} at (572,145) size 10x11 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=-5.50] [y1=-5.50] [x2=5.50] [y2=5.50]
+              RenderSVGPath {line} at (572,145) size 10x11 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.50] [y1=-5.50] [x2=-5.50] [y2=5.50]
           RenderSVGContainer {use} at (558,145) size 11x11 [transform={m=((1.00,0.00)(0.00,1.00)) t=(671.50,8.50)}]
             RenderSVGViewportContainer {svg} at (558,145) size 11x11
               RenderSVGRect {rect} at (558,145) size 11x11 [stroke={[type=SOLID] [color=#696969]}] [x=-5.50] [y=-5.50] [width=11.00] [height=11.00]
-          RenderSVGContainer {use} at (546,146) size 9x10 [transform={m=((1.00,0.00)(0.00,1.00)) t=(654.50,8.50)}]
-            RenderSVGViewportContainer {svg} at (546,146) size 9x10
+          RenderSVGContainer {use} at (545,146) size 11x10 [transform={m=((1.00,0.00)(0.00,1.00)) t=(654.50,8.50)}]
+            RenderSVGViewportContainer {svg} at (545,146) size 11x10
               RenderSVGRect {rect} at (546,146) size 9x9 [x=-5.50] [y=-5.50] [width=11.00] [height=11.00]
-              RenderSVGPath {line} at (546,154) size 9x2 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.50] [y1=5.50] [x2=-5.50] [y2=5.50]
+              RenderSVGPath {line} at (545,154) size 11x2 [stroke={[type=SOLID] [color=#696969]}] [fill={[type=SOLID] [color=#000000]}] [x1=5.50] [y1=5.50] [x2=-5.50] [y2=5.50]

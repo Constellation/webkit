@@ -3,11 +3,11 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (83,91) size 717x383
+    RenderSVGContainer {g} at (81,91) size 719x383
       RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-      RenderSVGPath {path} at (83,331) size 617x4 [stroke={[type=SOLID] [color=#888888] [stroke width=2.00]}] [fill={[type=SOLID] [color=#000000]}] [data="M 50 200 L 420 200"]
-      RenderSVGPath {path} at (83,91) size 617x4 [stroke={[type=SOLID] [color=#888888] [stroke width=2.00]}] [fill={[type=SOLID] [color=#000000]}] [data="M 50 56 L 420 56"]
-      RenderSVGPath {path} at (83,391) size 617x4 [stroke={[type=SOLID] [color=#888888] [stroke width=2.00]}] [fill={[type=SOLID] [color=#000000]}] [data="M 50 236 L 420 236"]
+      RenderSVGPath {path} at (81,331) size 621x4 [stroke={[type=SOLID] [color=#888888] [stroke width=2.00]}] [fill={[type=SOLID] [color=#000000]}] [data="M 50 200 L 420 200"]
+      RenderSVGPath {path} at (81,91) size 621x4 [stroke={[type=SOLID] [color=#888888] [stroke width=2.00]}] [fill={[type=SOLID] [color=#000000]}] [data="M 50 56 L 420 56"]
+      RenderSVGPath {path} at (81,391) size 621x4 [stroke={[type=SOLID] [color=#888888] [stroke width=2.00]}] [fill={[type=SOLID] [color=#000000]}] [data="M 50 236 L 420 236"]
       RenderSVGText {text} at (50,56) size 99x180 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 99x180
           chunk 1 text run 1 at (50.00,200.00) startOffset 0 endOffset 1 width 99.00: "\x{3B2}"

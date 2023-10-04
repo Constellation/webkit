@@ -3,11 +3,11 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (78,78) size 511x177
-      RenderSVGPath {path} at (79,79) size 176x176 [stroke={[type=SOLID] [color=#FF0000] [stroke width=5.00]}] [data="M 50 50 L 50 150 L 150 150 L 150 50 Z"]
-      RenderSVGPath {path} at (78,78) size 177x177 [stroke={[type=SOLID] [color=#000000] [stroke width=6.00]}] [data="M 50 50 L 50 150 L 150 150 L 150 50 Z"]
-      RenderSVGPath {path} at (412,79) size 176x176 [stroke={[type=SOLID] [color=#FF0000] [stroke width=5.00]}] [data="M 250 50 L 250 150 L 350 150 L 350 50 Z"]
-      RenderSVGPath {path} at (411,78) size 178x177 [stroke={[type=SOLID] [color=#000000] [stroke width=6.00]}] [data="M 250 50 L 250 150 L 350 150 L 350 50 Z"]
+    RenderSVGContainer {g} at (63,63) size 541x207
+      RenderSVGPath {path} at (66,66) size 201x201 [stroke={[type=SOLID] [color=#FF0000] [stroke width=5.00]}] [data="M 50 50 L 50 150 L 150 150 L 150 50 Z"]
+      RenderSVGPath {path} at (63,63) size 207x207 [stroke={[type=SOLID] [color=#000000] [stroke width=6.00]}] [data="M 50 50 L 50 150 L 150 150 L 150 50 Z"]
+      RenderSVGPath {path} at (400,66) size 200x201 [stroke={[type=SOLID] [color=#FF0000] [stroke width=5.00]}] [data="M 250 50 L 250 150 L 350 150 L 350 50 Z"]
+      RenderSVGPath {path} at (396,63) size 208x207 [stroke={[type=SOLID] [color=#000000] [stroke width=6.00]}] [data="M 250 50 L 250 150 L 350 150 L 350 50 Z"]
     RenderSVGContainer {g} at (16,518) size 388x60
       RenderSVGText {text} at (10,311) size 233x36 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 233x36

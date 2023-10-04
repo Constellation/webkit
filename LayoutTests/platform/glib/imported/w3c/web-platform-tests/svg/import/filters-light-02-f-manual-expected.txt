@@ -3,7 +3,7 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (41,62) size 759x355
+    RenderSVGContainer {g} at (39,62) size 761x358
       RenderSVGHiddenContainer {defs} at (0,0) size 0x0
         RenderSVGResourceFilter {filter} [id="right"] [filterUnits=objectBoundingBox] [primitiveUnits=userSpaceOnUse]
           [feSpecularLighting surfaceScale="5.00" specualConstant="100.00" specularExponent="10.00"]
@@ -31,10 +31,10 @@ layer at (0,0) size 800x600
           [filter="left"] RenderSVGResourceFilter {filter} at (-12,-12) size 24x24
         RenderSVGEllipse {circle} at (653,253) size 147x161 [transform={m=((1.00,0.00)(0.00,1.00)) t=(110.00,0.00)}] [fill={[type=SOLID] [color=#000000]}] [cx=0.00] [cy=0.00] [r=10.00]
           [filter="up"] RenderSVGResourceFilter {filter} at (-12,-12) size 24x24
-      RenderSVGPath {line} at (327,258) size 13x95 [transform={m=((1.00,0.00)(0.00,1.00)) t=(200.00,180.00)}] [stroke={[type=SOLID] [color=#000000] [stroke width=3.00]}] [fill={[type=SOLID] [color=#000000]}] [end marker=arrow] [x1=0.00] [y1=-25.00] [x2=0.00] [y2=25.00]
-      RenderSVGPath {line} at (530,327) size 95x13 [transform={m=((0.00,1.00)(-1.00,0.00)) t=(350.00,200.00)}] [stroke={[type=SOLID] [color=#000000] [stroke width=3.00]}] [fill={[type=SOLID] [color=#000000]}] [end marker=arrow] [x1=0.00] [y1=-25.00] [x2=0.00] [y2=25.00]
-      RenderSVGPath {line} at (727,322) size 13x95 [transform={m=((-1.00,0.00)(-0.00,-1.00)) t=(440.00,225.00)}] [stroke={[type=SOLID] [color=#000000] [stroke width=3.00]}] [fill={[type=SOLID] [color=#000000]}] [end marker=arrow] [x1=0.00] [y1=-25.00] [x2=0.00] [y2=25.00]
-      RenderSVGPath {line} at (41,327) size 96x13 [transform={m=((-0.00,-1.00)(1.00,-0.00)) t=(50.00,200.00)}] [stroke={[type=SOLID] [color=#000000] [stroke width=3.00]}] [fill={[type=SOLID] [color=#000000]}] [end marker=arrow] [x1=0.00] [y1=-25.00] [x2=0.00] [y2=25.00]
+      RenderSVGPath {line} at (327,255) size 13x98 [transform={m=((1.00,0.00)(0.00,1.00)) t=(200.00,180.00)}] [stroke={[type=SOLID] [color=#000000] [stroke width=3.00]}] [fill={[type=SOLID] [color=#000000]}] [end marker=arrow] [x1=0.00] [y1=-25.00] [x2=0.00] [y2=25.00]
+      RenderSVGPath {line} at (530,327) size 98x13 [transform={m=((0.00,1.00)(-1.00,0.00)) t=(350.00,200.00)}] [stroke={[type=SOLID] [color=#000000] [stroke width=3.00]}] [fill={[type=SOLID] [color=#000000]}] [end marker=arrow] [x1=0.00] [y1=-25.00] [x2=0.00] [y2=25.00]
+      RenderSVGPath {line} at (727,322) size 13x98 [transform={m=((-1.00,0.00)(-0.00,-1.00)) t=(440.00,225.00)}] [stroke={[type=SOLID] [color=#000000] [stroke width=3.00]}] [fill={[type=SOLID] [color=#000000]}] [end marker=arrow] [x1=0.00] [y1=-25.00] [x2=0.00] [y2=25.00]
+      RenderSVGPath {line} at (39,327) size 98x13 [transform={m=((-0.00,-1.00)(1.00,-0.00)) t=(50.00,200.00)}] [stroke={[type=SOLID] [color=#000000] [stroke width=3.00]}] [fill={[type=SOLID] [color=#000000]}] [end marker=arrow] [x1=0.00] [y1=-25.00] [x2=0.00] [y2=25.00]
     RenderSVGContainer {g} at (16,518) size 388x60
       RenderSVGText {text} at (10,311) size 233x36 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 233x36

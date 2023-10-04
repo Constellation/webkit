@@ -3,17 +3,17 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (16,38) size 527x421
+    RenderSVGContainer {g} at (16,38) size 784x529
       RenderSVGText {text} at (10,23) size 296x22 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 296x21
           chunk 1 text run 1 at (10.00,40.00) startOffset 0 endOffset 37 width 295.16: "Test stroking of zero length subpaths"
-      RenderSVGContainer {g} at (270,224) size 273x235
-        RenderSVGPath {path} at (270,237) size 93x93 [stroke={[type=SOLID] [color=#0000FF] [stroke width=50.00] [line cap=ROUND]}] [data="M 190 170 L 190 170"]
+      RenderSVGContainer {g} at (150,224) size 650x343
+        RenderSVGPath {path} at (275,241) size 84x84 [stroke={[type=SOLID] [color=#0000FF] [stroke width=50.00] [line cap=ROUND]}] [data="M 190 170 L 190 170"]
         RenderSVGPath {path} at (424,224) size 119x119 [stroke={[type=SOLID] [color=#0000FF] [stroke width=50.00] [line cap=SQUARE]}] [data="M 290 170 L 290 170"]
-        RenderSVGPath {path} at (0,0) size 0x0 [stroke={[type=SOLID] [color=#FF0000] [stroke width=50.00]}] [data="M 390 170 L 390 170"]
-        RenderSVGPath {path} at (270,354) size 93x92 [stroke={[type=SOLID] [color=#0000FF] [stroke width=50.00] [line cap=ROUND]}] [data="M 190 240 C 190 240 190 240 190 240"]
-        RenderSVGPath {path} at (424,341) size 119x118 [stroke={[type=SOLID] [color=#0000FF] [stroke width=50.00] [line cap=SQUARE]}] [data="M 290 240 C 290 240 290 240 290 240"]
-        RenderSVGPath {path} at (0,0) size 0x0 [stroke={[type=SOLID] [color=#FF0000] [stroke width=50.00]}] [data="M 390 240 C 390 240 390 240 390 240"]
+        RenderSVGPath {path} at (608,241) size 84x84 [stroke={[type=SOLID] [color=#FF0000] [stroke width=50.00]}] [data="M 390 170 L 390 170"]
+        RenderSVGPath {path} at (150,233) size 334x334 [stroke={[type=SOLID] [color=#0000FF] [stroke width=50.00] [line cap=ROUND]}] [data="M 190 240 C 190 240 190 240 190 240"]
+        RenderSVGPath {path} at (316,233) size 334x334 [stroke={[type=SOLID] [color=#0000FF] [stroke width=50.00] [line cap=SQUARE]}] [data="M 290 240 C 290 240 290 240 290 240"]
+        RenderSVGPath {path} at (483,233) size 317x334 [stroke={[type=SOLID] [color=#FF0000] [stroke width=50.00]}] [data="M 390 240 C 390 240 390 240 390 240"]
       RenderSVGContainer {g} at (16,273) size 203x140
         RenderSVGText {text} at (10,163) size 122x15 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 122x14

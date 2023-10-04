@@ -6,12 +6,12 @@ layer at (0,0) size 450x500
       RenderSVGResourceFilter {filter} [id="blur"] [filterUnits=userSpaceOnUse] [primitiveUnits=userSpaceOnUse]
         [feGaussianBlur stdDeviation="0.04, 0.04"]
           [SourceGraphic]
-      RenderSVGPath {path} at (14,6) size 122x33 [transform={m=((0.00,0.00)(0.00,0.00)) t=(0.00,0.00)}] [stroke={[type=SOLID] [color=#008000] [stroke width=5.00]}] [data="M 100 200 C 200 100 300 0 400 100 C 500 200 600 300 700 200 C 800 100 900 100 900 100"]
-    RenderSVGContainer {g} at (0,36) size 385x428
+      RenderSVGPath {path} at (13,7) size 124x31 [transform={m=((0.00,0.00)(0.00,0.00)) t=(0.00,0.00)}] [stroke={[type=SOLID] [color=#008000] [stroke width=5.00]}] [data="M 100 200 C 200 100 300 0 400 100 C 500 200 600 300 700 200 C 800 100 900 100 900 100"]
+    RenderSVGContainer {g} at (0,36) size 387x428
       RenderSVGText {text} at (1,0) size 7x2 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 6x1
           chunk 1 (middle anchor) text run 1 at (1.98,1.00) startOffset 0 endOffset 41 width 5.04: "Small font size test (viewBox=\"0 0 9 10\")"
-      RenderSVGContainer {g} at (0,71) size 385x393
+      RenderSVGContainer {g} at (0,71) size 387x393
         RenderSVGText {text} at (0,1) size 8x2 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 3x1
             chunk 1 text run 1 at (0.90,2.00) startOffset 0 endOffset 16 width 2.04: "Text can change "
@@ -138,9 +138,9 @@ layer at (0,0) size 450x500
           RenderSVGText {text} at (0,-1) size 3x2 contains 1 chunk(s)
             RenderSVGInlineText {#text} at (0,0) size 3x1
               chunk 1 text run 1 at (0.00,0.00) startOffset 0 endOffset 6 width 2.58: "Shadow"
-        RenderSVGContainer {g} at (255,395) size 130x46 [transform={m=((1.00,0.00)(0.00,1.00)) t=(5.00,8.00)}]
-          RenderSVGContainer {use} at (264,406) size 121x33
-            RenderSVGPath {path} at (264,406) size 121x33 [transform={m=((0.00,0.00)(0.00,0.00)) t=(0.00,0.00)}] [stroke={[type=SOLID] [color=#008000] [stroke width=5.00]}] [data="M 100 200 C 200 100 300 0 400 100 C 500 200 600 300 700 200 C 800 100 900 100 900 100"]
+        RenderSVGContainer {g} at (255,395) size 132x46 [transform={m=((1.00,0.00)(0.00,1.00)) t=(5.00,8.00)}]
+          RenderSVGContainer {use} at (263,407) size 124x31
+            RenderSVGPath {path} at (263,407) size 124x31 [transform={m=((0.00,0.00)(0.00,0.00)) t=(0.00,0.00)}] [stroke={[type=SOLID] [color=#008000] [stroke width=5.00]}] [data="M 100 200 C 200 100 300 0 400 100 C 500 200 600 300 700 200 C 800 100 900 100 900 100"]
           RenderSVGText {text} at (0,-1) size 3x2 contains 1 chunk(s)
             RenderSVGTextPath {textPath} at (0,0) size 3x1
               RenderSVGInlineText {#text} at (0,0) size 2x1

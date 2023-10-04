@@ -6,8 +6,8 @@ layer at (0,0) size 480x360
       RenderSVGText {text} at (75,5) size 246x14 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 246x14
           chunk 1 text run 1 at (75.00,16.00) startOffset 0 endOffset 55 width 246.00: "Simple exercise of xlink attributes on the 'a' element."
-      RenderSVGContainer {a} at (134,121) size 132x133
-        RenderSVGPath {path} at (134,121) size 132x133 [stroke={[type=SOLID] [color=#0000FF]}] [fill={[type=SOLID] [color=#00FF00]}] [data="M 135 122 L 265 122 L 200 252 Z"]
+      RenderSVGContainer {a} at (133,120) size 134x134
+        RenderSVGPath {path} at (133,120) size 134x134 [stroke={[type=SOLID] [color=#0000FF]}] [fill={[type=SOLID] [color=#00FF00]}] [data="M 135 122 L 265 122 L 200 252 Z"]
       RenderSVGText {text} at (160,105) size 69x14 contains 1 chunk(s)
         RenderSVGInlineText {#text} at (0,0) size 69x14
           chunk 1 text run 1 at (160.00,116.00) startOffset 0 endOffset 13 width 68.78: "Click for TOC"

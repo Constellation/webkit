@@ -3,13 +3,13 @@ layer at (0,0) size 800x600
 layer at (0,0) size 800x600
   RenderSVGRoot {svg} at (0,0) size 800x600
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
-    RenderSVGContainer {g} at (16,16) size 768x451
-      RenderSVGContainer {g} at (16,16) size 768x451
-        RenderSVGPath {path} at (199,16) size 2x451 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 120 10 L 120 280"]
-        RenderSVGPath {path} at (399,16) size 2x451 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 240 10 L 240 280"]
-        RenderSVGPath {path} at (599,16) size 2x451 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 360 10 L 360 280"]
-        RenderSVGPath {path} at (16,199) size 768x2 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 10 120 L 470 120"]
-        RenderSVGPath {path} at (16,399) size 768x2 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 10 240 L 470 240"]
+    RenderSVGContainer {g} at (15,15) size 770x453
+      RenderSVGContainer {g} at (15,15) size 770x453
+        RenderSVGPath {path} at (199,15) size 2x453 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 120 10 L 120 280"]
+        RenderSVGPath {path} at (399,15) size 2x453 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 240 10 L 240 280"]
+        RenderSVGPath {path} at (599,15) size 2x453 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 360 10 L 360 280"]
+        RenderSVGPath {path} at (15,199) size 770x2 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 10 120 L 470 120"]
+        RenderSVGPath {path} at (15,399) size 770x2 [stroke={[type=SOLID] [color=#BBBBBB]}] [fill={[type=SOLID] [color=#000000]}] [data="M 10 240 L 470 240"]
         RenderSVGText {text} at (196,66) size 88x69 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 88x69
             chunk 1 (middle anchor) text run 1 at (196.27,120.00) startOffset 0 endOffset 4 width 87.45 RTL: "\x{622}\x{644}\x{627}\x{62A}"

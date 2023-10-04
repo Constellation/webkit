@@ -1,10 +1,10 @@
 layer at (0,0) size 800x600
   RenderView at (0,0) size 800x600
 layer at (0,0) size 800x600
-  RenderSVGRoot {svg} at (50,4) size 750x57
-    RenderSVGContainer {g} at (310,4) size 78x57
-      RenderSVGPath {svg:line} at (310,4) size 6x57 [stroke={[type=SOLID] [color=#008000]}] [fill={[type=SOLID] [color=#000000]}] [x1=62.57] [y1=0.95] [x2=62.57] [y2=12.17]
-      RenderSVGPath {svg:line} at (382,4) size 6x57 [stroke={[type=SOLID] [color=#008000]}] [fill={[type=SOLID] [color=#000000]}] [x1=76.98] [y1=0.95] [x2=76.98] [y2=12.17]
+  RenderSVGRoot {svg} at (50,2) size 750x62
+    RenderSVGContainer {g} at (310,2) size 78x62
+      RenderSVGPath {svg:line} at (310,2) size 6x62 [stroke={[type=SOLID] [color=#008000]}] [fill={[type=SOLID] [color=#000000]}] [x1=62.57] [y1=0.95] [x2=62.57] [y2=12.17]
+      RenderSVGPath {svg:line} at (382,2) size 6x62 [stroke={[type=SOLID] [color=#008000]}] [fill={[type=SOLID] [color=#000000]}] [x1=76.98] [y1=0.95] [x2=76.98] [y2=12.17]
       RenderSVGRect {svg:rect} at (312,4) size 73x57 [fill={[type=SOLID] [color=#FF0000] [opacity=0.40]}] [x=62.57] [y=0.95] [width=14.41] [height=11.17]
     RenderSVGText {text} at (10,0) size 150x13 contains 1 chunk(s)
       RenderSVGInlineText {#text} at (0,0) size 150x12

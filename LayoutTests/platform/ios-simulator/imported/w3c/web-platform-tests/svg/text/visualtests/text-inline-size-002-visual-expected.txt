@@ -1,7 +1,7 @@
 layer at (0,0) size 800x600
   RenderView at (0,0) size 800x600
 layer at (0,0) size 800x600
-  RenderSVGRoot {svg} at (183,0) size 430x600
+  RenderSVGRoot {svg} at (180,0) size 433x600
     RenderSVGContainer {g} at (0,0) size 0x0
     RenderSVGHiddenContainer {defs} at (0,0) size 0x0
       RenderSVGPath {path} at (183,166) size 67x334 [fill={[type=SOLID] [color=#000000]}] [data="M 110 100 L 150 100 M 110 300 L 150 300"]
@@ -46,10 +46,10 @@ layer at (0,0) size 800x600
             RenderSVGInlineText {#text} at (10,20) size 192x20
               chunk 1 (end anchor) text run 1 at (198.79,134.80) startOffset 0 endOffset 29 width 191.21: "consectetur adipisicing elit,"
           RenderSVGInlineText {#text} at (0,0) size 0x0
-    RenderSVGContainer {g} at (183,0) size 334x600
-      RenderSVGContainer {g} at (183,165) size 67x435
-        RenderSVGContainer {use} at (183,165) size 67x336
-          RenderSVGPath {path} at (183,165) size 67x336 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 110 100 L 150 100 M 110 300 L 150 300"]
+    RenderSVGContainer {g} at (180,0) size 340x600
+      RenderSVGContainer {g} at (180,163) size 74x437
+        RenderSVGContainer {use} at (180,163) size 74x341
+          RenderSVGPath {path} at (180,163) size 74x341 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 110 100 L 150 100 M 110 300 L 150 300"]
         RenderSVGText {text} at (130,100) size 20x394 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 20x394
             chunk 1 (vertical) text run 1 at (134.00,100.00) startOffset 0 endOffset 1 height 19.20: "L"
@@ -109,9 +109,9 @@ layer at (0,0) size 800x600
             chunk 1 (vertical) text run 55 at (134.00,480.62) startOffset 54 endOffset 55 height 19.20: "i"
             chunk 1 (vertical) text run 56 at (134.00,484.17) startOffset 55 endOffset 56 height 19.20: "t"
             chunk 1 (vertical) text run 57 at (134.00,488.62) startOffset 56 endOffset 57 height 19.20: ","
-      RenderSVGContainer {g} at (316,0) size 68x600 [transform={m=((1.00,0.00)(0.00,1.00)) t=(80.00,0.00)}]
-        RenderSVGContainer {use} at (316,165) size 68x336
-          RenderSVGPath {path} at (316,165) size 68x336 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 110 100 L 150 100 M 110 300 L 150 300"]
+      RenderSVGContainer {g} at (313,0) size 74x600 [transform={m=((1.00,0.00)(0.00,1.00)) t=(80.00,0.00)}]
+        RenderSVGContainer {use} at (313,163) size 74x341
+          RenderSVGPath {path} at (313,163) size 74x341 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 110 100 L 150 100 M 110 300 L 150 300"]
         RenderSVGText {text} at (130,-4) size 20x394 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 20x394
             chunk 1 (middle anchor, vertical) text run 1 at (134.00,-3.91) startOffset 0 endOffset 1 height 19.20: "L"
@@ -171,9 +171,9 @@ layer at (0,0) size 800x600
             chunk 1 (middle anchor, vertical) text run 55 at (134.00,376.71) startOffset 54 endOffset 55 height 19.20: "i"
             chunk 1 (middle anchor, vertical) text run 56 at (134.00,380.26) startOffset 55 endOffset 56 height 19.20: "t"
             chunk 1 (middle anchor, vertical) text run 57 at (134.00,384.71) startOffset 56 endOffset 57 height 19.20: ","
-      RenderSVGContainer {g} at (450,0) size 67x501 [transform={m=((1.00,0.00)(0.00,1.00)) t=(160.00,0.00)}]
-        RenderSVGContainer {use} at (450,165) size 67x336
-          RenderSVGPath {path} at (450,165) size 67x336 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 110 100 L 150 100 M 110 300 L 150 300"]
+      RenderSVGContainer {g} at (446,0) size 74x504 [transform={m=((1.00,0.00)(0.00,1.00)) t=(160.00,0.00)}]
+        RenderSVGContainer {use} at (446,163) size 74x341
+          RenderSVGPath {path} at (446,163) size 74x341 [stroke={[type=SOLID] [color=#ADD8E6]}] [data="M 110 100 L 150 100 M 110 300 L 150 300"]
         RenderSVGText {text} at (130,-108) size 20x394 contains 1 chunk(s)
           RenderSVGInlineText {#text} at (0,0) size 20x394
             chunk 1 (end anchor, vertical) text run 1 at (134.00,-107.82) startOffset 0 endOffset 1 height 19.20: "L"
