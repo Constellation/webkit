@@ -61,8 +61,10 @@ void LegacyRenderSVGRect::updateShapeFromElement()
     FloatSize boundingBoxSize(lengthContext.valueForLength(style().width(), SVGLengthMode::Width), lengthContext.valueForLength(style().height(), SVGLengthMode::Height));
 
     // Spec: "A negative value is illegal. A value of zero disables rendering of the element."
-    if (boundingBoxSize.isEmpty())
+    if (boundingBoxSize.isEmpty()) {
+        m_strokeBoundingBox = { };
         return;
+    }
 
     m_shapeType = ShapeType::Rectangle;
     if (rectElement().rx().value(lengthContext) > 0 || rectElement().ry().value(lengthContext) > 0)
@@ -94,7 +96,7 @@ void LegacyRenderSVGRect::updateShapeFromElement()
 #if USE(CG)
     // CoreGraphics can inflate the stroke by 1px when drawing a rectangle with antialiasing disabled at non-integer coordinates, we need to compensate.
     if (style().svgStyle().shapeRendering() == ShapeRendering::CrispEdges)
-        m_strokeBoundingBox.inflate(1);
+        m_strokeBoundingBox->inflate(1);
 #endif
 }
 

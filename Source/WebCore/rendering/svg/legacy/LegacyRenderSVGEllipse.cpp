@@ -50,7 +50,6 @@ void LegacyRenderSVGEllipse::updateShapeFromElement()
     // Before creating a new object we need to clear the cached bounding box
     // to avoid using garbage.
     m_fillBoundingBox = FloatRect();
-    m_strokeBoundingBox = FloatRect();
     m_center = FloatPoint();
     m_radii = FloatSize();
     clearPath();
@@ -58,8 +57,10 @@ void LegacyRenderSVGEllipse::updateShapeFromElement()
     calculateRadiiAndCenter();
 
     // Spec: "A negative value is illegal. A value of zero disables rendering of the element."
-    if (m_radii.isEmpty())
+    if (m_radii.isEmpty()) {
+        m_strokeBoundingBox = { };
         return;
+    }
 
     if (m_radii.width() == m_radii.height())
         m_shapeType = ShapeType::Circle;
@@ -75,7 +76,7 @@ void LegacyRenderSVGEllipse::updateShapeFromElement()
     m_fillBoundingBox = FloatRect(m_center.x() - m_radii.width(), m_center.y() - m_radii.height(), 2 * m_radii.width(), 2 * m_radii.height());
     m_strokeBoundingBox = m_fillBoundingBox;
     if (style().svgStyle().hasStroke())
-        m_strokeBoundingBox.inflate(strokeWidth() / 2);
+        m_strokeBoundingBox->inflate(strokeWidth() / 2);
 }
 
 void LegacyRenderSVGEllipse::calculateRadiiAndCenter()

@@ -68,7 +68,6 @@ void LegacyRenderSVGShape::updateShapeFromElement()
 {
     m_path = createPath();
     m_fillBoundingBox = calculateObjectBoundingBox();
-    m_strokeBoundingBox = calculateStrokeBoundingBox();
 }
 
 bool LegacyRenderSVGShape::isEmpty() const
@@ -151,6 +150,7 @@ void LegacyRenderSVGShape::layout()
 
     if (m_needsShapeUpdate || m_needsBoundariesUpdate) {
         m_shapeType = ShapeType::Empty;
+        m_strokeBoundingBox = std::nullopt;
         updateShapeFromElement();
         m_needsShapeUpdate = false;
         updateRepaintBoundingBox();
@@ -365,6 +365,13 @@ bool LegacyRenderSVGShape::nodeAtFloatPoint(const HitTestRequest& request, HitTe
     return false;
 }
 
+FloatRect LegacyRenderSVGShape::strokeBoundingBox() const
+{
+    if (!m_strokeBoundingBox)
+        m_strokeBoundingBox = calculateStrokeBoundingBox();
+    return m_strokeBoundingBox.value();
+}
+
 FloatRect LegacyRenderSVGShape::calculateObjectBoundingBox() const
 {
     return path().boundingRect();
@@ -393,7 +400,13 @@ FloatRect LegacyRenderSVGShape::calculateStrokeBoundingBox() const
         }
     }
 
-    return strokeBoundingBox;
+    switch (m_shapeType) {
+    case ShapeType::Line:
+    case ShapeType::Path:
+        return downcast<LegacyRenderSVGPath>(*this).calculateUpdatedStrokeBoundingBox(strokeBoundingBox);
+    default:
+        return strokeBoundingBox;
+    }
 }
 
 void LegacyRenderSVGShape::updateRepaintBoundingBox()

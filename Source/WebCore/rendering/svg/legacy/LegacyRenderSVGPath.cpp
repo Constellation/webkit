@@ -53,8 +53,6 @@ void LegacyRenderSVGPath::updateShapeFromElement()
     processMarkerPositions();
     updateZeroLengthSubpaths();
 
-    m_strokeBoundingBox = calculateUpdatedStrokeBoundingBox(m_strokeBoundingBox);
-
     ASSERT(hasPath());
     if (path().isEmpty())
         m_shapeType = ShapeType::Empty;

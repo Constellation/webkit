@@ -102,7 +102,7 @@ protected:
     Path* nonScalingStrokePath(const Path*, const AffineTransform&) const;
 
     FloatRect m_fillBoundingBox;
-    FloatRect m_strokeBoundingBox;
+    mutable Markable<FloatRect, FloatRect::MarkableTraits> m_strokeBoundingBox;
 
 private:
     // Hit-detection separated for the fill and the stroke
@@ -124,7 +124,7 @@ private:
     bool nodeAtFloatPoint(const HitTestRequest&, HitTestResult&, const FloatPoint& pointInParent, HitTestAction) final;
 
     FloatRect objectBoundingBox() const final { return m_fillBoundingBox; }
-    FloatRect strokeBoundingBox() const final { return m_strokeBoundingBox; }
+    FloatRect strokeBoundingBox() const final;
     FloatRect calculateObjectBoundingBox() const;
     FloatRect calculateStrokeBoundingBox() const;
     void updateRepaintBoundingBox();

@@ -36,12 +36,12 @@ public:
     virtual ~LegacyRenderSVGPath();
 
     void drawMarkers(PaintInfo&);
+    FloatRect calculateUpdatedStrokeBoundingBox(FloatRect strokeBoundingBox) const;
 
 private:
     ASCIILiteral renderName() const override { return "RenderSVGPath"_s; }
 
     void updateShapeFromElement() override;
-    FloatRect calculateUpdatedStrokeBoundingBox(FloatRect strokeBoundingBox) const;
 
     void strokeShape(GraphicsContext&) const override;
     bool shapeDependentStrokeContains(const FloatPoint&, PointCoordinateSpace = GlobalCoordinateSpace) override;
