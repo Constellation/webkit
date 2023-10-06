@@ -138,8 +138,8 @@ bool LegacyRenderSVGRect::shapeDependentStrokeContains(const FloatPoint& point, 
 {
     // The optimized code below does not support non-smooth strokes so we need to
     // fall back to LegacyRenderSVGShape::shapeDependentStrokeContains in these cases.
-    if (!hasSmoothStroke() && !hasPath())
-        LegacyRenderSVGShape::updateShapeFromElement();
+    if (!hasSmoothStroke())
+        ensurePath();
 
     if (hasPath())
         return LegacyRenderSVGShape::shapeDependentStrokeContains(point, pointCoordinateSpace);
