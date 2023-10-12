@@ -909,14 +909,18 @@ ALWAYS_INLINE static void putByIdMegamorphic(JSGlobalObject* globalObject, VM& v
     {
         JSObject* object = baseObject;
         while (true) {
-            if (UNLIKELY(structure->hasReadOnlyOrGetterSetterPropertiesExcludingProto() || structure->typeInfo().overridesGetPrototype() || structure->typeInfo().overridesPut() || structure->hasPolyProto())) {
+            if (UNLIKELY(structure->hasReadOnlyOrGetterSetterPropertiesExcludingProto() || structure->typeInfo().overridesGetPrototype() || structure->typeInfo().overridesPut())) {
                 if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
                     repatchPutBySlowPathCall(callFrame->codeBlock(), *stubInfo, kind);
                 scope.release();
                 baseObject->putInlineSlow(globalObject, uid, value, slot);
                 return;
             }
-            JSValue prototype = object->getPrototypeDirect();
+            JSValue prototype;
+            if (structure->hasPolyProto())
+                prototype = object->getDirect(knownPolyProtoOffset);
+            else
+                prototype = object->getPrototypeDirect();
             if (prototype.isNull())
                 break;
             object = asObject(prototype);
@@ -1646,14 +1650,18 @@ ALWAYS_INLINE static void putByValMegamorphic(JSGlobalObject* globalObject, VM& 
     {
         JSObject* object = baseObject;
         while (true) {
-            if (UNLIKELY(structure->hasReadOnlyOrGetterSetterPropertiesExcludingProto() || structure->typeInfo().overridesGetPrototype() || structure->typeInfo().overridesPut() || structure->hasPolyProto())) {
+            if (UNLIKELY(structure->hasReadOnlyOrGetterSetterPropertiesExcludingProto() || structure->typeInfo().overridesGetPrototype() || structure->typeInfo().overridesPut())) {
                 if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
                     repatchPutBySlowPathCall(callFrame->codeBlock(), *stubInfo, kind);
                 scope.release();
                 baseObject->putInlineSlow(globalObject, uid, value, slot);
                 return;
             }
-            JSValue prototype = object->getPrototypeDirect();
+            JSValue prototype;
+            if (structure->hasPolyProto())
+                prototype = object->getDirect(knownPolyProtoOffset);
+            else
+                prototype = object->getPrototypeDirect();
             if (prototype.isNull())
                 break;
             object = asObject(prototype);

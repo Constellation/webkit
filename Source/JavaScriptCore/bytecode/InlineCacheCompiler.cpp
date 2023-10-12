@@ -3572,11 +3572,16 @@ static void commit(const GCSafeConcurrentJSLocker&, VM& vm, std::unique_ptr<Watc
     }
 }
 
-static inline bool canUseMegamorphicPutFastPath(Structure* structure)
+static inline bool canUseMegamorphicPutFastPath(Structure* structure, bool& hasPolyProto)
 {
+    hasPolyProto = false;
     while (true) {
-        if (structure->hasReadOnlyOrGetterSetterPropertiesExcludingProto() || structure->typeInfo().overridesGetPrototype() || structure->typeInfo().overridesPut() || structure->hasPolyProto())
+        if (structure->hasReadOnlyOrGetterSetterPropertiesExcludingProto() || structure->typeInfo().overridesGetPrototype() || structure->typeInfo().overridesPut())
             return false;
+        if (structure->hasPolyProto()) {
+            hasPolyProto = true;
+            return true;
+        }
         JSValue prototype = structure->storedPrototype();
         if (prototype.isNull())
             return true;
@@ -3735,11 +3740,16 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
                     allAreSimpleReplaceOrTransition = false;
                     break;
                 }
-                if (!canUseMegamorphicPutFastPath(accessCase->structure())) {
+                bool hasPolyProto = false;
+                if (!canUseMegamorphicPutFastPath(accessCase->structure(), hasPolyProto)) {
                     allAreSimpleReplaceOrTransition = false;
                     break;
                 }
                 if (accessCase->type() == AccessCase::Transition) {
+                    if (hasPolyProto) {
+                        allAreSimpleReplaceOrTransition = false;
+                        break;
+                    }
                     if (accessCase->newStructure()->outOfLineCapacity() != accessCase->structure()->outOfLineCapacity()) {
                         allAreSimpleReplaceOrTransition = false;
                         break;
@@ -3779,11 +3789,16 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
                     allAreSimpleReplaceOrTransition = false;
                     break;
                 }
-                if (!canUseMegamorphicPutFastPath(accessCase->structure())) {
+                bool hasPolyProto = false;
+                if (!canUseMegamorphicPutFastPath(accessCase->structure(), hasPolyProto)) {
                     allAreSimpleReplaceOrTransition = false;
                     break;
                 }
                 if (accessCase->type() == AccessCase::Transition) {
+                    if (hasPolyProto) {
+                        allAreSimpleReplaceOrTransition = false;
+                        break;
+                    }
                     if (accessCase->newStructure()->outOfLineCapacity() != accessCase->structure()->outOfLineCapacity()) {
                         allAreSimpleReplaceOrTransition = false;
                         break;
