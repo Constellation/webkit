@@ -58,7 +58,7 @@ BaselineJITCode::~BaselineJITCode()
 }
 
 BaselineJITData::BaselineJITData(unsigned size, CodeBlock* codeBlock)
-    : Base(size)
+    : Base(0, size)
     , m_globalObject(codeBlock->globalObject())
     , m_stackOffset(codeBlock->stackPointerOffset() * sizeof(Register))
 {

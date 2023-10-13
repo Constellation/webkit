@@ -29,6 +29,7 @@
 #include "JITCode.h"
 #include "JITCodeMap.h"
 #include "StructureStubInfo.h"
+#include <wtf/ButterflyArray.h>
 #include <wtf/CompactPointerTuple.h>
 
 #if ENABLE(JIT)
@@ -102,15 +103,15 @@ public:
     bool m_isShareable { true };
 };
 
-class BaselineJITData final : public TrailingArray<BaselineJITData, void*> {
+class BaselineJITData final : public ButterflyArray<BaselineJITData, StructureStubInfo, void*> {
     WTF_MAKE_FAST_ALLOCATED;
     friend class LLIntOffsetsExtractor;
 public:
-    using Base = TrailingArray<BaselineJITData, void*>;
+    using Base = ButterflyArray<BaselineJITData, StructureStubInfo, void*>;
 
     static std::unique_ptr<BaselineJITData> create(unsigned poolSize, CodeBlock* codeBlock)
     {
-        return std::unique_ptr<BaselineJITData> { new (NotNull, fastMalloc(Base::allocationSize(poolSize))) BaselineJITData(poolSize, codeBlock) };
+        return std::unique_ptr<BaselineJITData> { new (NotNull, fastMalloc(Base::allocationSize(0, poolSize))) BaselineJITData(poolSize, codeBlock) };
     }
 
     explicit BaselineJITData(unsigned size, CodeBlock*);

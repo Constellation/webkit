@@ -47,17 +47,17 @@ protected:
     {
         static_assert(std::is_final_v<Derived>);
         auto leadingSpan = this->leadingSpan();
-        VectorTypeOperations<LeadingType>::initializeIfNonPOD(std::begin(leadingSpan), std::end(leadingSpan));
+        VectorTypeOperations<LeadingType>::initializeIfNonPOD(leadingSpan.data(), leadingSpan.data() + leadingSpan.size());
         auto trailingSpan = this->trailingSpan();
-        VectorTypeOperations<TrailingType>::initializeIfNonPOD(std::begin(trailingSpan), std::end(trailingSpan));
+        VectorTypeOperations<TrailingType>::initializeIfNonPOD(trailingSpan.data(), trailingSpan.data() + trailingSpan.size());
     }
 
     ~ButterflyArray()
     {
         auto leadingSpan = this->leadingSpan();
-        VectorTypeOperations<LeadingType>::destruct(std::begin(leadingSpan), std::end(leadingSpan));
+        VectorTypeOperations<LeadingType>::destruct(leadingSpan.data(), leadingSpan.data() + leadingSpan.size());
         auto trailingSpan = this->trailingSpan();
-        VectorTypeOperations<TrailingType>::destruct(std::begin(trailingSpan), std::end(trailingSpan));
+        VectorTypeOperations<TrailingType>::destruct(trailingSpan.data(), trailingSpan.data() + trailingSpan.size());
     }
 
     void operator delete(ButterflyArray* base, std::destroying_delete_t)

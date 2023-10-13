@@ -499,7 +499,7 @@ void JITCompiler::makeCatchOSREntryBuffer()
 void JITCompiler::loadConstant(LinkerIR::Constant index, GPRReg dest)
 {
 #if USE(JSVALUE64)
-    loadPtr(Address(GPRInfo::jitDataRegister, JITData::offsetOfData() + sizeof(void*) * index), dest);
+    loadPtr(Address(GPRInfo::jitDataRegister, JITData::offsetOfTrailingData() + sizeof(void*) * index), dest);
 #else
     UNUSED_PARAM(index);
     UNUSED_PARAM(dest);
