@@ -64,7 +64,7 @@ protected:
     {
         unsigned leadingSize = base->m_leadingSize;
         std::destroy_at(static_cast<Derived*>(base));
-        Derived::freeAfterDestruction(bitwise_cast<uint8_t*>(static_cast<Derived*>(this)) - memoryOffsetForDerived(leadingSize));
+        Derived::freeAfterDestruction(bitwise_cast<uint8_t*>(static_cast<Derived*>(base)) - memoryOffsetForDerived(leadingSize));
     }
 
 public:
