@@ -199,8 +199,9 @@ public:
     static ptrdiff_t offsetOfGlobalObject() { return OBJECT_OFFSETOF(JITData, m_globalObject); }
     static ptrdiff_t offsetOfStackOffset() { return OBJECT_OFFSETOF(JITData, m_stackOffset); }
 
+    explicit JITData(unsigned stubInfoSize, unsigned poolSize, const JITCode&, ExitVector&&);
+
 private:
-    explicit JITData(const JITCode&, ExitVector&&);
 
     bool tryInitialize(VM&, CodeBlock*, const JITCode&);
 
@@ -322,7 +323,7 @@ public:
 
 inline std::unique_ptr<JITData> JITData::tryCreate(VM& vm, CodeBlock* codeBlock, const JITCode& jitCode, ExitVector&& exits)
 {
-    auto result = std::unique_ptr<JITData> { new (NotNull, fastMalloc(Base::allocationSize(0, jitCode.m_linkerIR.size()))) JITData(jitCode, WTFMove(exits)) };
+    auto result = std::unique_ptr<JITData> { createImpl(jitCode.m_unlinkedStubInfos.size(), jitCode.m_linkerIR.size(), jitCode, WTFMove(exits)) };
     if (result->tryInitialize(vm, codeBlock, jitCode))
         return result;
     return nullptr;

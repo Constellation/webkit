@@ -760,7 +760,7 @@ void CodeBlock::setupWithUnlinkedBaselineCode(Ref<BaselineJITCode> jitCode)
     {
         ConcurrentJSLocker locker(m_lock);
         ASSERT(!m_jitData);
-        auto baselineJITData = BaselineJITData::create(jitCode->m_constantPool.size(), jitCode->m_unlinkedStubInfos.size(), this);
+        auto baselineJITData = BaselineJITData::create(jitCode->m_unlinkedStubInfos.size(), jitCode->m_constantPool.size(), this);
         for (auto& unlinkedCallLinkInfo : jitCode->m_unlinkedCalls) {
             CallLinkInfo* callLinkInfo = getCallLinkInfoForBytecodeIndex(locker, unlinkedCallLinkInfo.bytecodeIndex);
             ASSERT(callLinkInfo);

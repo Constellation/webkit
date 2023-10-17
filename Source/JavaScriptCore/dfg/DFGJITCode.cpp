@@ -35,8 +35,8 @@
 
 namespace JSC { namespace DFG {
 
-JITData::JITData(const JITCode& jitCode, ExitVector&& exits)
-    : Base(jitCode.m_unlinkedStubInfos.size(), jitCode.m_linkerIR.size())
+JITData::JITData(unsigned stubInfoSize, unsigned poolSize, const JITCode& jitCode, ExitVector&& exits)
+    : Base(stubInfoSize, poolSize)
     , m_callLinkInfos(jitCode.m_unlinkedCallLinkInfos.size())
     , m_exits(WTFMove(exits))
 {

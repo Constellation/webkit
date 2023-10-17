@@ -109,9 +109,9 @@ class BaselineJITData final : public ButterflyArray<BaselineJITData, StructureSt
 public:
     using Base = ButterflyArray<BaselineJITData, StructureStubInfo, void*>;
 
-    static std::unique_ptr<BaselineJITData> create(unsigned poolSize, unsigned stubInfoSize, CodeBlock* codeBlock)
+    static std::unique_ptr<BaselineJITData> create(unsigned stubInfoSize, unsigned poolSize, CodeBlock* codeBlock)
     {
-        return std::unique_ptr<BaselineJITData> { new (NotNull, fastMalloc(Base::allocationSize(stubInfoSize, poolSize))) BaselineJITData(poolSize, stubInfoSize, codeBlock) };
+        return std::unique_ptr<BaselineJITData> { createImpl(stubInfoSize, poolSize, codeBlock) };
     }
 
     explicit BaselineJITData(unsigned poolSize, unsigned stubInfoSize, CodeBlock*);

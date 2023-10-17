@@ -67,6 +67,13 @@ protected:
         Derived::freeAfterDestruction(bitwise_cast<uint8_t*>(static_cast<Derived*>(base)) - memoryOffsetForDerived(leadingSize));
     }
 
+    template<typename... Args>
+    static Derived* createImpl(unsigned leadingSize, unsigned trailingSize, Args&&... args)
+    {
+        uint8_t* memory = bitwise_cast<uint8_t*>(fastMalloc(allocationSize(leadingSize, trailingSize)));
+        return new (NotNull, memory + memoryOffsetForDerived(leadingSize)) Derived(leadingSize, trailingSize, std::forward<Args>(args)...);
+    }
+
 public:
     static constexpr size_t allocationSize(unsigned leadingSize, unsigned trailingSize)
     {
