@@ -767,16 +767,15 @@ void CodeBlock::setupWithUnlinkedBaselineCode(Ref<BaselineJITCode> jitCode)
             static_cast<BaselineCallLinkInfo*>(callLinkInfo)->setCodeLocations(unlinkedCallLinkInfo.doneLocation);
         }
 
+        for (unsigned index = 0; index < jitCode->m_unlinkedStubInfos.size(); ++index) {
+            BaselineUnlinkedStructureStubInfo& unlinkedStubInfo = jitCode->m_unlinkedStubInfos[index];
+            auto& stubInfo = baselineJITData->stubInfo(index);
+            stubInfo.initializeFromUnlinkedStructureStubInfo(vm(), unlinkedStubInfo);
+        }
+
         for (size_t i = 0; i < jitCode->m_constantPool.size(); ++i) {
             auto entry = jitCode->m_constantPool.at(i);
             switch (entry.type()) {
-            case JITConstantPool::Type::StructureStubInfo: {
-                unsigned index = bitwise_cast<uintptr_t>(entry.pointer());
-                BaselineUnlinkedStructureStubInfo& unlinkedStubInfo = jitCode->m_unlinkedStubInfos[index];
-                auto& stubInfo = baselineJITData->stubInfo(index);
-                stubInfo.initializeFromUnlinkedStructureStubInfo(vm(), unlinkedStubInfo);
-                break;
-            }
             case JITConstantPool::Type::FunctionDecl: {
                 unsigned index = bitwise_cast<uintptr_t>(entry.pointer());
                 baselineJITData->trailingSpan()[i] = functionDecl(index);

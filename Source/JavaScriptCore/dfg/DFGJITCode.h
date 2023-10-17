@@ -96,7 +96,6 @@ public:
 
     enum class Type : uint16_t {
         Invalid,
-        StructureStubInfo,
         CallLinkInfo,
         CellPointer,
         NonCellPointer,

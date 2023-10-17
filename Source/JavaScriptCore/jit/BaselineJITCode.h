@@ -63,7 +63,6 @@ public:
     using Constant = unsigned;
 
     enum class Type : uint8_t {
-        StructureStubInfo,
         FunctionDecl,
         FunctionExpr,
     };
