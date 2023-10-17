@@ -521,7 +521,7 @@ ALWAYS_INLINE void JIT::loadGlobalObject(GPRReg result)
 
 ALWAYS_INLINE void JIT::loadStructureStubInfo(CCallHelpers& jit, StructureStubInfoIndex index, GPRReg result)
 {
-    jit.subPtr(s_constantsGPR, TrustedImm32(static_cast<uintptr_t>(index.m_index) * sizeof(StructureStubInfo)), result);
+    jit.subPtr(s_constantsGPR, TrustedImm32(static_cast<uintptr_t>(index.m_index + 1) * sizeof(StructureStubInfo)), result);
 }
 
 ALWAYS_INLINE void JIT::loadStructureStubInfo(StructureStubInfoIndex index, GPRReg result)

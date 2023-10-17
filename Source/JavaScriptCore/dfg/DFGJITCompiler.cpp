@@ -510,7 +510,7 @@ void JITCompiler::loadConstant(LinkerIR::Constant index, GPRReg dest)
 void JITCompiler::loadStructureStubInfo(StructureStubInfoIndex index, GPRReg dest)
 {
 #if USE(JSVALUE64)
-    subPtr(GPRInfo::jitDataRegister, TrustedImm32(static_cast<uintptr_t>(index.m_index) * sizeof(StructureStubInfo)), dest);
+    subPtr(GPRInfo::jitDataRegister, TrustedImm32(static_cast<uintptr_t>(index.m_index + 1) * sizeof(StructureStubInfo)), dest);
 #else
     UNUSED_PARAM(index);
     UNUSED_PARAM(dest);
