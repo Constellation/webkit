@@ -125,7 +125,7 @@ public:
         return span[span.size() - index - 1];
     }
 
-    auto stubInfos() -> decltype(auto)
+    auto stubInfos() -> decltype(leadingSpan())
     {
         return leadingSpan();
     }

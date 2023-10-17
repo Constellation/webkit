@@ -183,7 +183,7 @@ public:
         m_isInvalidated = 1;
     }
 
-    auto stubInfos() -> decltype(auto)
+    auto stubInfos() -> decltype(leadingSpan())
     {
         return leadingSpan();
     }
