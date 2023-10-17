@@ -776,17 +776,17 @@ void CodeBlock::setupWithUnlinkedBaselineCode(Ref<BaselineJITCode> jitCode)
                 BaselineUnlinkedStructureStubInfo& unlinkedStubInfo = jitCode->m_unlinkedStubInfos[index];
                 StructureStubInfo& stubInfo = baselineJITData->m_stubInfos[index];
                 stubInfo.initializeFromUnlinkedStructureStubInfo(vm(), unlinkedStubInfo);
-                baselineJITData->tralingSpan()[i] = &stubInfo;
+                baselineJITData->trailingSpan()[i] = &stubInfo;
                 break;
             }
             case JITConstantPool::Type::FunctionDecl: {
                 unsigned index = bitwise_cast<uintptr_t>(entry.pointer());
-                baselineJITData->tralingSpan()[i] = functionDecl(index);
+                baselineJITData->trailingSpan()[i] = functionDecl(index);
                 break;
             }
             case JITConstantPool::Type::FunctionExpr: {
                 unsigned index = bitwise_cast<uintptr_t>(entry.pointer());
-                baselineJITData->tralingSpan()[i] = functionExpr(index);
+                baselineJITData->trailingSpan()[i] = functionExpr(index);
                 break;
             }
             }
