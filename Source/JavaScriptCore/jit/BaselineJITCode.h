@@ -109,19 +109,29 @@ class BaselineJITData final : public ButterflyArray<BaselineJITData, StructureSt
 public:
     using Base = ButterflyArray<BaselineJITData, StructureStubInfo, void*>;
 
-    static std::unique_ptr<BaselineJITData> create(unsigned poolSize, CodeBlock* codeBlock)
+    static std::unique_ptr<BaselineJITData> create(unsigned poolSize, unsigned stubInfoSize, CodeBlock* codeBlock)
     {
-        return std::unique_ptr<BaselineJITData> { new (NotNull, fastMalloc(Base::allocationSize(0, poolSize))) BaselineJITData(poolSize, codeBlock) };
+        return std::unique_ptr<BaselineJITData> { new (NotNull, fastMalloc(Base::allocationSize(stubInfoSize, poolSize))) BaselineJITData(poolSize, stubInfoSize, codeBlock) };
     }
 
-    explicit BaselineJITData(unsigned size, CodeBlock*);
+    explicit BaselineJITData(unsigned poolSize, unsigned stubInfoSize, CodeBlock*);
 
     static ptrdiff_t offsetOfGlobalObject() { return OBJECT_OFFSETOF(BaselineJITData, m_globalObject); }
     static ptrdiff_t offsetOfStackOffset() { return OBJECT_OFFSETOF(BaselineJITData, m_stackOffset); }
 
+    StructureStubInfo& stubInfo(unsigned index)
+    {
+        auto span = stubInfos();
+        return span[span.size() - index - 1];
+    }
+
+    auto stubInfos() -> decltype(auto)
+    {
+        return leadingSpan();
+    }
+
     JSGlobalObject* m_globalObject { nullptr }; // This is not marked since owner CodeBlock will mark JSGlobalObject.
     intptr_t m_stackOffset { 0 };
-    FixedVector<StructureStubInfo> m_stubInfos;
 };
 
 } // namespace JSC

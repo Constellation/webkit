@@ -760,8 +760,7 @@ void CodeBlock::setupWithUnlinkedBaselineCode(Ref<BaselineJITCode> jitCode)
     {
         ConcurrentJSLocker locker(m_lock);
         ASSERT(!m_jitData);
-        auto baselineJITData = BaselineJITData::create(jitCode->m_constantPool.size(), this);
-        baselineJITData->m_stubInfos = FixedVector<StructureStubInfo>(jitCode->m_unlinkedStubInfos.size());
+        auto baselineJITData = BaselineJITData::create(jitCode->m_constantPool.size(), jitCode->m_unlinkedStubInfos.size(), this);
         for (auto& unlinkedCallLinkInfo : jitCode->m_unlinkedCalls) {
             CallLinkInfo* callLinkInfo = getCallLinkInfoForBytecodeIndex(locker, unlinkedCallLinkInfo.bytecodeIndex);
             ASSERT(callLinkInfo);
@@ -774,9 +773,8 @@ void CodeBlock::setupWithUnlinkedBaselineCode(Ref<BaselineJITCode> jitCode)
             case JITConstantPool::Type::StructureStubInfo: {
                 unsigned index = bitwise_cast<uintptr_t>(entry.pointer());
                 BaselineUnlinkedStructureStubInfo& unlinkedStubInfo = jitCode->m_unlinkedStubInfos[index];
-                StructureStubInfo& stubInfo = baselineJITData->m_stubInfos[index];
+                auto& stubInfo = baselineJITData->stubInfo(index);
                 stubInfo.initializeFromUnlinkedStructureStubInfo(vm(), unlinkedStubInfo);
-                baselineJITData->trailingSpan()[i] = &stubInfo;
                 break;
             }
             case JITConstantPool::Type::FunctionDecl: {
@@ -1027,16 +1025,18 @@ inline void CodeBlock::forEachStructureStubInfo(Func func)
                 return;
         }
         if (auto* jitData = dfgJITData()) {
-            for (auto& stubInfo : jitData->stubInfos())
+            for (auto& stubInfo : jitData->stubInfos()) {
                 if (func(stubInfo) == IterationStatus::Done)
                     return;
+            }
         }
 #endif
     } else {
         if (auto* jitData = baselineJITData()) {
-            for (auto& stubInfo : jitData->m_stubInfos)
+            for (auto& stubInfo : jitData->stubInfos()) {
                 if (func(stubInfo) == IterationStatus::Done)
                     return;
+            }
         }
     }
 #endif // ENABLE(JIT)
@@ -1785,7 +1785,7 @@ void CodeBlock::resetBaselineJITData()
         // these *infos, but when we have an OSR exit linked to this CodeBlock, we won't downgrade
         // to LLInt.
 
-        for (auto& stubInfo : jitData->m_stubInfos) {
+        for (auto& stubInfo : jitData->stubInfos()) {
             stubInfo.aboutToDie();
             stubInfo.deref();
         }

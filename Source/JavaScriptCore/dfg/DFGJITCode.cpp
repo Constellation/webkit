@@ -36,8 +36,7 @@
 namespace JSC { namespace DFG {
 
 JITData::JITData(const JITCode& jitCode, ExitVector&& exits)
-    : Base(0, jitCode.m_linkerIR.size())
-    , m_stubInfos(jitCode.m_unlinkedStubInfos.size())
+    : Base(jitCode.m_unlinkedStubInfos.size(), jitCode.m_linkerIR.size())
     , m_callLinkInfos(jitCode.m_unlinkedCallLinkInfos.size())
     , m_exits(WTFMove(exits))
 {
@@ -101,9 +100,7 @@ bool JITData::tryInitialize(VM& vm, CodeBlock* codeBlock, const JITCode& jitCode
         case LinkerIR::Type::StructureStubInfo: {
             unsigned index = bitwise_cast<uintptr_t>(entry.pointer());
             const UnlinkedStructureStubInfo& unlinkedStubInfo = jitCode.m_unlinkedStubInfos[index];
-            StructureStubInfo& stubInfo = m_stubInfos[index];
-            stubInfo.initializeFromDFGUnlinkedStructureStubInfo(unlinkedStubInfo);
-            trailingSpan()[i] = &stubInfo;
+            stubInfo(index).initializeFromDFGUnlinkedStructureStubInfo(unlinkedStubInfo);
             break;
         }
         case LinkerIR::Type::CallLinkInfo: {

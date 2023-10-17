@@ -183,7 +183,17 @@ public:
         m_isInvalidated = 1;
     }
 
-    FixedVector<StructureStubInfo>& stubInfos() { return m_stubInfos; }
+    auto stubInfos() -> decltype(auto)
+    {
+        return leadingSpan();
+    }
+
+    StructureStubInfo& stubInfo(unsigned index)
+    {
+        auto span = stubInfos();
+        return span[span.size() - index - 1];
+    }
+
     FixedVector<OptimizingCallLinkInfo>& callLinkInfos() { return m_callLinkInfos; }
 
     static ptrdiff_t offsetOfGlobalObject() { return OBJECT_OFFSETOF(JITData, m_globalObject); }
@@ -196,7 +206,6 @@ private:
 
     JSGlobalObject* m_globalObject { nullptr }; // This is not marked since owner CodeBlock will mark JSGlobalObject.
     intptr_t m_stackOffset { 0 };
-    FixedVector<StructureStubInfo> m_stubInfos;
     FixedVector<OptimizingCallLinkInfo> m_callLinkInfos;
     FixedVector<CodeBlockJettisoningWatchpoint> m_watchpoints;
     ExitVector m_exits;
