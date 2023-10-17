@@ -58,7 +58,7 @@ BaselineJITCode::~BaselineJITCode()
 }
 
 BaselineJITData::BaselineJITData(unsigned poolSize, unsigned stubInfoSize, CodeBlock* codeBlock)
-    : Base(stubInfoSize, size)
+    : Base(stubInfoSize, poolSize)
     , m_globalObject(codeBlock->globalObject())
     , m_stackOffset(codeBlock->stackPointerOffset() * sizeof(Register))
 {
