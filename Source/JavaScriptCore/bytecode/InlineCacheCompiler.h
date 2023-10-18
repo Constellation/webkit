@@ -184,6 +184,26 @@ private:
     std::unique_ptr<WatchpointsOnStructureStubInfo> m_watchpoints;
 };
 
+class InlineCacheHandler final : public RefCounted<InlineCacheHandler> {
+    WTF_MAKE_NONCOPYABLE(InlineCacheHandler);
+public:
+    static ptrdiff_t offsetOfCodePtr() { return OBJECT_OFFSETOF(InlineCacheHandler, m_codePtr); }
+    static ptrdiff_t offsetOfNext() { return OBJECT_OFFSETOF(InlineCacheHandler, m_next); }
+
+    InlineCacheHandler() = default;
+
+    static Ref<InlineCacheHandler> create()
+    {
+        return adoptRef(*new InlineCacheHandler);
+    }
+
+private:
+    CodePtr<JITStubRoutinePtrTag> m_codePtr;
+    RefPtr<PolymorphicAccessJITStubRoutine> m_stubRoutine;
+    std::unique_ptr<WatchpointsOnStructureStubInfo> m_watchpoints;
+    RefPtr<InlineCacheHandler> m_next;
+};
+
 inline bool canUseMegamorphicGetById(VM& vm, UniquedStringImpl* uid)
 {
     return !parseIndex(*uid) && uid != vm.propertyNames->length && uid != vm.propertyNames->name && uid != vm.propertyNames->prototype && uid != vm.propertyNames->underscoreProto;
