@@ -53,39 +53,49 @@ class AccessCase;
 class AccessGenerationResult;
 class PolymorphicAccess;
 
+#define JSC_FOR_EACH_STRUCTURE_STUB_INFO_ACCESS_TYPE(macro) \
+    macro(GetById) \
+    macro(GetByIdWithThis) \
+    macro(GetByIdDirect) \
+    macro(TryGetById) \
+    macro(GetByVal) \
+    macro(GetByValWithThis) \
+    macro(PutByIdStrict) \
+    macro(PutByIdSloppy) \
+    macro(PutByIdDirectStrict) \
+    macro(PutByIdDirectSloppy) \
+    macro(PutByValStrict) \
+    macro(PutByValSloppy) \
+    macro(PutByValDirectStrict) \
+    macro(PutByValDirectSloppy) \
+    macro(DefinePrivateNameByVal) \
+    macro(DefinePrivateNameById) \
+    macro(SetPrivateNameByVal) \
+    macro(SetPrivateNameById) \
+    macro(InById) \
+    macro(InByVal) \
+    macro(HasPrivateName) \
+    macro(HasPrivateBrand) \
+    macro(InstanceOf) \
+    macro(DeleteByIdStrict) \
+    macro(DeleteByIdSloppy) \
+    macro(DeleteByValStrict) \
+    macro(DeleteByValSloppy) \
+    macro(GetPrivateName) \
+    macro(GetPrivateNameById) \
+    macro(CheckPrivateBrand) \
+    macro(SetPrivateBrand) \
+
+
 enum class AccessType : int8_t {
-    GetById,
-    GetByIdWithThis,
-    GetByIdDirect,
-    TryGetById,
-    GetByVal,
-    GetByValWithThis,
-    PutByIdStrict,
-    PutByIdSloppy,
-    PutByIdDirectStrict,
-    PutByIdDirectSloppy,
-    PutByValStrict,
-    PutByValSloppy,
-    PutByValDirectStrict,
-    PutByValDirectSloppy,
-    DefinePrivateNameByVal,
-    DefinePrivateNameById,
-    SetPrivateNameByVal,
-    SetPrivateNameById,
-    InById,
-    InByVal,
-    HasPrivateName,
-    HasPrivateBrand,
-    InstanceOf,
-    DeleteByIdStrict,
-    DeleteByIdSloppy,
-    DeleteByValStrict,
-    DeleteByValSloppy,
-    GetPrivateName,
-    GetPrivateNameById,
-    CheckPrivateBrand,
-    SetPrivateBrand,
+#define JSC_DEFINE_ACCESS_TYPE(name) name,
+    JSC_FOR_EACH_STRUCTURE_STUB_INFO_ACCESS_TYPE(JSC_DEFINE_ACCESS_TYPE)
+#undef JSC_DEFINE_ACCESS_TYPE(name)
 };
+
+#define JSC_INCREMENT_ACCESS_TYPE(name) + 1
+static constexpr unsigned numberOfAccessTypes = 0 JSC_FOR_EACH_STRUCTURE_STUB_INFO_ACCESS_TYPE(JSC_INCREMENT_ACCESS_TYPE);
+#undef JSC_INCREMENT_ACCESS_TYPE
 
 enum class CacheType : int8_t {
     Unset,

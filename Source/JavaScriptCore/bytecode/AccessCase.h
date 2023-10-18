@@ -47,6 +47,7 @@ class ModuleNamespaceAccessCase;
 class ProxyableAccessCase;
 
 class InlineCacheCompiler;
+class InlineCacheHandler;
 
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(AccessCase);
 
@@ -571,6 +572,8 @@ private:
     RefPtr<PolymorphicAccessJITStubRoutine> m_getByValMegamorphic;
     RefPtr<PolymorphicAccessJITStubRoutine> m_getByValWithThisMegamorphic;
     RefPtr<PolymorphicAccessJITStubRoutine> m_putByValMegamorphic;
+    std::array<RefPtr<InlineCacheHandler>, numberOfAccessTypes> m_fallbackHandlers { };
+    std::array<RefPtr<InlineCacheHandler>, numberOfAccessTypes> m_slowPathHandlers { };
 };
 
 } // namespace JSC
