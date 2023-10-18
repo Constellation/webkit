@@ -363,6 +363,7 @@ public:
     static ptrdiff_t offsetOfSlowOperation() { return OBJECT_OFFSETOF(StructureStubInfo, m_slowOperation); }
     static ptrdiff_t offsetOfCountdown() { return OBJECT_OFFSETOF(StructureStubInfo, countdown); }
     static ptrdiff_t offsetOfCallSiteIndex() { return OBJECT_OFFSETOF(StructureStubInfo, callSiteIndex); }
+    static ptrdiff_t offsetOfHandler() { return OBJECT_OFFSETOF(StructureStubInfo, m_handler); }
 
     GPRReg thisGPR() const { return m_extraGPR; }
     GPRReg prototypeGPR() const { return m_extraGPR; }
@@ -408,6 +409,7 @@ public:
 
     CodePtr<JITStubRoutinePtrTag> m_codePtr;
     std::unique_ptr<PolymorphicAccess> m_stub;
+    RefPtr<InlineCacheHandler> m_handler;
 private:
     // Represents those structures that already have buffered AccessCases in the PolymorphicAccess.
     // Note that it's always safe to clear this. If we clear it prematurely, then if we see the same
