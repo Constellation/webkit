@@ -1139,6 +1139,26 @@ MacroAssemblerCodeRef<JITThunkPtrTag> InlineCacheCompiler::generateSlowPathCode(
     return { };
 }
 
+Ref<InlineCacheHandler> InlineCacheHandler::createSlowPath(VM& vm, AccessType accessType)
+{
+    auto result = adoptRef(*new InlineCacheHandler);
+    auto codeRef = InlineCacheCompiler::generateSlowPathCode(vm, accessType);
+    result->m_callTarget = codeRef.code().template retagged<JITStubRoutinePtrTag>();
+    result->m_jumpTarget = CodePtr<NoPtrTag> { codeRef.retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC }.template retagged<JITStubRoutinePtrTag>();
+    return result;
+}
+
+Ref<InlineCacheHandler> InlineCacheCompiler::generateSlowPathHandler(VM& vm, AccessType accessType)
+{
+    ASSERT(!isCompilationThread());
+    ASSERT(Options::useHandlerIC());
+    if (auto handler = vm.m_sharedJITStubs->getSlowPathHandler(accessType))
+        return handler.releaseNonNull();
+    auto handler = InlineCacheHandler::createSlowPath(vm, accessType);
+    vm.m_sharedJITStubs->setSlowPathHandler(accessType, handler);
+    return handler;
+}
+
 void InlineCacheCompiler::generateWithGuard(AccessCase& accessCase, CCallHelpers::JumpList& fallThrough)
 {
     SuperSamplerScope superSamplerScope(false);

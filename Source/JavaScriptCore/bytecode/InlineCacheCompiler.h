@@ -186,6 +186,7 @@ private:
 
 class InlineCacheHandler final : public RefCounted<InlineCacheHandler> {
     WTF_MAKE_NONCOPYABLE(InlineCacheHandler);
+    friend class InlineCacheCompiler;
 public:
     static ptrdiff_t offsetOfCallTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_callTarget); }
     static ptrdiff_t offsetOfJumpTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_jumpTarget); }
@@ -198,7 +199,12 @@ public:
         return adoptRef(*new InlineCacheHandler);
     }
 
+    CodePtr<JITStubRoutinePtrTag> callTarget() const { return m_callTarget; }
+    CodePtr<JITStubRoutinePtrTag> jumpTarget() const { return m_jumpTarget; }
+
 private:
+    static Ref<InlineCacheHandler> createSlowPath(VM&, AccessType);
+
     CodePtr<JITStubRoutinePtrTag> m_callTarget;
     CodePtr<JITStubRoutinePtrTag> m_jumpTarget;
     RefPtr<PolymorphicAccessJITStubRoutine> m_stubRoutine;
@@ -308,6 +314,7 @@ public:
     AccessGenerationResult regenerate(const GCSafeConcurrentJSLocker&, PolymorphicAccess&, CodeBlock*);
 
     static MacroAssemblerCodeRef<JITThunkPtrTag> generateSlowPathCode(VM&, AccessType);
+    static Ref<InlineCacheHandler> generateSlowPathHandler(VM&, AccessType);
 
     static void emitDataICPrologue(CCallHelpers&);
     static void emitDataICEpilogue(CCallHelpers&);

@@ -538,9 +538,10 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(VM& vm, const Ba
     m_identifier = unlinkedStubInfo.m_identifier;
     callSiteIndex = CallSiteIndex(BytecodeIndex(unlinkedStubInfo.bytecodeIndex.offset()));
     codeOrigin = CodeOrigin(unlinkedStubInfo.bytecodeIndex);
-    if (Options::useHandlerIC())
-        m_codePtr = InlineCacheCompiler::generateSlowPathCode(vm, accessType).code().template retagged<JITStubRoutinePtrTag>();
-    else {
+    if (Options::useHandlerIC()) {
+        m_handler = InlineCacheCompiler::generateSlowPathHandler(vm, accessType);
+        m_codePtr = m_handler->callTarget();
+    } else {
         m_codePtr = unlinkedStubInfo.slowPathStartLocation;
         slowPathStartLocation = unlinkedStubInfo.slowPathStartLocation;
     }
@@ -785,7 +786,7 @@ void StructureStubInfo::checkConsistency()
 }
 #endif // ASSERT_ENABLED
 
-RefPtr<PolymorphicAccessJITStubRoutine> SharedJITStubSet::getMegamorphic(AccessType type)
+RefPtr<PolymorphicAccessJITStubRoutine> SharedJITStubSet::getMegamorphic(AccessType type) const
 {
     switch (type) {
     case AccessType::GetByVal:
@@ -816,6 +817,16 @@ void SharedJITStubSet::setMegamorphic(AccessType type, Ref<PolymorphicAccessJITS
     default:
         break;
     }
+}
+
+RefPtr<InlineCacheHandler> SharedJITStubSet::getSlowPathHandler(AccessType type) const
+{
+    return m_slowPathHandlers[static_cast<unsigned>(type)];
+}
+
+void SharedJITStubSet::setSlowPathHandler(AccessType type, Ref<InlineCacheHandler> handler)
+{
+    m_slowPathHandlers[static_cast<unsigned>(type)] = WTFMove(handler);
 }
 
 #endif // ENABLE(JIT)

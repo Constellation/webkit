@@ -694,8 +694,11 @@ public:
         return nullptr;
     }
 
-    RefPtr<PolymorphicAccessJITStubRoutine> getMegamorphic(AccessType);
+    RefPtr<PolymorphicAccessJITStubRoutine> getMegamorphic(AccessType) const;
     void setMegamorphic(AccessType, Ref<PolymorphicAccessJITStubRoutine>);
+
+    RefPtr<InlineCacheHandler> getSlowPathHandler(AccessType) const;
+    void setSlowPathHandler(AccessType, Ref<InlineCacheHandler>);
 
 private:
     HashSet<Hash::Key, Hash, Hash::KeyTraits> m_stubs;

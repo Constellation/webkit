@@ -446,18 +446,25 @@ void InlineAccess::rewireStubAsJumpInAccess(CodeBlock* codeBlock, StructureStubI
 
 void InlineAccess::resetStubAsJumpInAccess(CodeBlock* codeBlock, StructureStubInfo& stubInfo)
 {
-    if (JITCode::isBaselineCode(codeBlock->jitType()) && Options::useHandlerIC())
-        rewireStubAsJumpInAccess(codeBlock, stubInfo, CodeLocationLabel { InlineCacheCompiler::generateSlowPathCode(codeBlock->vm(), stubInfo.accessType).code().template retagged<JITStubRoutinePtrTag>() });
-    else
-        rewireStubAsJumpInAccess(codeBlock, stubInfo, stubInfo.slowPathStartLocation);
+    if (JITCode::isBaselineCode(codeBlock->jitType()) && Options::useHandlerIC()) {
+        stubInfo.m_handler = InlineCacheCompiler::generateSlowPathHandler(codeBlock->vm(), stubInfo.accessType);
+        stubInfo.m_codePtr = stubInfo.m_handler->callTarget();
+        stubInfo.m_inlineAccessBaseStructureID.clear(); // Clear out the inline access code.
+        return;
+    }
+
+    rewireStubAsJumpInAccess(codeBlock, stubInfo, stubInfo.slowPathStartLocation);
 }
 
 void InlineAccess::resetStubAsJumpInAccessNotUsingInlineAccess(CodeBlock* codeBlock, StructureStubInfo& stubInfo)
 {
-    if (JITCode::isBaselineCode(codeBlock->jitType()) && Options::useHandlerIC())
-        rewireStubAsJumpInAccessNotUsingInlineAccess(codeBlock, stubInfo, CodeLocationLabel { InlineCacheCompiler::generateSlowPathCode(codeBlock->vm(), stubInfo.accessType).code().template retagged<JITStubRoutinePtrTag>() });
-    else
-        rewireStubAsJumpInAccessNotUsingInlineAccess(codeBlock, stubInfo, stubInfo.slowPathStartLocation);
+    if (JITCode::isBaselineCode(codeBlock->jitType()) && Options::useHandlerIC()) {
+        stubInfo.m_handler = InlineCacheCompiler::generateSlowPathHandler(codeBlock->vm(), stubInfo.accessType);
+        stubInfo.m_codePtr = stubInfo.m_handler->callTarget();
+        return;
+    }
+
+    rewireStubAsJumpInAccessNotUsingInlineAccess(codeBlock, stubInfo, stubInfo.slowPathStartLocation);
 }
 
 } // namespace JSC
