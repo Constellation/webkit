@@ -103,7 +103,6 @@ public:
 };
 
 class BaselineJITData final : public ButterflyArray<BaselineJITData, StructureStubInfo, void*> {
-    WTF_MAKE_FAST_ALLOCATED;
     friend class LLIntOffsetsExtractor;
 public:
     using Base = ButterflyArray<BaselineJITData, StructureStubInfo, void*>;

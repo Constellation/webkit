@@ -52,21 +52,6 @@ protected:
         VectorTypeOperations<TrailingType>::initializeIfNonPOD(trailingSpan.data(), trailingSpan.data() + trailingSpan.size());
     }
 
-    ~ButterflyArray()
-    {
-        auto leadingSpan = this->leadingSpan();
-        VectorTypeOperations<LeadingType>::destruct(leadingSpan.data(), leadingSpan.data() + leadingSpan.size());
-        auto trailingSpan = this->trailingSpan();
-        VectorTypeOperations<TrailingType>::destruct(trailingSpan.data(), trailingSpan.data() + trailingSpan.size());
-    }
-
-    void operator delete(ButterflyArray* base, std::destroying_delete_t)
-    {
-        unsigned leadingSize = base->m_leadingSize;
-        std::destroy_at(static_cast<Derived*>(base));
-        Derived::freeAfterDestruction(bitwise_cast<uint8_t*>(static_cast<Derived*>(base)) - memoryOffsetForDerived(leadingSize));
-    }
-
     template<typename... Args>
     static Derived* createImpl(unsigned leadingSize, unsigned trailingSize, Args&&... args)
     {
@@ -110,6 +95,21 @@ public:
     std::span<const TrailingType> trailingSpan() const
     {
         return std::span { trailingData(), trailingData() + m_trailingSize };
+    }
+
+    void operator delete(ButterflyArray* base, std::destroying_delete_t)
+    {
+        unsigned leadingSize = base->m_leadingSize;
+        std::destroy_at(static_cast<Derived*>(base));
+        Derived::freeAfterDestruction(bitwise_cast<uint8_t*>(static_cast<Derived*>(base)) - memoryOffsetForDerived(leadingSize));
+    }
+
+    ~ButterflyArray()
+    {
+        auto leadingSpan = this->leadingSpan();
+        VectorTypeOperations<LeadingType>::destruct(leadingSpan.data(), leadingSpan.data() + leadingSpan.size());
+        auto trailingSpan = this->trailingSpan();
+        VectorTypeOperations<TrailingType>::destruct(trailingSpan.data(), trailingSpan.data() + trailingSpan.size());
     }
 
 protected:

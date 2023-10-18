@@ -158,7 +158,6 @@ private:
 };
 
 class JITData final : public ButterflyArray<JITData, StructureStubInfo, void*> {
-    WTF_MAKE_FAST_ALLOCATED;
     friend class JSC::LLIntOffsetsExtractor;
 public:
     using Base = ButterflyArray<JITData, StructureStubInfo, void*>;
