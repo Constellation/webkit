@@ -532,6 +532,7 @@ static CodePtr<OperationPtrTag> slowOperationFromUnlinkedStructureStubInfo(const
 
 void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(VM& vm, const BaselineUnlinkedStructureStubInfo& unlinkedStubInfo)
 {
+    ASSERT(!isCompilationThread());
     accessType = unlinkedStubInfo.accessType;
     doneLocation = unlinkedStubInfo.doneLocation;
     m_identifier = unlinkedStubInfo.m_identifier;
@@ -734,6 +735,7 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(VM& vm, const Ba
 #if ENABLE(DFG_JIT)
 void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(const DFG::UnlinkedStructureStubInfo& unlinkedStubInfo)
 {
+    ASSERT(!isCompilationThread());
     accessType = unlinkedStubInfo.accessType;
     doneLocation = unlinkedStubInfo.doneLocation;
     m_identifier = unlinkedStubInfo.m_identifier;
@@ -782,6 +784,39 @@ void StructureStubInfo::checkConsistency()
     }
 }
 #endif // ASSERT_ENABLED
+
+RefPtr<PolymorphicAccessJITStubRoutine> SharedJITStubSet::getMegamorphic(AccessType type)
+{
+    switch (type) {
+    case AccessType::GetByVal:
+        return m_getByValMegamorphic;
+    case AccessType::GetByValWithThis:
+        return m_getByValWithThisMegamorphic;
+    case AccessType::PutByValStrict:
+    case AccessType::PutByValSloppy:
+        return m_putByValMegamorphic;
+    default:
+        return nullptr;
+    }
+}
+
+void SharedJITStubSet::setMegamorphic(AccessType type, Ref<PolymorphicAccessJITStubRoutine> stub)
+{
+    switch (type) {
+    case AccessType::GetByVal:
+        m_getByValMegamorphic = WTFMove(stub);
+        break;
+    case AccessType::GetByValWithThis:
+        m_getByValWithThisMegamorphic = WTFMove(stub);
+        break;
+    case AccessType::PutByValStrict:
+    case AccessType::PutByValSloppy:
+        m_putByValMegamorphic = WTFMove(stub);
+        break;
+    default:
+        break;
+    }
+}
 
 #endif // ENABLE(JIT)
 
