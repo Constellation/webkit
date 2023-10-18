@@ -46,6 +46,7 @@ class CodeBlock;
 class PolymorphicAccess;
 class ProxyObjectAccessCase;
 class StructureStubInfo;
+class InlineCacheHandler;
 
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(PolymorphicAccess);
 
@@ -126,6 +127,7 @@ public:
 private:
     Kind m_kind;
     CodePtr<JITStubRoutinePtrTag> m_code;
+    RefPtr<InlineCacheHandler> m_handler;
     Vector<std::pair<InlineWatchpointSet&, StringFireDetail>> m_watchpointsToFire;
 };
 
