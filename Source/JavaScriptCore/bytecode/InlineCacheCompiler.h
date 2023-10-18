@@ -83,16 +83,6 @@ public:
         RELEASE_ASSERT(code);
     }
 
-    bool operator==(const AccessGenerationResult& other) const
-    {
-        return m_kind == other.m_kind && m_code == other.m_code;
-    }
-
-    explicit operator bool() const
-    {
-        return *this != AccessGenerationResult();
-    }
-
     Kind kind() const { return m_kind; }
 
     const CodePtr<JITStubRoutinePtrTag>& code() const { return m_code; }
