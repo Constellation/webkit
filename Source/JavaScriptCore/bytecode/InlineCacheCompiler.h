@@ -187,7 +187,8 @@ private:
 class InlineCacheHandler final : public RefCounted<InlineCacheHandler> {
     WTF_MAKE_NONCOPYABLE(InlineCacheHandler);
 public:
-    static ptrdiff_t offsetOfCodePtr() { return OBJECT_OFFSETOF(InlineCacheHandler, m_codePtr); }
+    static ptrdiff_t offsetOfCallTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_callTarget); }
+    static ptrdiff_t offsetOfJumpTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_jumpTarget); }
     static ptrdiff_t offsetOfNext() { return OBJECT_OFFSETOF(InlineCacheHandler, m_next); }
 
     InlineCacheHandler() = default;
@@ -198,7 +199,8 @@ public:
     }
 
 private:
-    CodePtr<JITStubRoutinePtrTag> m_codePtr;
+    CodePtr<JITStubRoutinePtrTag> m_callTarget;
+    CodePtr<JITStubRoutinePtrTag> m_jumpTarget;
     RefPtr<PolymorphicAccessJITStubRoutine> m_stubRoutine;
     std::unique_ptr<WatchpointsOnStructureStubInfo> m_watchpoints;
     RefPtr<InlineCacheHandler> m_next;
