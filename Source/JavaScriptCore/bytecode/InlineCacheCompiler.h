@@ -115,7 +115,7 @@ public:
     }
 
 private:
-    Kind m_kind;
+    Kind m_kind { MadeNoChanges };
     CodePtr<JITStubRoutinePtrTag> m_code;
     RefPtr<InlineCacheHandler> m_handler;
     Vector<std::pair<InlineWatchpointSet&, StringFireDetail>> m_watchpointsToFire;
