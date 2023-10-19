@@ -75,13 +75,7 @@ public:
         RELEASE_ASSERT(kind != GeneratedMegamorphicCode);
     }
 
-    AccessGenerationResult(Kind kind, CodePtr<JITStubRoutinePtrTag> code)
-        : m_kind(kind)
-        , m_code(code)
-    {
-        RELEASE_ASSERT(kind == GeneratedNewCode || kind == GeneratedFinalCode || kind == GeneratedMegamorphicCode);
-        RELEASE_ASSERT(code);
-    }
+    AccessGenerationResult(Kind, Ref<InlineCacheHandler>&&);
 
     Kind kind() const { return m_kind; }
 
@@ -113,6 +107,8 @@ public:
         for (auto& pair : m_watchpointsToFire)
             pair.first.invalidate(vm, pair.second);
     }
+
+    InlineCacheHandler* handler() const { return m_handler.get(); }
 
 private:
     Kind m_kind { MadeNoChanges };
@@ -184,17 +180,18 @@ public:
     static ptrdiff_t offsetOfJumpTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_jumpTarget); }
     static ptrdiff_t offsetOfNext() { return OBJECT_OFFSETOF(InlineCacheHandler, m_next); }
 
-    InlineCacheHandler() = default;
-
-    static Ref<InlineCacheHandler> create()
+    static Ref<InlineCacheHandler> create(Ref<PolymorphicAccessJITStubRoutine>&& stubRoutine, std::unique_ptr<WatchpointsOnStructureStubInfo>&& watchpoints)
     {
-        return adoptRef(*new InlineCacheHandler);
+        return adoptRef(*new InlineCacheHandler(WTFMove(stubRoutine), WTFMove(watchpoints)));
     }
 
     CodePtr<JITStubRoutinePtrTag> callTarget() const { return m_callTarget; }
     CodePtr<JITStubRoutinePtrTag> jumpTarget() const { return m_jumpTarget; }
 
 private:
+    InlineCacheHandler() = default;
+    InlineCacheHandler(Ref<PolymorphicAccessJITStubRoutine>&&, std::unique_ptr<WatchpointsOnStructureStubInfo>&&);
+
     static Ref<InlineCacheHandler> createSlowPath(VM&, AccessType);
 
     CodePtr<JITStubRoutinePtrTag> m_callTarget;
@@ -214,6 +211,13 @@ inline bool canUseMegamorphicPutById(VM& vm, UniquedStringImpl* uid)
     return !parseIndex(*uid) && uid != vm.propertyNames->underscoreProto;
 }
 
+inline AccessGenerationResult::AccessGenerationResult(Kind kind, Ref<InlineCacheHandler>&& handler)
+    : m_kind(kind)
+    , m_code(handler->callTarget())
+    , m_handler(WTFMove(handler))
+{
+    RELEASE_ASSERT(kind == GeneratedNewCode || kind == GeneratedFinalCode || kind == GeneratedMegamorphicCode);
+}
 
 class InlineCacheCompiler {
 public:

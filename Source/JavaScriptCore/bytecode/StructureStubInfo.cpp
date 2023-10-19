@@ -220,6 +220,8 @@ AccessGenerationResult StructureStubInfo::addAccessCase(
         // If we generated some code then we don't want to attempt to repatch in the future until we
         // gather enough cases.
         bufferingCountdown = Options::repatchBufferingCountdown();
+        m_handler = result.handler();
+        m_codePtr = m_handler->callTarget();
         return result;
     })();
     vm.writeBarrier(codeBlock);

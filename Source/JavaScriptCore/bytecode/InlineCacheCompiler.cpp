@@ -1139,6 +1139,14 @@ MacroAssemblerCodeRef<JITThunkPtrTag> InlineCacheCompiler::generateSlowPathCode(
     return { };
 }
 
+InlineCacheHandler::InlineCacheHandler(Ref<PolymorphicAccessJITStubRoutine>&& stubRoutine, std::unique_ptr<WatchpointsOnStructureStubInfo>&& watchpoints)
+    : m_callTarget(stubRoutine->code().code().template retagged<JITStubRoutinePtrTag>())
+    , m_jumpTarget(CodePtr<NoPtrTag> { m_callTarget.retagged<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC }.template retagged<JITStubRoutinePtrTag>())
+    , m_stubRoutine(WTFMove(stubRoutine))
+    , m_watchpoints(WTFMove(watchpoints))
+{
+}
+
 Ref<InlineCacheHandler> InlineCacheHandler::createSlowPath(VM& vm, AccessType accessType)
 {
     auto result = adoptRef(*new InlineCacheHandler);
@@ -3830,10 +3838,9 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
 
     dataLogLnIf(InlineCacheCompilerInternal::verbose, "Optimized cases: ", listDump(cases));
 
-    auto finishCodeGeneration = [&](RefPtr<PolymorphicAccessJITStubRoutine>&& stub) {
-        poly.m_stubRoutine = WTFMove(stub);
-        poly.m_watchpoints = WTFMove(m_watchpoints);
-        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", poly.m_stubRoutine->code());
+    auto finishCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub) {
+        auto handler = InlineCacheHandler::create(WTFMove(stub), WTFMove(m_watchpoints));
+        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         poly.m_list = WTFMove(cases);
         poly.m_list.shrinkToFit();
@@ -3846,14 +3853,14 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         else
             resultKind = AccessGenerationResult::GeneratedNewCode;
 
-        return AccessGenerationResult(resultKind, poly.m_stubRoutine->code().code());
+        return AccessGenerationResult(resultKind, WTFMove(handler));
     };
 
     if (generatedMegamorphicCode && useHandlerIC()) {
         ASSERT(codeBlock->useDataIC());
         auto stub = vm().m_sharedJITStubs->getMegamorphic(m_stubInfo->accessType);
         if (stub)
-            return finishCodeGeneration(WTFMove(stub));
+            return finishCodeGeneration(stub.releaseNonNull());
     }
 
     auto allocator = makeDefaultScratchAllocator();
@@ -4193,7 +4200,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         stub = vm().m_sharedJITStubs->find(searcher);
         if (stub) {
             dataLogLnIf(InlineCacheCompilerInternal::verbose, "Found existing code stub ", stub->code());
-            return finishCodeGeneration(WTFMove(stub));
+            return finishCodeGeneration(stub.releaseNonNull());
         }
     }
 
@@ -4232,7 +4239,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             vm().m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(m_stubInfo->m_baseGPR, m_stubInfo->m_valueGPR, m_stubInfo->m_extraGPR, m_stubInfo->m_extra2GPR, m_stubInfo->m_stubInfoGPR, m_stubInfo->m_arrayProfileGPR, m_stubInfo->usedRegisters, stub.get()));
     }
 
-    return finishCodeGeneration(WTFMove(stub));
+    return finishCodeGeneration(stub.releaseNonNull());
 }
 
 PolymorphicAccess::PolymorphicAccess() { }
