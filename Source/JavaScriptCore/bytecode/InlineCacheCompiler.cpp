@@ -4242,8 +4242,8 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
     return finishCodeGeneration(stub.releaseNonNull());
 }
 
-PolymorphicAccess::PolymorphicAccess() { }
-PolymorphicAccess::~PolymorphicAccess() { }
+PolymorphicAccess::PolymorphicAccess() = default;
+PolymorphicAccess::~PolymorphicAccess() = default;
 
 AccessGenerationResult PolymorphicAccess::addCases(
     const GCSafeConcurrentJSLocker& locker, VM& vm, CodeBlock* codeBlock, StructureStubInfo& stubInfo,
@@ -4352,13 +4352,6 @@ bool PolymorphicAccess::visitWeak(VM& vm) const
         if (!at(i).visitWeak(vm))
             return false;
     }
-    if (m_stubRoutine) {
-        for (StructureID weakReference : m_stubRoutine->weakStructures()) {
-            Structure* structure = weakReference.decode();
-            if (!vm.heap.isMarked(structure))
-                return false;
-        }
-    }
     return true;
 }
 
@@ -4390,10 +4383,24 @@ void PolymorphicAccess::dump(PrintStream& out) const
     out.print("]");
 }
 
-void PolymorphicAccess::aboutToDie()
+void InlineCacheHandler::aboutToDie()
 {
     if (m_stubRoutine)
         m_stubRoutine->aboutToDie();
+}
+
+bool InlineCacheHandler::visitWeak(VM& vm) const
+{
+    if (!m_stubRoutine)
+        return true;
+
+    for (StructureID weakReference : m_stubRoutine->weakStructures()) {
+        Structure* structure = weakReference.decode();
+        if (!vm.heap.isMarked(structure))
+            return false;
+    }
+
+    return true;
 }
 
 } // namespace JSC

@@ -101,20 +101,10 @@ void StructureStubInfo::deref()
 
 void StructureStubInfo::aboutToDie()
 {
-    switch (m_cacheType) {
-    case CacheType::Stub:
-        m_stub->aboutToDie();
+    if (m_cacheType != CacheType::Stub)
         return;
-    case CacheType::Unset:
-    case CacheType::GetByIdSelf:
-    case CacheType::PutByIdReplace:
-    case CacheType::InByIdSelf:
-    case CacheType::ArrayLength:
-    case CacheType::StringLength:
-        return;
-    }
-
-    RELEASE_ASSERT_NOT_REACHED();
+    if (m_handler)
+        m_handler->aboutToDie();
 }
 
 AccessGenerationResult StructureStubInfo::addAccessCase(
@@ -384,8 +374,12 @@ void StructureStubInfo::visitWeakReferences(const ConcurrentJSLockerBase& locker
     bool isValid = true;
     if (Structure* structure = inlineAccessBaseStructure())
         isValid &= vm.heap.isMarked(structure);
-    if (m_cacheType == CacheType::Stub)
-        isValid &= m_stub->visitWeak(vm);
+    if (m_cacheType == CacheType::Stub) {
+        if (m_stub)
+            isValid &= m_stub->visitWeak(vm);
+        if (m_handler)
+            isValid &= m_handler->visitWeak(vm);
+    }
 
     if (isValid)
         return;
@@ -455,7 +449,9 @@ bool StructureStubInfo::containsPC(void* pc) const
 {
     if (m_cacheType != CacheType::Stub)
         return false;
-    return m_stub->containsPC(pc);
+    if (!m_handler)
+        return false;
+    return m_handler->containsPC(pc);
 }
 
 ALWAYS_INLINE void StructureStubInfo::setCacheType(const ConcurrentJSLockerBase&, CacheType newCacheType)

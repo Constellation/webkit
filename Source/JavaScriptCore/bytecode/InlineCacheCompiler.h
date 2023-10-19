@@ -148,17 +148,7 @@ public:
     // optimization to then avoid calling this method again during the fixpoint.
     template<typename Visitor> void propagateTransitions(Visitor&) const;
 
-    void aboutToDie();
-
     void dump(PrintStream& out) const;
-    bool containsPC(void* pc) const
-    {
-        if (!m_stubRoutine)
-            return false;
-
-        uintptr_t pcAsInt = bitwise_cast<uintptr_t>(pc);
-        return m_stubRoutine->startAddress() <= pcAsInt && pcAsInt <= m_stubRoutine->endAddress();
-    }
 
 private:
     friend class AccessCase;
@@ -187,6 +177,19 @@ public:
 
     CodePtr<JITStubRoutinePtrTag> callTarget() const { return m_callTarget; }
     CodePtr<JITStubRoutinePtrTag> jumpTarget() const { return m_jumpTarget; }
+
+    void aboutToDie();
+    bool containsPC(void* pc) const
+    {
+        if (!m_stubRoutine)
+            return false;
+
+        uintptr_t pcAsInt = bitwise_cast<uintptr_t>(pc);
+        return m_stubRoutine->startAddress() <= pcAsInt && pcAsInt <= m_stubRoutine->endAddress();
+    }
+
+    // If this returns false then we are requesting a reset of the owning StructureStubInfo.
+    bool visitWeak(VM&) const;
 
 private:
     InlineCacheHandler() = default;
