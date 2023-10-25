@@ -29,6 +29,21 @@
 
 namespace JSC {
 
+enum class JITCopyMode {
+    SimpleCopy,
+    JITCopy,
+};
+
+template<JITCopyMode mode>
+ALWAYS_INLINE void copyInstructions(void* dst, const void* src, size_t size)
+{
+    if constexpr (mode == JITCopyMode::SimpleCopy)
+        memcpy(dst, src, size);
+    else
+        performJITMemcpy(dst, src, size);
+}
+
+
 template<size_t bits, typename Type>
 ALWAYS_INLINE constexpr bool isInt(Type t)
 {

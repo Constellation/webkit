@@ -6502,12 +6502,10 @@ public:
         m_formatter.oneByteOp(OP_NOP);
     }
 
-    using CopyFunction = void*(&)(void*, const void*, size_t);
-
-    template <CopyFunction copy>
+    template<JITCopyMode mode>
     static void fillNops(void* base, size_t size)
     {
-        UNUSED_PARAM(copy);
+        UNUSED_PARAM(mode);
 #if CPU(X86_64)
         static const uint8_t nops[10][10] = {
             // nop

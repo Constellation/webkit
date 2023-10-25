@@ -2422,9 +2422,7 @@ public:
         return OP_NOP_T2a | (OP_NOP_T2b << 16);
     }
 
-    using CopyFunction = void*(&)(void*, const void*, size_t);
-
-    template <CopyFunction copy>
+    template<JITCopyMode mode>
     ALWAYS_INLINE static void fillNops(void* base, size_t size)
     {
         RELEASE_ASSERT(!(size % sizeof(int16_t)));
@@ -2433,7 +2431,7 @@ public:
         const size_t num32s = size / sizeof(int32_t);
         for (size_t i = 0; i < num32s; i++) {
             const int32_t insn = nopPseudo32();
-            copy(ptr, &insn, sizeof(int32_t));
+            copyInstructions<mode>(ptr, &insn, sizeof(int32_t));
             ptr += sizeof(int32_t);
         }
 
@@ -2442,7 +2440,7 @@ public:
         ASSERT(num16s * sizeof(int16_t) + num32s * sizeof(int32_t) == size);
         if (num16s) {
             const int16_t insn = nopPseudo16();
-            copy(ptr, &insn, sizeof(int16_t));
+            copyInstructions<mode>(ptr, &insn, sizeof(int16_t));
         }
     }
 
@@ -2580,31 +2578,31 @@ public:
         return m_jumpsToLink;
     }
 
-    template<CopyFunction copy>
+    template<JITCopyMode mode>
     static void ALWAYS_INLINE link(LinkRecord& record, uint8_t* from, const uint8_t* fromInstruction8, uint8_t* to)
     {
         const uint16_t* fromInstruction = reinterpret_cast_ptr<const uint16_t*>(fromInstruction8);
         switch (record.linkType()) {
         case LinkJumpT1:
-            linkJumpT1<copy>(record.condition(), reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
+            linkJumpT1<mode>(record.condition(), reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
             break;
         case LinkJumpT2:
-            linkJumpT2<copy>(reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
+            linkJumpT2<mode>(reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
             break;
         case LinkJumpT3:
-            linkJumpT3<copy>(record.condition(), reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
+            linkJumpT3<mode>(record.condition(), reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
             break;
         case LinkJumpT4:
-            linkJumpT4<copy>(reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to, BranchWithLink::No);
+            linkJumpT4<mode>(reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to, BranchWithLink::No);
             break;
         case LinkConditionalJumpT4:
-            linkConditionalJumpT4<copy>(record.condition(), reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
+            linkConditionalJumpT4<mode>(record.condition(), reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
             break;
         case LinkConditionalBX:
-            linkConditionalBX<copy>(record.condition(), reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
+            linkConditionalBX<mode>(record.condition(), reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
             break;
         case LinkBX:
-            linkBX<copy>(reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
+            linkBX<mode>(reinterpret_cast_ptr<uint16_t*>(from), fromInstruction, to);
             break;
         default:
             RELEASE_ASSERT_NOT_REACHED();
@@ -3037,7 +3035,7 @@ private:
         return ((relative << 7) >> 7) == relative;
     }
 
-    template<CopyFunction copy = performJITMemcpy>
+    template<JITCopyMode mode = JITCopyMode::JITCopy>
     static void linkJumpT1(Condition cond, uint16_t* writeTarget, const uint16_t* instruction, void* target)
     {
         // FIMXE: this should be up in the MacroAssembler layer. :-(        
@@ -3054,10 +3052,10 @@ private:
         // All branch offsets should be an even distance.
         ASSERT(!(relative & 1));
         uint16_t newInstruction = OP_B_T1 | ((cond & 0xf) << 8) | ((relative & 0x1fe) >> 1);
-        copy(writeTarget - 1, &newInstruction, sizeof(uint16_t));
+        copyInstructions<mode>(writeTarget - 1, &newInstruction, sizeof(uint16_t));
     }
 
-    template<CopyFunction copy = performJITMemcpy>
+    template<JITCopyMode mode = JITCopyMode::JITCopy>
     static void linkJumpT2(uint16_t* writeTarget, const uint16_t* instruction, void* target)
     {
         // FIMXE: this should be up in the MacroAssembler layer. :-(        
@@ -3074,10 +3072,10 @@ private:
         // All branch offsets should be an even distance.
         ASSERT(!(relative & 1));
         uint16_t newInstruction = OP_B_T2 | ((relative & 0xffe) >> 1);
-        copy(writeTarget - 1, &newInstruction, sizeof(uint16_t));
+        copyInstructions<mode>(writeTarget - 1, &newInstruction, sizeof(uint16_t));
     }
     
-    template<CopyFunction copy = performJITMemcpy>
+    template<JITCopyMode mode = JITCopyMode::JITCopy>
     static void linkJumpT3(Condition cond, uint16_t* writeTarget, const uint16_t* instruction, void* target)
     {
         // FIMXE: this should be up in the MacroAssembler layer. :-(
@@ -3092,10 +3090,10 @@ private:
         uint16_t instructions[2];
         instructions[0] = OP_B_T3a | ((relative & 0x100000) >> 10) | ((cond & 0xf) << 6) | ((relative & 0x3f000) >> 12);
         instructions[1] = OP_B_T3b | ((relative & 0x80000) >> 8) | ((relative & 0x40000) >> 5) | ((relative & 0xffe) >> 1);
-        copy(writeTarget - 2, instructions, 2 * sizeof(uint16_t));
+        copyInstructions<mode>(writeTarget - 2, instructions, 2 * sizeof(uint16_t));
     }
     
-    template<CopyFunction copy = performJITMemcpy>
+    template<JITCopyMode mode = JITCopyMode::JITCopy>
     static void linkJumpT4(uint16_t* writeTarget, const uint16_t* instruction, void* target, BranchWithLink link)
     {
         // FIMXE: this should be up in the MacroAssembler layer. :-(        
@@ -3113,10 +3111,10 @@ private:
         uint16_t instructions[2];
         instructions[0] = OP_B_T4a | ((relative & 0x1000000) >> 14) | ((relative & 0x3ff000) >> 12);
         instructions[1] = OP_B_T4b | (static_cast<uint16_t>(link) << 14) | ((relative & 0x800000) >> 10) | ((relative & 0x400000) >> 11) | ((relative & 0xffe) >> 1);
-        copy(writeTarget - 2, instructions, 2 * sizeof(uint16_t));
+        copyInstructions<mode>(writeTarget - 2, instructions, 2 * sizeof(uint16_t));
     }
 
-    template<CopyFunction copy = performJITMemcpy>
+    template<JITCopyMode mode = JITCopyMode::JITCopy>
     static void linkConditionalJumpT4(Condition cond, uint16_t* writeTarget, const uint16_t* instruction, void* target)
     {
         // FIMXE: this should be up in the MacroAssembler layer. :-(        
@@ -3124,11 +3122,11 @@ private:
         ASSERT(!(reinterpret_cast<intptr_t>(target) & 1));
         
         uint16_t newInstruction = ifThenElse(cond) | OP_IT;
-        copy(writeTarget - 3, &newInstruction, sizeof(uint16_t));
+        copyInstructions<mode>(writeTarget - 3, &newInstruction, sizeof(uint16_t));
         linkJumpT4<copy>(writeTarget, instruction, target, BranchWithLink::No);
     }
 
-    template<CopyFunction copy = performJITMemcpy>
+    template<JITCopyMode mode = JITCopyMode::JITCopy>
     static void linkBX(uint16_t* writeTarget, const uint16_t* instruction, void* target)
     {
         // FIMXE: this should be up in the MacroAssembler layer. :-(
@@ -3146,10 +3144,10 @@ private:
         instructions[3] = twoWordOp5i6Imm4Reg4EncodedImmSecond(JUMP_TEMPORARY_REGISTER, hi16);
         instructions[4] = OP_BX | (JUMP_TEMPORARY_REGISTER << 3);
 
-        copy(writeTarget - 5, instructions, 5 * sizeof(uint16_t));
+        copyInstructions<mode>(writeTarget - 5, instructions, 5 * sizeof(uint16_t));
     }
 
-    template<CopyFunction copy = performJITMemcpy>
+    template<JITCopyMode mode = JITCopyMode::JITCopy>
     static void linkConditionalBX(Condition cond, uint16_t* writeTarget, const uint16_t* instruction, void* target)
     {
         // FIMXE: this should be up in the MacroAssembler layer. :-(        
@@ -3158,7 +3156,7 @@ private:
         
         linkBX(writeTarget, instruction, target);
         uint16_t newInstruction = ifThenElse(cond, true, true) | OP_IT;
-        copy(writeTarget - 6, &newInstruction, sizeof(uint16_t));
+        copyInstructions<mode>(writeTarget - 6, &newInstruction, sizeof(uint16_t));
     }
     
     static void linkJumpAbsolute(uint16_t* writeTarget, const uint16_t* instruction, void* target)

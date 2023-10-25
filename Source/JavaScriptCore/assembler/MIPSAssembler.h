@@ -161,13 +161,11 @@ public:
     {
         emitInst(0x00000000);
     }
-    
-    using CopyFunction = void*(&)(void*, const void*, size_t);
 
-    template <CopyFunction copy>
+    template<JITCopyMode mode>
     ALWAYS_INLINE static void fillNops(void* base, size_t size)
     {
-        UNUSED_PARAM(copy);
+        UNUSED_PARAM(mode);
         RELEASE_ASSERT(!(size % sizeof(int32_t)));
 
         int32_t* ptr = static_cast<int32_t*>(base);
