@@ -3040,6 +3040,16 @@ private:
             break;
         }
 
+        case CallCustomAccessorGetter: {
+            fixEdge<KnownCellUse>(node->child2());
+            break;
+        }
+
+        case CallCustomAccessorSetter: {
+            fixEdge<KnownCellUse>(node->child3());
+            break;
+        }
+
 #if ASSERT_ENABLED
         // Have these no-op cases here to ensure that nobody forgets to add handlers for new opcodes.
         case SetArgumentDefinitely:

@@ -251,7 +251,24 @@ PutByStatus PutByStatus::computeForStubInfo(const ConcurrentJSLocker& locker, Co
                     return PutByStatus(JSC::slowVersion(summary), *stubInfo);
                 break;
             }
-                
+
+            case AccessCase::CustomAccessorSetter: {
+                auto conditionSet = access.conditionSet();
+                if (!conditionSet.isStillValid())
+                    continue;
+
+                auto customAccessorSetter = access.as<GetterSetterAccessCase>().customAccessor();
+                std::unique_ptr<DOMAttributeAnnotation> domAttribute;
+                if (access.as<GetterSetterAccessCase>().domAttribute())
+                    domAttribute = WTF::makeUnique<DOMAttributeAnnotation>(*access.as<GetterSetterAccessCase>().domAttribute());
+                result.m_state = Custom;
+
+                auto variant = PutByVariant::customSetter(access.identifier(), access.structure(), WTFMove(conditionSet), customAccessorSetter, WTFMove(domAttribute));
+                if (!result.appendVariant(variant))
+                    return PutByStatus(JSC::slowVersion(summary), *stubInfo);
+                break;
+            }
+
             case AccessCase::Setter: {
                 Structure* structure = access.structure();
                 
@@ -260,27 +277,27 @@ PutByStatus PutByStatus::computeForStubInfo(const ConcurrentJSLocker& locker, Co
                 switch (complexGetStatus.kind()) {
                 case ComplexGetStatus::ShouldSkip:
                     continue;
-                    
+
                 case ComplexGetStatus::TakesSlowPath:
                     return PutByStatus(JSC::slowVersion(summary), *stubInfo);
-                    
+
                 case ComplexGetStatus::Inlineable: {
                     auto callLinkStatus = makeUnique<CallLinkStatus>();
                     if (CallLinkInfo* callLinkInfo = access.as<GetterSetterAccessCase>().callLinkInfo()) {
                         *callLinkStatus = CallLinkStatus::computeFor(
                             locker, profiledBlock, *callLinkInfo, callExitSiteData);
                     }
-                    
+
                     auto variant = PutByVariant::setter(access.identifier(), structure, complexGetStatus.offset(), complexGetStatus.conditionSet(), WTFMove(callLinkStatus));
                     if (!result.appendVariant(variant))
                         return PutByStatus(JSC::slowVersion(summary), *stubInfo);
+                    break;
                 }
                 }
                 break;
             }
-                
+
             case AccessCase::CustomValueSetter:
-            case AccessCase::CustomAccessorSetter:
                 return PutByStatus(MakesCalls);
 
             case AccessCase::ProxyObjectStore: {
@@ -455,6 +472,7 @@ bool PutByStatus::makesCalls() const
     case MakesCalls:
     case ObservedSlowPathAndMakesCalls:
     case Megamorphic:
+    case Custom:
         return true;
     case Simple: {
         for (unsigned i = m_variants.size(); i--;) {
@@ -536,6 +554,7 @@ void PutByStatus::merge(const PutByStatus& other)
         return;
         
     case Simple:
+    case Custom:
         if (other.m_state != Simple)
             return mergeSlow();
         
@@ -569,31 +588,34 @@ void PutByStatus::filter(const StructureSet& set)
 
 void PutByStatus::dump(PrintStream& out) const
 {
+    out.print("(");
     switch (m_state) {
     case NoInformation:
-        out.print("(NoInformation)");
+        out.print("NoInformation");
         return;
     case Simple:
-        out.print("(", listDump(m_variants), ")");
-        return;
+        out.print("Simple");
+        break;
+    case Custom:
+        out.print("Custom");
+        break;
     case Megamorphic:
         out.print("Megamorphic");
-        return;
+        break;
     case LikelyTakesSlowPath:
         out.print("LikelyTakesSlowPath");
-        return;
+        break;
     case ObservedTakesSlowPath:
         out.print("ObservedTakesSlowPath");
-        return;
+        break;
     case MakesCalls:
         out.print("MakesCalls");
-        return;
+        break;
     case ObservedSlowPathAndMakesCalls:
         out.print("ObservedSlowPathAndMakesCalls");
-        return;
+        break;
     }
-    
-    RELEASE_ASSERT_NOT_REACHED();
+    out.print(", ", listDump(m_variants), ")");
 }
 
 } // namespace JSC

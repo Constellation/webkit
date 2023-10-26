@@ -4756,6 +4756,9 @@ bool ByteCodeParser::check(const ObjectPropertyCondition& condition)
     
     if (m_graph.watchCondition(condition))
         return true;
+
+    if (condition.kind() == PropertyCondition::Equivalence)
+        return false;
     
     Structure* structure = condition.object()->structure();
     if (!condition.structureEnsuresValidity(Concurrency::ConcurrentThread, structure))
@@ -5191,15 +5194,35 @@ void ByteCodeParser::handleGetById(
 
     // Special path for custom accessors since custom's offset does not have any meanings.
     // So, this is completely different from Simple one. But we have a chance to optimize it when we use DOMJIT.
-    if (Options::useDOMJIT() && getByStatus.isCustom()) {
-        ASSERT(getByStatus.numVariants() == 1);
-        ASSERT(!getByStatus.makesCalls());
+    if (getByStatus.numVariants() == 1) {
         GetByVariant variant = getByStatus[0];
-        ASSERT(variant.domAttribute());
-        if (handleDOMJITGetter(destination, variant, base, identifierNumber, prediction)) {
+        if (getByStatus.isCustom()) {
+            if (Options::useDOMJIT()) {
+                ASSERT(!getByStatus.makesCalls());
+                ASSERT(variant.domAttribute());
+                if (handleDOMJITGetter(destination, variant, base, identifierNumber, prediction)) {
+                    if (UNLIKELY(m_graph.compilation()))
+                        m_graph.compilation()->noticeInlinedGetById();
+                    return;
+                }
+            }
+
             if (UNLIKELY(m_graph.compilation()))
                 m_graph.compilation()->noticeInlinedGetById();
+
+            addToGraph(FilterGetByStatus, OpInfo(m_graph.m_plan.recordedStatuses().addGetByStatus(currentCodeOrigin(), getByStatus)), base);
+            if (!check(variant.conditionSet())) {
+                set(destination, addToGraph(getById, OpInfo(identifier), OpInfo(prediction), base));
+                return;
+            }
+            addToGraph(CheckStructure, OpInfo(m_graph.addStructureSet(variant.structureSet())), base);
+            auto* data = m_graph.m_callCustomAccessorData.add();
+            data->m_customAccessor = variant.customAccessorGetter();
+            data->m_identifier = identifier;
+            Node* globalObject = addToGraph(GetGlobalObject, base);
+            set(destination, addToGraph(CallCustomAccessorGetter, OpInfo(data), OpInfo(prediction), base, globalObject));
             return;
+
         }
     }
 
@@ -5592,6 +5615,28 @@ void ByteCodeParser::handlePutById(
     Node* base, CacheableIdentifier identifier, unsigned identifierNumber, Node* value,
     const PutByStatus& putByStatus, bool isDirect, BytecodeIndex osrExitIndex, ECMAMode ecmaMode)
 {
+    if (putByStatus.isCustom()) {
+        if (putByStatus.numVariants() == 1) {
+            // Special path for custom accessors since custom's offset does not have any meanings.
+            // So, this is completely different from Simple one. But we have a chance to optimize it.
+            auto variant = putByStatus[0];
+            if (UNLIKELY(m_graph.compilation()))
+                m_graph.compilation()->noticeInlinedPutById();
+            addToGraph(FilterPutByStatus, OpInfo(m_graph.m_plan.recordedStatuses().addPutByStatus(currentCodeOrigin(), putByStatus)), base);
+            if (!check(variant.conditionSet())) {
+                emitPutById(base, identifier, value, putByStatus, isDirect, ecmaMode);
+                return;
+            }
+            auto* data = m_graph.m_callCustomAccessorData.add();
+            data->m_customAccessor = variant.customAccessorSetter();
+            data->m_identifier = identifier;
+            addToGraph(CheckStructure, OpInfo(m_graph.addStructureSet(variant.oldStructure())), base);
+            Node* globalObject = addToGraph(GetGlobalObject, base);
+            addToGraph(CallCustomAccessorSetter, OpInfo(data), OpInfo(SpecNone), base, value, globalObject);
+            return;
+        }
+    }
+
     if (!putByStatus.isSimple() || !putByStatus.numVariants() || !Options::useAccessInlining()) {
         if (!putByStatus.isSet())
             addToGraph(ForceOSRExit);
