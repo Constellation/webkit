@@ -375,6 +375,7 @@ function withResolvers()
     return @newPromiseCapability(this);
 }
 
+@alwaysInline
 @nakedConstructor
 function Promise(executor)
 {
@@ -401,6 +402,7 @@ function Promise(executor)
     return promise;
 }
 
+@alwaysInline
 @nakedConstructor
 function InternalPromise(executor)
 {

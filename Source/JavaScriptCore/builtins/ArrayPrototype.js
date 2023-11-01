@@ -90,6 +90,7 @@ function reduceRight(callback /*, initialValue */)
     return accumulator;
 }
 
+@alwaysInline
 function every(callback /*, thisArg */)
 {
     "use strict";
@@ -112,6 +113,7 @@ function every(callback /*, thisArg */)
     return true;
 }
 
+@alwaysInline
 function forEach(callback /*, thisArg */)
 {
     "use strict";
@@ -130,6 +132,7 @@ function forEach(callback /*, thisArg */)
     }
 }
 
+@alwaysInline
 function filter(callback /*, thisArg */)
 {
     "use strict";
@@ -156,6 +159,7 @@ function filter(callback /*, thisArg */)
     return result;
 }
 
+@alwaysInline
 function map(callback /*, thisArg */)
 {
     "use strict";
@@ -178,6 +182,7 @@ function map(callback /*, thisArg */)
     return result;
 }
 
+@alwaysInline
 function some(callback /*, thisArg */)
 {
     "use strict";
@@ -235,6 +240,7 @@ function fill(value /* [, start [, end]] */)
     return array;
 }
 
+@alwaysInline
 function find(callback /*, thisArg */)
 {
     "use strict";
@@ -254,6 +260,7 @@ function find(callback /*, thisArg */)
     return @undefined;
 }
 
+@alwaysInline
 function findLast(callback /*, thisArg */)
 {
     "use strict";
@@ -273,6 +280,7 @@ function findLast(callback /*, thisArg */)
     return @undefined;
 }
 
+@alwaysInline
 function findIndex(callback /*, thisArg */)
 {
     "use strict";
@@ -291,6 +299,7 @@ function findIndex(callback /*, thisArg */)
     return -1;
 }
 
+@alwaysInline
 function findLastIndex(callback /*, thisArg */)
 {
     "use strict";
