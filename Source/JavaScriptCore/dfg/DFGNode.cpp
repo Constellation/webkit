@@ -261,17 +261,30 @@ void Node::convertToNewArrayWithSize()
 {
     ASSERT(op() == NewArrayWithSpecies);
     IndexingType indexingType = this->indexingType();
+    unsigned vectorLengthHint = this->vectorLengthHint();
     setOpAndDefaultFlags(NewArrayWithSize);
     children.child2() = Edge();
     m_opInfo = indexingType;
+    m_opInfo2 = vectorLengthHint;
+}
+
+void Node::convertToNewArray()
+{
+    ASSERT(op() == NewArrayWithSize);
+    ASSERT(size < MIN_ARRAY_STORAGE_CONSTRUCTION_LENGTH);
+    setOpAndDefaultFlags(NewArray);
 }
 
 void Node::convertToNewArrayWithConstantSize(Graph&, uint32_t size)
 {
     ASSERT(op() == NewArrayWithSize);
     ASSERT(size < MIN_ARRAY_STORAGE_CONSTRUCTION_LENGTH);
+    unsigned vectorLengthHint = this->vectorLengthHint();
     setOpAndDefaultFlags(NewArrayWithConstantSize);
-    m_opInfo2 = size;
+    NewArrayWithConstantSizeData data;
+    data.newArraySize = size;
+    data.vectorLengthHint = vectorLengthHint;
+    m_opInfo2 = data.asQuadWord;
 }
 
 void Node::convertToNewBoundFunction(FrozenValue* executable)

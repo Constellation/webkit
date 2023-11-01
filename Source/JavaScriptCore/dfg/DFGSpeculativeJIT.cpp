@@ -15227,6 +15227,22 @@ void SpeculativeJIT::compileNewArrayWithConstantSize(Node* node)
     ASSERT(m_graph.isWatchingHavingABadTimeWatchpoint(node));
     ASSERT(!hasAnyArrayStorage(node->indexingType()));
 
+    JSGlobalObject* globalObject = m_graph.globalObjectFor(node->origin.semantic);
+    RegisteredStructure structure = m_graph.registerStructure(globalObject->arrayStructureForIndexingTypeDuringAllocation(node->indexingType()));
+    if (!globalObject->isHavingABadTime() && !hasAnyArrayStorage(node->indexingType())) {
+        if (!node->newArraySize() && node->vectorLengthHint() && node->vectorLengthHint() < MAX_STORAGE_VECTOR_LENGTH) {
+            GPRTemporary result(this);
+            GPRTemporary storage(this);
+
+            GPRReg resultGPR = result.gpr();
+            GPRReg storageGPR = storage.gpr();
+
+            emitAllocateRawObject(resultGPR, structure, storageGPR, 0, node->vectorLengthHint());
+            cellResult(resultGPR, node);
+            return;
+        }
+    }
+
     GPRTemporary size(this);
     GPRTemporary result(this);
 

@@ -4596,7 +4596,7 @@ bool ByteCodeParser::handleConstantFunction(
         insertChecks();
         if (argumentCountIncludingThis == 2) {
             set(result,
-                addToGraph(NewArrayWithSize, OpInfo(ArrayWithUndecided), get(virtualRegisterForArgumentIncludingThis(1, registerOffset))));
+                addToGraph(NewArrayWithSize, OpInfo(ArrayWithUndecided), OpInfo(0), get(virtualRegisterForArgumentIncludingThis(1, registerOffset))));
             return true;
         }
         
@@ -6413,7 +6413,7 @@ void ByteCodeParser::parseBlock(unsigned limit)
         case op_new_array_with_size: {
             auto bytecode = currentInstruction->as<OpNewArrayWithSize>();
             ArrayAllocationProfile& profile = bytecode.metadata(codeBlock).m_arrayAllocationProfile;
-            set(bytecode.m_dst, addToGraph(NewArrayWithSize, OpInfo(profile.selectIndexingTypeConcurrently()), get(bytecode.m_length)));
+            set(bytecode.m_dst, addToGraph(NewArrayWithSize, OpInfo(profile.selectIndexingTypeConcurrently()), OpInfo(0), get(bytecode.m_length)));
             NEXT_OPCODE(op_new_array_with_size);
         }
 
@@ -6423,10 +6423,11 @@ void ByteCodeParser::parseBlock(unsigned limit)
             auto& metadata = bytecode.metadata(codeBlock);
             ArrayAllocationProfile& profile = metadata.m_arrayAllocationProfile;
             ArrayMode arrayMode = getArrayMode(metadata.m_arrayProfile, Array::Read);
-            NewArrayWithSpeciesData data { };
-            data.arrayMode = arrayMode.asWord();
-            data.indexingMode = profile.selectIndexingTypeConcurrently();
-            set(bytecode.m_dst, addToGraph(NewArrayWithSpecies, OpInfo(data.asQuadWord()), OpInfo(prediction), Edge(get(bytecode.m_length)), Edge(get(bytecode.m_array), KnownCellUse)));
+            auto* data = m_graph.m_newArrayWithSpeciesData.add();
+            data->arrayMode = arrayMode.asWord();
+            data->indexingMode = profile.selectIndexingTypeConcurrently();
+            data->vectorLengthHint = profile.vectorLengthHintConcurrently();
+            set(bytecode.m_dst, addToGraph(NewArrayWithSpecies, OpInfo(data), OpInfo(prediction), Edge(get(bytecode.m_length)), Edge(get(bytecode.m_array), KnownCellUse)));
             NEXT_OPCODE(op_new_array_with_species);
         }
 

@@ -1233,6 +1233,7 @@ public:
     Bag<CallDOMGetterData> m_callDOMGetterData;
     Bag<CallCustomAccessorData> m_callCustomAccessorData;
     Bag<BitVector> m_bitVectors;
+    Bag<NewArrayWithSpeciesData> m_newArrayWithSpeciesData;
     Vector<InlineVariableData, 4> m_inlineVariableData;
     HashMap<CodeBlock*, std::unique_ptr<FullBytecodeLiveness>> m_bytecodeLiveness;
     HashSet<std::pair<JSObject*, PropertyOffset>> m_safeToLoad;

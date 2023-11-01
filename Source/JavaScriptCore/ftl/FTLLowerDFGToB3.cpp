@@ -9157,9 +9157,18 @@ IGNORE_CLANG_WARNINGS_END
 
     void compileNewArrayWithConstantSize()
     {
-        LValue publicLength = m_out.constInt32(m_node->newArraySize());
-
         JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
+        RegisteredStructure structure = m_graph.registerStructure(globalObject->arrayStructureForIndexingTypeDuringAllocation(m_node->indexingType()));
+        if (!globalObject->isHavingABadTime() && !hasAnyArrayStorage(m_node->indexingType())) {
+            if (!m_node->newArraySize() && m_node->vectorLengthHint() && m_node->vectorLengthHint() < MAX_STORAGE_VECTOR_LENGTH) {
+                ArrayValues arrayValues = allocateUninitializedContiguousJSArray(0, m_node->vectorLengthHint(), structure);
+                setJSValue(arrayValues.array);
+                mutatorFence();
+                return;
+            }
+        }
+
+        LValue publicLength = m_out.constInt32(m_node->newArraySize());
 
         ASSERT(m_graph.isWatchingHavingABadTimeWatchpoint(m_node));
         ASSERT(!hasAnyArrayStorage(m_node->indexingType()));

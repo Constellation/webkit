@@ -130,11 +130,20 @@ static_assert(sizeof(NewArrayBufferData) == sizeof(uint64_t));
 struct NewArrayWithSpeciesData {
     unsigned arrayMode { 0 };
     unsigned indexingMode { 0 };
-
-    uint64_t asQuadWord() const { return bitwise_cast<uint64_t>(*this); }
+    unsigned vectorLengthHint { 0 };
 };
 static_assert(sizeof(IndexingType) <= sizeof(unsigned));
 static_assert(sizeof(ArrayMode) <= sizeof(unsigned));
+
+struct NewArrayWithConstantSizeData {
+    union {
+        struct {
+            unsigned newArraySize;
+            unsigned vectorLengthHint;
+        };
+        uint64_t asQuadWord;
+    };
+};
 
 struct DataViewData {
     union {
@@ -866,6 +875,7 @@ public:
 
     void convertToNewArrayBuffer(FrozenValue* immutableButterfly);
     void convertToNewArrayWithSize();
+    void convertToNewArray();
     void convertToNewArrayWithConstantSize(Graph&, uint32_t);
 
     void convertToNewBoundFunction(FrozenValue*);
@@ -1332,7 +1342,10 @@ public:
     {
         switch (op()) {
         case NewArray:
+        case NewArrayWithSize:
+        case NewArrayWithConstantSize:
         case NewArrayBuffer:
+        case NewArrayWithSpecies:
         case PhantomNewArrayBuffer:
             return true;
         default:
@@ -1343,9 +1356,21 @@ public:
     unsigned vectorLengthHint()
     {
         ASSERT(hasVectorLengthHint());
-        if (op() == NewArray)
+        if (op() == NewArray || op() == NewArrayWithSize)
             return m_opInfo2.as<unsigned>();
+        if (op() == NewArrayWithSpecies)
+            return newArrayWithSpeciesData()->vectorLengthHint;
+        if (op() == NewArrayWithConstantSize)
+            return newArrayWithConstantSizeData().vectorLengthHint;
         return newArrayBufferData().vectorLengthHint;
+    }
+
+    NewArrayWithConstantSizeData newArrayWithConstantSizeData()
+    {
+        ASSERT(op() == NewArrayWithConstantSize);
+        NewArrayWithConstantSizeData result;
+        result.asQuadWord = m_opInfo2.as<uint64_t>();
+        return result;
     }
 
     unsigned hasNewArraySize()
@@ -1361,7 +1386,8 @@ public:
     unsigned newArraySize()
     {
         ASSERT(hasNewArraySize());
-        return m_opInfo2.as<unsigned>();
+        return newArrayWithConstantSizeData().newArraySize;
+        
     }
 
     bool hasIndexingType()
@@ -1384,10 +1410,10 @@ public:
         return op() == NewArrayWithSpecies;
     }
 
-    NewArrayWithSpeciesData newArrayWithSpeciesData()
+    NewArrayWithSpeciesData* newArrayWithSpeciesData()
     {
         ASSERT(hasNewArrayWithSpeciesData());
-        return m_opInfo.asNewArrayWithSpeciesData();
+        return m_opInfo.as<NewArrayWithSpeciesData*>();
     }
 
     BitVector* bitVector()
@@ -1410,7 +1436,7 @@ public:
         if (op() == NewArrayBuffer || op() == PhantomNewArrayBuffer)
             return static_cast<IndexingType>(newArrayBufferData().indexingMode) & IndexingTypeMask;
         if (op() == NewArrayWithSpecies)
-            return static_cast<IndexingType>(newArrayWithSpeciesData().indexingMode) & IndexingTypeMask;
+            return static_cast<IndexingType>(newArrayWithSpeciesData()->indexingMode) & IndexingTypeMask;
         return static_cast<IndexingType>(m_opInfo.as<uint32_t>());
     }
 
@@ -1420,7 +1446,7 @@ public:
         if (op() == NewArrayBuffer || op() == PhantomNewArrayBuffer)
             return static_cast<IndexingType>(newArrayBufferData().indexingMode);
         if (op() == NewArrayWithSpecies)
-            return static_cast<IndexingType>(newArrayWithSpeciesData().indexingMode);
+            return static_cast<IndexingType>(newArrayWithSpeciesData()->indexingMode);
         return static_cast<IndexingType>(m_opInfo.as<uint32_t>());
     }
     
@@ -2525,7 +2551,7 @@ public:
         if (op() == ArrayifyToStructure)
             return ArrayMode::fromWord(m_opInfo2.as<uint32_t>());
         if (op() == NewArrayWithSpecies)
-            return ArrayMode::fromWord(newArrayWithSpeciesData().arrayMode);
+            return ArrayMode::fromWord(newArrayWithSpeciesData()->arrayMode);
         return ArrayMode::fromWord(m_opInfo.as<uint32_t>());
     }
     
@@ -2535,9 +2561,7 @@ public:
         if (this->arrayMode() == arrayMode)
             return false;
         if (op() == NewArrayWithSpecies) {
-            auto data = newArrayWithSpeciesData();
-            data.arrayMode = arrayMode.asWord();
-            m_opInfo = data.asQuadWord();
+            newArrayWithSpeciesData()->arrayMode = arrayMode.asWord();
             return true;
         }
         m_opInfo = arrayMode.asWord();
@@ -3704,11 +3728,6 @@ private:
         ALWAYS_INLINE NewArrayBufferData asNewArrayBufferData() const
         {
             return bitwise_cast<NewArrayBufferData>(u.int64);
-        }
-
-        ALWAYS_INLINE NewArrayWithSpeciesData asNewArrayWithSpeciesData() const
-        {
-            return bitwise_cast<NewArrayWithSpeciesData>(u.int64);
         }
 
         union {
