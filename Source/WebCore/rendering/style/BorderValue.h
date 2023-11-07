@@ -58,9 +58,9 @@ public:
     BorderStyle style() const { return static_cast<BorderStyle>(m_style); }
 
 protected:
-    StyleColor m_color;
+    NO_UNIQUE_ADDRESS StyleColor m_color;
 
-    float m_width { 3 };
+    NO_UNIQUE_ADDRESS float m_width { 3 };
 
     unsigned m_style : 4; // BorderStyle
 

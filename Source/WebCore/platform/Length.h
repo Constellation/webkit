@@ -315,6 +315,11 @@ inline bool Length::operator==(const Length& other) const
         return true;
     if (isCalculated())
         return isCalculatedEqual(other);
+    if (m_isFloat == other.m_isFloat) {
+        if (!m_isFloat)
+            return m_intValue == other.m_intValue;
+        return m_floatValue == other.m_floatValue;
+    }
     return value() == other.value();
 }
 

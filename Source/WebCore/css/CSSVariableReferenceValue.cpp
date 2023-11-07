@@ -231,9 +231,9 @@ RefPtr<CSSValue> CSSVariableReferenceValue::resolveAndCacheValue(Style::BuilderS
     if (auto data = tryResolveSimpleReference(builderState)) {
         // FIXME: Also cache the complex case.
         auto hasValidCachedValue = m_cachedResolvedValue
-            && arePointingToEqualData(m_cachedResolvedValue->dependencyData, data)
             && m_cachedResolvedValue->propertyID == propertyID
-            && m_cachedResolvedValue->shorthandID == shorthandID;
+            && m_cachedResolvedValue->shorthandID == shorthandID
+            && arePointingToEqualData(m_cachedResolvedValue->dependencyData, data);
 
         if (hasValidCachedValue) {
             // Update in case the object changed but data stayed the same.

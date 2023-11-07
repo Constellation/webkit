@@ -168,13 +168,14 @@ bool FillLayer::operator==(const FillLayer& o) const
 {
     // We do not check the "isSet" booleans for each property, since those are only used during initial construction
     // to propagate patterns into layers. All layer comparisons happen after values have all been filled in anyway.
-    return arePointingToEqualData(m_image.get(), o.m_image.get()) && m_xPosition == o.m_xPosition && m_yPosition == o.m_yPosition
+    return m_xPosition == o.m_xPosition && m_yPosition == o.m_yPosition
         && m_backgroundXOrigin == o.m_backgroundXOrigin && m_backgroundYOrigin == o.m_backgroundYOrigin
         && m_attachment == o.m_attachment && m_clip == o.m_clip && m_composite == o.m_composite
         && m_blendMode == o.m_blendMode && m_origin == o.m_origin && m_repeat == o.m_repeat
         && m_sizeType == o.m_sizeType && m_maskMode == o.m_maskMode
         && m_sizeLength == o.m_sizeLength && m_type == o.m_type
-        && ((m_next && o.m_next) ? *m_next == *o.m_next : m_next == o.m_next);
+        && ((m_next && o.m_next) ? *m_next == *o.m_next : m_next == o.m_next)
+        && arePointingToEqualData(m_image.get(), o.m_image.get());
 }
 
 void FillLayer::fillUnsetProperties()

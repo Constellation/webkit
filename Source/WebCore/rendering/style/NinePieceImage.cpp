@@ -278,14 +278,14 @@ Ref<NinePieceImage::Data> NinePieceImage::Data::copy() const
 
 bool NinePieceImage::Data::operator==(const Data& other) const
 {
-    return arePointingToEqualData(image, other.image)
-        && imageSlices == other.imageSlices
+    return imageSlices == other.imageSlices
         && fill == other.fill
         && borderSlices == other.borderSlices
         && overridesBorderWidths == other.overridesBorderWidths
         && outset == other.outset
         && horizontalRule == other.horizontalRule
-        && verticalRule == other.verticalRule;
+        && verticalRule == other.verticalRule
+        && arePointingToEqualData(image, other.image);
 }
 
 TextStream& operator<<(TextStream& ts, const NinePieceImage& image)
