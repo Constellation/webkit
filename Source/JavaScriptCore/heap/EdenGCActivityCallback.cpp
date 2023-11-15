@@ -30,7 +30,7 @@
 
 namespace JSC {
 
-EdenGCActivityCallback::EdenGCActivityCallback(Heap* heap)
+EdenGCActivityCallback::EdenGCActivityCallback(Heap& heap)
     : GCActivityCallback(heap)
 {
 }

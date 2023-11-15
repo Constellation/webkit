@@ -26,7 +26,10 @@
 #include "config.h"
 #include "OpportunisticTaskScheduler.h"
 
+#include "CommonVM.h"
+#include "GCController.h"
 #include "Page.h"
+#include <wtf/DataLog.h>
 #include <wtf/SystemTracing.h>
 
 namespace WebCore {
@@ -69,20 +72,30 @@ Ref<ImminentlyScheduledWorkScope> OpportunisticTaskScheduler::makeScheduledWorkS
 
 void OpportunisticTaskScheduler::runLoopObserverFired()
 {
-    if (!m_currentDeadline)
-        return;
+    constexpr bool verbose = false;
 
-    if (UNLIKELY(!m_page))
+    if (!m_currentDeadline) {
         return;
+    }
+
+    if (UNLIKELY(!m_page)) {
+        return;
+    }
 
     auto page = checkedPage();
-    if (page->isWaitingForLoadToFinish() || !page->isVisibleAndActive())
+    if (page->isWaitingForLoadToFinish()) {
         return;
+    }
+
+    if (!page->isVisibleAndActive()) {
+        return;
+    }
 
     auto currentTime = ApproximateTime::now();
     auto remainingTime = m_currentDeadline.secondsSinceEpoch() - currentTime.secondsSinceEpoch();
-    if (remainingTime < 0_ms)
+    if (remainingTime < 0_ms) {
         return;
+    }
 
     m_runloopCountAfterBeingScheduled++;
 
@@ -98,10 +111,12 @@ void OpportunisticTaskScheduler::runLoopObserverFired()
         if (m_runloopCountAfterBeingScheduled > minimumRunloopCountWhenScheduledWorkIsImminent)
             return true;
 
+        dataLogLnIf(verbose, "GAVEUP: task does not get scheduled ", remainingTime, " ", hasImminentlyScheduledWork(), " ", page->preferredRenderingUpdateInterval(), " ", m_runloopCountAfterBeingScheduled);
         return false;
     }();
 
     if (!shouldRunTask) {
+        dataLogLnIf(verbose, "RunLoopObserverInvalidate");
         m_runLoopObserver->invalidate();
         m_runLoopObserver->schedule();
         return;
@@ -117,12 +132,16 @@ void OpportunisticTaskScheduler::runLoopObserverFired()
     if (std::exchange(m_mayHavePendingIdleCallbacks, false)) {
         auto weakPage = m_page;
         page->opportunisticallyRunIdleCallbacks();
-        if (UNLIKELY(!weakPage))
+        if (UNLIKELY(!weakPage)) {
+            dataLogLnIf(verbose, "GAVEUP: page gets destroyed");
             return;
+        }
     }
 
-    if (!page->settings().opportunisticSweepingAndGarbageCollectionEnabled())
+    if (!page->settings().opportunisticSweepingAndGarbageCollectionEnabled()) {
+        dataLogLnIf(verbose, "GAVEUP: opportunistic sweep and GC is not enabled");
         return;
+    }
 
     page->performOpportunisticallyScheduledTasks(deadline);
 }
@@ -137,6 +156,76 @@ ImminentlyScheduledWorkScope::~ImminentlyScheduledWorkScope()
 {
     if (m_scheduler)
         m_scheduler->m_imminentlyScheduledWorkCount--;
+}
+
+bool OpportunisticTaskScheduler::SchedulerCoordinator::isBusy() const
+{
+    bool result = false;
+    Page::forEachPage([&](auto& page) {
+        if (page.isWaitingForLoadToFinish()) {
+            result = true;
+            return;
+        }
+        if (page.opportunisticTaskScheduler().hasImminentlyScheduledWork()) {
+            result = true;
+            return;
+        }
+    });
+    return result;
+}
+
+void OpportunisticTaskScheduler::FullGCActivityCallback::doCollection(JSC::VM& vm)
+{
+    if (!m_coordinator->isBusy()) {
+        m_version = 0;
+        m_deferCount = 0;
+        Base::doCollection(vm);
+        return;
+    }
+
+    if (!m_version || m_version != vm.heap.objectSpace().markingVersion()) {
+        m_version = vm.heap.objectSpace().markingVersion();
+        m_delay = s_decade;
+        scheduleTimer(50_ms);
+        return;
+    }
+
+    if (++m_deferCount < 5) {
+        m_delay = s_decade;
+        scheduleTimer(50_ms);
+        return;
+    }
+
+    m_version = 0;
+    m_deferCount = 0;
+    Base::doCollection(vm);
+}
+
+void OpportunisticTaskScheduler::EdenGCActivityCallback::doCollection(JSC::VM& vm)
+{
+    if (!m_coordinator->isBusy()) {
+        m_version = 0;
+        m_deferCount = 0;
+        Base::doCollection(vm);
+        return;
+    }
+
+    if (!m_version || m_version != vm.heap.objectSpace().edenVersion()) {
+        m_version = vm.heap.objectSpace().edenVersion();
+        m_delay = s_decade;
+        scheduleTimer(10_ms);
+        return;
+    }
+
+    if (++m_deferCount < 5) {
+        m_delay = s_decade;
+        scheduleTimer(10_ms);
+        return;
+    }
+
+    m_version = 0;
+    m_deferCount = 0;
+    Base::doCollection(vm);
 }
 
 } // namespace WebCore

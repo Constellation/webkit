@@ -26,6 +26,8 @@
 #pragma once
 
 #include "RunLoopObserver.h"
+#include <JavaScriptCore/EdenGCActivityCallback.h>
+#include <JavaScriptCore/FullGCActivityCallback.h>
 #include <wtf/CheckedPtr.h>
 #include <wtf/MonotonicTime.h>
 #include <wtf/RefCounted.h>
@@ -51,7 +53,7 @@ private:
     WeakPtr<OpportunisticTaskScheduler> m_scheduler;
 };
 
-class OpportunisticTaskScheduler : public RefCounted<OpportunisticTaskScheduler>, public CanMakeWeakPtr<OpportunisticTaskScheduler> {
+class OpportunisticTaskScheduler final : public RefCounted<OpportunisticTaskScheduler>, public CanMakeWeakPtr<OpportunisticTaskScheduler> {
 public:
     static Ref<OpportunisticTaskScheduler> create(Page& page)
     {
@@ -67,6 +69,68 @@ public:
 
     WARN_UNUSED_RETURN Ref<ImminentlyScheduledWorkScope> makeScheduledWorkScope();
 
+    class SchedulerCoordinator final : public RefCounted<SchedulerCoordinator> {
+    public:
+        static Ref<SchedulerCoordinator> create()
+        {
+            return adoptRef(*new SchedulerCoordinator);
+        }
+
+        bool isBusy() const;
+
+    private:
+    };
+
+    class FullGCActivityCallback final : public JSC::FullGCActivityCallback {
+    public:
+        using Base = JSC::FullGCActivityCallback;
+
+        static Ref<FullGCActivityCallback> create(JSC::Heap& heap, SchedulerCoordinator& coordinator)
+        {
+            return adoptRef(*new FullGCActivityCallback(heap, coordinator));
+        }
+
+        void doCollection(JSC::VM&) final;
+
+        SchedulerCoordinator& coordinator() { return m_coordinator.get(); }
+
+    private:
+        FullGCActivityCallback(JSC::Heap& heap, SchedulerCoordinator& coordinator)
+            : Base(heap)
+            , m_coordinator(coordinator)
+        { }
+
+        JSC::HeapVersion m_version { 0 };
+        unsigned m_deferCount { 0 };
+        Ref<SchedulerCoordinator> m_coordinator;
+    };
+
+    class EdenGCActivityCallback final : public JSC::EdenGCActivityCallback {
+    public:
+        using Base = JSC::EdenGCActivityCallback;
+
+        static Ref<EdenGCActivityCallback> create(JSC::Heap& heap, SchedulerCoordinator& coordinator)
+        {
+            return adoptRef(*new EdenGCActivityCallback(heap, coordinator));
+        }
+
+        void doCollection(JSC::VM&) final;
+
+        SchedulerCoordinator& coordinator() { return m_coordinator.get(); }
+
+    private:
+        EdenGCActivityCallback(JSC::Heap& heap, SchedulerCoordinator& coordinator)
+            : Base(heap)
+            , m_coordinator(coordinator)
+        { }
+
+        JSC::HeapVersion m_version { 0 };
+        unsigned m_deferCount { 0 };
+        Ref<SchedulerCoordinator> m_coordinator;
+    };
+
+    CheckedPtr<Page> checkedPage() const;
+
 private:
     friend class ImminentlyScheduledWorkScope;
 
@@ -76,7 +140,6 @@ private:
     bool isPageInactiveOrLoading() const;
 
     bool shouldAllowOpportunisticallyScheduledTasks() const;
-    CheckedPtr<Page> checkedPage() const;
 
     WeakPtr<Page> m_page;
     uint64_t m_imminentlyScheduledWorkCount { 0 };
