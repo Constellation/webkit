@@ -173,27 +173,23 @@ static bool isBusyForTimerBasedGC()
     return opportunisticSweepingAndGarbageCollectionEnabled && isVisibleAndActive && hasPendingTasks;
 }
 
+OpportunisticTaskScheduler::FullGCActivityCallback::FullGCActivityCallback(JSC::Heap& heap)
+    : Base(heap)
+    , m_vm(heap.vm())
+    , m_runLoopObserver(makeUnique<RunLoopObserver>(RunLoopObserver::WellKnownOrder::PostRenderingUpdate, [this] {
+        Base::doCollection(m_vm);
+    }, RunLoopObserver::Type::OneShot))
+{
+}
+
 // We would like to keep FullGCActivityCallback::doCollection and EdenGCActivityCallback::doCollection separate
 // since we would like to encode more and more different heuristics for them.
 void OpportunisticTaskScheduler::FullGCActivityCallback::doCollection(JSC::VM& vm)
 {
-    constexpr Seconds delay { 100_ms };
-    constexpr unsigned deferCountThreshold = 3;
-
     if (isBusyForTimerBasedGC()) {
-        if (!m_version || m_version != vm.heap.objectSpace().markingVersion()) {
-            m_version = vm.heap.objectSpace().markingVersion();
-            m_deferCount = 0;
-            m_delay = delay;
-            setTimeUntilFire(delay);
-            return;
-        }
-
-        if (++m_deferCount < deferCountThreshold) {
-            m_delay = delay;
-            setTimeUntilFire(delay);
-            return;
-        }
+        m_runLoopObserver->invalidate();
+        m_runLoopObserver->schedule();
+        return;
     }
 
     m_version = 0;
@@ -201,25 +197,21 @@ void OpportunisticTaskScheduler::FullGCActivityCallback::doCollection(JSC::VM& v
     Base::doCollection(vm);
 }
 
+OpportunisticTaskScheduler::EdenGCActivityCallback::EdenGCActivityCallback(JSC::Heap& heap)
+    : Base(heap)
+    , m_vm(heap.vm())
+    , m_runLoopObserver(makeUnique<RunLoopObserver>(RunLoopObserver::WellKnownOrder::PostRenderingUpdate, [this] {
+        Base::doCollection(m_vm);
+    }, RunLoopObserver::Type::OneShot))
+{
+}
+
 void OpportunisticTaskScheduler::EdenGCActivityCallback::doCollection(JSC::VM& vm)
 {
-    constexpr Seconds delay { 10_ms };
-    constexpr unsigned deferCountThreshold = 5;
-
     if (isBusyForTimerBasedGC()) {
-        if (!m_version || m_version != vm.heap.objectSpace().edenVersion()) {
-            m_version = vm.heap.objectSpace().edenVersion();
-            m_deferCount = 0;
-            m_delay = delay;
-            setTimeUntilFire(delay);
-            return;
-        }
-
-        if (++m_deferCount < deferCountThreshold) {
-            m_delay = delay;
-            setTimeUntilFire(delay);
-            return;
-        }
+        m_runLoopObserver->invalidate();
+        m_runLoopObserver->schedule();
+        return;
     }
 
     m_version = 0;
