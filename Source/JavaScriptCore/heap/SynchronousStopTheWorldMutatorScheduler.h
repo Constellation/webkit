@@ -44,8 +44,8 @@ public:
     
     void beginCollection() final;
     
-    MonotonicTime timeToStop() final;
-    MonotonicTime timeToResume() final;
+    ApproximateTime timeToStop() final;
+    ApproximateTime timeToResume() final;
     
     void endCollection() final;
 

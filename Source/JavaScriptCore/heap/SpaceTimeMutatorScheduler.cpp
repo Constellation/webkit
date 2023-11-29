@@ -38,16 +38,16 @@ class SpaceTimeMutatorScheduler::Snapshot {
 public:
     Snapshot(SpaceTimeMutatorScheduler& scheduler)
     {
-        m_now = MonotonicTime::now();
+        m_now = ApproximateTime::now();
         m_bytesAllocatedThisCycle = scheduler.bytesAllocatedThisCycleImpl();
     }
     
-    MonotonicTime now() const { return m_now; }
+    ApproximateTime now() const { return m_now; }
     
     double bytesAllocatedThisCycle() const { return m_bytesAllocatedThisCycle; }
     
 private:
-    MonotonicTime m_now;
+    ApproximateTime m_now;
     double m_bytesAllocatedThisCycle;
 };
 
@@ -70,7 +70,7 @@ void SpaceTimeMutatorScheduler::beginCollection()
 {
     RELEASE_ASSERT(m_state == Normal);
     m_state = Stopped;
-    m_startTime = MonotonicTime::now();
+    m_startTime = ApproximateTime::now();
 
     m_bytesAllocatedThisCycleAtTheBeginning = m_heap.m_bytesAllocatedThisCycle;
     m_bytesAllocatedThisCycleAtTheEnd = 
@@ -98,16 +98,16 @@ void SpaceTimeMutatorScheduler::didExecuteConstraints()
     // with things that don't play well with concurrency.
     // FIXME: The feels so wrong but benchmarks so good.
     // https://bugs.webkit.org/show_bug.cgi?id=166833
-    m_startTime = MonotonicTime::now();
+    m_startTime = ApproximateTime::now();
 }
 
-MonotonicTime SpaceTimeMutatorScheduler::timeToStop()
+ApproximateTime SpaceTimeMutatorScheduler::timeToStop()
 {
     switch (m_state) {
     case Normal:
-        return MonotonicTime::infinity();
+        return ApproximateTime::infinity();
     case Stopped:
-        return MonotonicTime::now();
+        return ApproximateTime::now();
     case Resumed: {
         Snapshot snapshot(*this);
         if (!shouldBeResumed(snapshot))
@@ -116,15 +116,15 @@ MonotonicTime SpaceTimeMutatorScheduler::timeToStop()
     } }
     
     RELEASE_ASSERT_NOT_REACHED();
-    return MonotonicTime();
+    return ApproximateTime();
 }
 
-MonotonicTime SpaceTimeMutatorScheduler::timeToResume()
+ApproximateTime SpaceTimeMutatorScheduler::timeToResume()
 {
     switch (m_state) {
     case Normal:
     case Resumed:
-        return MonotonicTime::now();
+        return ApproximateTime::now();
     case Stopped: {
         Snapshot snapshot(*this);
         if (shouldBeResumed(snapshot))
@@ -133,7 +133,7 @@ MonotonicTime SpaceTimeMutatorScheduler::timeToResume()
     } }
     
     RELEASE_ASSERT_NOT_REACHED();
-    return MonotonicTime();
+    return ApproximateTime();
 }
 
 void SpaceTimeMutatorScheduler::log()
@@ -149,7 +149,7 @@ void SpaceTimeMutatorScheduler::log()
 void SpaceTimeMutatorScheduler::endCollection()
 {
     m_state = Normal;
-    m_startTime = MonotonicTime::now();
+    m_startTime = ApproximateTime::now();
 }
 
 double SpaceTimeMutatorScheduler::bytesAllocatedThisCycleImpl()

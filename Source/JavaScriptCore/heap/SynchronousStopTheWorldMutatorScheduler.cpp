@@ -47,14 +47,14 @@ void SynchronousStopTheWorldMutatorScheduler::beginCollection()
     m_state = Stopped;
 }
 
-MonotonicTime SynchronousStopTheWorldMutatorScheduler::timeToStop()
+ApproximateTime SynchronousStopTheWorldMutatorScheduler::timeToStop()
 {
-    return m_state == Normal ? MonotonicTime::infinity() : MonotonicTime::now();
+    return m_state == Normal ? ApproximateTime::infinity() : ApproximateTime::now();
 }
 
-MonotonicTime SynchronousStopTheWorldMutatorScheduler::timeToResume()
+ApproximateTime SynchronousStopTheWorldMutatorScheduler::timeToResume()
 {
-    return m_state == Normal ? MonotonicTime::now() : MonotonicTime::infinity();
+    return m_state == Normal ? ApproximateTime::now() : ApproximateTime::infinity();
 }
 
 void SynchronousStopTheWorldMutatorScheduler::endCollection()

@@ -480,7 +480,7 @@ void SlotVisitor::optimizeForStoppedMutator()
     m_canOptimizeForStoppedMutator = true;
 }
 
-NEVER_INLINE void SlotVisitor::drain(MonotonicTime timeout)
+NEVER_INLINE void SlotVisitor::drain(ApproximateTime timeout)
 {
     if (!m_isInParallelMode) {
         dataLog("FATAL: attempting to drain when not in parallel mode.\n");
@@ -593,7 +593,7 @@ bool SlotVisitor::hasWork(const AbstractLocker&)
         || !m_heap.m_sharedMutatorMarkStack->isEmpty();
 }
 
-NEVER_INLINE SlotVisitor::SharedDrainResult SlotVisitor::drainFromShared(SharedDrainMode sharedDrainMode, MonotonicTime timeout)
+NEVER_INLINE SlotVisitor::SharedDrainResult SlotVisitor::drainFromShared(SharedDrainMode sharedDrainMode, ApproximateTime timeout)
 {
     ASSERT(m_isInParallelMode);
     
@@ -698,13 +698,13 @@ NEVER_INLINE SlotVisitor::SharedDrainResult SlotVisitor::drainFromShared(SharedD
     }
 }
 
-SlotVisitor::SharedDrainResult SlotVisitor::drainInParallel(MonotonicTime timeout)
+SlotVisitor::SharedDrainResult SlotVisitor::drainInParallel(ApproximateTime timeout)
 {
     donateAndDrain(timeout);
     return drainFromShared(MainDrain, timeout);
 }
 
-SlotVisitor::SharedDrainResult SlotVisitor::drainInParallelPassively(MonotonicTime timeout)
+SlotVisitor::SharedDrainResult SlotVisitor::drainInParallelPassively(ApproximateTime timeout)
 {
     ASSERT(m_isInParallelMode);
     
@@ -723,7 +723,7 @@ SlotVisitor::SharedDrainResult SlotVisitor::drainInParallelPassively(MonotonicTi
     return waitForTermination(timeout);
 }
 
-SlotVisitor::SharedDrainResult SlotVisitor::waitForTermination(MonotonicTime timeout)
+SlotVisitor::SharedDrainResult SlotVisitor::waitForTermination(ApproximateTime timeout)
 {
     Locker locker { m_heap.m_markingMutex };
     for (;;) {
@@ -771,7 +771,7 @@ void SlotVisitor::donate()
     donateKnownParallel();
 }
 
-void SlotVisitor::donateAndDrain(MonotonicTime timeout)
+void SlotVisitor::donateAndDrain(ApproximateTime timeout)
 {
     donate();
     drain(timeout);

@@ -26,7 +26,7 @@
 #pragma once
 
 #include <wtf/FastMalloc.h>
-#include <wtf/MonotonicTime.h>
+#include <wtf/ApproximateTime.h>
 #include <wtf/Noncopyable.h>
 
 namespace JSC {
@@ -61,8 +61,8 @@ public:
     // just 'cause, it will call this.
     virtual void synchronousDrainingDidStall();
     
-    virtual MonotonicTime timeToStop() = 0; // Call while resumed, to ask when to stop.
-    virtual MonotonicTime timeToResume() = 0; // Call while stopped, to ask when to resume.
+    virtual ApproximateTime timeToStop() = 0; // Call while resumed, to ask when to stop.
+    virtual ApproximateTime timeToResume() = 0; // Call while stopped, to ask when to resume.
     
     virtual void log();
     

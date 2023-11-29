@@ -29,7 +29,7 @@
 #include "HandleTypes.h"
 #include <wtf/Forward.h>
 #include <wtf/IterationStatus.h>
-#include <wtf/MonotonicTime.h>
+#include <wtf/ApproximateTime.h>
 
 namespace JSC {
 
@@ -130,17 +130,17 @@ public:
     size_t bytesVisited() const { return m_bytesVisited; }
 
     void donate();
-    void drain(MonotonicTime timeout = MonotonicTime::infinity());
-    void donateAndDrain(MonotonicTime timeout = MonotonicTime::infinity());
+    void drain(ApproximateTime timeout = ApproximateTime::infinity());
+    void donateAndDrain(ApproximateTime timeout = ApproximateTime::infinity());
     
     enum SharedDrainMode { HelperDrain, MainDrain };
     enum class SharedDrainResult { Done, TimedOut };
-    SharedDrainResult drainFromShared(SharedDrainMode, MonotonicTime timeout = MonotonicTime::infinity());
+    SharedDrainResult drainFromShared(SharedDrainMode, ApproximateTime timeout = ApproximateTime::infinity());
 
-    SharedDrainResult drainInParallel(MonotonicTime timeout = MonotonicTime::infinity());
-    SharedDrainResult drainInParallelPassively(MonotonicTime timeout = MonotonicTime::infinity());
+    SharedDrainResult drainInParallel(ApproximateTime timeout = ApproximateTime::infinity());
+    SharedDrainResult drainInParallelPassively(ApproximateTime timeout = ApproximateTime::infinity());
     
-    SharedDrainResult waitForTermination(MonotonicTime timeout = MonotonicTime::infinity());
+    SharedDrainResult waitForTermination(ApproximateTime timeout = ApproximateTime::infinity());
 
     // Attempts to perform an increment of draining that involves only walking `bytes` worth of data. This
     // is likely to accidentally walk more or less than that. It will usually mark more than bytes. It may

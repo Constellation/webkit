@@ -38,16 +38,16 @@ class StochasticSpaceTimeMutatorScheduler::Snapshot {
 public:
     Snapshot(StochasticSpaceTimeMutatorScheduler& scheduler)
     {
-        m_now = MonotonicTime::now();
+        m_now = ApproximateTime::now();
         m_bytesAllocatedThisCycle = scheduler.bytesAllocatedThisCycleImpl();
     }
     
-    MonotonicTime now() const { return m_now; }
+    ApproximateTime now() const { return m_now; }
     
     double bytesAllocatedThisCycle() const { return m_bytesAllocatedThisCycle; }
     
 private:
-    MonotonicTime m_now;
+    ApproximateTime m_now;
     double m_bytesAllocatedThisCycle;
 };
 
@@ -79,7 +79,7 @@ void StochasticSpaceTimeMutatorScheduler::beginCollection()
     
     dataLogIf(Options::logGC(), "ca=", m_bytesAllocatedThisCycleAtTheBeginning / 1024, "kb h=", (m_bytesAllocatedThisCycleAtTheEnd - m_bytesAllocatedThisCycleAtTheBeginning) / 1024, "kb ");
     
-    m_beforeConstraints = MonotonicTime::now();
+    m_beforeConstraints = ApproximateTime::now();
 }
 
 void StochasticSpaceTimeMutatorScheduler::didStop()
@@ -96,7 +96,7 @@ void StochasticSpaceTimeMutatorScheduler::willResume()
 
 void StochasticSpaceTimeMutatorScheduler::didReachTermination()
 {
-    m_beforeConstraints = MonotonicTime::now();
+    m_beforeConstraints = ApproximateTime::now();
 }
 
 void StochasticSpaceTimeMutatorScheduler::didExecuteConstraints()
@@ -120,7 +120,7 @@ void StochasticSpaceTimeMutatorScheduler::synchronousDrainingDidStall()
     
     double resumeProbability = mutatorUtilization(snapshot);
     if (resumeProbability < Options::epsilonMutatorUtilization()) {
-        m_plannedResumeTime = MonotonicTime::infinity();
+        m_plannedResumeTime = ApproximateTime::infinity();
         return;
     }
     
@@ -134,37 +134,37 @@ void StochasticSpaceTimeMutatorScheduler::synchronousDrainingDidStall()
     m_plannedResumeTime = snapshot.now() + m_targetPause;
 }
 
-MonotonicTime StochasticSpaceTimeMutatorScheduler::timeToStop()
+ApproximateTime StochasticSpaceTimeMutatorScheduler::timeToStop()
 {
     switch (m_state) {
     case Normal:
-        return MonotonicTime::infinity();
+        return ApproximateTime::infinity();
     case Stopped:
-        return MonotonicTime::now();
+        return ApproximateTime::now();
     case Resumed: {
         // Once we're running, we keep going unless we run out of headroom.
         Snapshot snapshot(*this);
         if (mutatorUtilization(snapshot) < Options::epsilonMutatorUtilization())
-            return MonotonicTime::now();
-        return MonotonicTime::infinity();
+            return ApproximateTime::now();
+        return ApproximateTime::infinity();
     } }
     
     RELEASE_ASSERT_NOT_REACHED();
-    return MonotonicTime();
+    return ApproximateTime();
 }
 
-MonotonicTime StochasticSpaceTimeMutatorScheduler::timeToResume()
+ApproximateTime StochasticSpaceTimeMutatorScheduler::timeToResume()
 {
     switch (m_state) {
     case Normal:
     case Resumed:
-        return MonotonicTime::now();
+        return ApproximateTime::now();
     case Stopped:
         return m_plannedResumeTime;
     }
     
     RELEASE_ASSERT_NOT_REACHED();
-    return MonotonicTime();
+    return ApproximateTime();
 }
 
 void StochasticSpaceTimeMutatorScheduler::log()

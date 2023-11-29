@@ -51,8 +51,8 @@ public:
     void willResume() final;
     void didExecuteConstraints() final;
     
-    MonotonicTime timeToStop() final;
-    MonotonicTime timeToResume() final;
+    ApproximateTime timeToStop() final;
+    ApproximateTime timeToResume() final;
     
     void log() final;
     
@@ -79,7 +79,7 @@ private:
     
     double m_bytesAllocatedThisCycleAtTheBeginning { 0 };
     double m_bytesAllocatedThisCycleAtTheEnd { 0 };
-    MonotonicTime m_startTime;
+    ApproximateTime m_startTime;
 };
 
 } // namespace JSC

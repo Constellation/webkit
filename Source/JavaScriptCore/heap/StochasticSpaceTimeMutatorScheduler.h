@@ -54,8 +54,8 @@ public:
     void didExecuteConstraints() final;
     void synchronousDrainingDidStall() final;
     
-    MonotonicTime timeToStop() final;
-    MonotonicTime timeToResume() final;
+    ApproximateTime timeToStop() final;
+    ApproximateTime timeToResume() final;
     
     void log() final;
     
@@ -84,8 +84,8 @@ private:
     double m_bytesAllocatedThisCycleAtTheBeginning { 0 };
     double m_bytesAllocatedThisCycleAtTheEnd { 0 };
     
-    MonotonicTime m_beforeConstraints;
-    MonotonicTime m_plannedResumeTime;
+    ApproximateTime m_beforeConstraints;
+    ApproximateTime m_plannedResumeTime;
 };
 
 } // namespace JSC
