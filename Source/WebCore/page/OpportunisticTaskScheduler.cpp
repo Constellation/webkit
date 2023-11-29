@@ -173,6 +173,17 @@ static bool isBusyForTimerBasedGC()
     return opportunisticSweepingAndGarbageCollectionEnabled && isVisibleAndActive && hasPendingTasks;
 }
 
+OpportunisticTaskScheduler::FullGCActivityCallback::FullGCActivityCallback(JSC::Heap& heap)
+    : Base(heap, JSC::Synchronousness::Sync)
+    , m_vm(heap.vm())
+    , m_runLoopObserver(makeUnique<RunLoopObserver>(RunLoopObserver::WellKnownOrder::PostRenderingUpdate, [this] {
+        m_version = 0;
+        m_deferCount = 0;
+        Base::doCollection(m_vm);
+    }, RunLoopObserver::Type::OneShot))
+{
+}
+
 // We would like to keep FullGCActivityCallback::doCollection and EdenGCActivityCallback::doCollection separate
 // since we would like to encode more and more different heuristics for them.
 void OpportunisticTaskScheduler::FullGCActivityCallback::doCollection(JSC::VM& vm)
@@ -194,11 +205,26 @@ void OpportunisticTaskScheduler::FullGCActivityCallback::doCollection(JSC::VM& v
             setTimeUntilFire(delay);
             return;
         }
+
+        m_runLoopObserver->invalidate();
+        m_runLoopObserver->schedule();
+        return;
     }
 
     m_version = 0;
     m_deferCount = 0;
     Base::doCollection(vm);
+}
+
+OpportunisticTaskScheduler::EdenGCActivityCallback::EdenGCActivityCallback(JSC::Heap& heap)
+    : Base(heap, JSC::Synchronousness::Sync)
+    , m_vm(heap.vm())
+    , m_runLoopObserver(makeUnique<RunLoopObserver>(RunLoopObserver::WellKnownOrder::PostRenderingUpdate, [this] {
+        m_version = 0;
+        m_deferCount = 0;
+        Base::doCollection(m_vm);
+    }, RunLoopObserver::Type::OneShot))
+{
 }
 
 void OpportunisticTaskScheduler::EdenGCActivityCallback::doCollection(JSC::VM& vm)
@@ -220,11 +246,15 @@ void OpportunisticTaskScheduler::EdenGCActivityCallback::doCollection(JSC::VM& v
             setTimeUntilFire(delay);
             return;
         }
+
+        m_runLoopObserver->invalidate();
+        m_runLoopObserver->schedule();
+        return;
     }
 
     m_version = 0;
     m_deferCount = 0;
-    Base::doCollection(vm);
+    Base::doCollection(m_vm);
 }
 
 } // namespace WebCore
