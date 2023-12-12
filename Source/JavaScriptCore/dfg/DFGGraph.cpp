@@ -411,6 +411,11 @@ void Graph::dump(PrintStream& out, const char* prefixStr, Node* node, DumpContex
         for (unsigned i = 0; i < data->cases.size(); ++i)
             out.print(comma, BranchTarget(data->cases[i]));
     }
+    if (node->hasArrayModeList()) {
+        ArrayModeList& data = node->arrayModeList();
+        for (ArrayMode mode : data)
+            out.print(comma, mode);
+    }
     ClobberSet reads;
     ClobberSet writes;
     addReadsAndWrites(*this, node, reads, writes);

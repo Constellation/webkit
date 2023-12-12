@@ -29,6 +29,7 @@
 
 #include "ArrayProfile.h"
 #include "SpeculatedType.h"
+#include <array>
 
 namespace JSC {
 
@@ -118,6 +119,8 @@ Array::Type refineTypedArrayType(Array::Type, TypedArrayType);
 
 bool permitsBoundsCheckLowering(Array::Type);
 
+class ArrayModeList;
+
 class ArrayMode {
 public:
     ArrayMode()
@@ -190,7 +193,7 @@ public:
         return ArrayMode(word);
     }
     
-    static ArrayMode fromObserved(const ConcurrentJSLocker&, ArrayProfile*, Array::Action, bool makeSafe);
+    static ArrayModeList fromObserved(const ConcurrentJSLocker&, ArrayProfile*, Array::Action, bool makeSafe, bool allowMultiple);
 
     ArrayMode withType(Array::Type type) const
     {
@@ -339,6 +342,45 @@ public:
     bool isSlowPut() const
     {
         return type() == Array::SlowPutArrayStorage;
+    }
+
+    bool doesClobberTop() const
+    {
+        switch (type()) {
+        case Array::Generic:
+        case Array::BigInt64Array:
+        case Array::BigUint64Array:
+        case Array::SelectUsingPredictions:
+        case Array::Unprofiled:
+        case Array::SelectUsingArguments:
+            return true;
+        case Array::String:
+            return isOutOfBounds();
+        case Array::Int32:
+        case Array::Double:
+        case Array::Contiguous:
+            return !isInBounds() && !isOutOfBoundsSaneChain();
+        case Array::ScopedArguments:
+        case Array::Undecided:
+        case Array::Int8Array:
+        case Array::Int16Array:
+        case Array::Int32Array:
+        case Array::Uint8Array:
+        case Array::Uint8ClampedArray:
+        case Array::Uint16Array:
+        case Array::Uint32Array:
+        case Array::Float32Array:
+        case Array::Float64Array:
+        case Array::AnyTypedArray:
+        case Array::ForceExit:
+            return false;
+        case Array::DirectArguments:
+        case Array::ArrayStorage:
+        case Array::SlowPutArrayStorage:
+            return !isInBounds();
+        default:
+            return true;
+        }
     }
 
     bool canCSEStorage() const
@@ -601,6 +643,79 @@ private:
     } u;
     static_assert(sizeof(decltype(u.asBytes)) == sizeof(decltype(u.asWord)), "the word form of ArrayMode should have the same size as the individual slices");
 };
+
+class ArrayModeList {
+public:
+    constexpr static unsigned MAX_MODES = 7;
+    using StorageType = std::array<ArrayMode, MAX_MODES>;
+    using const_iterator = typename StorageType::const_iterator;
+
+    template<typename... Args>
+    inline ArrayModeList(Args... args) {
+        constexpr unsigned argc = sizeof...(args);
+        static_assert(argc <= MAX_MODES);
+        m_count = argc;
+        std::array<ArrayMode, argc> modeArgs { args... };
+        for (unsigned i = 0; i < argc; i ++)
+            m_modes[i] = modeArgs[i];
+    }
+
+    inline ArrayModeList()
+        : m_count(0)
+    { }
+
+    inline bool full() const
+    {
+        return count() >= MAX_MODES;
+    }
+
+    inline void push(ArrayMode mode)
+    {
+        RELEASE_ASSERT(!full());
+        m_modes[m_count++] = mode;
+    }
+
+    inline unsigned count() const
+    {
+        return m_count;
+    }
+
+    inline ArrayMode operator[](unsigned i) const
+    {
+        return m_modes[i];
+    }
+
+    const_iterator begin() const { return m_modes.begin(); } 
+    const_iterator end() const { return m_modes.begin() + m_count; }
+
+    template<typename Pred>
+    inline bool trueForAny(Pred&& pred)
+    {
+        for (unsigned i = 0; i < m_count; i ++) {
+            if (pred(m_modes[i]))
+                return true;
+        }
+        return false;
+    }
+
+    template<typename Pred>
+    inline bool trueForAll(Pred&& pred)
+    {
+        for (unsigned i = 0; i < m_count; i ++) {
+            if (!pred(m_modes[i]))
+                return false;
+        }
+        return true;
+    }
+private:
+    unsigned m_count;
+    StorageType m_modes;
+};
+
+static inline bool doesClobberTop(const ArrayMode& arrayMode)
+{
+    return arrayMode.doesClobberTop();
+}
 
 static inline bool canCSEStorage(const ArrayMode& arrayMode)
 {

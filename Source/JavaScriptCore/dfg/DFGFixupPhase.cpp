@@ -1213,6 +1213,15 @@ private:
             break;
         }
 
+        case MultiArrayGetByVal:
+            fixEdge<CellUse>(node->child1());
+            if (!node->prediction()) {
+                m_insertionSet.insertNode(
+                    m_indexInBlock, SpecNone, ForceOSRExit, node->origin);
+            }
+            node->setResult(NodeResultJS);
+            break;
+
         case GetByValWithThis:
             break;
 
@@ -2343,7 +2352,8 @@ private:
         }
 
         case CheckDetached:
-        case CheckArray: {
+        case CheckArray: 
+        case MultiCheckArray: {
             fixEdge<CellUse>(node->child1());
             break;
         }
@@ -4325,7 +4335,7 @@ private:
             ArrayProfile* arrayProfile = profiledBlock->getArrayProfile(locker, node->origin.semantic.bytecodeIndex());
             if (arrayProfile) {
                 arrayProfile->computeUpdatedPrediction(profiledBlock);
-                arrayMode = ArrayMode::fromObserved(locker, arrayProfile, Array::Read, false);
+                arrayMode = ArrayMode::fromObserved(locker, arrayProfile, Array::Read, false, false)[0];
                 if (arrayMode.type() == Array::Unprofiled) {
                     // For normal array operations, it makes sense to treat Unprofiled
                     // accesses as ForceExit and get more data rather than using

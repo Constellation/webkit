@@ -592,6 +592,7 @@ public:
         case CheckNotJSCast:
         case CheckStructureImmediate:
         case CheckTraps:
+        case MultiCheckArray:
             return true;
         default:
             return false;
@@ -1952,6 +1953,7 @@ public:
         case GetByValMegamorphic:
         case GetByValWithThis:
         case GetByValWithThisMegamorphic:
+        case MultiArrayGetByVal:
         case GetPrivateName:
         case GetPrivateNameById:
         case Call:
@@ -3279,6 +3281,17 @@ public:
     {
         ASSERT(hasBasicBlockLocation());
         return m_opInfo.as<BasicBlockLocation*>();
+    }
+
+    bool hasArrayModeList() const
+    {
+        return op() == MultiArrayGetByVal || op() == MultiCheckArray;
+    }
+
+    ArrayModeList& arrayModeList()
+    {
+        ASSERT(hasArrayModeList());
+        return *m_opInfo.as<ArrayModeList*>();
     }
 
     bool hasCallDOMGetterData() const

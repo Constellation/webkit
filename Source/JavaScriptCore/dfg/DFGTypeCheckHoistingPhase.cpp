@@ -275,6 +275,7 @@ private:
                 case GetButterfly:
                 case EnumeratorGetByVal:
                 case GetByVal:
+                case MultiArrayGetByVal:
                 case PutByValDirect:
                 case PutByVal:
                 case PutByValAlias:
@@ -283,6 +284,7 @@ private:
                 case GetArrayLength:
                 case GetTypedArrayLengthAsInt52:
                 case CheckArray:
+                case MultiCheckArray:
                 case CheckDetached:
                 case GetIndexedPropertyStorage:
                 case ResolveRope:
@@ -360,6 +362,7 @@ private:
                 case GetButterfly:
                 case EnumeratorGetByVal:
                 case GetByVal:
+                case MultiArrayGetByVal:
                 case PutByValDirect:
                 case PutByVal:
                 case PutByValAlias:

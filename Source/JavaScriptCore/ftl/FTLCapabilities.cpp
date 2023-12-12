@@ -214,6 +214,7 @@ inline CapabilityLevel canCompile(Node* node)
     case CheckVarargs:
     case CheckArray:
     case CheckArrayOrEmpty:
+    case MultiCheckArray:
     case CheckDetached:
     case CountExecution:
     case SuperSamplerBegin:
@@ -424,6 +425,7 @@ inline CapabilityLevel canCompile(Node* node)
     case GetTypedArrayLengthAsInt52:
     case GetVectorLength:
     case GetByVal:
+    case MultiArrayGetByVal:
     case GetByValMegamorphic:
     case GetByValWithThis:
     case GetByValWithThisMegamorphic:

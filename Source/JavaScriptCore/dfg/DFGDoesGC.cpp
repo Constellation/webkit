@@ -118,6 +118,7 @@ bool doesGC(Graph& graph, Node* node)
     case CheckNotJSCast:
     case CheckArray:
     case CheckArrayOrEmpty:
+    case MultiCheckArray:
     case CheckDetached:
     case GetScope:
     case SkipScope:
@@ -534,9 +535,10 @@ bool doesGC(Graph& graph, Node* node)
     case GetByVal:
     case GetByValMegamorphic:
     case EnumeratorGetByVal:
-        if (node->arrayMode().type() == Array::String)
-            return true;
-        return false;
+        return node->arrayMode().type() == Array::String;
+
+    case MultiArrayGetByVal:
+        return true;
 
     case ResolveRope:
         return true;

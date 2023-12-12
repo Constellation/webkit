@@ -1057,7 +1057,30 @@ private:
     {
         profile.computeUpdatedPrediction(m_inlineStackTop->m_profiledBlock);
         bool makeSafe = profile.outOfBounds(locker);
-        return ArrayMode::fromObserved(locker, &profile, action, makeSafe);
+        return ArrayMode::fromObserved(locker, &profile, action, makeSafe, false)[0];
+    }
+
+    ArrayModeList getArrayModes(Array::Action action)
+    {
+        CodeBlock* codeBlock = m_inlineStackTop->m_profiledBlock;
+        ConcurrentJSLocker locker(codeBlock->m_lock);
+        ArrayProfile* profile = codeBlock->getArrayProfile(locker, codeBlock->bytecodeIndex(m_currentInstruction));
+        if (!profile)
+            return { };
+        return getArrayModes(locker, *profile, action);
+    }
+
+    ArrayModeList getArrayModes(ArrayProfile& profile, Array::Action action)
+    {
+        ConcurrentJSLocker locker(m_inlineStackTop->m_profiledBlock->m_lock);
+        return getArrayModes(locker, profile, action);
+    }
+
+    ArrayModeList getArrayModes(const ConcurrentJSLocker& locker, ArrayProfile& profile, Array::Action action)
+    {
+        profile.computeUpdatedPrediction(m_inlineStackTop->m_profiledBlock);
+        bool makeSafe = profile.outOfBounds(locker);
+        return ArrayMode::fromObserved(locker, &profile, action, makeSafe, true);
     }
 
     Node* makeSafe(Node* node)
@@ -7041,18 +7064,27 @@ void ByteCodeParser::parseBlock(unsigned limit)
             if (shouldCompileAsGetById)
                 handleGetById(bytecode.m_dst, prediction, base, identifier, identifierNumber, getByStatus, AccessType::GetById, nextOpcodeIndex());
             else {
-                ArrayMode arrayMode = getArrayMode(bytecode.metadata(codeBlock).m_arrayProfile, Array::Read);
-                // FIXME: We could consider making this not vararg, since it only uses three child
-                // slots.
-                // https://bugs.webkit.org/show_bug.cgi?id=184192
-                addVarArgChild(base);
-                addVarArgChild(property);
-                addVarArgChild(nullptr); // Leave room for property storage.
-                Node* getByVal = addToGraph(Node::VarArg, getByStatus.isMegamorphic() ? GetByValMegamorphic : GetByVal, OpInfo(arrayMode.asWord()), OpInfo(prediction));
-                m_exitOK = false; // GetByVal must be treated as if it clobbers exit state, since FixupPhase may make it generic.
-                set(bytecode.m_dst, getByVal);
-                if (!getByStatus.isMegamorphic() && getByStatus.observedStructureStubInfoSlowPath())
-                    m_graph.m_slowGetByVal.add(getByVal);
+                ArrayModeList arrayModes = getArrayModes(bytecode.metadata(codeBlock).m_arrayProfile, Array::Read);
+                if (arrayModes.count() == 1 || getByStatus.isMegamorphic()) {
+                    // FIXME: We could consider making this not vararg, since it only uses three child
+                    // slots.
+                    // https://bugs.webkit.org/show_bug.cgi?id=184192
+                    addVarArgChild(base);
+                    addVarArgChild(property);
+                    addVarArgChild(nullptr); // Leave room for property storage.
+                    Node* getByVal = addToGraph(Node::VarArg, getByStatus.isMegamorphic() ? GetByValMegamorphic : GetByVal, OpInfo(arrayModes[0].asWord()), OpInfo(prediction));
+                    m_exitOK = false; // GetByVal must be treated as if it clobbers exit state, since FixupPhase may make it generic.
+                    set(bytecode.m_dst, getByVal);
+                    if (!getByStatus.isMegamorphic() && getByStatus.observedStructureStubInfoSlowPath())
+                        m_graph.m_slowGetByVal.add(getByVal);
+                } else {
+                    ArrayModeList* data = m_graph.m_arrayModeLists.add(arrayModes);
+                    Node* multiArrayGetByVal = addToGraph(MultiArrayGetByVal, OpInfo(data), OpInfo(prediction), base, property);
+                    m_exitOK = false;
+                    set(bytecode.m_dst, multiArrayGetByVal);
+                    if (!getByStatus.isMegamorphic() && getByStatus.observedStructureStubInfoSlowPath())
+                        m_graph.m_slowGetByVal.add(multiArrayGetByVal);
+                }
             }
 
             NEXT_OPCODE(op_get_by_val);

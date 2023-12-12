@@ -1148,6 +1148,32 @@ void SpeculativeJIT::checkArray(Node* node)
     noResult(m_currentNode);
 }
 
+void SpeculativeJIT::compileMultiCheckArray(Node* node)
+{
+    UNUSED_PARAM(node);
+    // TODO: Uncomment this, make it actually work.
+    // IndexingType allowedIndexingTypes;
+    // SpeculateCellOperand base(this, node->child1());
+    // GPRReg baseReg = base.gpr();
+    // StructureSet structuresToCheck;
+
+    // for (ArrayMode mode : node->arrayModeList()) {
+    //     ASSERT(arrayMode.isSpecific());
+    //     ASSERT(!arrayMode.doesConversion());
+    //     if (mode.isSomeTypedArrayView())
+    //         structuresToCheck.add(globalObject->typedArrayStructureConcurrently(mode.typedArrayType(), false));
+    //     else {
+    //         IndexingType mask = mode.shapeMask();
+    //         ASSERT(mask);
+    //         allowedIndexingTypes |= mask;
+    //     }
+    // }
+
+    // std::optional<GPRTemporary> temp;
+    // std::optional<GPRReg> tempGPR;
+    noResult(m_currentNode);
+}
+
 void SpeculativeJIT::arrayify(Node* node, GPRReg baseReg, GPRReg propertyReg)
 {
     ASSERT(node->arrayMode().doesConversion());

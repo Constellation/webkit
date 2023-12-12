@@ -621,6 +621,51 @@ private:
             }
             break;
         }
+
+        case MultiArrayGetByVal:
+            for (ArrayMode mode : node->arrayModeList()) {
+                switch (mode.type()) {
+                case Array::Int32:
+                    if (mode.isOutOfBounds())
+                        changed |= mergePrediction(node->getHeapPrediction() | SpecInt32Only);
+                    else
+                        changed |= mergePrediction(SpecInt32Only);
+                    break;
+                case Array::Double:
+                    if (mode.isOutOfBounds())
+                        changed |= mergePrediction(node->getHeapPrediction() | SpecDoubleReal);
+                    else if (node->getHeapPrediction() & SpecNonIntAsDouble)
+                        changed |= mergePrediction(SpecDoubleReal);
+                    else
+                        changed |= mergePrediction(SpecBytecodeDouble);
+                    break;
+                case Array::Float32Array:
+                case Array::Float64Array:
+                    changed |= mergePrediction(SpecBytecodeDouble);
+                    break;
+                case Array::Uint32Array:
+                    if (isInt32SpeculationForArithmetic(node->getHeapPrediction()))
+                        changed |= mergePrediction(SpecInt32Only);
+                    else
+                        changed |= mergePrediction(SpecInt32Only | SpecAnyIntAsDouble);
+                    break;
+                case Array::Int8Array:
+                case Array::Uint8Array:
+                case Array::Int16Array:
+                case Array::Uint16Array:
+                case Array::Int32Array:
+                    changed |= mergePrediction(SpecInt32Only);
+                    break;
+                case Array::BigInt64Array:
+                case Array::BigUint64Array:
+                    changed |= mergePrediction(SpecBigInt);
+                    break;
+                default:
+                    changed |= mergePrediction(node->getHeapPrediction());
+                    break;
+                }
+            }
+            break;
             
         case ToThis: {
             // ToThis in methods for primitive types should speculate primitive types in strict mode.
@@ -1455,6 +1500,7 @@ private:
         case ArithMod:
         case ArithAbs:
         case GetByVal:
+        case MultiArrayGetByVal:
         case ToThis:
         case ToPrimitive: 
         case ToPropertyKey:
@@ -1607,6 +1653,7 @@ private:
         case Phantom:
         case Check:
         case CheckArray:
+        case MultiCheckArray:
         case CheckDetached:
         case CheckVarargs:
         case PutGlobalVariable:

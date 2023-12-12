@@ -1382,6 +1382,7 @@ public:
     // We use a scopedLambda to placate register allocation validation.
     enum class CanUseFlush : bool { No, Yes };
     void compileGetByVal(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
+    void compileMultiArrayGetByVal(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
 
     void compileGetCharCodeAt(Node*);
     void compileGetByValOnString(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
@@ -1482,6 +1483,7 @@ public:
     void compilePutByValForCellWithSymbol(Node*);
     void compileGetByValWithThis(Node*);
     void compileGetByValWithThisMegamorphic(Node*);
+    void compileMultiCheckArray(Node*);
     void compilePutPrivateName(Node*);
     void compilePutPrivateNameById(Node*);
     void compileCheckPrivateBrand(Node*);

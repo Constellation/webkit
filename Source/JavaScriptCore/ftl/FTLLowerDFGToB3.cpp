@@ -1055,6 +1055,9 @@ private:
         case CheckArrayOrEmpty:
             compileCheckArrayOrEmpty();
             break;
+        case MultiCheckArray:
+            compileMultiCheckArray();
+            break;
         case CheckDetached:
             compileCheckDetached();
             break;
@@ -1081,6 +1084,9 @@ private:
             break;
         case GetByValMegamorphic:
             compileGetByValMegamorphic();
+            break;
+        case MultiArrayGetByVal:
+            compileMultiArrayGetByVal();
             break;
         case GetMyArgumentByVal:
         case GetMyArgumentByValOutOfBounds:
@@ -5438,6 +5444,20 @@ private:
             BadIndexingType, jsValueValue(cell), edge.node(),
             m_out.isNull(m_out.loadPtr(cell, m_heaps.JSArrayBufferView_vector)));
     }
+    
+    void compileMultiCheckArray()
+    {
+        // TODO: Uncomment this, make it work.
+        // Edge edge = m_node->child1();
+        // LValue cell = lowCell(edge);
+
+        // if (m_node->arrayMode().alreadyChecked(m_graph, m_node, abstractValue(edge)))
+        //     return;
+        
+        // speculate(
+        //     BadIndexingType, jsValueValue(cell), nullptr,
+        //     m_out.logicalNot(isArrayTypeForCheckArray(cell, m_node->arrayMode())));
+    }
 
     LValue emitGetTypedArrayByteOffsetExceptSettingResult()
     {
@@ -6285,6 +6305,120 @@ IGNORE_CLANG_WARNINGS_END
             setDouble(result);
         else
             setJSValue(result);
+    }
+
+    void compileMultiArrayGetByVal()
+    {
+        JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
+        if (m_graph.m_slowGetByVal.contains(m_node)) {
+            setJSValue(
+                vmCall(
+                    Int64, operationGetByValGeneric, weakPointer(globalObject),
+                    lowJSValue(m_graph.child(m_node, 0)), lowJSValue(m_graph.child(m_node, 1)))
+            );
+            return;
+        }
+
+        Node* node = m_node;
+
+        LValue base = lowJSValue(m_graph.child(node, 0), ManualOperandSpeculation);
+        LValue property = lowJSValue(m_graph.child(node, 1), ManualOperandSpeculation);
+
+        speculate(m_graph.child(node, 0));
+        speculate(m_graph.child(node, 1));
+        bool baseIsCell = abstractValue(m_graph.child(node, 0)).isType(SpecCell);
+        bool propertyIsString = false;
+        bool propertyIsInt32 = false;
+        bool propertyIsSymbol = false;
+        bool isEnumerator = node->op() == EnumeratorGetByVal;
+        if (abstractValue(m_graph.child(node, 1)).isType(SpecString))
+            propertyIsString = true;
+        else if (abstractValue(m_graph.child(node, 1)).isType(SpecInt32Only))
+            propertyIsInt32 = true;
+        else if (abstractValue(m_graph.child(node, 1)).isType(SpecSymbol))
+            propertyIsSymbol = true;
+
+        PatchpointValue* patchpoint = m_out.patchpoint(Int64);
+        patchpoint->appendSomeRegister(base);
+        patchpoint->appendSomeRegister(property);
+        patchpoint->append(m_notCellMask, ValueRep::lateReg(GPRInfo::notCellMaskRegister));
+        patchpoint->append(m_numberTag, ValueRep::lateReg(GPRInfo::numberTagRegister));
+        patchpoint->clobber(RegisterSetBuilder::macroClobberedGPRs());
+        patchpoint->numGPScratchRegisters = Options::useDataICInFTL() ? 1 : 0;
+
+        RefPtr<PatchpointExceptionHandle> exceptionHandle = preparePatchpointForExceptions(patchpoint);
+
+        State* state = &m_ftlState;
+        CodeOrigin nodeSemanticOrigin = node->origin.semantic;
+        patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
+            JIT_COMMENT(jit, "GetByValImpl: unavailable registers: ", params.unavailableRegisters(), " used: ", params.usedRegisters());
+            AllowMacroScratchRegisterUsage allowScratch(jit);
+
+            CallSiteIndex callSiteIndex = state->jitCode->common.codeOrigins->addUniqueCallSiteIndex(nodeSemanticOrigin);
+
+            // This is the direct exit target for operation calls.
+            Box<CCallHelpers::JumpList> exceptions = exceptionHandle->scheduleExitCreation(params)->jumps(jit);
+
+            // This is the exit for call IC's created by the IC for getters. We don't have
+            // to do anything weird other than call this, since it will associate the exit with
+            // the callsite index.
+            exceptionHandle->scheduleExitCreationForUnwind(params, callSiteIndex);
+
+            GPRReg resultGPR = params[0].gpr();
+            GPRReg baseGPR = params[1].gpr();
+            GPRReg propertyGPR = params[2].gpr();
+            GPRReg stubInfoGPR = Options::useDataICInFTL() ? params.gpScratch(0) : InvalidGPRReg;
+
+            auto* stubInfo = state->addStructureStubInfo();
+            auto generator = Box<JITGetByValGenerator>::create(
+                jit.codeBlock(), stubInfo, JITType::FTLJIT, nodeSemanticOrigin, callSiteIndex, AccessType::GetByVal,
+                params.unavailableRegisters(), JSValueRegs(baseGPR), JSValueRegs(propertyGPR), JSValueRegs(resultGPR), InvalidGPRReg, stubInfoGPR);
+
+            generator->stubInfo()->propertyIsString = propertyIsString;
+            generator->stubInfo()->propertyIsInt32 = propertyIsInt32;
+            generator->stubInfo()->propertyIsSymbol = propertyIsSymbol;
+            generator->stubInfo()->isEnumerator = isEnumerator;
+
+            CCallHelpers::Jump notCell;
+            if (!baseIsCell)
+                notCell = jit.branchIfNotCell(baseGPR);
+
+            generator->generateFastPath(jit);
+            CCallHelpers::Label done = jit.label();
+
+            params.addLatePath([=] (CCallHelpers& jit) {
+                AllowMacroScratchRegisterUsage allowScratch(jit);
+
+                if (notCell.isSet())
+                    notCell.link(&jit);
+                if (!Options::useDataICInFTL())
+                    generator->slowPathJump().link(&jit);
+                CCallHelpers::Label slowPathBegin = jit.label();
+                CCallHelpers::Call slowPathCall;
+                if (Options::useDataICInFTL()) {
+                    jit.move(CCallHelpers::TrustedImmPtr(generator->stubInfo()), stubInfoGPR);
+                    generator->stubInfo()->m_slowOperation = operationGetByValOptimize;
+                    slowPathCall = callOperation(
+                        *state, params.unavailableRegisters(), jit, nodeSemanticOrigin,
+                        exceptions.get(), CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), resultGPR,
+                        baseGPR, propertyGPR, CCallHelpers::TrustedImmPtr(jit.codeBlock()->globalObjectFor(nodeSemanticOrigin)), stubInfoGPR, CCallHelpers::TrustedImmPtr(nullptr)).call();
+                } else {
+                    slowPathCall = callOperation(
+                        *state, params.unavailableRegisters(), jit, nodeSemanticOrigin,
+                        exceptions.get(), operationGetByValOptimize, resultGPR,
+                        baseGPR, propertyGPR, CCallHelpers::TrustedImmPtr(jit.codeBlock()->globalObjectFor(nodeSemanticOrigin)), CCallHelpers::TrustedImmPtr(generator->stubInfo()), CCallHelpers::TrustedImmPtr(nullptr)).call();
+                }
+                jit.jump().linkTo(done, &jit);
+
+                generator->reportSlowPathCall(slowPathBegin, slowPathCall);
+
+                jit.addLinkTask([=] (LinkBuffer& linkBuffer) {
+                    generator->finalize(linkBuffer, linkBuffer);
+                });
+            });
+        });
+
+        setJSValue(patchpoint);
     }
     
     void compileGetMyArgumentByVal()

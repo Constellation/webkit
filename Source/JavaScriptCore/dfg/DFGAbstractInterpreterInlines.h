@@ -2661,6 +2661,91 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         }
         break;
     }
+
+    case MultiArrayGetByVal: {
+        SpeculatedType speculation = SpecNone;
+        for (ArrayMode mode : node->arrayModeList()) {
+            switch (mode.type()) {
+            case Array::SelectUsingPredictions:
+            case Array::Unprofiled:
+            case Array::SelectUsingArguments:
+                RELEASE_ASSERT_NOT_REACHED();
+                break;
+            case Array::ForceExit:
+                m_state.setIsValid(false);
+                break;
+            case Array::Undecided:
+                break;
+            case Array::Generic:
+                clobberWorld();
+                makeHeapTopForNode(node);
+                speculation = SpecHeapTop;
+                break;
+            case Array::String:
+                if (mode.isOutOfBounds())
+                    clobberWorld();
+                makeHeapTopForNode(node);
+                speculation = SpecHeapTop;
+                break;
+            case Array::DirectArguments:
+            case Array::ScopedArguments:
+                if (mode.isOutOfBounds())
+                    clobberWorld();
+                makeHeapTopForNode(node);
+                speculation = SpecHeapTop;
+                break;
+            case Array::Int32:
+                if (mode.isEffectfulOutOfBounds())
+                    clobberWorld();
+                makeHeapTopForNode(node);
+                speculation = SpecHeapTop;
+                break;
+            case Array::Double:
+                if (mode.isEffectfulOutOfBounds())
+                    clobberWorld();
+                makeHeapTopForNode(node);
+                speculation = SpecHeapTop;
+                break;
+            case Array::Contiguous:
+            case Array::ArrayStorage:
+            case Array::SlowPutArrayStorage:
+                if (mode.isEffectfulOutOfBounds())
+                    clobberWorld();
+                makeHeapTopForNode(node);
+                speculation = SpecHeapTop;
+                break;
+            case Array::Int8Array:
+            case Array::Int16Array:
+            case Array::Int32Array:
+            case Array::Uint8Array:
+            case Array::Uint8ClampedArray:
+            case Array::Uint16Array:
+                speculation |= SpecInt32Only;
+                break;
+            case Array::Uint32Array:
+                if (node->shouldSpeculateInt32())
+                    speculation |= SpecInt32Only;
+                else
+                    speculation |= SpecAnyIntAsDouble;
+                break;
+            case Array::Float32Array:
+            case Array::Float64Array:
+                // Since this node doesn't directly load from the array and
+                // goes through an inline cache, we can safely assume any 
+                // floats we load to be purified.
+                speculation |= SpecBytecodeDouble;
+                break;
+            default:
+                RELEASE_ASSERT_NOT_REACHED();
+                break;
+            }
+        }
+        RELEASE_ASSERT(!(speculation & SpecInt52Any));
+        RELEASE_ASSERT(!(speculation & SpecDoubleImpureNaN));
+        if (speculation != SpecHeapTop)
+            setNonCellTypeForNode(node, speculation);
+        break;
+    }
             
     case PutByValDirect:
     case PutByVal:
@@ -4120,6 +4205,75 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
             break;
         }
         filterArrayModes(node->child1(), node->arrayMode().arrayModesThatPassFiltering(), admittedTypes);
+        break;
+    }
+
+    case MultiCheckArray: {
+        SpeculatedType admittedTypes = SpecNone;
+        ArrayModes modesThatPassFiltering = 0;
+        for (ArrayMode mode : node->arrayModeList()) {
+            modesThatPassFiltering |= mode.arrayModesThatPassFiltering();
+
+            switch (node->arrayMode().type()) {
+            case Array::String:
+                admittedTypes |= SpecString;
+                break;
+            case Array::Int32:
+            case Array::Double:
+            case Array::Contiguous:
+            case Array::Undecided:
+            case Array::ArrayStorage:
+            case Array::SlowPutArrayStorage:
+                break;
+            case Array::DirectArguments:
+                admittedTypes |= SpecDirectArguments;
+                break;
+            case Array::ScopedArguments:
+                admittedTypes |= SpecScopedArguments;
+                break;
+            case Array::Int8Array:
+                admittedTypes |= SpecInt8Array;
+                break;
+            case Array::Int16Array:
+                admittedTypes |= SpecInt16Array;
+                break;
+            case Array::Int32Array:
+                admittedTypes |= SpecInt32Array;
+                break;
+            case Array::Uint8Array:
+                admittedTypes |= SpecUint8Array;
+                break;
+            case Array::Uint8ClampedArray:
+                admittedTypes |= SpecUint8ClampedArray;
+                break;
+            case Array::Uint16Array:
+                admittedTypes |= SpecUint16Array;
+                break;
+            case Array::Uint32Array:
+                admittedTypes |= SpecUint32Array;
+                break;
+            case Array::Float32Array:
+                admittedTypes |= SpecFloat32Array;
+                break;
+            case Array::Float64Array:
+                admittedTypes |= SpecFloat64Array;
+                break;
+            case Array::BigInt64Array:
+                admittedTypes |= SpecBigInt64Array;
+                break;
+            case Array::BigUint64Array:
+                admittedTypes |= SpecBigUint64Array;
+                break;
+            case Array::AnyTypedArray:
+                admittedTypes |= SpecTypedArrayView;
+                break;
+            default:
+                RELEASE_ASSERT_NOT_REACHED();
+                break;
+            }
+        }
+        filter(node->child1(), admittedTypes);
+        filterArrayModes(node->child1(), modesThatPassFiltering, admittedTypes);
         break;
     }
 

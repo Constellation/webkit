@@ -2787,6 +2787,94 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
     } }
 }
 
+void SpeculativeJIT::compileMultiArrayGetByVal(Node* node, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix)
+{
+    if (m_graph.m_slowGetByVal.contains(node)) {
+        JSValueOperand base(this, m_graph.child(node, 0));
+        JSValueOperand property(this, m_graph.child(node, 1));
+        GPRReg baseGPR = base.gpr();
+        GPRReg propertyGPR = property.gpr();
+
+        JSValueRegs resultRegs;
+        CanUseFlush canUseFlush = CanUseFlush::Yes;
+        std::tie(resultRegs, std::ignore, canUseFlush) = prefix(DataFormatJS);
+
+        if (canUseFlush == CanUseFlush::No)
+            silentSpillAllRegisters(resultRegs);
+        else
+            flushRegisters();
+        callOperation(operationGetByValGeneric, resultRegs, LinkableConstant::globalObject(*this, node), baseGPR, propertyGPR);
+        if (canUseFlush == CanUseFlush::No)
+            silentFillAllRegisters();
+        exceptionCheck();
+
+        jsValueResult(resultRegs, node);
+        return;
+    }
+
+    JSValueOperand base(this, m_graph.child(node, 0), ManualOperandSpeculation);
+    JSValueOperand property(this, m_graph.child(node, 1), ManualOperandSpeculation);
+    GPRReg baseGPR = base.gpr();
+    GPRReg propertyGPR = property.gpr();
+
+    GPRTemporary stubInfoTemp;
+    GPRReg stubInfoGPR = InvalidGPRReg;
+    if (m_graph.m_plan.isUnlinked()) {
+        stubInfoTemp = GPRTemporary(this);
+        stubInfoGPR = stubInfoTemp.gpr();
+    }
+
+    speculate(node, m_graph.child(node, 0));
+    speculate(node, m_graph.child(node, 1));
+
+    JSValueRegs resultRegs;
+    std::tie(resultRegs, std::ignore, std::ignore) = prefix(DataFormatJS);
+    GPRReg resultGPR = resultRegs.gpr();
+
+    CodeOrigin codeOrigin = node->origin.semantic;
+    CallSiteIndex callSite = recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
+    RegisterSetBuilder usedRegisters = this->usedRegisters();
+
+    JumpList slowCases;
+    if (!m_state.forNode(m_graph.child(node, 0)).isType(SpecCell))
+        slowCases.append(branchIfNotCell(baseGPR));
+
+    JSValueRegs baseRegs { baseGPR };
+    JSValueRegs propertyRegs { propertyGPR };
+    auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
+    JITGetByValGenerator gen(
+        codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, AccessType::GetByVal, usedRegisters,
+        baseRegs, propertyRegs, resultRegs, InvalidGPRReg, stubInfoGPR);
+
+    std::visit([&](auto* stubInfo) {
+        if (m_state.forNode(m_graph.child(node, 1)).isType(SpecString))
+            stubInfo->propertyIsString = true;
+        else if (m_state.forNode(m_graph.child(node, 1)).isType(SpecInt32Only))
+            stubInfo->propertyIsInt32 = true;
+        else if (m_state.forNode(m_graph.child(node, 1)).isType(SpecSymbol))
+            stubInfo->propertyIsSymbol = true;
+        stubInfo->isEnumerator = node->op() == EnumeratorGetByVal;
+    }, stubInfo);
+
+    std::unique_ptr<SlowPathGenerator> slowPath;
+    if (m_graph.m_plan.isUnlinked()) {
+        gen.generateDFGDataICFastPath(*this, stubInfoConstant, stubInfoGPR);
+        slowPath = slowPathICCall(
+            slowCases, this, stubInfoConstant, stubInfoGPR, Address(stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValOptimize,
+            resultGPR, baseGPR, propertyGPR, LinkableConstant::globalObject(*this, node), stubInfoGPR, nullptr);
+    } else {
+        gen.generateFastPath(*this);
+        slowCases.append(gen.slowPathJump());
+        slowPath = slowPathCall(
+            slowCases, this, operationGetByValOptimize,
+            resultGPR, baseGPR, propertyGPR, LinkableConstant::globalObject(*this, node), TrustedImmPtr(gen.stubInfo()), nullptr);
+    }
+
+    addGetByVal(gen, slowPath.get());
+    addSlowPathGenerator(WTFMove(slowPath));
+    jsValueResult(resultGPR, node);
+}
+
 #if ENABLE(YARR_JIT_REGEXP_TEST_INLINE)
 void SpeculativeJIT::compileRegExpTestInline(Node* node)
 {
@@ -3521,6 +3609,10 @@ void SpeculativeJIT::compile(Node* node)
         checkArray(node);
         break;
     }
+
+    case MultiCheckArray:
+        compileMultiCheckArray(node);
+        break;
         
     case Arrayify:
     case ArrayifyToStructure: {
@@ -3541,6 +3633,24 @@ void SpeculativeJIT::compile(Node* node)
     case GetByVal: {
         JSValueRegsTemporary result;
         compileGetByVal(node, scopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>([&] (DataFormat preferredFormat) {
+            JSValueRegs resultRegs;
+            switch (preferredFormat) {
+            case DataFormatDouble:
+                break;
+            default: {
+                result = JSValueRegsTemporary(this);
+                resultRegs = result.regs();
+                break;
+            }
+            };
+            return std::tuple { resultRegs, preferredFormat, CanUseFlush::Yes };
+        }));
+        break;
+    }
+
+    case MultiArrayGetByVal: {
+        JSValueRegsTemporary result;
+        compileMultiArrayGetByVal(node, scopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>([&] (DataFormat preferredFormat) {
             JSValueRegs resultRegs;
             switch (preferredFormat) {
             case DataFormatDouble:

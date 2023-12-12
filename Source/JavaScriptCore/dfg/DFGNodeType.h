@@ -206,6 +206,7 @@ namespace JSC { namespace DFG {
     macro(GetByValMegamorphic, NodeResultJS | NodeMustGenerate | NodeHasVarArgs) \
     macro(GetByValWithThis, NodeResultJS | NodeMustGenerate) \
     macro(GetByValWithThisMegamorphic, NodeResultJS | NodeMustGenerate) \
+    macro(MultiArrayGetByVal, NodeResultJS | NodeMustGenerate) \
     macro(GetMyArgumentByVal, NodeResultJS | NodeMustGenerate) \
     macro(GetMyArgumentByValOutOfBounds, NodeResultJS | NodeMustGenerate) \
     macro(VarargsLength, NodeMustGenerate | NodeResultInt32) \
@@ -252,6 +253,7 @@ namespace JSC { namespace DFG {
     macro(NukeStructureAndSetButterfly, NodeMustGenerate) \
     macro(CheckArray, NodeMustGenerate) \
     macro(CheckArrayOrEmpty, NodeMustGenerate) \
+    macro(MultiCheckArray, NodeMustGenerate) \
     macro(GetPrivateName, NodeResultJS | NodeMustGenerate) \
     macro(GetPrivateNameById, NodeResultJS | NodeMustGenerate) \
     /* This checks if the edge is a typed array and if it is detached. */ \

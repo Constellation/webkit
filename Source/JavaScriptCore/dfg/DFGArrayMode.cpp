@@ -34,9 +34,11 @@
 #include "DFGGraph.h"
 #include "JSCInlines.h"
 
+#include <wtf/MathExtras.h>
+
 namespace JSC { namespace DFG {
 
-ArrayMode ArrayMode::fromObserved(const ConcurrentJSLocker& locker, ArrayProfile* profile, Array::Action action, bool makeSafe)
+ArrayModeList ArrayMode::fromObserved(const ConcurrentJSLocker& locker, ArrayProfile* profile, Array::Action action, bool makeSafe, bool allowMultiple)
 {
     Array::Class nonArray;
     if (profile->usesOriginalArrayStructures(locker))
@@ -152,8 +154,101 @@ ArrayMode ArrayMode::fromObserved(const ConcurrentJSLocker& locker, ArrayProfile
 
     default:
         // If we have seen multiple TypedArray types, or a TypedArray and non-typed array, it doesn't make sense to try to convert the object since you can't convert typed arrays.
-        if (observed & ALL_TYPED_ARRAY_MODES)
-            return ArrayMode(Array::Generic, nonArray, Array::AsIs, action).withProfile(locker, profile, makeSafe);
+        if (observed & ALL_TYPED_ARRAY_MODES) {
+            ArrayMode generic = ArrayMode(Array::Generic, nonArray, Array::AsIs, action).withProfile(locker, profile, makeSafe);
+            if (!allowMultiple)
+                return generic;
+
+            ArrayModeList result;
+            unsigned typedArrayModes = observed & ALL_TYPED_ARRAY_MODES;
+            
+            // Prefetch these to avoid overly touching the profile.
+            Array::Speculation speculation = speculationFromProfile(locker, profile, makeSafe);
+            bool mayBeLargeTypedArray = profile->mayBeLargeTypedArray(locker);
+            bool mayBeResizableOrGrowableSharedTypedArray = profile->mayBeResizableOrGrowableSharedTypedArray(locker);
+
+            // First, visit each typed array seen in the observed modes, and add a mode for it.
+            while (typedArrayModes) {
+                if (result.full())
+                    return generic;
+
+                ArrayModes typedArrayMode = static_cast<ArrayModes>(1u << ctz(typedArrayModes));
+                Array::Type type;
+                switch (typedArrayMode) {
+                case Int8ArrayMode: type = Array::Int8Array; break;
+                case Int16ArrayMode: type = Array::Int16Array; break;
+                case Int32ArrayMode: type = Array::Int32Array; break;
+                case Uint8ArrayMode: type = Array::Uint8Array; break;
+                case Uint8ClampedArrayMode: type = Array::Uint8ClampedArray; break;
+                case Uint16ArrayMode: type = Array::Uint16Array; break;
+                case Uint32ArrayMode: type = Array::Uint32Array; break;
+                case Float32ArrayMode: type = Array::Float32Array; break;
+                case Float64ArrayMode: type = Array::Float64Array; break;
+                case BigInt64ArrayMode: type = Array::BigInt64Array; break;
+                case BigUint64ArrayMode: type = Array::BigUint64Array; break;
+                default: RELEASE_ASSERT_NOT_REACHED();
+                }
+                result.push(ArrayMode(type, nonArray, Array::AsIs, action).withArrayClassAndSpeculation(nonArray, speculation, mayBeLargeTypedArray, mayBeResizableOrGrowableSharedTypedArray));
+                typedArrayModes &= ~typedArrayMode;
+            }
+
+            // Next, attempt to collect all the non-typed array modes observed in the profile. We only
+            // consider contiguous arrays that are likely to be well-behaved currently.
+            ArrayModes observedMinusTypedArrays = static_cast<ArrayModes>(observed & ~ALL_TYPED_ARRAY_MODES);
+            ArrayModes nicelyBehavedModes[] = {
+                asArrayModesIgnoringTypedArrays(NonArrayWithInt32),
+                asArrayModesIgnoringTypedArrays(NonArrayWithDouble),
+                asArrayModesIgnoringTypedArrays(NonArrayWithContiguous),
+                asArrayModesIgnoringTypedArrays(NonArrayWithArrayStorage),
+                asArrayModesIgnoringTypedArrays(NonArrayWithSlowPutArrayStorage),
+                asArrayModesIgnoringTypedArrays(ArrayWithUndecided),
+                asArrayModesIgnoringTypedArrays(ArrayWithInt32),
+                asArrayModesIgnoringTypedArrays(ArrayWithDouble),
+                asArrayModesIgnoringTypedArrays(ArrayWithContiguous),
+                asArrayModesIgnoringTypedArrays(ArrayWithArrayStorage),
+                asArrayModesIgnoringTypedArrays(ArrayWithSlowPutArrayStorage),
+                CopyOnWriteArrayWithInt32ArrayMode,
+                CopyOnWriteArrayWithDoubleArrayMode,
+                CopyOnWriteArrayWithContiguousArrayMode
+            };
+            Array::Type correspondingTypes[] = {
+                Array::Int32,
+                Array::Double,
+                Array::Contiguous,
+                Array::ArrayStorage,
+                Array::SlowPutArrayStorage,
+                Array::Undecided,
+                Array::Int32,
+                Array::Double,
+                Array::Contiguous,
+                Array::ArrayStorage,
+                Array::SlowPutArrayStorage,
+                Array::Int32,
+                Array::Double,
+                Array::Contiguous
+            };
+            constexpr unsigned nicelyBehavedModesCount = sizeof(nicelyBehavedModes) / sizeof(ArrayModes);
+            for (unsigned i = 0; i < nicelyBehavedModesCount; i ++) {
+                if (result.full())
+                    return generic;
+                if (observedMinusTypedArrays & nicelyBehavedModes[i])
+                    result.push(ArrayMode(correspondingTypes[i], action).withArrayClassAndSpeculation(nicelyBehavedModes[i] & ALL_ARRAY_ARRAY_MODES ? Array::Array : Array::NonArray, speculation, false, false));
+                
+                ASSERT(WTF::isPowerOfTwo(nicelyBehavedModes[i])); // Make sure we don't mess up any other bits.
+                observedMinusTypedArrays &= ~nicelyBehavedModes[i];
+            }
+            if (observedMinusTypedArrays)
+                return generic; // There must be some weird array modes that won't be well-behaved.
+
+            // For each array mode we saw, check if it's well-behaved, and bail out if it isn't.
+            for (ArrayMode mode : result) {
+                if (mode.doesClobberTop())
+                    return generic;
+            }
+
+            // Otherwise, we return this list of multiple modes.
+            return result;
+        }
 
         if ((observed & asArrayModesIgnoringTypedArrays(NonArray)) && profile->mayInterceptIndexedAccesses(locker))
             return ArrayMode(Array::SelectUsingPredictions).withSpeculationFromProfile(locker, profile, makeSafe);

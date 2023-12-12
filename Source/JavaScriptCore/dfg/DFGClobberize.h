@@ -142,10 +142,11 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
     // Since Fixup can widen our ArrayModes based on profiling from other nodes we pessimistically assume
     // all nodes with an ArrayMode can clobber top. We allow some nodes like CheckArray because they can
     // only exit.
-    if (graph.m_planStage < PlanStage::AfterFixup && node->hasArrayMode()) {
+    if (graph.m_planStage < PlanStage::AfterFixup && (node->hasArrayMode() || node->hasArrayModeList())) {
         switch (node->op()) {
         case CheckArray:
         case CheckArrayOrEmpty:
+        case MultiCheckArray:
             break;
         case EnumeratorNextUpdateIndexAndMode:
         case EnumeratorGetByVal:
@@ -165,6 +166,7 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         case PutByValMegamorphic:
         case GetByVal:
         case GetByValMegamorphic:
+        case MultiArrayGetByVal:
         case StringCharAt:
         case StringCharCodeAt:
         case StringCodePointAt:
@@ -1028,7 +1030,7 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
             read(ScopeProperties);
             def(HeapLocation(indexedPropertyLoc, ScopeProperties, graph.varArgChild(node, 0), graph.varArgChild(node, 1)), LazyNode(node));
             return;
-            
+             
         case Array::Int32:
             if (mode.isInBounds() || mode.isOutOfBoundsSaneChain()) {
                 read(Butterfly_publicLength);
@@ -1110,6 +1112,123 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
             return;
         }
         RELEASE_ASSERT_NOT_REACHED();
+        return;
+    }
+
+    case MultiArrayGetByVal: {
+        for (ArrayMode mode : node->arrayModeList()) {
+            switch (mode.type()) {
+            case Array::SelectUsingPredictions:
+            case Array::Unprofiled:
+            case Array::SelectUsingArguments:
+                // Assume the worst since we don't have profiling yet.
+                clobberTop();
+                return;
+                
+            case Array::ForceExit:
+                write(SideState);
+                break;
+                
+            case Array::Generic:
+            case Array::BigInt64Array:
+            case Array::BigUint64Array:
+                clobberTop();
+                return;
+                
+            case Array::String:
+                if (mode.isOutOfBounds()) {
+                    clobberTop();
+                    return;
+                }
+                break;
+                
+            case Array::DirectArguments:
+                if (mode.isInBounds()) {
+                    read(DirectArgumentsProperties);
+                    break;
+                }
+                clobberTop();
+                return;
+                
+            case Array::ScopedArguments:
+                read(ScopeProperties);
+                break;
+                
+            case Array::Int32:
+                if (mode.isInBounds() || mode.isOutOfBoundsSaneChain()) {
+                    read(Butterfly_publicLength);
+                    read(IndexedInt32Properties);
+                    break;
+                }
+                clobberTop();
+                return;
+                
+            case Array::Double:
+                if (mode.isInBounds() || mode.isOutOfBoundsSaneChain()) {
+                    read(Butterfly_publicLength);
+                    read(IndexedDoubleProperties);
+                    LocationKind kind;
+                    if (node->hasDoubleResult()) {
+                        if (mode.isInBoundsSaneChain())
+                            kind = IndexedPropertyDoubleSaneChainLoc;
+                        else if (mode.isOutOfBoundsSaneChain())
+                            kind = IndexedPropertyDoubleOutOfBoundsSaneChainLoc;
+                        else
+                            kind = IndexedPropertyDoubleLoc;
+                    } else {
+                        ASSERT(mode.isOutOfBoundsSaneChain());
+                        kind = IndexedPropertyDoubleOrOtherOutOfBoundsSaneChainLoc;
+                    }
+                    break;
+                }
+                clobberTop();
+                return;
+                
+            case Array::Contiguous:
+                if (mode.isInBounds() || mode.isOutOfBoundsSaneChain()) {
+                    read(Butterfly_publicLength);
+                    read(IndexedContiguousProperties);
+                    break;
+                }
+                clobberTop();
+                return;
+
+            case Array::Undecided:
+                break;
+                
+            case Array::ArrayStorage:
+            case Array::SlowPutArrayStorage:
+                if (mode.isInBounds()) {
+                    read(Butterfly_vectorLength);
+                    read(IndexedArrayStorageProperties);
+                    break;
+                }
+                clobberTop();
+                return;
+                
+            case Array::Int8Array:
+            case Array::Int16Array:
+            case Array::Int32Array:
+            case Array::Uint8Array:
+            case Array::Uint8ClampedArray:
+            case Array::Uint16Array:
+            case Array::Uint32Array:
+            case Array::Float32Array:
+            case Array::Float64Array:
+                read(TypedArrayProperties);
+                read(MiscFields);
+                if (mode.mayBeResizableOrGrowableSharedTypedArray()) {
+                    write(MiscFields);
+                    write(TypedArrayProperties);
+                }
+                break;
+            // We should not get an AnyTypedArray in a MultiArrayGetByVal as AnyTypedArray is only created from intrinsics, which
+            // are only added from Inline Caching a GetById.
+            case Array::AnyTypedArray:
+                DFG_CRASH(graph, node, "impossible array mode for get");
+                return;
+            }
+        }
         return;
     }
         
@@ -1264,6 +1383,7 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
 
     case CheckArrayOrEmpty:
     case CheckArray:
+    case MultiCheckArray:
         read(JSCell_indexingType);
         read(JSCell_structureID);
         return;
