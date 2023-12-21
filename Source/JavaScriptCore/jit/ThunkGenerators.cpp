@@ -370,6 +370,14 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> polymorphicThunkFor(VM& vm, CallMod
 
     CCallHelpers::JumpList slowCase;
 
+
+#if USE(JSVALUE32_64)
+    if (isTailCall)
+        slowCase.append(jit.branchIfNotCell(GPRInfo::regT0, DoNotHaveTagRegisters));
+    else
+        slowCase.append(jit.branchIfNotCell(GPRInfo::regT0));
+#endif
+
     GPRReg comparisonValueGPR;
     if (isClosureCall) {
         comparisonValueGPR = GPRInfo::regT4;
@@ -379,8 +387,6 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> polymorphicThunkFor(VM& vm, CallMod
             slowCase.append(jit.branchIfNotCell(GPRInfo::regT0, DoNotHaveTagRegisters));
         else
             slowCase.append(jit.branchIfNotCell(GPRInfo::regT0));
-#else
-        // We would have already checked that the callee is a cell.
 #endif
         // FIXME: We could add a fast path for InternalFunction with closure call.
         slowCase.append(jit.branchIfNotFunction(GPRInfo::regT0));
@@ -395,10 +401,16 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> polymorphicThunkFor(VM& vm, CallMod
     jit.loadPtr(CCallHelpers::Address(GPRInfo::regT2, CallLinkInfo::offsetOfStub()), GPRInfo::regT5);
     jit.addPtr(CCallHelpers::TrustedImm32(PolymorphicCallStubRoutine::offsetOfTrailingData()), GPRInfo::regT5);
 
+#if USE(JSVALUE64)
+    GPRInfo cachedGPR = GPRInfo::regT1;
+#else
+    GPRInfo cachedGPR = GPRInfo::regT6;
+#endif
+
     auto loop = jit.label();
-    jit.loadPtr(CCallHelpers::Address(GPRInfo::regT5, CallSlot::offsetOfCalleeOrExecutable()), GPRInfo::regT6);
-    auto found = jit.branchPtr(CCallHelpers::Equal, comparisonValueGPR, GPRInfo::regT6);
-    slowCase.append(jit.branchTestPtr(CCallHelpers::Zero, GPRInfo::regT6));
+    jit.loadPtr(CCallHelpers::Address(GPRInfo::regT5, CallSlot::offsetOfCalleeOrExecutable()), cachedGPR);
+    auto found = jit.branchPtr(CCallHelpers::Equal, comparisonValueGPR, cachedGPR);
+    slowCase.append(jit.branchTestPtr(CCallHelpers::Zero, cachedGPR));
     jit.addPtr(CCallHelpers::TrustedImm32(sizeof(CallSlot)), GPRInfo::regT5);
     jit.jump().linkTo(loop, &jit);
 
