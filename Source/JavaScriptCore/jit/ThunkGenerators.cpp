@@ -402,9 +402,9 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> polymorphicThunkFor(VM& vm, CallMod
     jit.addPtr(CCallHelpers::TrustedImm32(PolymorphicCallStubRoutine::offsetOfTrailingData()), GPRInfo::regT5);
 
 #if USE(JSVALUE64)
-    GPRInfo cachedGPR = GPRInfo::regT1;
+    GPRReg cachedGPR = GPRInfo::regT1;
 #else
-    GPRInfo cachedGPR = GPRInfo::regT6;
+    GPRReg cachedGPR = GPRInfo::regT6;
 #endif
 
     auto loop = jit.label();
@@ -415,8 +415,9 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> polymorphicThunkFor(VM& vm, CallMod
     jit.jump().linkTo(loop, &jit);
 
     found.link(&jit);
+    ASSERT((CallSlot::offsetOfTarget() + sizeof(void*)) == CallSlot::offsetOfCodeBlock());
     jit.add32(CCallHelpers::TrustedImm32(1), CCallHelpers::Address(GPRInfo::regT5, CallSlot::offsetOfCount()));
-    jit.loadPair64(CCallHelpers::Address(GPRInfo::regT5, CallSlot::offsetOfTarget()), GPRInfo::regT4, GPRInfo::regT5);
+    jit.loadPairPtr(CCallHelpers::Address(GPRInfo::regT5, CallSlot::offsetOfTarget()), GPRInfo::regT4, GPRInfo::regT5);
 
     jit.storePtr(GPRInfo::regT5, CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
     emitPointerValidation(jit, GPRInfo::regT4, JSEntryPtrTag);
