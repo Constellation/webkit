@@ -2062,7 +2062,24 @@ JSC_DEFINE_JIT_OPERATION(operationLinkPolymorphicCall, UGPRPair, (CallFrame* cal
     JSCell* calleeAsFunctionCell;
     UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
 
-    linkPolymorphicCall(globalObject, calleeFrame, *callLinkInfo, CallVariant(calleeAsFunctionCell));
+    CallFrame* callerFrame = calleeFrame->callerFrame();
+    JSCell* owner = callerFrame->codeOwnerCell();
+    linkPolymorphicCall(globalObject, owner, calleeFrame, *callLinkInfo, CallVariant(calleeAsFunctionCell));
+    
+    return result;
+}
+
+JSC_DEFINE_JIT_OPERATION(operationLinkPolymorphicCallForTailCall, UGPRPair, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
+{
+    sanitizeStackForVM(globalObject->vm());
+    ASSERT(callLinkInfo->specializationKind() == CodeForCall);
+    JSCell* calleeAsFunctionCell;
+    UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
+
+    PolymorphicCallStubRoutine* stub = callLinkInfo->stub();
+    auto span = stub->trailingSpan();
+    JSCell* owner = span[std::size(span) - 1].m_codeBlock;
+    linkPolymorphicCall(globalObject, owner, calleeFrame, *callLinkInfo, CallVariant(calleeAsFunctionCell));
     
     return result;
 }
