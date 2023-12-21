@@ -1816,8 +1816,7 @@ static void linkVirtualFor(VM& vm, CallFrame* callFrame, CallLinkInfo& callLinkI
     JSCell* owner = callerFrame->codeOwnerCell();
     CodeBlock* callerCodeBlock = jsDynamicCast<CodeBlock*>(owner); // WebAssembly -> JS stubs don't have a valid CodeBlock.
 
-    dataLogLnIf(shouldDumpDisassemblyFor(callerCodeBlock),
-        "Linking virtual call at ", FullCodeOrigin(callerCodeBlock, callerCodeBlock ? callerFrame->codeOrigin() : CodeOrigin { }));
+    dataLogLnIf(shouldDumpDisassemblyFor(callerCodeBlock), "Linking virtual call at ", FullCodeOrigin(callerCodeBlock, callerCodeBlock ? callerFrame->codeOrigin() : CodeOrigin { }));
 #endif
     MacroAssemblerCodeRef<JITStubRoutinePtrTag> virtualThunk = vm.getCTIVirtualCall(callLinkInfo.callMode());
     revertCall(vm, callLinkInfo, virtualThunk);
@@ -2009,6 +2008,8 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
         return;
     }
 
+    ASSERT(callLinkInfo.type() == CallLinkInfo::Type::Optimizing);
+
     CCallHelpers stubJit(callerCodeBlock);
     GPRReg calleeGPR = callLinkInfo.calleeGPR();
 
@@ -2020,24 +2021,10 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
     }
 
     std::optional<CallFrameShuffler> frameShuffler;
-    switch (callLinkInfo.type()) {
-    case CallLinkInfo::Type::Baseline: {
-        auto* instruction = callerCodeBlock->instructionAt(callLinkInfo.codeOrigin().bytecodeIndex());
-        if (instruction->opcodeID() == op_tail_call) {
-            auto bytecode = instruction->as<OpTailCall>();
-            CallFrameShuffleData shuffleData = CallFrameShuffleData::createForBaselineOrLLIntTailCall(bytecode, callerCodeBlock->numParameters());
-            frameShuffler.emplace(stubJit, shuffleData);
-        }
-        break;
-    }
-    case CallLinkInfo::Type::Optimizing: {
-        auto& optimizingCallLinkInfo = static_cast<OptimizingCallLinkInfo&>(callLinkInfo);
-        if (optimizingCallLinkInfo.frameShuffleData()) {
-            ASSERT(callLinkInfo.isTailCall());
-            frameShuffler.emplace(stubJit, *optimizingCallLinkInfo.frameShuffleData());
-        }
-        break;
-    }
+    auto& optimizingCallLinkInfo = static_cast<OptimizingCallLinkInfo&>(callLinkInfo);
+    if (optimizingCallLinkInfo.frameShuffleData()) {
+        ASSERT(callLinkInfo.isTailCall());
+        frameShuffler.emplace(stubJit, *optimizingCallLinkInfo.frameShuffleData());
     }
 
     if (frameShuffler) {
