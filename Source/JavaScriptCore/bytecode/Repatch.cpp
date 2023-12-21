@@ -1853,6 +1853,7 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
     bool isWebAssembly = false;
 #endif
     bool isDataIC = callLinkInfo.isDataIC();
+    bool isTailCall = callLinkInfo.isTailCall();
 
     CallVariantList list;
     if (PolymorphicCallStubRoutine* stub = callLinkInfo.stub())
@@ -1943,7 +1944,7 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
     ASSERT(callCases.size() == caseValues.size());
 
     CallFrame* callerFrame = nullptr;
-    if (!callLinkInfo.isTailCall())
+    if (!isTailCall)
         callerFrame = callFrame->callerFrame();
 
     if (callLinkInfo.type() == CallLinkInfo::Type::Baseline) {
@@ -1985,9 +1986,9 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
 
         CommonJITThunkID jitThunk = CommonJITThunkID::PolymorphicThunkForRegularCall;
         if (isClosureCall)
-            jitThunk = callLinkInfo.isTailCall() ? CommonJITThunkID::PolymorphicThunkForTailCallForClosure : CommonJITThunkID::PolymorphicThunkForRegularCallForClosure;
+            jitThunk = isTailCall ? CommonJITThunkID::PolymorphicThunkForTailCallForClosure : CommonJITThunkID::PolymorphicThunkForRegularCallForClosure;
         else
-            jitThunk = callLinkInfo.isTailCall() ? CommonJITThunkID::PolymorphicThunkForTailCall : CommonJITThunkID::PolymorphicThunkForRegularCall;
+            jitThunk = isTailCall ? CommonJITThunkID::PolymorphicThunkForTailCall : CommonJITThunkID::PolymorphicThunkForRegularCall;
 
         auto stubRoutine = PolymorphicCallStubRoutine::create(vm.getCTIStub(jitThunk).retagged<JITStubRoutinePtrTag>(), vm, owner, callerFrame, callLinkInfo, callCases, callSlots);
 
@@ -2023,7 +2024,7 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
     std::optional<CallFrameShuffler> frameShuffler;
     auto& optimizingCallLinkInfo = static_cast<OptimizingCallLinkInfo&>(callLinkInfo);
     if (optimizingCallLinkInfo.frameShuffleData()) {
-        ASSERT(callLinkInfo.isTailCall());
+        ASSERT(isTailCall);
         frameShuffler.emplace(stubJit, *optimizingCallLinkInfo.frameShuffleData());
     }
 
@@ -2054,7 +2055,7 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
     }
     stubJit.move(CCallHelpers::TrustedImmPtr(fastCounts.get()), fastCountsBaseGPR);
 
-    if (!frameShuffler && callLinkInfo.isTailCall()) {
+    if (!frameShuffler && isTailCall) {
         // We strongly assume that calleeGPR is not a callee save register in the slow path.
         ASSERT(!callerCodeBlock->jitCode()->calleeSaveRegisters()->find(calleeGPR));
         stubJit.emitRestoreCalleeSavesFor(callerCodeBlock->jitCode()->calleeSaveRegisters());
@@ -2064,7 +2065,7 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
     if (isClosureCall) {
         // Verify that we have a function and stash the executable in scratchGPR.
 #if USE(JSVALUE64)
-        if (callLinkInfo.isTailCall())
+        if (isTailCall)
             slowPath.append(stubJit.branchIfNotCell(calleeGPR, DoNotHaveTagRegisters));
         else
             slowPath.append(stubJit.branchIfNotCell(calleeGPR));
@@ -2118,13 +2119,13 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
             if (callCase.codeBlock())
                 stubJit.storePtr(CCallHelpers::TrustedImmPtr(callCase.codeBlock()), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
             stubJit.nearTailCallThunk(CodeLocationLabel { codePtr });
-        } else if (callLinkInfo.isTailCall()) {
+        } else if (isTailCall) {
             stubJit.prepareForTailCallSlow();
             if (callCase.codeBlock())
                 stubJit.storePtr(CCallHelpers::TrustedImmPtr(callCase.codeBlock()), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
             stubJit.nearTailCallThunk(CodeLocationLabel { codePtr });
         } else {
-            ASSERT(!callLinkInfo.isTailCall());
+            ASSERT(!isTailCall);
             if (isDataIC) {
                 if (callCase.codeBlock())
                     stubJit.storePtr(CCallHelpers::TrustedImmPtr(callCase.codeBlock()), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
@@ -2168,30 +2169,11 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
         stubJit.move(CCallHelpers::TrustedImmPtr(callLinkInfo.doneLocation().untaggedPtr()), GPRInfo::regT4);
         stubJit.restoreReturnAddressBeforeReturn(GPRInfo::regT4);
     } else {
-        // FIXME: We are not doing a real tail-call in this case. We leave stack entries in the caller, and we are not running prepareForTailCall, thus,
-        // we will return to the caller after the callee finishes. We should make it a real tail-call for this slow path case.
-        switch (callLinkInfo.type()) {
-        case CallLinkInfo::Type::Baseline: {
-#if ASSERT_ENABLED
-            // It needs to be LLInt or Baseline since we are using returnFromBaselineGenerator.
-            if (!isWebAssembly)
-                ASSERT(!JSC::JITCode::isOptimizingJIT(callerCodeBlock->jitType()));
-#endif
-            if (callLinkInfo.isTailCall()) {
-                stubJit.move(CCallHelpers::TrustedImmPtr(vm.getCTIStub(CommonJITThunkID::ReturnFromBaseline).code().untaggedPtr()), GPRInfo::regT4);
-                stubJit.restoreReturnAddressBeforeReturn(GPRInfo::regT4);
-            }
-            break;
-        }
-        case CallLinkInfo::Type::Optimizing: {
+        if (isTailCall) {
             // While Baseline / LLInt shares BaselineCallLinkInfo, OptimizingCallLinkInfo is exclusively used for one JIT code.
             // Thus, we can safely use doneLocation.
-            if (callLinkInfo.isTailCall()) {
-                stubJit.move(CCallHelpers::TrustedImmPtr(callLinkInfo.doneLocation().untaggedPtr()), GPRInfo::regT4);
-                stubJit.restoreReturnAddressBeforeReturn(GPRInfo::regT4);
-            }
-            break;
-        }
+            stubJit.move(CCallHelpers::TrustedImmPtr(callLinkInfo.doneLocation().untaggedPtr()), GPRInfo::regT4);
+            stubJit.restoreReturnAddressBeforeReturn(GPRInfo::regT4);
         }
     }
 
