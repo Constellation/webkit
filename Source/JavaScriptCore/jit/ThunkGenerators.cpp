@@ -426,10 +426,53 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> polymorphicThunkFor(VM& vm, CallMod
     // Here we don't know anything, so revert to the full slow path.
     slowCase.link(&jit);
 
-    if (isTailCall)
-        slowPathFor(jit, vm, operationLinkPolymorphicCallForTailCall);
-    else
-        slowPathFor(jit, vm, operationLinkPolymorphicCall);
+    jit.emitFunctionPrologue();
+    jit.storePtr(GPRInfo::callFrameRegister, &vm.topCallFrame);
+#if OS(WINDOWS) && CPU(X86_64)
+    // Windows X86_64 needs some space pointed to by arg0 for return types larger than 64 bits.
+    // Other argument values are shift by 1. Use space on the stack for our two return values.
+    // Moving the stack down maxFrameExtentForSlowPathCall bytes gives us room for our 3 arguments
+    // and space for the 16 byte return area.
+    jit.addPtr(CCallHelpers::TrustedImm32(-static_cast<int32_t>(maxFrameExtentForSlowPathCall)), CCallHelpers::stackPointerRegister);
+    static_assert(GPRInfo::regT2 != GPRInfo::argumentGPR0);
+    static_assert(GPRInfo::regT3 != GPRInfo::argumentGPR0);
+    jit.move(GPRInfo::regT2, GPRInfo::argumentGPR0);
+    jit.move(GPRInfo::regT3, GPRInfo::argumentGPR2);
+    jit.move(GPRInfo::argumentGPR0, GPRInfo::argumentGPR3);
+    jit.addPtr(CCallHelpers::TrustedImm32(32), CCallHelpers::stackPointerRegister, GPRInfo::argumentGPR0);
+    jit.move(GPRInfo::callFrameRegister, GPRInfo::argumentGPR1);
+    jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(slowPathFunction)), GPRInfo::nonArgGPR0);
+    emitPointerValidation(jit, GPRInfo::nonArgGPR0, OperationPtrTag);
+    jit.call(GPRInfo::nonArgGPR0, OperationPtrTag);
+    jit.loadPtr(CCallHelpers::Address(GPRInfo::returnValueGPR, 8), GPRInfo::returnValueGPR2);
+    jit.loadPtr(CCallHelpers::Address(GPRInfo::returnValueGPR), GPRInfo::returnValueGPR);
+    jit.addPtr(CCallHelpers::TrustedImm32(maxFrameExtentForSlowPathCall), CCallHelpers::stackPointerRegister);
+#else
+    if (maxFrameExtentForSlowPathCall)
+        jit.addPtr(CCallHelpers::TrustedImm32(-maxFrameExtentForSlowPathCall), CCallHelpers::stackPointerRegister);
+    if (isTailCall) {
+        jit.setupArguments<decltype(operationLinkPolymorphicCallForTailCall)>(GPRInfo::regT3, GPRInfo::regT2);
+        jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationLinkPolymorphicCallForTailCall)), GPRInfo::nonArgGPR0);
+    } else {
+        jit.setupArguments<decltype(operationLinkPolymorphicCall)>(GPRInfo::regT3, GPRInfo::regT2);
+        jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationLinkPolymorphicCall)), GPRInfo::nonArgGPR0);
+    }
+    emitPointerValidation(jit, GPRInfo::nonArgGPR0, OperationPtrTag);
+    jit.call(GPRInfo::nonArgGPR0, OperationPtrTag);
+    if (maxFrameExtentForSlowPathCall)
+        jit.addPtr(CCallHelpers::TrustedImm32(maxFrameExtentForSlowPathCall), CCallHelpers::stackPointerRegister);
+#endif
+
+    // This slow call will return the address of one of the following:
+    // 1) Exception throwing thunk.
+    // 2) Host call return value returner thingy.
+    // 3) The function to call.
+    // The second return value GPR will hold a non-zero value for tail calls.
+
+    emitPointerValidation(jit, GPRInfo::returnValueGPR, JSEntryPtrTag);
+    jit.emitFunctionEpilogue();
+    jit.untagReturnAddress();
+    jit.farJump(GPRInfo::returnValueGPR, JSEntryPtrTag);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::Thunk);
     return FINALIZE_THUNK(
