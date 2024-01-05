@@ -588,12 +588,38 @@ LLINT_SLOW_PATH_DECL(stack_check)
     LLINT_RETURN_TWO(pc, callFrame);
 }
 
-extern "C" UGPRPair llint_link_call(CallFrame* calleeFrame, JSCell* globalObject, CallLinkInfo* callLinkInfo)
+extern "C" UGPRPair llint_link_slow_call(CallFrame* calleeFrame, JSCell* globalObject, CallLinkInfo* callLinkInfo)
 {
     return linkFor(calleeFrame, jsCast<JSGlobalObject*>(globalObject), callLinkInfo);
 }
 
 extern "C" UGPRPair llint_virtual_call(CallFrame* calleeFrame, JSCell* globalObject, CallLinkInfo* callLinkInfo)
+{
+    VM& vm = globalObject->vm();
+    JSCell* calleeAsFunctionCellIgnored;
+    NativeCallFrameTracer tracer(vm, calleeFrame->callerFrame());
+    return virtualForWithFunction(jsCast<JSGlobalObject*>(globalObject), calleeFrame, callLinkInfo, calleeAsFunctionCellIgnored);
+}
+
+extern "C" UGPRPair llint_virtual_construct(CallFrame* calleeFrame, JSCell* globalObject, CallLinkInfo* callLinkInfo)
+{
+    VM& vm = globalObject->vm();
+    JSCell* calleeAsFunctionCellIgnored;
+    NativeCallFrameTracer tracer(vm, calleeFrame->callerFrame());
+    return virtualForWithFunction(jsCast<JSGlobalObject*>(globalObject), calleeFrame, callLinkInfo, calleeAsFunctionCellIgnored);
+}
+
+extern "C" UGPRPair llint_virtual_tail_call(CallFrame* calleeFrame, JSCell* globalObject, CallLinkInfo* callLinkInfo)
+{
+    VM& vm = globalObject->vm();
+    JSCell* calleeAsFunctionCellIgnored;
+    EntryFrame* topEntryFrame = vm.topEntryFrame;
+    CallFrame* callerFrame = calleeFrame->callerFrame(topEntryFrame);
+    NativeCallFrameTracer tracer(vm, callerFrame);
+    return virtualForWithFunction(jsCast<JSGlobalObject*>(globalObject), calleeFrame, callLinkInfo, calleeAsFunctionCellIgnored);
+}
+
+extern "C" UGPRPair llint_virtual_slow_call(CallFrame* calleeFrame, JSCell* globalObject, CallLinkInfo* callLinkInfo)
 {
     VM& vm = globalObject->vm();
     JSCell* calleeAsFunctionCellIgnored;

@@ -316,9 +316,9 @@ void BaselineCallLinkInfo::initialize(VM& vm, CallType callType, BytecodeIndex b
     m_bytecodeIndex = bytecodeIndex;
     m_callType = callType;
     if (LIKELY(Options::useLLIntICs()))
-        setSlowPathCallDestination(vm.getCTILinkCall().code());
+        setSlowPathCallDestination(vm.getCTILinkCallSlow().code());
     else
-        setSlowPathCallDestination(vm.getCTIVirtualCall(callMode()).retagged<JSEntryPtrTag>().code());
+        setSlowPathCallDestination(vm.getCTIVirtualCallSlow(callMode()).retagged<JSEntryPtrTag>().code());
     // If JIT is disabled, we should not support dynamically generated call IC.
     if (!Options::useJIT())
         disallowStubs();
@@ -431,6 +431,17 @@ void CallLinkInfo::setStub(JSCell* owner, Ref<PolymorphicCallStubRoutine>&& newS
     }
 }
 
+void CallLinkInfo::setVirtualCall(VM& vm, JSCell* owner)
+{
+    if (isDataIC()) {
+        m_calleeOrCodeBlock.clear();
+        *bitwise_cast<uintptr_t*>(m_calleeOrCodeBlock.slot()) = (bitwise_cast<uintptr_t>(owner) | polymorphicCalleeMask);
+        u.dataIC.m_codeBlock = nullptr; // PolymorphicCallStubRoutine will set CodeBlock inside it.
+        u.dataIC.m_monomorphicCallDestination = vm.getCTIVirtualCall(callMode()).code().template retagged<JSEntryPtrTag>();
+    }
+    setClearedByVirtual();
+}
+
 void CallLinkInfo::emitDataICSlowPath(VM&, CCallHelpers& jit, GPRReg callLinkInfoGPR)
 {
     jit.move(callLinkInfoGPR, GPRInfo::regT2);
@@ -490,7 +501,7 @@ MacroAssembler::JumpList OptimizingCallLinkInfo::emitTailCallFastPath(CCallHelpe
 
 void OptimizingCallLinkInfo::emitSlowPath(VM& vm, CCallHelpers& jit)
 {
-    setSlowPathCallDestination(vm.getCTILinkCall().code());
+    setSlowPathCallDestination(vm.getCTILinkCallSlow().code());
     jit.move(CCallHelpers::TrustedImmPtr(this), GPRInfo::regT2);
     jit.call(CCallHelpers::Address(GPRInfo::regT2, offsetOfSlowPathCallDestination()), JSEntryPtrTag);
 }
@@ -608,7 +619,7 @@ void OptimizingCallLinkInfo::setDirectCallMaxArgumentCountIncludingThis(unsigned
 void OptimizingCallLinkInfo::initializeFromDFGUnlinkedCallLinkInfo(VM& vm, const DFG::UnlinkedCallLinkInfo& unlinkedCallLinkInfo)
 {
     m_doneLocation = unlinkedCallLinkInfo.doneLocation;
-    setSlowPathCallDestination(vm.getCTILinkCall().code());
+    setSlowPathCallDestination(vm.getCTILinkCallSlow().code());
     m_codeOrigin = unlinkedCallLinkInfo.codeOrigin;
     m_callType = unlinkedCallLinkInfo.callType;
     m_calleeGPR = unlinkedCallLinkInfo.calleeGPR;

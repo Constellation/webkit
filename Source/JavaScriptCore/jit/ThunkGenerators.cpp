@@ -221,7 +221,7 @@ static void slowPathFor(CCallHelpers& jit, VM& vm, Sprt_JITOperation_EGCli slowP
     jit.farJump(GPRInfo::returnValueGPR, JSEntryPtrTag);
 }
 
-MacroAssemblerCodeRef<JITThunkPtrTag> linkCallThunkGenerator(VM& vm)
+MacroAssemblerCodeRef<JITThunkPtrTag> linkSlowCallThunkGenerator(VM& vm)
 {
     // The return address is on the stack or in the link register. We will hence
     // save the return address to the call frame while we make a C++ function call
@@ -248,10 +248,6 @@ MacroAssemblerCodeRef<JITThunkPtrTag> linkPolymorphicCallThunkGenerator(VM& vm)
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "Link polymorphic call slow path thunk");
 }
 
-// FIXME: We should distinguish between a megamorphic virtual call vs. a slow
-// path virtual call so that we can enable fast tail calls for megamorphic
-// virtual calls by using the shuffler.
-// https://bugs.webkit.org/show_bug.cgi?id=148831
 static MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkFor(VM& vm, CallMode mode, CodeSpecializationKind kind)
 {
     // The callee is in regT0 (for JSVALUE32_64, the tag is in regT1).
@@ -259,12 +255,17 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkFor(VM& vm, CallMode mo
     // jump to the callee, or save the return address to the call frame while we
     // make a C++ function call to the appropriate JIT operation.
 
+    // regT0 => callee
+    // regT1 => tag (32bit)
+    // regT2 => CallLinkInfo*
+    // regT3 => JSGlobalObject*
+
     CCallHelpers jit;
 
     bool isTailCall = mode == CallMode::Tail;
 
     CCallHelpers::JumpList slowCase;
-    
+
     // This is a slow path execution, and regT2 contains the CallLinkInfo. Count the
     // slow path execution for the profiler.
     jit.add32(
@@ -273,7 +274,7 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkFor(VM& vm, CallMode mo
 
     // FIXME: we should have a story for eliminating these checks. In many cases,
     // the DFG knows that the value is definitely a cell, or definitely a function.
-    
+
 #if USE(JSVALUE64)
     if (isTailCall) {
         // Tail calls could have clobbered the GPRInfo::notCellMaskRegister because they
@@ -286,7 +287,7 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkFor(VM& vm, CallMode mo
     slowCase.append(jit.branchIfNotCell(GPRInfo::regT1));
 #endif
     auto notJSFunction = jit.branchIfNotFunction(GPRInfo::regT0);
-    
+
     // Now we know we have a JSFunction.
 
     jit.loadPtr(CCallHelpers::Address(GPRInfo::regT0, JSFunction::offsetOfExecutableOrRareData()), GPRInfo::regT0);
@@ -297,7 +298,134 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkFor(VM& vm, CallMode mo
         CCallHelpers::Address(GPRInfo::regT0, ExecutableBase::offsetOfJITCodeWithArityCheckFor(kind)),
         GPRInfo::regT4);
     slowCase.append(jit.branchTestPtr(CCallHelpers::Zero, GPRInfo::regT4));
-    
+
+    // Now we know that we have a CodeBlock, and we're committed to making a fast call.
+
+    auto isNative = jit.branchIfNotType(GPRInfo::regT0, FunctionExecutableType);
+    jit.loadPtr(
+        CCallHelpers::Address(GPRInfo::regT0, FunctionExecutable::offsetOfCodeBlockFor(kind)),
+        GPRInfo::regT5);
+    jit.storePtr(GPRInfo::regT5, CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
+
+    // Make a tail call. This will return back to JIT code.
+    auto dispatchLabel = jit.label();
+    isNative.link(&jit);
+    emitPointerValidation(jit, GPRInfo::regT4, JSEntryPtrTag);
+    jit.farJump(GPRInfo::regT4, JSEntryPtrTag);
+
+    // NullSetterFunctionType does not get the fast path support. But it is OK since using NullSetterFunctionType is extremely rare.
+    notJSFunction.link(&jit);
+    slowCase.append(jit.branchIfNotType(GPRInfo::regT0, InternalFunctionType));
+    void* executableAddress = vm.getCTIInternalFunctionTrampolineFor(kind).taggedPtr();
+    jit.move(CCallHelpers::TrustedImmPtr(executableAddress), GPRInfo::regT4);
+    jit.jump().linkTo(dispatchLabel, &jit);
+
+    // Here we don't know anything, so revert to the full slow path.
+    slowCase.link(&jit);
+
+    jit.emitFunctionPrologue();
+    jit.storePtr(GPRInfo::callFrameRegister, &vm.topCallFrame);
+    if (maxFrameExtentForSlowPathCall)
+        jit.addPtr(CCallHelpers::TrustedImm32(-static_cast<int32_t>(maxFrameExtentForSlowPathCall)), CCallHelpers::stackPointerRegister);
+    switch (mode) {
+    case CallMode::Regular:
+        jit.setupArguments<decltype(operationVirtualCallForRegularCall)>(GPRInfo::regT3, GPRInfo::regT2);
+        jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationVirtualCallForRegularCall)), GPRInfo::nonArgGPR0);
+        break;
+    case CallMode::Tail:
+        jit.setupArguments<decltype(operationVirtualCallForTailCall)>(GPRInfo::regT3, GPRInfo::regT2);
+        jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationVirtualCallForTailCall)), GPRInfo::nonArgGPR0);
+        break;
+    case CallMode::Construct:
+        jit.setupArguments<decltype(operationVirtualCallForConstruct)>(GPRInfo::regT3, GPRInfo::regT2);
+        jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationVirtualCallForConstruct)), GPRInfo::nonArgGPR0);
+        break;
+    }
+    emitPointerValidation(jit, GPRInfo::nonArgGPR0, OperationPtrTag);
+    jit.call(GPRInfo::nonArgGPR0, OperationPtrTag);
+    if (maxFrameExtentForSlowPathCall)
+        jit.addPtr(CCallHelpers::TrustedImm32(maxFrameExtentForSlowPathCall), CCallHelpers::stackPointerRegister);
+
+    // This slow call will return the address of one of the following:
+    // 1) Exception throwing thunk.
+    // 2) Host call return value returner thingy.
+    // 3) The function to call.
+    // The second return value GPR will hold a non-zero value for tail calls.
+
+    emitPointerValidation(jit, GPRInfo::returnValueGPR, JSEntryPtrTag);
+    jit.emitFunctionEpilogue();
+    jit.untagReturnAddress();
+    jit.farJump(GPRInfo::returnValueGPR, JSEntryPtrTag);
+
+    LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::VirtualThunk);
+    return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "Virtual %s thunk", mode == CallMode::Regular ? "call" : mode == CallMode::Tail ? "tail call" : "construct");
+}
+
+MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkForRegularCall(VM& vm)
+{
+    return virtualThunkFor(vm, CallMode::Regular, CodeForCall);
+}
+
+MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkForTailCall(VM& vm)
+{
+    return virtualThunkFor(vm, CallMode::Tail, CodeForCall);
+}
+
+MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkForConstruct(VM& vm)
+{
+    return virtualThunkFor(vm, CallMode::Construct, CodeForConstruct);
+}
+
+// FIXME: We should distinguish between a megamorphic virtual call vs. a slow
+// path virtual call so that we can enable fast tail calls for megamorphic
+// virtual calls by using the shuffler.
+// https://bugs.webkit.org/show_bug.cgi?id=148831
+static MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkSlowFor(VM& vm, CallMode mode, CodeSpecializationKind kind)
+{
+    // The callee is in regT0 (for JSVALUE32_64, the tag is in regT1).
+    // The return address is on the stack, or in the link register. We will hence
+    // jump to the callee, or save the return address to the call frame while we
+    // make a C++ function call to the appropriate JIT operation.
+
+    CCallHelpers jit;
+
+    bool isTailCall = mode == CallMode::Tail;
+
+    CCallHelpers::JumpList slowCase;
+
+    // This is a slow path execution, and regT2 contains the CallLinkInfo. Count the
+    // slow path execution for the profiler.
+    jit.add32(
+        CCallHelpers::TrustedImm32(1),
+        CCallHelpers::Address(GPRInfo::regT2, CallLinkInfo::offsetOfSlowPathCount()));
+
+    // FIXME: we should have a story for eliminating these checks. In many cases,
+    // the DFG knows that the value is definitely a cell, or definitely a function.
+
+#if USE(JSVALUE64)
+    if (isTailCall) {
+        // Tail calls could have clobbered the GPRInfo::notCellMaskRegister because they
+        // restore callee saved registers before getthing here. So, let's materialize
+        // the NotCellMask in a temp register and use the temp instead.
+        slowCase.append(jit.branchIfNotCell(GPRInfo::regT0, DoNotHaveTagRegisters));
+    } else
+        slowCase.append(jit.branchIfNotCell(GPRInfo::regT0));
+#else
+    slowCase.append(jit.branchIfNotCell(GPRInfo::regT1));
+#endif
+    auto notJSFunction = jit.branchIfNotFunction(GPRInfo::regT0);
+
+    // Now we know we have a JSFunction.
+
+    jit.loadPtr(CCallHelpers::Address(GPRInfo::regT0, JSFunction::offsetOfExecutableOrRareData()), GPRInfo::regT0);
+    auto hasExecutable = jit.branchTestPtr(CCallHelpers::Zero, GPRInfo::regT0, CCallHelpers::TrustedImm32(JSFunction::rareDataTag));
+    jit.loadPtr(CCallHelpers::Address(GPRInfo::regT0, FunctionRareData::offsetOfExecutable() - JSFunction::rareDataTag), GPRInfo::regT0);
+    hasExecutable.link(&jit);
+    jit.loadPtr(
+        CCallHelpers::Address(GPRInfo::regT0, ExecutableBase::offsetOfJITCodeWithArityCheckFor(kind)),
+        GPRInfo::regT4);
+    slowCase.append(jit.branchTestPtr(CCallHelpers::Zero, GPRInfo::regT4));
+
     // Now we know that we have a CodeBlock, and we're committed to making a fast call.
 
     auto isNative = jit.branchIfNotType(GPRInfo::regT0, FunctionExecutableType);
@@ -334,19 +462,19 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkFor(VM& vm, CallMode mo
         mode == CallMode::Regular ? "call" : mode == CallMode::Tail ? "tail call" : "construct");
 }
 
-MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkForRegularCall(VM& vm)
+MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkSlowForRegularCall(VM& vm)
 {
-    return virtualThunkFor(vm, CallMode::Regular, CodeForCall);
+    return virtualThunkSlowFor(vm, CallMode::Regular, CodeForCall);
 }
 
-MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkForTailCall(VM& vm)
+MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkSlowForTailCall(VM& vm)
 {
-    return virtualThunkFor(vm, CallMode::Tail, CodeForCall);
+    return virtualThunkSlowFor(vm, CallMode::Tail, CodeForCall);
 }
 
-MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkForConstruct(VM& vm)
+MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkSlowForConstruct(VM& vm)
 {
-    return virtualThunkFor(vm, CallMode::Construct, CodeForConstruct);
+    return virtualThunkSlowFor(vm, CallMode::Construct, CodeForConstruct);
 }
 
 enum class ClosureMode : uint8_t { No, Yes };

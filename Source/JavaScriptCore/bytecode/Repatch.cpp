@@ -106,8 +106,7 @@ static void linkSlowPathTo(VM&, CallLinkInfo& callLinkInfo, MacroAssemblerCodeRe
 
 static void linkSlowFor(VM& vm, CallLinkInfo& callLinkInfo)
 {
-    MacroAssemblerCodeRef<JITStubRoutinePtrTag> virtualThunk = vm.getCTIVirtualCall(callLinkInfo.callMode());
-    linkSlowPathTo(vm, callLinkInfo, virtualThunk);
+    linkSlowPathTo(vm, callLinkInfo, vm.getCTIVirtualCallSlow(callLinkInfo.callMode()));
 }
 
 void linkMonomorphicCall(
@@ -167,9 +166,9 @@ void unlinkCall(VM& vm, CallLinkInfo& callLinkInfo)
     dataLogLnIf(Options::dumpDisassembly(), "Unlinking CallLinkInfo: ", RawPointer(&callLinkInfo));
     
     if (UNLIKELY(!Options::useLLIntICs() && callLinkInfo.type() == CallLinkInfo::Type::Baseline))
-        revertCall(vm, callLinkInfo, vm.getCTIVirtualCall(callLinkInfo.callMode()));
+        revertCall(vm, callLinkInfo, vm.getCTIVirtualCallSlow(callLinkInfo.callMode()));
     else
-        revertCall(vm, callLinkInfo, vm.getCTILinkCall().retagged<JITStubRoutinePtrTag>());
+        revertCall(vm, callLinkInfo, vm.getCTILinkCallSlow().retagged<JITStubRoutinePtrTag>());
 }
 
 CodePtr<JSEntryPtrTag> jsToWasmICCodePtr(CodeSpecializationKind kind, JSObject* callee)
@@ -1807,11 +1806,10 @@ void linkDirectCall(
         calleeCodeBlock->linkIncomingCall(callerCodeBlock, callFrame, &callLinkInfo);
 }
 
-static void linkVirtualFor(VM& vm, CallLinkInfo& callLinkInfo)
+static void linkVirtualFor(VM& vm, JSCell* owner, CallLinkInfo& callLinkInfo)
 {
-    MacroAssemblerCodeRef<JITStubRoutinePtrTag> virtualThunk = vm.getCTIVirtualCall(callLinkInfo.callMode());
-    revertCall(vm, callLinkInfo, virtualThunk);
-    callLinkInfo.setClearedByVirtual();
+    revertCall(vm, callLinkInfo, vm.getCTIVirtualCallSlow(callLinkInfo.callMode()));
+    callLinkInfo.setVirtualCall(vm, owner);
 }
 
 namespace {
@@ -1832,7 +1830,7 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
     DeferGCForAWhile deferGCForAWhile(vm);
     
     if (!newVariant) {
-        linkVirtualFor(vm, callLinkInfo);
+        linkVirtualFor(vm, owner, callLinkInfo);
         return;
     }
 
@@ -1880,7 +1878,7 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
 
     // We use list.size() instead of callCases.size() because we respect CallVariant size for now.
     if (list.size() > maxPolymorphicCallVariantListSize) {
-        linkVirtualFor(vm, callLinkInfo);
+        linkVirtualFor(vm, owner, callLinkInfo);
         return;
     }
 
@@ -1896,7 +1894,7 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
             // If we cannot handle a callee, because we don't have a CodeBlock,
             // assume that it's better for this whole thing to be a virtual call.
             if (!codeBlock) {
-                linkVirtualFor(vm, callLinkInfo);
+                linkVirtualFor(vm, owner, callLinkInfo);
                 return;
             }
         }
@@ -2159,7 +2157,7 @@ void linkPolymorphicCall(JSGlobalObject* globalObject, JSCell* owner, CallFrame*
 
     LinkBuffer patchBuffer(stubJit, owner, LinkBuffer::Profile::InlineCache, JITCompilationCanFail);
     if (patchBuffer.didFailToAllocate()) {
-        linkVirtualFor(vm, callLinkInfo);
+        linkVirtualFor(vm, owner, callLinkInfo);
         return;
     }
     

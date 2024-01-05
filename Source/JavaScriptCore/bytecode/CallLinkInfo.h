@@ -233,6 +233,8 @@ public:
 #endif
     void clearStub();
 
+    void setVirtualCall(VM&, JSCell* owner);
+
     PolymorphicCallStubRoutine* stub() const
     {
 #if ENABLE(JIT)
@@ -373,6 +375,12 @@ public:
     void visitWeak(VM&);
 
     Type type() const { return static_cast<Type>(m_type); }
+
+    JSCell* owner() const
+    {
+        ASSERT(bitwise_cast<uintptr_t>(m_calleeOrCodeBlock.unvalidatedGet()) & polymorphicCalleeMask);
+        return bitwise_cast<JSCell*>(bitwise_cast<uintptr_t>(m_calleeOrCodeBlock.unvalidatedGet()) & (~polymorphicCalleeMask));
+    }
 
 protected:
     CallLinkInfo(Type type, UseDataIC useDataIC)

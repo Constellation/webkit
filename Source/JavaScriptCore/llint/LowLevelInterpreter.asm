@@ -2558,10 +2558,52 @@ macro linkSlowPathFor(function)
     jmp t0, JSEntryPtrTag
 end
 
+macro linkFor(function)
+    functionPrologue()
+    loadp JSGlobalObject::m_vm[t3], t1
+    storep cfr, VM::topCallFrame[t1]
+    move t2, a2
+    move t3, a1
+    move cfr, a0
+    cCall3(function)
+    functionEpilogue()
+    untagReturnAddress sp
+    jmp t0, JSEntryPtrTag
+end
+
 # 64bit:t0 32bit(t0,t1) is callee
 # t2 is CallLinkInfo*
 # t3 is caller's JSGlobalObject
-macro virtualThunkFor(offsetOfJITCodeWithArityCheck, offsetOfCodeBlock, internalFunctionTrampoline, prepareCall, slowCase)
+macro virtualThunkFor(offsetOfJITCodeWithArityCheck, offsetOfCodeBlock, internalFunctionTrampoline, slowCase)
+    addi 1, CallLinkInfo::m_slowPathCount[t2]
+    if JSVALUE64
+        btqnz t0, NotCellMask, slowCase
+    else
+        bineq t1, CellTag, slowCase
+    end
+    bbneq JSCell::m_type[t0], JSFunctionType, .notJSFunction
+    loadp JSFunction::m_executableOrRareData[t0], t5
+    btpz t5, (constexpr JSFunction::rareDataTag), .isExecutable
+    loadp (FunctionRareData::m_executable - (constexpr JSFunction::rareDataTag))[t5], t5
+.isExecutable:
+    loadp offsetOfJITCodeWithArityCheck[t5], t4
+    btpz t4, slowCase # When jumping to slowCase, t0, t1, t2, t3 needs to be unmodified.
+    move t4, t1
+    move 0, t0
+    bbneq JSCell::m_type[t5], FunctionExecutableType, .callCode
+    loadp offsetOfCodeBlock[t5], t0
+.callCode:
+    storep t0, CodeBlock - PrologueStackPointerDelta[sp]
+    jmp t1, JSEntryPtrTag
+.notJSFunction:
+    bbneq JSCell::m_type[t0], InternalFunctionType, slowCase
+    jmp internalFunctionTrampoline
+end
+
+# 64bit:t0 32bit(t0,t1) is callee
+# t2 is CallLinkInfo*
+# t3 is caller's JSGlobalObject
+macro virtualThunkSlowFor(offsetOfJITCodeWithArityCheck, offsetOfCodeBlock, internalFunctionTrampoline, prepareCall, slowCase)
     addi 1, CallLinkInfo::m_slowPathCount[t2]
     if JSVALUE64
         btqnz t0, NotCellMask, slowCase
@@ -2592,39 +2634,66 @@ end
 # 64bit:t0 32bit(t0,t1) is callee
 # t2 is CallLinkInfo*
 # t3 is caller's JSGlobalObject
-op(llint_link_call_trampoline, macro ()
-    linkSlowPathFor(_llint_link_call)
+op(llint_link_slow_call_trampoline, macro ()
+    linkSlowPathFor(_llint_link_slow_call)
 end)
 
 # 64bit:t0 32bit(t0,t1) is callee
 # t2 is CallLinkInfo*
 # t3 is caller's JSGlobalObject
 op(llint_virtual_call_trampoline, macro ()
-    virtualThunkFor(ExecutableBase::m_jitCodeForCallWithArityCheck, FunctionExecutable::m_codeBlockForCall, _llint_internal_function_call_trampoline, macro (temp1, temp2, temp3, temp4) end, .slowCase)
+    virtualThunkFor(ExecutableBase::m_jitCodeForCallWithArityCheck, FunctionExecutable::m_codeBlockForCall, _llint_internal_function_call_trampoline, .slowCase)
 .slowCase:
-    linkSlowPathFor(_llint_virtual_call)
+    linkFor(_llint_virtual_call)
 end)
 
 # 64bit:t0 32bit(t0,t1) is callee
 # t2 is CallLinkInfo*
 # t3 is caller's JSGlobalObject
 op(llint_virtual_construct_trampoline, macro ()
-    virtualThunkFor(ExecutableBase::m_jitCodeForConstructWithArityCheck, FunctionExecutable::m_codeBlockForConstruct, _llint_internal_function_construct_trampoline, macro (temp1, temp2, temp3, temp4) end, .slowCase)
+    virtualThunkFor(ExecutableBase::m_jitCodeForConstructWithArityCheck, FunctionExecutable::m_codeBlockForConstruct, _llint_internal_function_construct_trampoline, .slowCase)
 .slowCase:
-    linkSlowPathFor(_llint_virtual_call)
+    linkFor(_llint_virtual_construct)
 end)
 
 # 64bit:t0 32bit(t0,t1) is callee
 # t2 is CallLinkInfo*
 # t3 is caller's JSGlobalObject
 op(llint_virtual_tail_call_trampoline, macro ()
-    virtualThunkFor(ExecutableBase::m_jitCodeForCallWithArityCheck, FunctionExecutable::m_codeBlockForCall, _llint_internal_function_call_trampoline, macro (temp1, temp2, temp3, temp4)
+    virtualThunkFor(ExecutableBase::m_jitCodeForCallWithArityCheck, FunctionExecutable::m_codeBlockForCall, _llint_internal_function_call_trampoline, .slowCase)
+.slowCase:
+    linkFor(_llint_virtual_tail_call)
+end)
+
+# 64bit:t0 32bit(t0,t1) is callee
+# t2 is CallLinkInfo*
+# t3 is caller's JSGlobalObject
+op(llint_virtual_slow_call_trampoline, macro ()
+    virtualThunkSlowFor(ExecutableBase::m_jitCodeForCallWithArityCheck, FunctionExecutable::m_codeBlockForCall, _llint_internal_function_call_trampoline, macro (temp1, temp2, temp3, temp4) end, .slowCase)
+.slowCase:
+    linkSlowPathFor(_llint_virtual_slow_call)
+end)
+
+# 64bit:t0 32bit(t0,t1) is callee
+# t2 is CallLinkInfo*
+# t3 is caller's JSGlobalObject
+op(llint_virtual_slow_construct_trampoline, macro ()
+    virtualThunkSlowFor(ExecutableBase::m_jitCodeForConstructWithArityCheck, FunctionExecutable::m_codeBlockForConstruct, _llint_internal_function_construct_trampoline, macro (temp1, temp2, temp3, temp4) end, .slowCase)
+.slowCase:
+    linkSlowPathFor(_llint_virtual_slow_call)
+end)
+
+# 64bit:t0 32bit(t0,t1) is callee
+# t2 is CallLinkInfo*
+# t3 is caller's JSGlobalObject
+op(llint_virtual_slow_tail_call_trampoline, macro ()
+    virtualThunkSlowFor(ExecutableBase::m_jitCodeForCallWithArityCheck, FunctionExecutable::m_codeBlockForCall, _llint_internal_function_call_trampoline, macro (temp1, temp2, temp3, temp4)
         preserveReturnAddressAfterCall(temp1)
         prepareForTailCall(temp1, temp2, temp3, temp4, macro(address) end)
         untagReturnAddress temp4
     end, .slowCase)
 .slowCase:
-    linkSlowPathFor(_llint_virtual_call)
+    linkSlowPathFor(_llint_virtual_slow_call)
 end)
 
 if JIT
