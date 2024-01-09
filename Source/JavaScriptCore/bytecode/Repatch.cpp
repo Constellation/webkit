@@ -115,8 +115,6 @@ void linkMonomorphicCall(
 {
     ASSERT(!callLinkInfo.stub());
 
-    CallFrame* callerFrame = callFrame->callerFrame();
-
     CodeBlock* callerCodeBlock = jsDynamicCast<CodeBlock*>(owner); // WebAssembly -> JS stubs don't have a valid CodeBlock.
     ASSERT(owner);
 
