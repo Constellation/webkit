@@ -48,7 +48,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> throwExceptionFromCallSlowPathGenerator(VM
 MacroAssemblerCodeRef<JITThunkPtrTag> checkExceptionGenerator(VM&);
 MacroAssemblerCodeRef<JITThunkPtrTag> returnFromBaselineGenerator(VM&);
 
-MacroAssemblerCodeRef<JITThunkPtrTag> linkCallThunkGenerator(VM&);
+MacroAssemblerCodeRef<JITThunkPtrTag> linkSlowCallThunkGenerator(VM&);
 MacroAssemblerCodeRef<JITThunkPtrTag> linkPolymorphicCallThunkGenerator(VM&);
 
 MacroAssemblerCodeRef<JITThunkPtrTag> polymorphicThunkForRegularCall(VM&);
@@ -59,6 +59,10 @@ MacroAssemblerCodeRef<JITThunkPtrTag> polymorphicThunkForTailCallForClosure(VM&)
 MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkForRegularCall(VM&);
 MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkForTailCall(VM&);
 MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkForConstruct(VM&);
+
+MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkSlowForRegularCall(VM&);
+MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkSlowForTailCall(VM&);
+MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkSlowForConstruct(VM&);
 
 MacroAssemblerCodeRef<JITThunkPtrTag> nativeCallGenerator(VM&);
 MacroAssemblerCodeRef<JITThunkPtrTag> nativeCallWithDebuggerHookGenerator(VM&);

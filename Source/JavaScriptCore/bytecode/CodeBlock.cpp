@@ -863,7 +863,7 @@ CodeBlock::~CodeBlock()
     // So, if we don't remove incoming calls, and get destroyed before the
     // CodeBlock(s) that have calls into us, then the CallLinkInfo vector's
     // destructor will try to remove nodes from our (no longer valid) linked list.
-    unlinkIncomingCalls();
+    unlinkOrUpgradeIncomingCalls(vm, nullptr);
     
     // Note that our outgoing calls will be removed from other CodeBlocks'
     // m_incomingCalls linked lists through the execution of the ~CallLinkInfo
@@ -2100,10 +2100,16 @@ void CodeBlock::linkIncomingCall(JSCell* caller, CallFrame* callerFrame, CallLin
     m_incomingCalls.push(incoming);
 }
 
-void CodeBlock::unlinkIncomingCalls()
+void CodeBlock::unlinkOrUpgradeIncomingCalls(VM& vm, CodeBlock* newCodeBlock)
 {
-    while (!m_incomingCalls.isEmpty())
-        m_incomingCalls.begin()->unlink(vm());
+    SentinelLinkedList<CallLinkInfoBase, BasicRawSentinelNode<CallLinkInfoBase>> toBeRemoved;
+    toBeRemoved.takeFrom(m_incomingCalls);
+
+    // Note that upgrade may relink CallLinkInfo into newCodeBlock, and it is possible that |this| and newCodeBlock are the same.
+    // This happens when newCodeBlock is installed by upgrading LLInt to Baseline. In that case, |this|'s m_incomingCalls will
+    // be accumulated correctly.
+    while (!toBeRemoved.isEmpty())
+        toBeRemoved.begin()->unlinkOrUpgrade(vm, this, newCodeBlock);
 }
 
 CodeBlock* CodeBlock::newReplacement()

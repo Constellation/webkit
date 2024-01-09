@@ -281,7 +281,7 @@ public:
     void resetBaselineJITData();
 #endif // ENABLE(JIT)
 
-    void unlinkIncomingCalls();
+    void unlinkOrUpgradeIncomingCalls(VM&, CodeBlock*);
     void linkIncomingCall(JSCell* caller, CallFrame* callerFrame, CallLinkInfoBase*, bool skipFirstFrame = false);
 
     const JSInstruction* outOfLineJumpTarget(const JSInstruction* pc);

@@ -306,9 +306,14 @@ JSC_DECLARE_JIT_OPERATION(operationCallDirectEvalSloppy, EncodedJSValue, (void*,
 JSC_DECLARE_JIT_OPERATION(operationCallDirectEvalStrict, EncodedJSValue, (void*, JSScope*, EncodedJSValue));
 JSC_DECLARE_JIT_OPERATION(operationLinkCall, UGPRPair, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
 JSC_DECLARE_JIT_OPERATION(operationLinkPolymorphicCall, UGPRPair, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
+JSC_DECLARE_JIT_OPERATION(operationVirtualCall, UGPRPair, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
+
 JSC_DECLARE_JIT_OPERATION(operationLinkPolymorphicCallForRegularCall, UCPURegister, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
 JSC_DECLARE_JIT_OPERATION(operationLinkPolymorphicCallForTailCall, UCPURegister, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
-JSC_DECLARE_JIT_OPERATION(operationVirtualCall, UGPRPair, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
+
+JSC_DECLARE_JIT_OPERATION(operationVirtualCallForRegularCall, UCPURegister, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
+JSC_DECLARE_JIT_OPERATION(operationVirtualCallForTailCall, UCPURegister, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
+JSC_DECLARE_JIT_OPERATION(operationVirtualCallForConstruct, UCPURegister, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
 
 JSC_DECLARE_JIT_OPERATION(operationCompareLess, size_t, (JSGlobalObject*, EncodedJSValue, EncodedJSValue));
 JSC_DECLARE_JIT_OPERATION(operationCompareLessEq, size_t, (JSGlobalObject*, EncodedJSValue, EncodedJSValue));

@@ -180,7 +180,7 @@ public:
     }
 
     bool isLinked() const { return stub() || m_calleeOrCodeBlock; }
-    void unlinkImpl(VM&);
+    void unlinkOrUpgradeImpl(VM&, CodeBlock* oldCodeBlock, CodeBlock* newCodeBlock);
 
     enum class UseDataIC : bool { No, Yes };
 
@@ -232,6 +232,8 @@ public:
     void setStub(JSCell* owner, Ref<PolymorphicCallStubRoutine>&&);
 #endif
     void clearStub();
+
+    void setVirtualCall(VM& vm, JSCell* owner);
 
     PolymorphicCallStubRoutine* stub() const
     {
@@ -373,6 +375,18 @@ public:
     void visitWeak(VM&);
 
     Type type() const { return static_cast<Type>(m_type); }
+
+    JSCell* owner() const
+    {
+        ASSERT(isPolymorphicOrVirtualDataIC());
+        return bitwise_cast<JSCell*>(bitwise_cast<uintptr_t>(m_calleeOrCodeBlock.unvalidatedGet()) & (~polymorphicCalleeMask));
+    }
+
+
+    bool isPolymorphicOrVirtualDataIC() const
+    {
+        return bitwise_cast<uintptr_t>(m_calleeOrCodeBlock.unvalidatedGet()) & polymorphicCalleeMask;
+    }
 
 protected:
     CallLinkInfo(Type type, UseDataIC useDataIC)

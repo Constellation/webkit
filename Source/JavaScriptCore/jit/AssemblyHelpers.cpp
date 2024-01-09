@@ -1124,7 +1124,7 @@ void AssemblyHelpers::emitVirtualCall(VM& vm, JSGlobalObject* globalObject, Call
 void AssemblyHelpers::emitVirtualCallWithoutMovingGlobalObject(VM& vm, GPRReg callLinkInfoGPR, CallMode callMode)
 {
     move(callLinkInfoGPR, GPRInfo::regT2);
-    nearCallThunk(CodeLocationLabel<JITStubRoutinePtrTag> { vm.getCTIVirtualCall(callMode).code() });
+    nearCallThunk(CodeLocationLabel<JITStubRoutinePtrTag> { vm.getCTIVirtualCallSlow(callMode).code() });
 }
 
 #if USE(JSVALUE64)

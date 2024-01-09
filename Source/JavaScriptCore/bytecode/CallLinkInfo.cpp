@@ -89,12 +89,25 @@ void CallLinkInfo::clearStub()
 #endif
 }
 
-void CallLinkInfo::unlinkImpl(VM& vm)
+void CallLinkInfo::unlinkOrUpgradeImpl(VM& vm, CodeBlock* oldCodeBlock, CodeBlock* newCodeBlock)
 {
+    UNUSED_PARAM(oldCodeBlock);
+    UNUSED_PARAM(newCodeBlock);
     // We could be called even if we're not linked anymore because of how polymorphic calls
     // work. Each callsite within the polymorphic call stub may separately ask us to unlink().
-    if (isLinked())
+    if (isLinked()) {
+        if (newCodeBlock && isDataIC() && !isPolymorphicOrVirtualDataIC() && oldCodeBlock == u.dataIC.m_codeBlock) {
+            // Upgrading Monomorphic DataIC with newCodeBlock.
+            remove();
+            ArityCheckMode arityCheck = oldCodeBlock->jitCode()->addressForCall(ArityCheckNotRequired) == u.dataIC.m_monomorphicCallDestination ? ArityCheckNotRequired : MustCheckArity;
+            auto target = newCodeBlock->jitCode()->addressForCall(arityCheck);
+            u.dataIC.m_codeBlock = newCodeBlock;
+            u.dataIC.m_monomorphicCallDestination = target;
+            newCodeBlock->linkIncomingCall(nullptr, nullptr, this); // This is just relinking. So owner and caller frame can be nullptr.
+            return;
+        }
         unlinkCall(vm, *this);
+    }
 
     // Either we were unlinked, in which case we should not have been on any list, or we unlinked
     // ourselves so that we're not on any list anymore.
@@ -224,7 +237,7 @@ void CallLinkInfo::visitWeak(VM& vm)
                         listDump(stub()->variants()), ", stub routine ", RawPointer(stub()),
                         ".\n");
                 }
-                unlink(vm);
+                unlinkOrUpgrade(vm, nullptr, nullptr);
                 m_clearedByGC = true;
             }
 #else
@@ -254,14 +267,14 @@ void CallLinkInfo::visitWeak(VM& vm)
                     m_clearedByGC = true;
                 }
             }
-            unlink(vm);
+            unlinkOrUpgrade(vm, nullptr, nullptr);
         } else if (isDirect() && !vm.heap.isMarked(m_lastSeenCalleeOrExecutable.get())) {
             if (UNLIKELY(Options::verboseOSR())) {
                 dataLog(
                     "Clearing call to ", RawPointer(executable()),
                     " because the executable is dead.\n");
             }
-            unlink(vm);
+            unlinkOrUpgrade(vm, nullptr, nullptr);
             // We should only get here once the owning CodeBlock is dying, since the executable must
             // already be in the owner's weak references.
             m_lastSeenCalleeOrExecutable.clear();
@@ -316,9 +329,9 @@ void BaselineCallLinkInfo::initialize(VM& vm, CallType callType, BytecodeIndex b
     m_bytecodeIndex = bytecodeIndex;
     m_callType = callType;
     if (LIKELY(Options::useLLIntICs()))
-        setSlowPathCallDestination(vm.getCTILinkCall().code());
+        setSlowPathCallDestination(vm.getCTILinkCallSlow().code());
     else
-        setSlowPathCallDestination(vm.getCTIVirtualCall(callMode()).retagged<JSEntryPtrTag>().code());
+        setSlowPathCallDestination(vm.getCTIVirtualCallSlow(callMode()).retagged<JSEntryPtrTag>().code());
     // If JIT is disabled, we should not support dynamically generated call IC.
     if (!Options::useJIT())
         disallowStubs();
@@ -431,6 +444,17 @@ void CallLinkInfo::setStub(JSCell* owner, Ref<PolymorphicCallStubRoutine>&& newS
     }
 }
 
+void CallLinkInfo::setVirtualCall(VM& vm, JSCell* owner)
+{
+    if (isDataIC()) {
+        m_calleeOrCodeBlock.clear();
+        *bitwise_cast<uintptr_t*>(m_calleeOrCodeBlock.slot()) = (bitwise_cast<uintptr_t>(owner) | polymorphicCalleeMask);
+        u.dataIC.m_codeBlock = nullptr; // PolymorphicCallStubRoutine will set CodeBlock inside it.
+        u.dataIC.m_monomorphicCallDestination = vm.getCTIVirtualCall(callMode()).code().template retagged<JSEntryPtrTag>();
+    }
+    setClearedByVirtual();
+}
+
 void CallLinkInfo::emitDataICSlowPath(VM&, CCallHelpers& jit, GPRReg callLinkInfoGPR)
 {
     jit.move(callLinkInfoGPR, GPRInfo::regT2);
@@ -490,7 +514,7 @@ MacroAssembler::JumpList OptimizingCallLinkInfo::emitTailCallFastPath(CCallHelpe
 
 void OptimizingCallLinkInfo::emitSlowPath(VM& vm, CCallHelpers& jit)
 {
-    setSlowPathCallDestination(vm.getCTILinkCall().code());
+    setSlowPathCallDestination(vm.getCTILinkCallSlow().code());
     jit.move(CCallHelpers::TrustedImmPtr(this), GPRInfo::regT2);
     jit.call(CCallHelpers::Address(GPRInfo::regT2, offsetOfSlowPathCallDestination()), JSEntryPtrTag);
 }
@@ -608,7 +632,7 @@ void OptimizingCallLinkInfo::setDirectCallMaxArgumentCountIncludingThis(unsigned
 void OptimizingCallLinkInfo::initializeFromDFGUnlinkedCallLinkInfo(VM& vm, const DFG::UnlinkedCallLinkInfo& unlinkedCallLinkInfo)
 {
     m_doneLocation = unlinkedCallLinkInfo.doneLocation;
-    setSlowPathCallDestination(vm.getCTILinkCall().code());
+    setSlowPathCallDestination(vm.getCTILinkCallSlow().code());
     m_codeOrigin = unlinkedCallLinkInfo.codeOrigin;
     m_callType = unlinkedCallLinkInfo.callType;
     m_calleeGPR = unlinkedCallLinkInfo.calleeGPR;
