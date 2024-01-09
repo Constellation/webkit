@@ -240,7 +240,9 @@ public:
 #endif
     void clearStub();
 
-    void setVirtualCall(VM& vm, JSCell* owner);
+    void setVirtualCall(VM&, JSCell* owner);
+
+    void revertCall(VM&);
 
     PolymorphicCallStubRoutine* stub() const
     {

@@ -141,34 +141,10 @@ void linkMonomorphicCall(
     linkSlowFor(vm, callLinkInfo);
 }
 
-static void revertCall(VM& vm, CallLinkInfo& callLinkInfo, MacroAssemblerCodeRef<JITStubRoutinePtrTag> codeRef)
-{
-    if (callLinkInfo.isDirect()) {
-#if ENABLE(JIT)
-        callLinkInfo.clearCodeBlock();
-        static_cast<OptimizingCallLinkInfo&>(callLinkInfo).initializeDirectCall();
-#endif
-    } else {
-        linkSlowPathTo(vm, callLinkInfo, codeRef);
-
-        if (callLinkInfo.stub())
-            callLinkInfo.revertCallToStub();
-        callLinkInfo.clearCallee(); // This also clears the inline cache both for data and code-based caches.
-    }
-    callLinkInfo.clearSeen();
-    callLinkInfo.clearStub();
-    if (callLinkInfo.isOnList())
-        callLinkInfo.remove();
-}
-
 void unlinkCall(VM& vm, CallLinkInfo& callLinkInfo)
 {
     dataLogLnIf(Options::dumpDisassembly(), "Unlinking CallLinkInfo: ", RawPointer(&callLinkInfo));
-    
-    if (UNLIKELY(!Options::useLLIntICs() && callLinkInfo.type() == CallLinkInfo::Type::Baseline))
-        revertCall(vm, callLinkInfo, vm.getCTIVirtualCallSlow(callLinkInfo.callMode()));
-    else
-        revertCall(vm, callLinkInfo, vm.getCTILinkCallSlow().retagged<JITStubRoutinePtrTag>());
+    callLinkInfo.revertCall(vm);
 }
 
 CodePtr<JSEntryPtrTag> jsToWasmICCodePtr(CodeSpecializationKind kind, JSObject* callee)
@@ -1808,7 +1784,6 @@ void linkDirectCall(
 
 static void linkVirtualFor(VM& vm, JSCell* owner, CallLinkInfo& callLinkInfo)
 {
-    revertCall(vm, callLinkInfo, vm.getCTIVirtualCallSlow(callLinkInfo.callMode()));
     callLinkInfo.setVirtualCall(vm, owner);
 }
 

@@ -138,6 +138,7 @@ void CallLinkInfo::setMonomorphicCallee(VM& vm, JSCell* owner, JSObject* callee,
         RELEASE_ASSERT_NOT_REACHED();
 #endif
     }
+    m_mode = static_cast<unsigned>(Mode::Monomorphic);
 }
 
 void CallLinkInfo::clearCallee()
@@ -329,10 +330,13 @@ void BaselineCallLinkInfo::initialize(VM& vm, CodeBlock* owner, CallType callTyp
     ASSERT(UseDataIC::Yes == useDataIC());
     m_bytecodeIndex = bytecodeIndex;
     m_callType = callType;
-    if (LIKELY(Options::useLLIntICs()))
+    if (LIKELY(Options::useLLIntICs())) {
+        m_mode = static_cast<unsigned>(Mode::Init);
         setSlowPathCallDestination(vm.getCTILinkCallSlow().code());
-    else
+    } else {
+        m_mode = static_cast<unsigned>(Mode::Virtual);
         setSlowPathCallDestination(vm.getCTIVirtualCallSlow(callMode()).retagged<JSEntryPtrTag>().code());
+    }
     // If JIT is disabled, we should not support dynamically generated call IC.
     if (!Options::useJIT())
         disallowStubs();
@@ -443,10 +447,13 @@ void CallLinkInfo::setStub(JSCell* owner, Ref<PolymorphicCallStubRoutine>&& newS
             MacroAssembler::startOfBranchPtrWithPatchOnRegister(u.codeIC.m_calleeLocation),
             CodeLocationLabel<JITStubRoutinePtrTag>(m_stub->code().code()));
     }
+    m_mode = static_cast<unsigned>(Mode::Polymorphic);
 }
 
 void CallLinkInfo::setVirtualCall(VM& vm, JSCell* owner)
 {
+    revertCall(vm);
+    setSlowPathCallDestination(vm.getCTIVirtualCallSlow(callMode()).retagged<JSEntryPtrTag>().code());
     if (isDataIC()) {
         m_calleeOrCodeBlock.clear();
         *bitwise_cast<uintptr_t*>(m_calleeOrCodeBlock.slot()) = (bitwise_cast<uintptr_t>(owner) | polymorphicCalleeMask);
@@ -454,6 +461,34 @@ void CallLinkInfo::setVirtualCall(VM& vm, JSCell* owner)
         u.dataIC.m_monomorphicCallDestination = vm.getCTIVirtualCall(callMode()).code().template retagged<JSEntryPtrTag>();
     }
     setClearedByVirtual();
+    m_mode = static_cast<unsigned>(Mode::Virtual);
+}
+
+void CallLinkInfo::revertCall(VM& vm)
+{
+    Mode mode = Mode::Init;
+    CodePtr<JSEntryPtrTag> codePtr = vm.getCTILinkCallSlow().retagged<JITStubRoutinePtrTag>().code().template retagged<JSEntryPtrTag>();
+    if (UNLIKELY(!Options::useLLIntICs() && type() == CallLinkInfo::Type::Baseline)) {
+        mode = Mode::Virtual;
+        codePtr = vm.getCTIVirtualCallSlow(callMode()).code().template retagged<JSEntryPtrTag>();
+    }
+
+    if (isDirect()) {
+#if ENABLE(JIT)
+        clearCodeBlock();
+        static_cast<OptimizingCallLinkInfo&>(*this).initializeDirectCall();
+#endif
+    } else {
+        setSlowPathCallDestination(codePtr);
+        if (stub())
+            revertCallToStub();
+        clearCallee(); // This also clears the inline cache both for data and code-based caches.
+    }
+    clearSeen();
+    clearStub();
+    if (isOnList())
+        remove();
+    m_mode = static_cast<unsigned>(mode);
 }
 
 void CallLinkInfo::emitDataICSlowPath(VM&, CCallHelpers& jit, GPRReg callLinkInfoGPR)
