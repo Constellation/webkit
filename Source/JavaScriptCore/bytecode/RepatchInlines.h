@@ -111,7 +111,7 @@ ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, JSCell* owner, Call
             CodePtr<JSEntryPtrTag> codePtr = vm.getCTIInternalFunctionTrampolineFor(kind);
             RELEASE_ASSERT(!!codePtr);
 
-            switch (callLinkInfo.mode()) {
+            switch (callLinkInfo->mode()) {
             case CallLinkInfo::Mode::Init: {
                 if (!callLinkInfo->seenOnce())
                     callLinkInfo->setSeen();
@@ -174,7 +174,7 @@ ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, JSCell* owner, Call
         codePtr = functionExecutable->entrypointFor(kind, arity);
     }
 
-    switch (callLinkInfo.mode()) {
+    switch (callLinkInfo->mode()) {
     case CallLinkInfo::Mode::Init: {
         if (!callLinkInfo->seenOnce())
             callLinkInfo->setSeen();
