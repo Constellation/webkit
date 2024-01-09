@@ -111,10 +111,21 @@ ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, JSCell* owner, Call
             CodePtr<JSEntryPtrTag> codePtr = vm.getCTIInternalFunctionTrampolineFor(kind);
             RELEASE_ASSERT(!!codePtr);
 
-            if (!callLinkInfo->seenOnce())
-                callLinkInfo->setSeen();
-            else
-                linkMonomorphicCall(vm, owner, *callLinkInfo, nullptr, internalFunction, codePtr);
+            switch (callLinkInfo.mode()) {
+            case CallLinkInfo::Mode::Init: {
+                if (!callLinkInfo->seenOnce())
+                    callLinkInfo->setSeen();
+                else
+                    linkMonomorphicCall(vm, owner, *callLinkInfo, nullptr, internalFunction, codePtr);
+                break;
+            }
+            case CallLinkInfo::Mode::Monomorphic:
+            case CallLinkInfo::Mode::Polymorphic:
+                linkPolymorphicCall(globalObject, owner, calleeFrame, *callLinkInfo, CallVariant(internalFunction));
+                break;
+            case CallLinkInfo::Mode::Virtual:
+                break;
+            }
 
             void* linkedTarget = codePtr.taggedPtr();
             return encodeResult(linkedTarget, reinterpret_cast<void*>(callLinkInfo->callMode() == CallMode::Tail ? ReuseTheFrame : KeepTheFrame));
@@ -163,10 +174,21 @@ ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, JSCell* owner, Call
         codePtr = functionExecutable->entrypointFor(kind, arity);
     }
 
-    if (!callLinkInfo->seenOnce())
-        callLinkInfo->setSeen();
-    else
-        linkMonomorphicCall(vm, owner, *callLinkInfo, codeBlock, callee, codePtr);
+    switch (callLinkInfo.mode()) {
+    case CallLinkInfo::Mode::Init: {
+        if (!callLinkInfo->seenOnce())
+            callLinkInfo->setSeen();
+        else
+            linkMonomorphicCall(vm, owner, *callLinkInfo, nullptr, internalFunction, codePtr);
+        break;
+    }
+    case CallLinkInfo::Mode::Monomorphic:
+    case CallLinkInfo::Mode::Polymorphic:
+        linkPolymorphicCall(globalObject, owner, calleeFrame, *callLinkInfo, CallVariant(callee));
+        break;
+    case CallLinkInfo::Mode::Virtual:
+        break;
+    }
 
     return encodeResult(codePtr.taggedPtr(), reinterpret_cast<void*>(callLinkInfo->callMode() == CallMode::Tail ? ReuseTheFrame : KeepTheFrame));
 }
