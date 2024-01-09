@@ -179,7 +179,7 @@ ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, JSCell* owner, Call
         if (!callLinkInfo->seenOnce())
             callLinkInfo->setSeen();
         else
-            linkMonomorphicCall(vm, owner, *callLinkInfo, nullptr, internalFunction, codePtr);
+            linkMonomorphicCall(vm, owner, *callLinkInfo, codeBlock, callee, codePtr);
         break;
     }
     case CallLinkInfo::Mode::Monomorphic:
