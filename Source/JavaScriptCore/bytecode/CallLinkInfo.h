@@ -81,6 +81,13 @@ public:
         DirectTailCall
     };
 
+    enum class Mode : uint8_t {
+        Init,
+        Monomorphic,
+        Polymorphic,
+        Virtual,
+    };
+
     static constexpr uintptr_t polymorphicCalleeMask = 1;
     
     static CallType callTypeFor(OpcodeID opcodeID);
@@ -376,6 +383,8 @@ public:
 
     Type type() const { return static_cast<Type>(m_type); }
 
+    Mode mode() const { return static_cast<Mode>(m_mode); }
+
     JSCell* owner() const { return m_owner; }
 
     bool isPolymorphicOrVirtualDataIC() const
@@ -386,12 +395,6 @@ public:
 protected:
     CallLinkInfo(Type type, UseDataIC useDataIC)
         : CallLinkInfoBase(CallSiteType::CallLinkInfo)
-        , m_hasSeenShouldRepatch(false)
-        , m_hasSeenClosure(false)
-        , m_clearedByGC(false)
-        , m_clearedByVirtual(false)
-        , m_allowStubs(true)
-        , m_callType(None)
         , m_useDataIC(static_cast<unsigned>(useDataIC))
         , m_type(static_cast<unsigned>(type))
     {
@@ -399,14 +402,15 @@ protected:
         ASSERT(useDataIC == this->useDataIC());
     }
 
-    bool m_hasSeenShouldRepatch : 1;
-    bool m_hasSeenClosure : 1;
-    bool m_clearedByGC : 1;
-    bool m_clearedByVirtual : 1;
-    bool m_allowStubs : 1;
-    unsigned m_callType : 4; // CallType
+    bool m_hasSeenShouldRepatch : 1 { false };
+    bool m_hasSeenClosure : 1 { false };
+    bool m_clearedByGC : 1 { false };
+    bool m_clearedByVirtual : 1 { false };
+    bool m_allowStubs : 1 { true };
+    unsigned m_callType : 4 { None }; // CallType
     unsigned m_useDataIC : 1; // UseDataIC
     unsigned m_type : 1; // Type
+    unsigned m_mode : 2 { static_cast<unsigned>(Mode::Init) }; // Mode
     uint8_t m_maxArgumentCountIncludingThisForVarargs { 0 }; // For varargs: the profiled maximum number of arguments. For direct: the number of stack slots allocated for arguments.
     uint32_t m_slowPathCount { 0 };
 
