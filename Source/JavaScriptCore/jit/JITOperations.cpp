@@ -2127,11 +2127,13 @@ JSC_DEFINE_JIT_OPERATION(operationVirtualCallForRegularCall, UCPURegister, (Call
 {
     VM& vm = globalObject->vm();
     sanitizeStackForVM(vm);
+    auto scope = DECLARE_THROW_SCOPE(vm);
     ASSERT(callLinkInfo->specializationKind() == CodeForCall);
     JSCell* calleeAsFunctionCell;
-    CallFrame* callFrame = calleeFrame->callerFrame();
-    NativeCallFrameTracer tracer(vm, callFrame);
+    NativeCallFrameTracer tracer(vm, calleeFrame);
     UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
+    if (UNLIKELY(scope.exception()))
+        return bitwise_cast<uintptr_t>(vm.getCTIStub(CommonJITThunkID::ThrowExceptionFromCall).template retagged<JSEntryPtrTag>().code().taggedPtr());
     size_t first;
     size_t second;
     decodeResult(result, first, second);
@@ -2142,11 +2144,13 @@ JSC_DEFINE_JIT_OPERATION(operationVirtualCallForConstruct, UCPURegister, (CallFr
 {
     VM& vm = globalObject->vm();
     sanitizeStackForVM(vm);
+    auto scope = DECLARE_THROW_SCOPE(vm);
     ASSERT(callLinkInfo->specializationKind() == CodeForConstruct);
     JSCell* calleeAsFunctionCell;
-    CallFrame* callFrame = calleeFrame->callerFrame();
-    NativeCallFrameTracerForTailCall tracer(vm, callFrame);
+    NativeCallFrameTracer tracer(vm, calleeFrame);
     UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
+    if (UNLIKELY(scope.exception()))
+        return bitwise_cast<uintptr_t>(vm.getCTIStub(CommonJITThunkID::ThrowExceptionFromCall).template retagged<JSEntryPtrTag>().code().taggedPtr());
     size_t first;
     size_t second;
     decodeResult(result, first, second);
@@ -2157,12 +2161,13 @@ JSC_DEFINE_JIT_OPERATION(operationVirtualCallForTailCall, UCPURegister, (CallFra
 {
     VM& vm = globalObject->vm();
     sanitizeStackForVM(vm);
+    auto scope = DECLARE_THROW_SCOPE(vm);
     ASSERT(callLinkInfo->specializationKind() == CodeForCall);
     JSCell* calleeAsFunctionCell;
-    EntryFrame* topEntryFrame = vm.topEntryFrame;
-    CallFrame* callFrame = calleeFrame->callerFrame(topEntryFrame);
-    NativeCallFrameTracerForTailCall tracer(vm, callFrame);
+    NativeCallFrameTracer tracer(vm, calleeFrame);
     UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
+    if (UNLIKELY(scope.exception()))
+        return bitwise_cast<uintptr_t>(vm.getCTIStub(CommonJITThunkID::ThrowExceptionFromCall).template retagged<JSEntryPtrTag>().code().taggedPtr());
     size_t first;
     size_t second;
     decodeResult(result, first, second);

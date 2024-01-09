@@ -342,7 +342,6 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkFor(VM& vm, CallMode mo
     slowCase.link(&jit);
 
     jit.emitFunctionPrologue();
-    jit.storePtr(GPRInfo::callFrameRegister, &vm.topCallFrame);
     if (maxFrameExtentForSlowPathCall)
         jit.addPtr(CCallHelpers::TrustedImm32(-static_cast<int32_t>(maxFrameExtentForSlowPathCall)), CCallHelpers::stackPointerRegister);
     switch (mode) {
