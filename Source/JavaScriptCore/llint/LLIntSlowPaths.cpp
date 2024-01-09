@@ -588,13 +588,18 @@ LLINT_SLOW_PATH_DECL(stack_check)
     LLINT_RETURN_TWO(pc, callFrame);
 }
 
-extern "C" UGPRPair llint_link_slow_call(CallFrame* calleeFrame, JSCell* globalObject, CallLinkInfo* callLinkInfo)
+extern "C" UGPRPair llint_link_slow_call(CallFrame* calleeFrame, JSCell* globalObjectCell, CallLinkInfo* callLinkInfo)
 {
-    return linkFor(calleeFrame, jsCast<JSGlobalObject*>(globalObject), callLinkInfo);
+    JSGlobalObject* globalObject = jsCast<JSGlobalObject*>(globalObjectCell);
+    VM& vm = globalObject->vm();
+    sanitizeStackForVM(vm);
+    NativeCallFrameTracer tracer(vm, calleeFrame->callerFrame());
+    return linkFor(globalObject, calleeFrame, callLinkInfo);
 }
 
-extern "C" UGPRPair llint_virtual_slow_call(CallFrame* calleeFrame, JSCell* globalObject, CallLinkInfo* callLinkInfo)
+extern "C" UGPRPair llint_virtual_slow_call(CallFrame* calleeFrame, JSCell* globalObjectCell, CallLinkInfo* callLinkInfo)
 {
+    JSGlobalObject* globalObject = jsCast<JSGlobalObject*>(globalObjectCell);
     VM& vm = globalObject->vm();
     JSCell* calleeAsFunctionCellIgnored;
     NativeCallFrameTracer tracer(vm, calleeFrame->callerFrame());

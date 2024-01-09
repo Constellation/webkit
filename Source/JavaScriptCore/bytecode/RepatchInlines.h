@@ -95,14 +95,12 @@ inline UGPRPair handleHostCall(JSGlobalObject* globalObject, CallFrame* calleeFr
         reinterpret_cast<void*>(KeepTheFrame));
 }
 
-ALWAYS_INLINE UGPRPair linkFor(CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo)
+ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, CallFrame* calleeFrame, CallLinkInfo* callLinkInfo)
 {
-    CallFrame* callFrame = calleeFrame->callerFrame();
     VM& vm = globalObject->vm();
     auto throwScope = DECLARE_THROW_SCOPE(vm);
 
     CodeSpecializationKind kind = callLinkInfo->specializationKind();
-    NativeCallFrameTracer tracer(vm, callFrame);
 
     RELEASE_ASSERT(!callLinkInfo->isDirect());
 

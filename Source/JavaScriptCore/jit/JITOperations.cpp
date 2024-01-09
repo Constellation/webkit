@@ -2051,8 +2051,10 @@ JSC_DEFINE_JIT_OPERATION(operationCallDirectEvalStrict, EncodedJSValue, (void* f
 
 JSC_DEFINE_JIT_OPERATION(operationLinkCall, UGPRPair, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
 {
-    sanitizeStackForVM(globalObject->vm());
-    return linkFor(calleeFrame, globalObject, callLinkInfo);
+    VM& vm = globalObject->vm();
+    sanitizeStackForVM(vm);
+    NativeCallFrameTracer tracer(vm, calleeFrame->callerFrame());
+    return linkFor(globalObject, calleeFrame, callLinkInfo);
 }
 
 JSC_DEFINE_JIT_OPERATION(operationLinkPolymorphicCall, UGPRPair, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
