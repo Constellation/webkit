@@ -344,20 +344,8 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkFor(VM& vm, CallMode mo
     jit.emitFunctionPrologue();
     if (maxFrameExtentForSlowPathCall)
         jit.addPtr(CCallHelpers::TrustedImm32(-static_cast<int32_t>(maxFrameExtentForSlowPathCall)), CCallHelpers::stackPointerRegister);
-    switch (mode) {
-    case CallMode::Regular:
-        jit.setupArguments<decltype(operationVirtualCallForRegularCall)>(GPRInfo::regT3, GPRInfo::regT2);
-        jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationVirtualCallForRegularCall)), GPRInfo::nonArgGPR0);
-        break;
-    case CallMode::Tail:
-        jit.setupArguments<decltype(operationVirtualCallForTailCall)>(GPRInfo::regT3, GPRInfo::regT2);
-        jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationVirtualCallForTailCall)), GPRInfo::nonArgGPR0);
-        break;
-    case CallMode::Construct:
-        jit.setupArguments<decltype(operationVirtualCallForConstruct)>(GPRInfo::regT3, GPRInfo::regT2);
-        jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationVirtualCallForConstruct)), GPRInfo::nonArgGPR0);
-        break;
-    }
+    jit.setupArguments<decltype(operationVirtualCallDataIC)>(GPRInfo::regT3, GPRInfo::regT2);
+    jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationVirtualCallDataIC)), GPRInfo::nonArgGPR0);
     emitPointerValidation(jit, GPRInfo::nonArgGPR0, OperationPtrTag);
     jit.call(GPRInfo::nonArgGPR0, OperationPtrTag);
     if (maxFrameExtentForSlowPathCall)
@@ -573,13 +561,8 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> polymorphicThunkFor(VM&, CallMode m
     jit.emitFunctionPrologue();
     if (maxFrameExtentForSlowPathCall)
         jit.addPtr(CCallHelpers::TrustedImm32(-static_cast<int32_t>(maxFrameExtentForSlowPathCall)), CCallHelpers::stackPointerRegister);
-    if (isTailCall) {
-        jit.setupArguments<decltype(operationLinkPolymorphicCallForTailCall)>(GPRInfo::regT3, GPRInfo::regT2);
-        jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationLinkPolymorphicCallForTailCall)), GPRInfo::nonArgGPR0);
-    } else {
-        jit.setupArguments<decltype(operationLinkPolymorphicCallForRegularCall)>(GPRInfo::regT3, GPRInfo::regT2);
-        jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationLinkPolymorphicCallForRegularCall)), GPRInfo::nonArgGPR0);
-    }
+    jit.setupArguments<decltype(operationPolymorphicCallDataIC)>(GPRInfo::regT3, GPRInfo::regT2);
+    jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationPolymorphicCallDataIC)), GPRInfo::nonArgGPR0);
     emitPointerValidation(jit, GPRInfo::nonArgGPR0, OperationPtrTag);
     jit.call(GPRInfo::nonArgGPR0, OperationPtrTag);
     if (maxFrameExtentForSlowPathCall)
@@ -640,8 +623,8 @@ MacroAssemblerCodeRef<JITThunkPtrTag> defaultCallThunk(VM&)
     jit.emitFunctionPrologue();
     if (maxFrameExtentForSlowPathCall)
         jit.addPtr(CCallHelpers::TrustedImm32(-static_cast<int32_t>(maxFrameExtentForSlowPathCall)), CCallHelpers::stackPointerRegister);
-    jit.setupArguments<decltype(operationDefaultCall)>(GPRInfo::regT3, GPRInfo::regT2);
-    jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationDefaultCall)), GPRInfo::nonArgGPR0);
+    jit.setupArguments<decltype(operationDefaultCallDataIC)>(GPRInfo::regT3, GPRInfo::regT2);
+    jit.move(CCallHelpers::TrustedImmPtr(tagCFunction<OperationPtrTag>(operationDefaultCallDataIC)), GPRInfo::nonArgGPR0);
     emitPointerValidation(jit, GPRInfo::nonArgGPR0, OperationPtrTag);
     jit.call(GPRInfo::nonArgGPR0, OperationPtrTag);
     if (maxFrameExtentForSlowPathCall)

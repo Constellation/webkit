@@ -2071,33 +2071,11 @@ JSC_DEFINE_JIT_OPERATION(operationLinkPolymorphicCall, UGPRPair, (CallFrame* cal
     return result;
 }
 
-JSC_DEFINE_JIT_OPERATION(operationLinkPolymorphicCallForRegularCall, UCPURegister, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
+JSC_DEFINE_JIT_OPERATION(operationPolymorphicCallDataIC, UCPURegister, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
 {
     VM& vm = globalObject->vm();
     sanitizeStackForVM(vm);
     auto scope = DECLARE_THROW_SCOPE(vm);
-    JSCell* calleeAsFunctionCell;
-    NativeCallFrameTracer tracer(vm, calleeFrame);
-    UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
-
-    JSCell* owner = callLinkInfo->owner();
-    linkPolymorphicCall(globalObject, owner, calleeFrame, *callLinkInfo, CallVariant(calleeAsFunctionCell));
-
-    if (UNLIKELY(scope.exception()))
-        return bitwise_cast<uintptr_t>(vm.getCTIStub(CommonJITThunkID::ThrowExceptionFromCall).template retagged<JSEntryPtrTag>().code().taggedPtr());
-
-    size_t first;
-    size_t second;
-    decodeResult(result, first, second);
-    return first;
-}
-
-JSC_DEFINE_JIT_OPERATION(operationLinkPolymorphicCallForTailCall, UCPURegister, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
-{
-    VM& vm = globalObject->vm();
-    sanitizeStackForVM(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
-    ASSERT(callLinkInfo->specializationKind() == CodeForCall);
     JSCell* calleeAsFunctionCell;
     NativeCallFrameTracer tracer(vm, calleeFrame);
     UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
@@ -2123,12 +2101,11 @@ JSC_DEFINE_JIT_OPERATION(operationVirtualCall, UGPRPair, (CallFrame* calleeFrame
     return virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCellIgnored);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationVirtualCallForRegularCall, UCPURegister, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
+JSC_DEFINE_JIT_OPERATION(operationVirtualCallDataIC, UCPURegister, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
 {
     VM& vm = globalObject->vm();
     sanitizeStackForVM(vm);
     auto scope = DECLARE_THROW_SCOPE(vm);
-    ASSERT(callLinkInfo->specializationKind() == CodeForCall);
     JSCell* calleeAsFunctionCell;
     NativeCallFrameTracer tracer(vm, calleeFrame);
     UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
@@ -2140,41 +2117,7 @@ JSC_DEFINE_JIT_OPERATION(operationVirtualCallForRegularCall, UCPURegister, (Call
     return first;
 }
 
-JSC_DEFINE_JIT_OPERATION(operationVirtualCallForConstruct, UCPURegister, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
-{
-    VM& vm = globalObject->vm();
-    sanitizeStackForVM(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
-    ASSERT(callLinkInfo->specializationKind() == CodeForConstruct);
-    JSCell* calleeAsFunctionCell;
-    NativeCallFrameTracer tracer(vm, calleeFrame);
-    UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
-    if (UNLIKELY(scope.exception()))
-        return bitwise_cast<uintptr_t>(vm.getCTIStub(CommonJITThunkID::ThrowExceptionFromCall).template retagged<JSEntryPtrTag>().code().taggedPtr());
-    size_t first;
-    size_t second;
-    decodeResult(result, first, second);
-    return first;
-}
-
-JSC_DEFINE_JIT_OPERATION(operationVirtualCallForTailCall, UCPURegister, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
-{
-    VM& vm = globalObject->vm();
-    sanitizeStackForVM(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
-    ASSERT(callLinkInfo->specializationKind() == CodeForCall);
-    JSCell* calleeAsFunctionCell;
-    NativeCallFrameTracer tracer(vm, calleeFrame);
-    UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
-    if (UNLIKELY(scope.exception()))
-        return bitwise_cast<uintptr_t>(vm.getCTIStub(CommonJITThunkID::ThrowExceptionFromCall).template retagged<JSEntryPtrTag>().code().taggedPtr());
-    size_t first;
-    size_t second;
-    decodeResult(result, first, second);
-    return first;
-}
-
-JSC_DEFINE_JIT_OPERATION(operationDefaultCall, UCPURegister, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
+JSC_DEFINE_JIT_OPERATION(operationDefaultCallDataIC, UCPURegister, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
 {
     VM& vm = globalObject->vm();
     sanitizeStackForVM(vm);
