@@ -2126,7 +2126,6 @@ JSC_DEFINE_JIT_OPERATION(operationDefaultCallDataIC, UCPURegister, (CallFrame* c
     VM& vm = globalObject->vm();
     sanitizeStackForVM(vm);
     auto scope = DECLARE_THROW_SCOPE(vm);
-    JSCell* calleeAsFunctionCell;
     NativeCallFrameTracer tracer(vm, calleeFrame);
     JSCell* owner = callLinkInfo->owner();
     UGPRPair result = linkFor(globalObject, owner, calleeFrame, callLinkInfo);
