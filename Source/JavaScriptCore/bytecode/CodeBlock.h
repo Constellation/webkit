@@ -282,7 +282,7 @@ public:
 #endif // ENABLE(JIT)
 
     void unlinkOrUpgradeIncomingCalls(VM&, CodeBlock*);
-    void linkIncomingCall(JSCell* caller, CallFrame* callerFrame, CallLinkInfoBase*, bool skipFirstFrame = false);
+    void linkIncomingCall(JSCell* caller, CallLinkInfoBase*);
 
     const JSInstruction* outOfLineJumpTarget(const JSInstruction* pc);
     int outOfLineJumpOffset(JSInstructionStream::Offset offset)
@@ -880,7 +880,7 @@ private:
     
     CodeBlock* specialOSREntryBlockOrNull();
     
-    void noticeIncomingCall(JSCell* caller, CallFrame* callerFrame, bool skipFirstFrame);
+    void noticeIncomingCall(JSCell* caller);
 
     void updateAllNonLazyValueProfilePredictionsAndCountLiveness(const ConcurrentJSLocker&, unsigned& numberOfLiveNonArgumentValueProfiles, unsigned& numberOfSamplesInProfiles);
 

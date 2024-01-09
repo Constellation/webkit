@@ -89,7 +89,7 @@ PolymorphicCallStubRoutine::PolymorphicCallStubRoutine(unsigned headerSize, unsi
         auto& callNode = leadingSpan()[index];
         callNode.initialize(index, headerSize);
         if (CodeBlock* codeBlock = slot.m_codeBlock)
-            codeBlock->linkIncomingCall(owner, callerFrame, &callNode, /* skipFirstFrame */ m_isDataIC);
+            codeBlock->linkIncomingCall(owner, &callNode);
 
         vm.writeBarrier(owner, slot.m_calleeOrExecutable);
     }
@@ -118,7 +118,7 @@ bool PolymorphicCallStubRoutine::upgradeIfPossible(VM&, CodeBlock* oldCodeBlock,
     auto target = newCodeBlock->jitCode()->addressForCall(slot.m_arityCheckMode);
     slot.m_codeBlock = newCodeBlock;
     slot.m_target = target;
-    newCodeBlock->linkIncomingCall(nullptr, nullptr, &callNode); // This is just relinking. So owner and caller frame can be nullptr.
+    newCodeBlock->linkIncomingCall(m_callLinkInfo->owner(), &callNode); // This is just relinking. So owner and caller frame can be nullptr.
     return true;
 }
 

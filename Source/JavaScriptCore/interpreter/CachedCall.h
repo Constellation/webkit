@@ -114,7 +114,7 @@ public:
             newCodeBlock->m_shouldAlwaysBeInlined = false;
             m_addressForCall = newCodeBlock->jitCode()->addressForCall();
             m_protoCallFrame.setCodeBlock(newCodeBlock);
-            newCodeBlock->linkIncomingCall(nullptr, nullptr, this);
+            newCodeBlock->linkIncomingCall(nullptr, this);
             return;
         }
         m_addressForCall = nullptr;

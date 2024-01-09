@@ -2093,10 +2093,10 @@ void CodeBlock::shrinkToFit(const ConcurrentJSLocker&, ShrinkMode shrinkMode)
 #endif
 }
 
-void CodeBlock::linkIncomingCall(JSCell* caller, CallFrame* callerFrame, CallLinkInfoBase* incoming, bool skipFirstFrame)
+void CodeBlock::linkIncomingCall(JSCell* caller, CallLinkInfoBase* incoming)
 {
     if (caller)
-        noticeIncomingCall(caller, callerFrame, skipFirstFrame);
+        noticeIncomingCall(caller);
     m_incomingCalls.push(incoming);
 }
 
@@ -2339,11 +2339,9 @@ private:
     mutable bool m_didRecurse;
 };
 
-void CodeBlock::noticeIncomingCall(JSCell* caller, CallFrame* callerFrame, bool skipFirstFrame)
+void CodeBlock::noticeIncomingCall(JSCell* caller)
 {
     RELEASE_ASSERT(!m_isJettisoned);
-    UNUSED_PARAM(callerFrame);
-    UNUSED_PARAM(skipFirstFrame);
 
     CodeBlock* callerCodeBlock = jsDynamicCast<CodeBlock*>(caller);
     
@@ -2400,20 +2398,8 @@ void CodeBlock::noticeIncomingCall(JSCell* caller, CallFrame* callerFrame, bool 
     }
 
     // Recursive calls won't be inlined.
-    if (callerFrame) {
-        VM& vm = this->vm();
-        RecursionCheckFunctor functor(callerFrame, this, Options::maximumInliningDepth());
-        StackVisitor::visit(vm.topCallFrame, vm, functor, skipFirstFrame);
-
-        if (functor.didRecurse()) {
-            dataLogLnIf(Options::verboseCallLink(), "    Clearing SABI because recursion was detected.");
-            m_shouldAlwaysBeInlined = false;
-            return;
-        }
-    }
-    
     if (callerCodeBlock->capabilityLevelState() == DFG::CapabilityLevelNotSet) {
-        dataLog("In call from ", FullCodeOrigin(callerCodeBlock, callerFrame ? callerFrame->codeOrigin() : CodeOrigin { }), " to ", *this, ": caller's DFG capability level is not set.\n");
+        dataLog("In call from ", FullCodeOrigin(callerCodeBlock, CodeOrigin { }), " to ", *this, ": caller's DFG capability level is not set.\n");
         CRASH();
     }
     

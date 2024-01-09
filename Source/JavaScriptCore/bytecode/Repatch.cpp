@@ -129,7 +129,7 @@ void linkMonomorphicCall(
         dataLog("Linking call in ", FullCodeOrigin(callerCodeBlock, callLinkInfo.codeOrigin()), " to ", pointerDump(calleeCodeBlock), ", entrypoint at ", codePtr, "\n");
 
     if (calleeCodeBlock)
-        calleeCodeBlock->linkIncomingCall(owner, callerFrame, &callLinkInfo);
+        calleeCodeBlock->linkIncomingCall(owner, &callLinkInfo);
 
 #if ENABLE(JIT)
     if (callLinkInfo.specializationKind() == CodeForCall && callLinkInfo.allowStubs()) {
@@ -1803,7 +1803,7 @@ void linkDirectCall(
     callLinkInfo.setDirectCallTarget(jsCast<FunctionCodeBlock*>(calleeCodeBlock), CodeLocationLabel<JSEntryPtrTag>(codePtr));
 
     if (calleeCodeBlock)
-        calleeCodeBlock->linkIncomingCall(callerCodeBlock, callFrame, &callLinkInfo);
+        calleeCodeBlock->linkIncomingCall(callerCodeBlock, &callLinkInfo);
 }
 
 static void linkVirtualFor(VM& vm, JSCell* owner, CallLinkInfo& callLinkInfo)
