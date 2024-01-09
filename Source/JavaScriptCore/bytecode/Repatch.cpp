@@ -109,9 +109,7 @@ static void linkSlowFor(VM& vm, CallLinkInfo& callLinkInfo)
     linkSlowPathTo(vm, callLinkInfo, vm.getCTIVirtualCallSlow(callLinkInfo.callMode()));
 }
 
-void linkMonomorphicCall(
-    VM& vm, JSCell* owner, CallFrame* callFrame, CallLinkInfo& callLinkInfo, CodeBlock* calleeCodeBlock,
-    JSObject* callee, CodePtr<JSEntryPtrTag> codePtr)
+void linkMonomorphicCall(VM& vm, JSCell* owner, CallLinkInfo& callLinkInfo, CodeBlock* calleeCodeBlock, JSObject* callee, CodePtr<JSEntryPtrTag> codePtr)
 {
     ASSERT(!callLinkInfo.stub());
 

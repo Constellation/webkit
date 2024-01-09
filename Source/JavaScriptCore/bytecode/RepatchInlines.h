@@ -114,7 +114,7 @@ ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, JSCell* owner, Call
             if (!callLinkInfo->seenOnce())
                 callLinkInfo->setSeen();
             else
-                linkMonomorphicCall(vm, owner, calleeFrame, *callLinkInfo, nullptr, internalFunction, codePtr);
+                linkMonomorphicCall(vm, owner, *callLinkInfo, nullptr, internalFunction, codePtr);
 
             void* linkedTarget = codePtr.taggedPtr();
             return encodeResult(linkedTarget, reinterpret_cast<void*>(callLinkInfo->callMode() == CallMode::Tail ? ReuseTheFrame : KeepTheFrame));
@@ -166,7 +166,7 @@ ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, JSCell* owner, Call
     if (!callLinkInfo->seenOnce())
         callLinkInfo->setSeen();
     else
-        linkMonomorphicCall(vm, owner, calleeFrame, *callLinkInfo, codeBlock, callee, codePtr);
+        linkMonomorphicCall(vm, owner, *callLinkInfo, codeBlock, callee, codePtr);
 
     return encodeResult(codePtr.taggedPtr(), reinterpret_cast<void*>(callLinkInfo->callMode() == CallMode::Tail ? ReuseTheFrame : KeepTheFrame));
 }
