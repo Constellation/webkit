@@ -484,10 +484,16 @@ void CallLinkInfo::revertCall(VM& vm)
     m_mode = static_cast<unsigned>(mode);
 }
 
-void CallLinkInfo::emitDataICSlowPath(VM&, CCallHelpers& jit, GPRReg callLinkInfoGPR)
+void CallLinkInfo::emitDataICSlowPath(VM&, CCallHelpers& jit, GPRReg callLinkInfoGPR, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall)
 {
-    jit.move(callLinkInfoGPR, GPRInfo::regT2);
-    jit.call(CCallHelpers::Address(GPRInfo::regT2, offsetOfSlowPathCallDestination()), JSEntryPtrTag);
+    if (isTailCall) {
+        prepareForTailCall();
+        jit.storePtr(TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
+        jit.jumpThunk(CodeLocationLabel { vm.getCTIStub(CommonJITThunkID::DefaultCallThunk).retaggedCode<NoPtrTag>() });
+    } else {
+        jit.storePtr(TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeCall());
+        jit.nearCallThunk(CodeLocationLabel { vm.getCTIStub(CommonJITThunkID::DefaultCallThunk).retaggedCode<NoPtrTag>() });
+    }
 }
 
 MacroAssembler::JumpList CallLinkInfo::emitFastPath(CCallHelpers& jit, CompileTimeCallLinkInfo callLinkInfo, GPRReg calleeGPR, GPRReg callLinkInfoGPR)
@@ -512,7 +518,16 @@ void CallLinkInfo::emitSlowPath(VM& vm, CCallHelpers& jit, CompileTimeCallLinkIn
         std::get<OptimizingCallLinkInfo*>(callLinkInfo)->emitSlowPath(vm, jit);
         return;
     }
-    emitDataICSlowPath(vm, jit, callLinkInfoGPR);
+    emitDataICSlowPath(vm, jit, callLinkInfoGPR, /* isTailCall */ false, nullptr);
+}
+
+void CallLinkInfo::emitTailCallSlowPath(VM& vm, CCallHelpers& jit, CompileTimeCallLinkInfo callLinkInfo, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall)
+{
+    if (std::holds_alternative<OptimizingCallLinkInfo*>(callLinkInfo)) {
+        std::get<OptimizingCallLinkInfo*>(callLinkInfo)->emitSlowPath(vm, jit);
+        return;
+    }
+    emitDataICSlowPath(vm, jit, callLinkInfoGPR, /* isTailCall */ true, prepareForTailCall);
 }
 
 CCallHelpers::JumpList OptimizingCallLinkInfo::emitFastPath(CCallHelpers& jit, GPRReg calleeGPR, GPRReg callLinkInfoGPR)

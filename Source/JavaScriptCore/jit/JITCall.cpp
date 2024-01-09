@@ -212,7 +212,6 @@ bool JIT::compileTailCall(const Op&, BaselineUnlinkedCallLinkInfo*, unsigned)
 template<>
 bool JIT::compileTailCall(const OpTailCall& bytecode, BaselineUnlinkedCallLinkInfo* callLinkInfo, unsigned callLinkInfoIndex)
 {
-    materializePointerIntoMetadata(bytecode, OpTailCall::Metadata::offsetOfCallLinkInfo(), BaselineJITRegisters::Call::callLinkInfoGPR);
     JumpList slowPaths = CallLinkInfo::emitTailCallFastPath(*this, callLinkInfo, BaselineJITRegisters::Call::calleeJSR.payloadGPR(), BaselineJITRegisters::Call::callLinkInfoGPR, scopedLambda<void()>([&] {
         CallFrameShuffleData shuffleData = CallFrameShuffleData::createForBaselineOrLLIntTailCall(bytecode, m_unlinkedCodeBlock->numParameters());
         CallFrameShuffler shuffler { *this, shuffleData };
@@ -269,6 +268,8 @@ void JIT::compileOpCall(const JSInstruction* instruction, unsigned callLinkInfoI
         return;
     }
 
+    materializePointerIntoMetadata(bytecode, Op::Metadata::offsetOfCallLinkInfo(), BaselineJITRegisters::Call::callLinkInfoGPR);
+
 #if USE(JSVALUE32_64)
     // We need this on JSVALUE32_64 only as on JSVALUE64 a pointer comparison in the DataIC fast
     // path catches this.
@@ -278,7 +279,6 @@ void JIT::compileOpCall(const JSInstruction* instruction, unsigned callLinkInfoI
     if constexpr (Op::opcodeID == op_tail_call) {
         compileTailCall(bytecode, callLinkInfo, callLinkInfoIndex);
     } else {
-        materializePointerIntoMetadata(bytecode, Op::Metadata::offsetOfCallLinkInfo(), BaselineJITRegisters::Call::callLinkInfoGPR);
         if constexpr (Op::opcodeID == op_tail_call_varargs || Op::opcodeID == op_tail_call_forward_arguments) {
             auto slowPaths = CallLinkInfo::emitTailCallFastPath(*this, callLinkInfo, BaselineJITRegisters::Call::calleeJSR.payloadGPR(), BaselineJITRegisters::Call::callLinkInfoGPR, scopedLambda<void()>([&] {
                 emitRestoreCalleeSaves();
@@ -304,27 +304,23 @@ void JIT::compileOpCall(const JSInstruction* instruction, unsigned callLinkInfoI
 }
 
 template<typename Op>
-void JIT::compileOpCallSlowCase(const JSInstruction* instruction, Vector<SlowCaseEntry>::iterator& iter, unsigned callLinkInfoIndex)
+void JIT::compileOpCallSlowCase(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter, unsigned callLinkInfoIndex)
 {
-    OpcodeID opcodeID = Op::opcodeID;
-    auto bytecode = instruction->as<Op>();
+    constexpr OpcodeID opcodeID = Op::opcodeID;
     ASSERT(opcodeID != op_call_direct_eval);
     auto* callLinkInfo = m_callCompilationInfo[callLinkInfoIndex].unlinkedCallLinkInfo;
 
     linkAllSlowCases(iter);
 
-    loadGlobalObject(regT3);
-    materializePointerIntoMetadata(bytecode, Op::Metadata::offsetOfCallLinkInfo(), regT2);
-
-    if (opcodeID == op_tail_call || opcodeID == op_tail_call_varargs || opcodeID == op_tail_call_forward_arguments)
-        emitRestoreCalleeSaves();
-
-    CallLinkInfo::emitSlowPath(*m_vm, *this, callLinkInfo, regT2);
-
-    if (opcodeID == op_tail_call || opcodeID == op_tail_call_varargs || opcodeID == op_tail_call_forward_arguments) {
+    loadGlobalObject(BaselineJITRegisters::Call::globalObjectGPR);
+    if constexpr (opcodeID == op_tail_call || opcodeID == op_tail_call_varargs || opcodeID == op_tail_call_forward_arguments) {
+        CallLinkInfo::emitTailCallSlowPath(*m_vm, *this, callLinkInfo, BaselineJITRegisters::Call::callLinkInfoGPR, scopedLambda<void()>([&] {
+            emitRestoreCalleeSaves();
+            prepareForTailCallSlow(BaselineJITRegisters::Call::callLinkInfoGPR, BaselineJITRegisters::Call::globalObjectGPR);
+        }));
         abortWithReason(JITDidReturnFromTailCall);
-        return;
-    }
+    } else
+        CallLinkInfo::emitSlowPath(*m_vm, *this, callLinkInfo, BaselineJITRegisters::Call::callLinkInfoGPR);
 }
 
 void JIT::emit_op_call(const JSInstruction* currentInstruction)
