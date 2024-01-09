@@ -31,6 +31,7 @@
 #include "DFGJITCode.h"
 #include "DisallowMacroScratchRegisterUsage.h"
 #include "FunctionCodeBlock.h"
+#include "JITThunks.h"
 #include "JSCellInlines.h"
 #include "LinkBuffer.h"
 #include "Opcode.h"
@@ -484,7 +485,7 @@ void CallLinkInfo::revertCall(VM& vm)
     m_mode = static_cast<unsigned>(mode);
 }
 
-void CallLinkInfo::emitDataICSlowPath(VM&, CCallHelpers& jit, GPRReg callLinkInfoGPR, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall)
+void CallLinkInfo::emitDataICSlowPath(VM& vm, CCallHelpers& jit, GPRReg callLinkInfoGPR, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall)
 {
     if (isTailCall) {
         prepareForTailCall();
