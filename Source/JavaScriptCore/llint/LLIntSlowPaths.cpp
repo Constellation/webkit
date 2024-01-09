@@ -593,8 +593,10 @@ extern "C" UGPRPair llint_link_slow_call(CallFrame* calleeFrame, JSCell* globalO
     JSGlobalObject* globalObject = jsCast<JSGlobalObject*>(globalObjectCell);
     VM& vm = globalObject->vm();
     sanitizeStackForVM(vm);
-    NativeCallFrameTracer tracer(vm, calleeFrame->callerFrame());
-    return linkFor(globalObject, calleeFrame, callLinkInfo);
+    CallFrame* callerFrame = calleeFrame->callerFrame();
+    NativeCallFrameTracer tracer(vm, callerFrame);
+    JSCell* owner = callerFrame->codeOwnerCell();
+    return linkFor(globalObject, owner, calleeFrame, callLinkInfo);
 }
 
 extern "C" UGPRPair llint_virtual_slow_call(CallFrame* calleeFrame, JSCell* globalObjectCell, CallLinkInfo* callLinkInfo)

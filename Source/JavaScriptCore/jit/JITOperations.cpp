@@ -2053,8 +2053,10 @@ JSC_DEFINE_JIT_OPERATION(operationLinkCall, UGPRPair, (CallFrame* calleeFrame, J
 {
     VM& vm = globalObject->vm();
     sanitizeStackForVM(vm);
-    NativeCallFrameTracer tracer(vm, calleeFrame->callerFrame());
-    return linkFor(globalObject, calleeFrame, callLinkInfo);
+    CallFrame* callerFrame = calleeFrame->callerFrame();
+    NativeCallFrameTracer tracer(vm, callerFrame);
+    JSCell* owner = callerFrame->codeOwnerCell();
+    return linkFor(globalObject, owner, calleeFrame, callLinkInfo);
 }
 
 JSC_DEFINE_JIT_OPERATION(operationLinkPolymorphicCall, UGPRPair, (CallFrame* calleeFrame, JSGlobalObject* globalObject, CallLinkInfo* callLinkInfo))
@@ -2063,10 +2065,10 @@ JSC_DEFINE_JIT_OPERATION(operationLinkPolymorphicCall, UGPRPair, (CallFrame* cal
     sanitizeStackForVM(vm);
     ASSERT(callLinkInfo->specializationKind() == CodeForCall);
     JSCell* calleeAsFunctionCell;
-    NativeCallFrameTracer tracer(vm, calleeFrame->callerFrame());
+    CallFrame* callerFrame = calleeFrame->callerFrame();
+    NativeCallFrameTracer tracer(vm, callerFrame);
     UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
 
-    CallFrame* callerFrame = calleeFrame->callerFrame();
     JSCell* owner = callerFrame->codeOwnerCell();
     linkPolymorphicCall(globalObject, owner, calleeFrame, *callLinkInfo, CallVariant(calleeAsFunctionCell));
 
@@ -2126,7 +2128,8 @@ JSC_DEFINE_JIT_OPERATION(operationDefaultCallDataIC, UCPURegister, (CallFrame* c
     auto scope = DECLARE_THROW_SCOPE(vm);
     JSCell* calleeAsFunctionCell;
     NativeCallFrameTracer tracer(vm, calleeFrame);
-    UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCell);
+    JSCell* owner = callLinkInfo->owner();
+    UGPRPair result = linkFor(globalObject, owner, calleeFrame, callLinkInfo);
     if (UNLIKELY(scope.exception()))
         return bitwise_cast<uintptr_t>(vm.getCTIStub(CommonJITThunkID::ThrowExceptionFromCall).template retagged<JSEntryPtrTag>().code().taggedPtr());
     size_t first;

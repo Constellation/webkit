@@ -95,7 +95,7 @@ inline UGPRPair handleHostCall(JSGlobalObject* globalObject, CallFrame* calleeFr
         reinterpret_cast<void*>(KeepTheFrame));
 }
 
-ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, CallFrame* calleeFrame, CallLinkInfo* callLinkInfo)
+ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, JSCell* owner, CallFrame* calleeFrame, CallLinkInfo* callLinkInfo)
 {
     VM& vm = globalObject->vm();
     auto throwScope = DECLARE_THROW_SCOPE(vm);
@@ -114,7 +114,7 @@ ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, CallFrame* calleeFr
             if (!callLinkInfo->seenOnce())
                 callLinkInfo->setSeen();
             else
-                linkMonomorphicCall(vm, calleeFrame, *callLinkInfo, nullptr, internalFunction, codePtr);
+                linkMonomorphicCall(vm, owner, calleeFrame, *callLinkInfo, nullptr, internalFunction, codePtr);
 
             void* linkedTarget = codePtr.taggedPtr();
             return encodeResult(linkedTarget, reinterpret_cast<void*>(callLinkInfo->callMode() == CallMode::Tail ? ReuseTheFrame : KeepTheFrame));
@@ -166,7 +166,7 @@ ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, CallFrame* calleeFr
     if (!callLinkInfo->seenOnce())
         callLinkInfo->setSeen();
     else
-        linkMonomorphicCall(vm, calleeFrame, *callLinkInfo, codeBlock, callee, codePtr);
+        linkMonomorphicCall(vm, owner, calleeFrame, *callLinkInfo, codeBlock, callee, codePtr);
 
     return encodeResult(codePtr.taggedPtr(), reinterpret_cast<void*>(callLinkInfo->callMode() == CallMode::Tail ? ReuseTheFrame : KeepTheFrame));
 }

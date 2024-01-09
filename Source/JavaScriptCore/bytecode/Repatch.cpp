@@ -110,14 +110,13 @@ static void linkSlowFor(VM& vm, CallLinkInfo& callLinkInfo)
 }
 
 void linkMonomorphicCall(
-    VM& vm, CallFrame* callFrame, CallLinkInfo& callLinkInfo, CodeBlock* calleeCodeBlock,
+    VM& vm, JSCell* owner, CallFrame* callFrame, CallLinkInfo& callLinkInfo, CodeBlock* calleeCodeBlock,
     JSObject* callee, CodePtr<JSEntryPtrTag> codePtr)
 {
     ASSERT(!callLinkInfo.stub());
 
     CallFrame* callerFrame = callFrame->callerFrame();
 
-    JSCell* owner = callerFrame->codeOwnerCell();
     CodeBlock* callerCodeBlock = jsDynamicCast<CodeBlock*>(owner); // WebAssembly -> JS stubs don't have a valid CodeBlock.
     ASSERT(owner);
 
