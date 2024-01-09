@@ -413,6 +413,7 @@ protected:
     unsigned m_useDataIC : 1; // UseDataIC
     unsigned m_type : 1; // Type
     uint8_t m_maxArgumentCountIncludingThisForVarargs { 0 }; // For varargs: the profiled maximum number of arguments. For direct: the number of stack slots allocated for arguments.
+    uint32_t m_slowPathCount { 0 };
 
     CodeLocationLabel<JSInternalPtrTag> m_doneLocation;
     CodePtr<JSEntryPtrTag> m_slowPathCallDestination;
@@ -437,7 +438,7 @@ protected:
 #if ENABLE(JIT)
     RefPtr<PolymorphicCallStubRoutine> m_stub;
 #endif
-    uint32_t m_slowPathCount { 0 };
+    JSCell* m_owner { nullptr };
 };
 
 class BaselineCallLinkInfo final : public CallLinkInfo {
@@ -447,7 +448,7 @@ public:
     {
     }
 
-    void initialize(VM&, CallType, BytecodeIndex);
+    void initialize(VM&, CodeBlock*, CallType, BytecodeIndex);
 
     void setCodeLocations(CodeLocationLabel<JSInternalPtrTag> doneLocation)
     {
