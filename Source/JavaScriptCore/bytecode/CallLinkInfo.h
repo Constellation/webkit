@@ -376,12 +376,7 @@ public:
 
     Type type() const { return static_cast<Type>(m_type); }
 
-    JSCell* owner() const
-    {
-        ASSERT(isPolymorphicOrVirtualDataIC());
-        return bitwise_cast<JSCell*>(bitwise_cast<uintptr_t>(m_calleeOrCodeBlock.unvalidatedGet()) & (~polymorphicCalleeMask));
-    }
-
+    JSCell* owner() const { return m_owner; }
 
     bool isPolymorphicOrVirtualDataIC() const
     {
