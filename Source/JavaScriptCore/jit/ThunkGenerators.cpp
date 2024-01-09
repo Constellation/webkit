@@ -659,7 +659,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> defaultCallThunk(VM& vm)
     jit.farJump(GPRInfo::returnValueGPR, JSEntryPtrTag);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::Thunk);
-    return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "Default Call %s thunk", mode == CallMode::Regular ? "call" : mode == CallMode::Tail ? "tail call" : "construct");
+    return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "Default Call thunk");
 }
 
 enum ThunkEntryType { EnterViaCall, EnterViaJumpWithSavedTags, EnterViaJumpWithoutSavedTags };
