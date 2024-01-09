@@ -315,6 +315,8 @@ JSC_DECLARE_JIT_OPERATION(operationVirtualCallForRegularCall, UCPURegister, (Cal
 JSC_DECLARE_JIT_OPERATION(operationVirtualCallForTailCall, UCPURegister, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
 JSC_DECLARE_JIT_OPERATION(operationVirtualCallForConstruct, UCPURegister, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
 
+JSC_DECLARE_JIT_OPERATION(operationDefaultCall, UCPURegister, (CallFrame*, JSGlobalObject*, CallLinkInfo*));
+
 JSC_DECLARE_JIT_OPERATION(operationCompareLess, size_t, (JSGlobalObject*, EncodedJSValue, EncodedJSValue));
 JSC_DECLARE_JIT_OPERATION(operationCompareLessEq, size_t, (JSGlobalObject*, EncodedJSValue, EncodedJSValue));
 JSC_DECLARE_JIT_OPERATION(operationCompareGreater, size_t, (JSGlobalObject*, EncodedJSValue, EncodedJSValue));

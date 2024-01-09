@@ -72,6 +72,7 @@ class NativeExecutable;
     macro(VirtualThunkSlowForRegularCall, virtualThunkSlowForRegularCall) \
     macro(VirtualThunkSlowForTailCall, virtualThunkSlowForTailCall) \
     macro(VirtualThunkSlowForConstruct, virtualThunkSlowForConstruct) \
+    macro(DefaultCallThunk, defaultCallThunk) \
     macro(PolymorphicThunkForRegularCall, polymorphicThunkForRegularCall) \
     macro(PolymorphicThunkForTailCall, polymorphicThunkForTailCall) \
     macro(PolymorphicThunkForRegularCallForClosure, polymorphicThunkForRegularCallForClosure) \
