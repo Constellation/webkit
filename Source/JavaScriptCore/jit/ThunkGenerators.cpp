@@ -623,7 +623,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> polymorphicThunkForTailCallForClosure(VM& 
     return polymorphicThunkFor(vm, CallMode::Tail, ClosureMode::Yes);
 }
 
-MacroAssemblerCodeRef<JITThunkPtrTag> defaultCallThunk(VM& vm)
+MacroAssemblerCodeRef<JITThunkPtrTag> defaultCallThunk(VM&)
 {
     // The callee is in regT0 (for JSVALUE32_64, the tag is in regT1).
     // The return address is on the stack, or in the link register. We will hence
