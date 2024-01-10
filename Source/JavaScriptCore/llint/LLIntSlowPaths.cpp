@@ -608,6 +608,31 @@ extern "C" UGPRPair llint_virtual_slow_call(CallFrame* calleeFrame, JSCell* glob
     return virtualForWithFunction(jsCast<JSGlobalObject*>(globalObject), calleeFrame, callLinkInfo, calleeAsFunctionCellIgnored);
 }
 
+extern "C" UGPRPair llint_default_call(CallFrame* calleeFrame, JSCell* globalObjectCell, CallLinkInfo* callLinkInfo)
+{
+    JSGlobalObject* globalObject = jsCast<JSGlobalObject*>(globalObjectCell);
+    VM& vm = globalObject->vm();
+    sanitizeStackForVM(vm);
+    auto scope = DECLARE_THROW_SCOPE(vm);
+    NativeCallFrameTracer tracer(vm, calleeFrame);
+    JSCell* owner = callLinkInfo->owner();
+    // Right now, IC (Getter, Setter, Proxy IC etc.) sets nullptr intentionally since we would like to share IC eventually.
+    // However, in that case, each IC's data side will have CallLinkInfo.
+    // At that time, they should have appropriate owner. So this is a hack only for now.
+    // This should always works since IC only performs regular-calls and it never does tail-calls.
+    if (!owner) {
+        CallFrame* callerFrame = calleeFrame->callerFrame();
+        owner = callerFrame->codeOwnerCell();
+    }
+    UGPRPair result = linkFor(globalObject, owner, calleeFrame, callLinkInfo);
+    size_t first;
+    size_t second;
+    decodeResult(result, first, second);
+    if (UNLIKELY(scope.exception()))
+        return encodeResult(bitwise_cast<void*>(static_cast<uintptr_t>(first)), bitwise_cast<void*>(&vm));
+    return encodeResult(bitwise_cast<void*>(static_cast<uintptr_t>(first)), nullptr);
+}
+
 extern "C" UGPRPair llint_virtual_call(CallFrame* calleeFrame, JSCell* globalObjectCell, CallLinkInfo* callLinkInfo)
 {
     JSGlobalObject* globalObject = jsCast<JSGlobalObject*>(globalObjectCell);

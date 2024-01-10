@@ -2612,6 +2612,13 @@ end
 # 64bit:t0 32bit(t0,t1) is callee
 # t2 is CallLinkInfo*
 # t3 is caller's JSGlobalObject
+op(llint_default_call_trampoline, macro ()
+    linkFor(_llint_default_call)
+end)
+
+# 64bit:t0 32bit(t0,t1) is callee
+# t2 is CallLinkInfo*
+# t3 is caller's JSGlobalObject
 op(llint_virtual_call_trampoline, macro ()
     virtualThunkSlowFor(ExecutableBase::m_jitCodeForCallWithArityCheck, FunctionExecutable::m_codeBlockForCall, _llint_internal_function_call_trampoline, macro (temp1, temp2, temp3, temp4) end, .slowCase)
 .slowCase:
