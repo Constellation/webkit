@@ -481,7 +481,6 @@ void CallLinkInfo::revertCall(VM& vm)
 
 void CallLinkInfo::emitSlowPathImpl(VM&, CCallHelpers& jit, GPRReg callLinkInfoGPR, UseDataIC useDataIC, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall)
 {
-    UNUSED_PARAM(callLinkInfoGPR);
     if (useDataIC == UseDataIC::Yes) {
         if (isTailCall) {
             prepareForTailCall();
