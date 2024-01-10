@@ -340,11 +340,6 @@ public:
         return OBJECT_OFFSETOF(CallLinkInfo, u) + OBJECT_OFFSETOF(UnionType, dataIC.m_monomorphicCallDestination);
     }
 
-    static ptrdiff_t offsetOfSlowPathCallDestination()
-    {
-        return OBJECT_OFFSETOF(CallLinkInfo, m_slowPathCallDestination);
-    }
-
 #if ENABLE(JIT)
     GPRReg calleeGPR() const;
     GPRReg callLinkInfoGPR() const;
@@ -413,7 +408,6 @@ protected:
     uint32_t m_slowPathCount { 0 };
 
     CodeLocationLabel<JSInternalPtrTag> m_doneLocation;
-    CodePtr<JSEntryPtrTag> m_slowPathCallDestination;
     union UnionType {
         UnionType()
             : dataIC { nullptr, nullptr }
@@ -544,12 +538,18 @@ public:
 
     void initializeFromDFGUnlinkedCallLinkInfo(VM&, const DFG::UnlinkedCallLinkInfo&);
 
+    static ptrdiff_t offsetOfSlowPathCallDestination()
+    {
+        return OBJECT_OFFSETOF(CallLinkInfo, m_slowPathCallDestination);
+    }
+
 private:
     void initializeDirectCallRepatch(CCallHelpers&);
     MacroAssembler::JumpList emitFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR) WARN_UNUSED_RETURN;
     MacroAssembler::JumpList emitTailCallFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
 
     CodeOrigin m_codeOrigin;
+    CodePtr<JSEntryPtrTag> m_slowPathCallDestination;
     CodeLocationNearCall<JSInternalPtrTag> m_callLocation NO_UNIQUE_ADDRESS;
     GPRReg m_calleeGPR { InvalidGPRReg };
     GPRReg m_callLinkInfoGPR { InvalidGPRReg };
