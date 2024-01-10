@@ -540,7 +540,7 @@ public:
 
     static ptrdiff_t offsetOfSlowPathCallDestination()
     {
-        return OBJECT_OFFSETOF(CallLinkInfo, m_slowPathCallDestination);
+        return OBJECT_OFFSETOF(OptimizingCallLinkInfo, m_slowPathCallDestination);
     }
 
 private:
