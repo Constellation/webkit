@@ -294,7 +294,7 @@ void CallLinkInfo::visitWeak(VM& vm)
 void CallLinkInfo::setSlowPathCallDestination(CodePtr<JSEntryPtrTag> codePtr)
 {
     if (!isDataIC())
-        static_cast<OptimizingCallLinkInfo*>(callLinkInfo)->m_slowPathCallDestination = codePtr;
+        static_cast<OptimizingCallLinkInfo*>(this)->m_slowPathCallDestination = codePtr;
 }
 
 void CallLinkInfo::revertCallToStub()
