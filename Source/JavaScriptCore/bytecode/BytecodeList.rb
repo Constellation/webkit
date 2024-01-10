@@ -1396,6 +1396,9 @@ op :llint_native_call_trampoline
 op :llint_native_construct_trampoline
 op :llint_internal_function_call_trampoline
 op :llint_internal_function_construct_trampoline
+op :llint_virtual_call_trampoline
+op :llint_virtual_construct_trampoline
+op :llint_virtual_tail_call_trampoline
 op :llint_link_slow_call_trampoline
 op :llint_virtual_slow_call_trampoline
 op :llint_virtual_slow_construct_trampoline

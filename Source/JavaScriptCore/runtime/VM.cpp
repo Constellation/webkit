@@ -835,16 +835,15 @@ MacroAssemblerCodeRef<JITStubRoutinePtrTag> VM::getCTIVirtualCall(CallMode callM
         RELEASE_ASSERT_NOT_REACHED();
     }
 #endif
-    // FIXME
     switch (callMode) {
     case CallMode::Regular:
-        return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_slow_call_trampoline);
+        return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_call_trampoline);
     case CallMode::Tail:
-        return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_slow_tail_call_trampoline);
+        return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_tail_call_trampoline);
     case CallMode::Construct:
-        return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_slow_construct_trampoline);
+        return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_construct_trampoline);
     }
-    return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_slow_call_trampoline);
+    return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_call_trampoline);
 }
 
 MacroAssemblerCodeRef<JITStubRoutinePtrTag> VM::getCTIVirtualCallSlow(CallMode callMode)
