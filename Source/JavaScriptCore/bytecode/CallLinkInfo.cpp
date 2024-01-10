@@ -97,7 +97,7 @@ void CallLinkInfo::unlinkOrUpgradeImpl(VM& vm, CodeBlock* oldCodeBlock, CodeBloc
     // We could be called even if we're not linked anymore because of how polymorphic calls
     // work. Each callsite within the polymorphic call stub may separately ask us to unlink().
     if (isLinked()) {
-        if (newCodeBlock && isDataIC() && !isPolymorphicOrVirtualDataIC() && oldCodeBlock == u.dataIC.m_codeBlock) {
+        if (newCodeBlock && isDataIC() && mode() == Mode::Monomorphic && oldCodeBlock == u.dataIC.m_codeBlock) {
             // Upgrading Monomorphic DataIC with newCodeBlock.
             remove();
             ArityCheckMode arityCheck = oldCodeBlock->jitCode()->addressForCall(ArityCheckNotRequired) == u.dataIC.m_monomorphicCallDestination ? ArityCheckNotRequired : MustCheckArity;

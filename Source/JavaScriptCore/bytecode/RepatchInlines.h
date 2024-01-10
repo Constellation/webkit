@@ -121,7 +121,8 @@ ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, JSCell* owner, Call
             }
             case CallLinkInfo::Mode::Monomorphic:
             case CallLinkInfo::Mode::Polymorphic:
-                linkPolymorphicCall(globalObject, owner, calleeFrame, *callLinkInfo, CallVariant(internalFunction));
+                if (kind == CodeForCall && callLinkInfo->allowStubs())
+                    linkPolymorphicCall(globalObject, owner, calleeFrame, *callLinkInfo, CallVariant(internalFunction));
                 break;
             case CallLinkInfo::Mode::Virtual:
                 break;
@@ -184,7 +185,8 @@ ALWAYS_INLINE UGPRPair linkFor(JSGlobalObject* globalObject, JSCell* owner, Call
     }
     case CallLinkInfo::Mode::Monomorphic:
     case CallLinkInfo::Mode::Polymorphic:
-        linkPolymorphicCall(globalObject, owner, calleeFrame, *callLinkInfo, CallVariant(callee));
+        if (kind == CodeForCall && callLinkInfo->allowStubs())
+            linkPolymorphicCall(globalObject, owner, calleeFrame, *callLinkInfo, CallVariant(callee));
         break;
     case CallLinkInfo::Mode::Virtual:
         break;

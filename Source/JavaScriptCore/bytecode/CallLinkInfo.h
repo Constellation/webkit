@@ -390,11 +390,6 @@ public:
 
     JSCell* owner() const { return m_owner; }
 
-    bool isPolymorphicOrVirtualDataIC() const
-    {
-        return bitwise_cast<uintptr_t>(m_calleeOrCodeBlock.unvalidatedGet()) & polymorphicCalleeMask;
-    }
-
 protected:
     CallLinkInfo(Type type, UseDataIC useDataIC)
         : CallLinkInfoBase(CallSiteType::CallLinkInfo)
@@ -410,7 +405,7 @@ protected:
     bool m_clearedByGC : 1 { false };
     bool m_clearedByVirtual : 1 { false };
     bool m_allowStubs : 1 { true };
-    unsigned m_callType : 4 { None }; // CallType
+    unsigned m_callType : 4 { CallType::None }; // CallType
     unsigned m_useDataIC : 1; // UseDataIC
     unsigned m_type : 1; // Type
     unsigned m_mode : 2 { static_cast<unsigned>(Mode::Init) }; // Mode
