@@ -99,14 +99,10 @@ static ECMAMode ecmaModeFor(PutByKind putByKind)
 
 #endif // ENABLE(JIT)
 
-static void linkSlowPathTo(VM&, CallLinkInfo& callLinkInfo, MacroAssemblerCodeRef<JITStubRoutinePtrTag> codeRef)
-{
-    callLinkInfo.setSlowPathCallDestination(codeRef.code().template retagged<JSEntryPtrTag>());
-}
-
 static void linkSlowFor(VM& vm, CallLinkInfo& callLinkInfo)
 {
-    linkSlowPathTo(vm, callLinkInfo, vm.getCTIVirtualCallSlow(callLinkInfo.callMode()));
+    if (callLinkInfo.type() == CallLinkInfo::Type::Optimizing)
+        callLinkInfo.setSlowPathCallDestination(vm.getCTIVirtualCallSlow(callLinkInfo.callMode()).code().template retagged<JSEntryPtrTag>());
 }
 
 void linkMonomorphicCall(VM& vm, JSCell* owner, CallLinkInfo& callLinkInfo, CodeBlock* calleeCodeBlock, JSObject* callee, CodePtr<JSEntryPtrTag> codePtr)
@@ -128,7 +124,8 @@ void linkMonomorphicCall(VM& vm, JSCell* owner, CallLinkInfo& callLinkInfo, Code
 
 #if ENABLE(JIT)
     if (callLinkInfo.specializationKind() == CodeForCall && callLinkInfo.allowStubs()) {
-        linkSlowPathTo(vm, callLinkInfo, vm.getCTIStub(CommonJITThunkID::LinkPolymorphicCall).retagged<JITStubRoutinePtrTag>());
+        if (callLinkInfo.type() == CallLinkInfo::Type::Optimizing)
+            callLinkInfo.setSlowPathCallDestination(vm.getCTIStub(CommonJITThunkID::LinkPolymorphicCall).retagged<JSEntryPtrTag>());
         return;
     }
 #endif

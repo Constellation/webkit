@@ -805,10 +805,11 @@ CodePtr<JSEntryPtrTag> VM::getCTIInternalFunctionTrampolineFor(CodeSpecializatio
 MacroAssemblerCodeRef<JSEntryPtrTag> VM::getCTILinkCallSlow()
 {
 #if ENABLE(JIT)
-    if (Options::useJIT())
-        return getCTIStub(CommonJITThunkID::LinkSlowCall).template retagged<JSEntryPtrTag>();
+    ASSERT(Options::useJIT());
+    return getCTIStub(CommonJITThunkID::LinkSlowCall).template retagged<JSEntryPtrTag>();
+#else
+    return { };
 #endif
-    return LLInt::getCodeRef<JSEntryPtrTag>(llint_link_slow_call_trampoline);
 }
 
 MacroAssemblerCodeRef<JSEntryPtrTag> VM::getCTIThrowExceptionFromCallSlowPath()
@@ -849,27 +850,18 @@ MacroAssemblerCodeRef<JITStubRoutinePtrTag> VM::getCTIVirtualCall(CallMode callM
 MacroAssemblerCodeRef<JITStubRoutinePtrTag> VM::getCTIVirtualCallSlow(CallMode callMode)
 {
 #if ENABLE(JIT)
-    if (Options::useJIT()) {
-        switch (callMode) {
-        case CallMode::Regular:
-            return getCTIStub(CommonJITThunkID::VirtualThunkSlowForRegularCall).template retagged<JITStubRoutinePtrTag>();
-        case CallMode::Tail:
-            return getCTIStub(CommonJITThunkID::VirtualThunkSlowForTailCall).template retagged<JITStubRoutinePtrTag>();
-        case CallMode::Construct:
-            return getCTIStub(CommonJITThunkID::VirtualThunkSlowForConstruct).template retagged<JITStubRoutinePtrTag>();
-        }
-        RELEASE_ASSERT_NOT_REACHED();
-    }
-#endif
+    ASSERT(Options::useJIT());
     switch (callMode) {
     case CallMode::Regular:
-        return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_slow_call_trampoline);
+        return getCTIStub(CommonJITThunkID::VirtualThunkSlowForRegularCall).template retagged<JITStubRoutinePtrTag>();
     case CallMode::Tail:
-        return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_slow_tail_call_trampoline);
+        return getCTIStub(CommonJITThunkID::VirtualThunkSlowForTailCall).template retagged<JITStubRoutinePtrTag>();
     case CallMode::Construct:
-        return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_slow_construct_trampoline);
+        return getCTIStub(CommonJITThunkID::VirtualThunkSlowForConstruct).template retagged<JITStubRoutinePtrTag>();
     }
-    return LLInt::getCodeRef<JITStubRoutinePtrTag>(llint_virtual_slow_call_trampoline);
+    RELEASE_ASSERT_NOT_REACHED();
+#endif
+    return { };
 }
 
 void VM::whenIdle(Function<void()>&& callback)
