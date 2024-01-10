@@ -2550,7 +2550,11 @@ macro linkFor(function)
     cCall3(function)
     functionEpilogue()
     untagReturnAddress sp
-    jmp t0, JSEntryPtrTag
+    btpnz r1, .throw
+    jmp r0, JSEntryPtrTag
+.throw:
+    functionPrologue()
+    jmp _llint_throw_from_slow_path_trampoline
 end
 
 # 64bit:t0 32bit(t0,t1) is callee

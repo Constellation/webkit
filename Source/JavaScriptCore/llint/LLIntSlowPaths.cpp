@@ -608,6 +608,22 @@ extern "C" UGPRPair llint_virtual_slow_call(CallFrame* calleeFrame, JSCell* glob
     return virtualForWithFunction(jsCast<JSGlobalObject*>(globalObject), calleeFrame, callLinkInfo, calleeAsFunctionCellIgnored);
 }
 
+extern "C" UGPRPair llint_virtual_call(CallFrame* calleeFrame, JSCell* globalObjectCell, CallLinkInfo* callLinkInfo)
+{
+    JSGlobalObject* globalObject = jsCast<JSGlobalObject*>(globalObjectCell);
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+    JSCell* calleeAsFunctionCellIgnored;
+    NativeCallFrameTracer tracer(vm, calleeFrame);
+    UGPRPair result = virtualForWithFunction(globalObject, calleeFrame, callLinkInfo, calleeAsFunctionCellIgnored);
+    size_t first;
+    size_t second;
+    decodeResult(result, first, second);
+    if (UNLIKELY(scope.exception()))
+        return encodeResult(first, 1);
+    return encodeResult(first, 0);
+}
+
 LLINT_SLOW_PATH_DECL(slow_path_new_object)
 {
     LLINT_BEGIN();
