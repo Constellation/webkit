@@ -64,8 +64,6 @@ MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkSlowForRegularCall(VM&);
 MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkSlowForTailCall(VM&);
 MacroAssemblerCodeRef<JITThunkPtrTag> virtualThunkSlowForConstruct(VM&);
 
-MacroAssemblerCodeRef<JITThunkPtrTag> defaultCallThunk(VM&);
-
 MacroAssemblerCodeRef<JITThunkPtrTag> nativeCallGenerator(VM&);
 MacroAssemblerCodeRef<JITThunkPtrTag> nativeCallWithDebuggerHookGenerator(VM&);
 MacroAssemblerCodeRef<JITThunkPtrTag> nativeConstructGenerator(VM&);

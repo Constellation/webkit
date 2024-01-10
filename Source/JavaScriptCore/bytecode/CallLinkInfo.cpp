@@ -485,16 +485,16 @@ void CallLinkInfo::revertCall(VM& vm)
     m_mode = static_cast<unsigned>(mode);
 }
 
-void CallLinkInfo::emitDataICSlowPath(VM& vm, CCallHelpers& jit, GPRReg callLinkInfoGPR, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall)
+void CallLinkInfo::emitDataICSlowPath(VM&, CCallHelpers& jit, GPRReg callLinkInfoGPR, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall)
 {
     UNUSED_PARAM(callLinkInfoGPR);
     if (isTailCall) {
         prepareForTailCall();
         jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
-        jit.jumpThunk(CodeLocationLabel { vm.getCTIStub(CommonJITThunkID::DefaultCallThunk).retaggedCode<NoPtrTag>() });
+        jit.jumpThunk(CodeLocationLabel<JSEntryPtrTag> { g_jscConfig.defaultCallThunk }.retagged<NoPtrTag>());
     } else {
         jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeCall());
-        jit.nearCallThunk(CodeLocationLabel { vm.getCTIStub(CommonJITThunkID::DefaultCallThunk).retaggedCode<NoPtrTag>() });
+        jit.nearCallThunk(CodeLocationLabel<JSEntryPtrTag> { g_jscConfig.defaultCallThunk }.retagged<NoPtrTag>());
     }
 }
 

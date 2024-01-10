@@ -260,6 +260,7 @@ void initialize()
     INITIALIZE_TAG_AND_UNTAG_THUNKS(llint_function_for_construct_arity_check);
 #endif // CPU(ARM64E)
 #endif // ENABLE(C_LOOP)
+    g_jscConfig.defaultCallThunk = defaultCallThunk().code().taggedPtr();
 }
 
 IGNORE_WARNINGS_BEGIN("missing-noreturn")

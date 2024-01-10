@@ -1412,26 +1412,15 @@ op :op_call_ignore_result_return_location
 op :op_construct_return_location
 op :op_call_varargs_return_location
 op :op_construct_varargs_return_location
-op :op_call_varargs_slow_return_location
-op :op_construct_varargs_slow_return_location
 op :op_get_by_id_return_location
 op :op_get_by_val_return_location
 op :op_put_by_id_return_location
 op :op_put_by_val_return_location
 op :op_iterator_open_return_location
 op :op_iterator_next_return_location
+op :op_call_direct_eval_slow_return_location
 op :wasm_function_prologue
 op :wasm_function_prologue_simd
-
-op :op_call_slow_return_location
-op :op_call_ignore_result_slow_return_location
-op :op_construct_slow_return_location
-op :op_iterator_open_slow_return_location
-op :op_iterator_next_slow_return_location
-op :op_tail_call_slow_return_location
-op :op_tail_call_forward_arguments_slow_return_location
-op :op_tail_call_varargs_slow_return_location
-op :op_call_direct_eval_slow_return_location
 
 op :js_trampoline_op_call
 op :js_trampoline_op_call_ignore_result
