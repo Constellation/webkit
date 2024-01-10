@@ -2596,6 +2596,9 @@ macro callHelper(opcodeName, opcodeStruct, dispatchAfterCall, valueProfileName, 
     prepareCall(t2, t3, t4, t1, macro(address)
         storep 0, address
     end)
+    addp %opcodeStruct%::Metadata::m_callLinkInfo, t5, t2 # CallLinkInfo* in t2
+    loadp %opcodeStruct%::Metadata::m_callLinkInfo.m_owner[t2], t3
+    loadp CodeBlock::m_globalObject[t3], t3
     leap _g_config, t5
     loadp JSCConfigOffset + constexpr JSC::offsetOfJSCConfigDefaultCallThunk[t5], t5
     jmp .dispatch
@@ -2682,6 +2685,9 @@ macro doCallVarargs(opcodeName, size, get, opcodeStruct, valueProfileName, dstVi
             prepareCall(t2, t3, t4, t1, macro(address)
                 storep 0, address
             end)
+            addp %opcodeStruct%::Metadata::m_callLinkInfo, t5, t2 # CallLinkInfo* in t2
+            loadp %opcodeStruct%::Metadata::m_callLinkInfo.m_owner[t2], t3
+            loadp CodeBlock::m_globalObject[t3], t3
             leap _g_config, t5
             loadp JSCConfigOffset + constexpr JSC::offsetOfJSCConfigDefaultCallThunk[t5], t5
             jmp .dispatch
