@@ -1084,18 +1084,21 @@ void SpeculativeJIT::emitCall(Node* node)
 
     if (node->op() == TailCall) {
         loadLinkableConstant(LinkableConstant::globalObject(*this, node), globalObjectGPR);
-        shuffleData.registers[GPRInfo::regT3] = ValueRecovery::inGPR(globalObjectGPR, DataFormatJS);
+        shuffleData.registers[BaselineJITRegisters::Call::globalObjectGPR] = ValueRecovery::inGPR(globalObjectGPR, DataFormatJS);
         CallFrameShuffler callFrameShuffler(*this, shuffleData);
         callFrameShuffler.setCalleeJSValueRegs(JSValueRegs(GPRInfo::regT0));
         callFrameShuffler.prepareForSlowPath();
     } else {
         move(calleeGPR, GPRInfo::regT0); // Callee needs to be in regT0
-        loadLinkableConstant(LinkableConstant::globalObject(*this, node), GPRInfo::regT3); // JSGlobalObject needs to be in regT3
+        loadLinkableConstant(LinkableConstant::globalObject(*this, node), BaselineJITRegisters::Call::globalObjectGPR); // JSGlobalObject needs to be in regT3
         if (isTail)
             emitRestoreCalleeSaves(); // This needs to happen after we moved calleeGPR to regT0
     }
 
-    CallLinkInfo::emitSlowPath(vm(), *this, callLinkInfo, callLinkInfoGPR);
+    if (isTail)
+        CallLinkInfo::emitTailCallSlowPath(vm(), *this, callLinkInfo, BaselineJITRegisters::Call::callLinkInfoGPR, scopedLambda<void()>([&]() { }));
+    else
+        CallLinkInfo::emitSlowPath(vm(), *this, callLinkInfo, BaselineJITRegisters::Call::callLinkInfoGPR);
 
     if (done)
         done->link(this);

@@ -962,8 +962,11 @@ void SpeculativeJIT::emitCall(Node* node)
     }
 
     ASSERT(!m_graph.m_plan.isUnlinked());
-    loadLinkableConstant(LinkableConstant::globalObject(*this, node), GPRInfo::regT3);
-    CallLinkInfo::emitSlowPath(vm(), *this, callLinkInfo, InvalidGPRReg);
+    loadLinkableConstant(LinkableConstant::globalObject(*this, node), BaselineJITRegisters::Call::globalObjectGPR);
+    if (isTail)
+        CallLinkInfo::emitTailCallSlowPath(vm(), *this, callLinkInfo, BaselineJITRegisters::Call::callLinkInfoGPR, scopedLambda<void()>([&]() { }));
+    else
+        CallLinkInfo::emitSlowPath(vm(), *this, callLinkInfo, BaselineJITRegisters::Call::callLinkInfoGPR);
 
     done.link(this);
     auto doneLocation = label();

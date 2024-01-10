@@ -2527,7 +2527,7 @@ void InlineCacheCompiler::generateImpl(AccessCase& accessCase)
             // https://bugs.webkit.org/show_bug.cgi?id=148914
             callLinkInfo->disallowStubs();
 
-            callLinkInfo->setUpCall(CallLinkInfo::Call, loadedValueGPR);
+            callLinkInfo->setUpCall(CallLinkInfo::Call, GPRInfo::regT0);
 
             CCallHelpers::JumpList done;
 
@@ -2589,7 +2589,12 @@ void InlineCacheCompiler::generateImpl(AccessCase& accessCase)
                         virtualRegisterForArgumentIncludingThis(1).offset() * sizeof(Register)));
             }
 
-            auto slowCase = CallLinkInfo::emitFastPath(jit, callLinkInfo, loadedValueGPR, loadedValueGPR == GPRInfo::regT2 ? GPRInfo::regT0 : GPRInfo::regT2);
+            jit.move(loadedValueGPR, GPRInfo::regT0);
+#if USE(JSVALUE32_64)
+            // We *always* know that the getter/setter, if non-null, is a cell.
+            jit.move(CCallHelpers::TrustedImm32(JSValue::CellTag), GPRInfo::regT1);
+#endif
+            auto slowCase = CallLinkInfo::emitFastPath(jit, callLinkInfo, GPRInfo::regT0, BaselineJITRegisters::Call::callLinkInfoGPR);
             auto doneLocation = jit.label();
 
             if (accessCase.m_type == AccessCase::Getter)
@@ -2598,13 +2603,8 @@ void InlineCacheCompiler::generateImpl(AccessCase& accessCase)
 
             slowCase.link(&jit);
             auto slowPathStart = jit.label();
-            jit.move(loadedValueGPR, GPRInfo::regT0);
-#if USE(JSVALUE32_64)
-            // We *always* know that the getter/setter, if non-null, is a cell.
-            jit.move(CCallHelpers::TrustedImm32(JSValue::CellTag), GPRInfo::regT1);
-#endif
-            jit.move(CCallHelpers::TrustedImmPtr(globalObject), GPRInfo::regT3);
-            callLinkInfo->emitSlowPath(vm, jit);
+            jit.move(CCallHelpers::TrustedImmPtr(globalObject), BaselineJITRegisters::Call::globalObjectGPR);
+            CallLinkInfo::emitSlowPath(vm, jit, callLinkInfo, BaselineJITRegisters::Call::callLinkInfoGPR);
 
             if (accessCase.m_type == AccessCase::Getter)
                 jit.setupResults(valueRegs);
@@ -3265,7 +3265,7 @@ void InlineCacheCompiler::emitProxyObjectAccess(ProxyObjectAccessCase& accessCas
 
     callLinkInfo->disallowStubs();
 
-    callLinkInfo->setUpCall(CallLinkInfo::Call, scratchGPR);
+    callLinkInfo->setUpCall(CallLinkInfo::Call, GPRInfo::regT0);
 
     unsigned numberOfParameters;
     JSFunction* proxyInternalMethod = nullptr;
@@ -3331,7 +3331,8 @@ void InlineCacheCompiler::emitProxyObjectAccess(ProxyObjectAccessCase& accessCas
     jit.move(CCallHelpers::TrustedImmPtr(proxyInternalMethod), scratchGPR);
     jit.storeCell(scratchGPR, calleeFrame.withOffset(CallFrameSlot::callee * sizeof(Register)));
 
-    auto slowCase = CallLinkInfo::emitFastPath(jit, callLinkInfo, scratchGPR, scratchGPR == GPRInfo::regT2 ? GPRInfo::regT0 : GPRInfo::regT2);
+    jit.move(scratchGPR, GPRInfo::regT0);
+    auto slowCase = CallLinkInfo::emitFastPath(jit, callLinkInfo, GPRInfo::regT0, BaselineJITRegisters::Call::callLinkInfoGPR);
     auto doneLocation = jit.label();
 
     if (accessCase.m_type != AccessCase::ProxyObjectStore)
@@ -3341,13 +3342,12 @@ void InlineCacheCompiler::emitProxyObjectAccess(ProxyObjectAccessCase& accessCas
 
     slowCase.link(&jit);
     auto slowPathStart = jit.label();
-    jit.move(scratchGPR, GPRInfo::regT0);
 #if USE(JSVALUE32_64)
     // We *always* know that the proxy function, if non-null, is a cell.
     jit.move(CCallHelpers::TrustedImm32(JSValue::CellTag), GPRInfo::regT1);
 #endif
-    jit.move(CCallHelpers::TrustedImmPtr(globalObject), GPRInfo::regT3);
-    callLinkInfo->emitSlowPath(vm, jit);
+    jit.move(CCallHelpers::TrustedImmPtr(globalObject), BaselineJITRegisters::Call::globalObjectGPR);
+    CallLinkInfo::emitSlowPath(vm, jit, callLinkInfo, BaselineJITRegisters::Call::callLinkInfoGPR);
 
     if (accessCase.m_type != AccessCase::ProxyObjectStore)
         jit.setupResults(valueRegs);

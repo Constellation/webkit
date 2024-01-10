@@ -486,17 +486,27 @@ void CallLinkInfo::revertCall(VM& vm)
     m_mode = static_cast<unsigned>(mode);
 }
 
-void CallLinkInfo::emitDataICSlowPath(VM&, CCallHelpers& jit, GPRReg callLinkInfoGPR, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall)
+void CallLinkInfo::emitSlowPathImpl(VM&, CCallHelpers& jit, GPRReg callLinkInfoGPR, UseDataIC useDataIC, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall)
 {
     UNUSED_PARAM(callLinkInfoGPR);
-    if (isTailCall) {
-        prepareForTailCall();
-        jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
-        jit.jumpThunk(CodeLocationLabel<JSEntryPtrTag> { g_jscConfig.defaultCallThunk }.retagged<NoPtrTag>());
-    } else {
-        jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeCall());
-        jit.nearCallThunk(CodeLocationLabel<JSEntryPtrTag> { g_jscConfig.defaultCallThunk }.retagged<NoPtrTag>());
+    if (useDataIC == UseDataIC::Yes) {
+        if (isTailCall) {
+            prepareForTailCall();
+            jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
+            jit.jumpThunk(CodeLocationLabel<JSEntryPtrTag> { g_jscConfig.defaultCallThunk }.retagged<NoPtrTag>());
+        } else {
+            jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeCall());
+            jit.nearCallThunk(CodeLocationLabel<JSEntryPtrTag> { g_jscConfig.defaultCallThunk }.retagged<NoPtrTag>());
+        }
+        return;
     }
+
+    jit.call(CCallHelpers::Address(callLinkInfoGPR, OptimizingCallLinkInfo::offsetOfSlowPathCallDestination()), JSEntryPtrTag);
+}
+
+void CallLinkInfo::emitDataICSlowPath(VM& vm, CCallHelpers& jit, GPRReg callLinkInfoGPR, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall)
+{
+    emitSlowPathImpl(vm, jit, callLinkInfoGPR, UseDataIC::Yes, isTailCall, WTFMove(prepareForTailCall));
 }
 
 MacroAssembler::JumpList CallLinkInfo::emitFastPath(CCallHelpers& jit, CompileTimeCallLinkInfo callLinkInfo, GPRReg calleeGPR, GPRReg callLinkInfoGPR)
@@ -518,7 +528,7 @@ MacroAssembler::JumpList CallLinkInfo::emitTailCallFastPath(CCallHelpers& jit, C
 void CallLinkInfo::emitSlowPath(VM& vm, CCallHelpers& jit, CompileTimeCallLinkInfo callLinkInfo, GPRReg callLinkInfoGPR)
 {
     if (std::holds_alternative<OptimizingCallLinkInfo*>(callLinkInfo)) {
-        std::get<OptimizingCallLinkInfo*>(callLinkInfo)->emitSlowPath(vm, jit);
+        std::get<OptimizingCallLinkInfo*>(callLinkInfo)->emitSlowPath(vm, jit, callLinkInfoGPR);
         return;
     }
     emitDataICSlowPath(vm, jit, callLinkInfoGPR, /* isTailCall */ false, nullptr);
@@ -527,7 +537,7 @@ void CallLinkInfo::emitSlowPath(VM& vm, CCallHelpers& jit, CompileTimeCallLinkIn
 void CallLinkInfo::emitTailCallSlowPath(VM& vm, CCallHelpers& jit, CompileTimeCallLinkInfo callLinkInfo, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall)
 {
     if (std::holds_alternative<OptimizingCallLinkInfo*>(callLinkInfo)) {
-        std::get<OptimizingCallLinkInfo*>(callLinkInfo)->emitSlowPath(vm, jit);
+        std::get<OptimizingCallLinkInfo*>(callLinkInfo)->emitTailCallSlowPath(vm, jit, callLinkInfoGPR, WTFMove(prepareForTailCall));
         return;
     }
     emitDataICSlowPath(vm, jit, callLinkInfoGPR, /* isTailCall */ true, WTFMove(prepareForTailCall));
@@ -559,11 +569,20 @@ MacroAssembler::JumpList OptimizingCallLinkInfo::emitTailCallFastPath(CCallHelpe
     return emitFastPathImpl(this, jit, calleeGPR, callLinkInfoGPR, useDataIC(), isTailCall(), WTFMove(prepareForTailCall));
 }
 
-void OptimizingCallLinkInfo::emitSlowPath(VM& vm, CCallHelpers& jit)
+void OptimizingCallLinkInfo::emitSlowPath(VM& vm, CCallHelpers& jit, GPRReg callLinkInfoGPR)
 {
     setSlowPathCallDestination(vm.getCTILinkCallSlow().code());
-    jit.move(CCallHelpers::TrustedImmPtr(this), GPRInfo::regT2);
-    jit.call(CCallHelpers::Address(GPRInfo::regT2, offsetOfSlowPathCallDestination()), JSEntryPtrTag);
+    RELEASE_ASSERT(!isTailCall());
+    jit.move(CCallHelpers::TrustedImmPtr(this), callLinkInfoGPR);
+    return emitSlowPathImpl(vm, jit, callLinkInfoGPR, useDataIC(), isTailCall(), nullptr);
+}
+
+void OptimizingCallLinkInfo::emitTailCallSlowPath(VM& vm, CCallHelpers& jit, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall)
+{
+    setSlowPathCallDestination(vm.getCTILinkCallSlow().code());
+    RELEASE_ASSERT(isTailCall());
+    jit.move(CCallHelpers::TrustedImmPtr(this), callLinkInfoGPR);
+    return emitSlowPathImpl(vm, jit, callLinkInfoGPR, useDataIC(), isTailCall(), WTFMove(prepareForTailCall));
 }
 
 CodeLocationLabel<JSInternalPtrTag> OptimizingCallLinkInfo::slowPathStart()

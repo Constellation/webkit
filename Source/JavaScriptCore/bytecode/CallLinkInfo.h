@@ -195,8 +195,10 @@ public:
 protected:
     static MacroAssembler::JumpList emitFastPathImpl(CallLinkInfo*, CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, UseDataIC, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
     static MacroAssembler::JumpList emitDataICFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR) WARN_UNUSED_RETURN;
-    static void emitDataICSlowPath(VM&, CCallHelpers&, GPRReg callLinkInfoGPR, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall);
     static MacroAssembler::JumpList emitTailCallDataICFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
+
+    static void emitSlowPathImpl(VM&, CCallHelpers&, GPRReg callLinkInfoGPR, UseDataIC, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall);
+    static void emitDataICSlowPath(VM&, CCallHelpers&, GPRReg callLinkInfoGPR, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall);
 
 public:
     static MacroAssembler::JumpList emitFastPath(CCallHelpers&, CompileTimeCallLinkInfo, GPRReg calleeGPR, GPRReg callLinkInfoGPR) WARN_UNUSED_RETURN;
@@ -525,7 +527,6 @@ public:
     void setDirectCallTarget(CodeBlock*, CodeLocationLabel<JSEntryPtrTag>);
     void setDirectCallMaxArgumentCountIncludingThis(unsigned);
     unsigned maxArgumentCountIncludingThisForDirectCall() const { return m_maxArgumentCountIncludingThisForDirectCall; }
-    void emitSlowPath(VM&, CCallHelpers&);
 
     void setFrameShuffleData(const CallFrameShuffleData&);
 
@@ -547,6 +548,8 @@ private:
     void initializeDirectCallRepatch(CCallHelpers&);
     MacroAssembler::JumpList emitFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR) WARN_UNUSED_RETURN;
     MacroAssembler::JumpList emitTailCallFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
+    void emitSlowPath(VM&, CCallHelpers&, GPRReg callLinkInfoGPR);
+    void emitTailCallSlowPath(VM&, CCallHelpers&, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall);
 
     CodeOrigin m_codeOrigin;
     CodePtr<JSEntryPtrTag> m_slowPathCallDestination;
