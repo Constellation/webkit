@@ -102,7 +102,7 @@ static ECMAMode ecmaModeFor(PutByKind putByKind)
 static void linkSlowFor(VM& vm, CallLinkInfo& callLinkInfo)
 {
     if (callLinkInfo.type() == CallLinkInfo::Type::Optimizing)
-        callLinkInfo.setSlowPathCallDestination(vm.getCTIVirtualCallSlow(callLinkInfo.callMode()).code().template retagged<JSEntryPtrTag>());
+        static_cast<OptimizingCallLinkInfo&>(callLinkInfo).setSlowPathCallDestination(vm.getCTIVirtualCallSlow(callLinkInfo.callMode()).code().template retagged<JSEntryPtrTag>());
 }
 
 void linkMonomorphicCall(VM& vm, JSCell* owner, CallLinkInfo& callLinkInfo, CodeBlock* calleeCodeBlock, JSObject* callee, CodePtr<JSEntryPtrTag> codePtr)
@@ -125,7 +125,7 @@ void linkMonomorphicCall(VM& vm, JSCell* owner, CallLinkInfo& callLinkInfo, Code
 #if ENABLE(JIT)
     if (callLinkInfo.specializationKind() == CodeForCall && callLinkInfo.allowStubs()) {
         if (callLinkInfo.type() == CallLinkInfo::Type::Optimizing)
-            callLinkInfo.setSlowPathCallDestination(vm.getCTIStub(CommonJITThunkID::LinkPolymorphicCall).retagged<JSEntryPtrTag>());
+            static_cast<OptimizingCallLinkInfo&>(callLinkInfo).setSlowPathCallDestination(vm.getCTIStub(CommonJITThunkID::LinkPolymorphicCall).code().template retagged<JSEntryPtrTag>());
         return;
     }
 #endif

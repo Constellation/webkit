@@ -222,7 +222,6 @@ public:
     CodeLocationLabel<JSInternalPtrTag> doneLocation();
 
     void setMonomorphicCallee(VM&, JSCell*, JSObject* callee, CodeBlock*, CodePtr<JSEntryPtrTag>);
-    void setSlowPathCallDestination(CodePtr<JSEntryPtrTag>);
     void clearCallee();
     JSObject* callee();
 
@@ -529,6 +528,7 @@ public:
     unsigned maxArgumentCountIncludingThisForDirectCall() const { return m_maxArgumentCountIncludingThisForDirectCall; }
 
     void setFrameShuffleData(const CallFrameShuffleData&);
+    void setSlowPathCallDestination(CodePtr<JSEntryPtrTag>);
 
     const CallFrameShuffleData* frameShuffleData()
     {

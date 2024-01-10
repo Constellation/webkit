@@ -289,12 +289,6 @@ void CallLinkInfo::visitWeak(VM& vm)
     }
 }
 
-void CallLinkInfo::setSlowPathCallDestination(CodePtr<JSEntryPtrTag> codePtr)
-{
-    if (type() == Type::Optimizing)
-        static_cast<OptimizingCallLinkInfo*>(this)->m_slowPathCallDestination = codePtr;
-}
-
 void CallLinkInfo::revertCallToStub()
 {
     RELEASE_ASSERT(stub());
@@ -340,6 +334,11 @@ void BaselineCallLinkInfo::initialize(VM& vm, CodeBlock* owner, CallType callTyp
 }
 
 #if ENABLE(JIT)
+
+void OptimizingCallLinkInfo::setSlowPathCallDestination(CodePtr<JSEntryPtrTag> codePtr)
+{
+    m_slowPathCallDestination = codePtr;
+}
 
 void OptimizingCallLinkInfo::setFrameShuffleData(const CallFrameShuffleData& shuffleData)
 {
@@ -444,7 +443,7 @@ void CallLinkInfo::setVirtualCall(VM& vm, JSCell* owner)
 {
     revertCall(vm);
     if (type() == Type::Optimizing)
-        setSlowPathCallDestination(vm.getCTIVirtualCallSlow(callMode()).retagged<JSEntryPtrTag>().code());
+        static_cast<OptimizingCallLinkInfo*>(this)->setSlowPathCallDestination(vm.getCTIVirtualCallSlow(callMode()).retagged<JSEntryPtrTag>().code());
     if (isDataIC()) {
         m_calleeOrCodeBlock.clear();
         *bitwise_cast<uintptr_t*>(m_calleeOrCodeBlock.slot()) = (bitwise_cast<uintptr_t>(owner) | polymorphicCalleeMask);
@@ -468,7 +467,7 @@ void CallLinkInfo::revertCall(VM& vm)
 #endif
     } else {
         if (type() == CallLinkInfo::Type::Optimizing)
-            setSlowPathCallDestination(vm.getCTILinkCallSlow().retagged<JITStubRoutinePtrTag>().code().template retagged<JSEntryPtrTag>());
+            static_cast<OptimizingCallLinkInfo*>(this)->setSlowPathCallDestination(vm.getCTILinkCallSlow().retagged<JITStubRoutinePtrTag>().code().template retagged<JSEntryPtrTag>());
         if (stub())
             revertCallToStub();
         clearCallee(); // This also clears the inline cache both for data and code-based caches.
