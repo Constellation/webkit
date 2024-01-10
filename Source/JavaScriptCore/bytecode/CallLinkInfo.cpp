@@ -315,7 +315,7 @@ void CallLinkInfo::revertCallToStub()
     }
 }
 
-void BaselineCallLinkInfo::initialize(VM& vm, CodeBlock* owner, CallType callType, BytecodeIndex bytecodeIndex)
+void BaselineCallLinkInfo::initialize(VM&, CodeBlock* owner, CallType callType, BytecodeIndex bytecodeIndex)
 {
     m_owner = owner;
     m_type = static_cast<unsigned>(Type::Baseline);
