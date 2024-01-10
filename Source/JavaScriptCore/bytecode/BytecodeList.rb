@@ -1429,17 +1429,7 @@ op :js_trampoline_op_call_varargs
 op :js_trampoline_op_construct_varargs
 op :js_trampoline_op_iterator_next
 op :js_trampoline_op_iterator_open
-op :js_trampoline_op_call_slow
-op :js_trampoline_op_call_ignore_result_slow
-op :js_trampoline_op_tail_call_slow
-op :js_trampoline_op_construct_slow
-op :js_trampoline_op_call_varargs_slow
-op :js_trampoline_op_tail_call_varargs_slow
-op :js_trampoline_op_tail_call_forward_arguments_slow
-op :js_trampoline_op_construct_varargs_slow
 op :js_trampoline_op_call_direct_eval_slow
-op :js_trampoline_op_iterator_next_slow
-op :js_trampoline_op_iterator_open_slow
 op :js_trampoline_llint_function_for_call_arity_check_untag
 op :js_trampoline_llint_function_for_call_arity_check_tag
 op :js_trampoline_llint_function_for_construct_arity_check_untag
