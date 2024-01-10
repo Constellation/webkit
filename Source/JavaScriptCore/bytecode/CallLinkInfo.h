@@ -195,7 +195,7 @@ public:
 protected:
     static MacroAssembler::JumpList emitFastPathImpl(CallLinkInfo*, CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, UseDataIC, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
     static MacroAssembler::JumpList emitDataICFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR) WARN_UNUSED_RETURN;
-    static void emitDataICSlowPath(VM&, CCallHelpers&, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall);
+    static void emitDataICSlowPath(VM&, CCallHelpers&, GPRReg callLinkInfoGPR, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall);
     static MacroAssembler::JumpList emitTailCallDataICFastPath(CCallHelpers&, GPRReg calleeGPR, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
 
 public:

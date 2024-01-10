@@ -489,10 +489,10 @@ void CallLinkInfo::emitDataICSlowPath(VM& vm, CCallHelpers& jit, GPRReg callLink
 {
     if (isTailCall) {
         prepareForTailCall();
-        jit.storePtr(TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
+        jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
         jit.jumpThunk(CodeLocationLabel { vm.getCTIStub(CommonJITThunkID::DefaultCallThunk).retaggedCode<NoPtrTag>() });
     } else {
-        jit.storePtr(TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeCall());
+        jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeCall());
         jit.nearCallThunk(CodeLocationLabel { vm.getCTIStub(CommonJITThunkID::DefaultCallThunk).retaggedCode<NoPtrTag>() });
     }
 }
