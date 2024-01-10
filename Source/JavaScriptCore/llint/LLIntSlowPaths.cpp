@@ -620,8 +620,8 @@ extern "C" UGPRPair llint_virtual_call(CallFrame* calleeFrame, JSCell* globalObj
     size_t second;
     decodeResult(result, first, second);
     if (UNLIKELY(scope.exception()))
-        return encodeResult(first, 1);
-    return encodeResult(first, 0);
+        return encodeResult(bitwise_cast<void*>(static_cast<uintptr_t>(first)), bitwise_cast<void*>(&vm));
+    return encodeResult(bitwise_cast<void*>(static_cast<uintptr_t>(first)), nullptr);
 }
 
 LLINT_SLOW_PATH_DECL(slow_path_new_object)
