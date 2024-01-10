@@ -487,6 +487,7 @@ void CallLinkInfo::revertCall(VM& vm)
 
 void CallLinkInfo::emitDataICSlowPath(VM& vm, CCallHelpers& jit, GPRReg callLinkInfoGPR, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall)
 {
+    UNUSED_PARAM(callLinkInfoGPR);
     if (isTailCall) {
         prepareForTailCall();
         jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
@@ -528,7 +529,7 @@ void CallLinkInfo::emitTailCallSlowPath(VM& vm, CCallHelpers& jit, CompileTimeCa
         std::get<OptimizingCallLinkInfo*>(callLinkInfo)->emitSlowPath(vm, jit);
         return;
     }
-    emitDataICSlowPath(vm, jit, callLinkInfoGPR, /* isTailCall */ true, prepareForTailCall);
+    emitDataICSlowPath(vm, jit, callLinkInfoGPR, /* isTailCall */ true, WTFMove(prepareForTailCall));
 }
 
 CCallHelpers::JumpList OptimizingCallLinkInfo::emitFastPath(CCallHelpers& jit, GPRReg calleeGPR, GPRReg callLinkInfoGPR)
