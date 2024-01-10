@@ -92,8 +92,6 @@ void CallLinkInfo::clearStub()
 
 void CallLinkInfo::unlinkOrUpgradeImpl(VM& vm, CodeBlock* oldCodeBlock, CodeBlock* newCodeBlock)
 {
-    UNUSED_PARAM(oldCodeBlock);
-    UNUSED_PARAM(newCodeBlock);
     // We could be called even if we're not linked anymore because of how polymorphic calls
     // work. Each callsite within the polymorphic call stub may separately ask us to unlink().
     if (isLinked()) {
