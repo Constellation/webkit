@@ -43,7 +43,7 @@ class IsoSubspace;
 class IsoSubspace : public Subspace {
     WTF_MAKE_TZONE_ALLOCATED_EXPORT(IsoSubspace, JS_EXPORT_PRIVATE);
 public:
-    JS_EXPORT_PRIVATE IsoSubspace(CString name, Heap&, const HeapCellType&, size_t size, uint8_t numberOfLowerTierCells, std::unique_ptr<IsoMemoryAllocatorBase>&& = nullptr);
+    JS_EXPORT_PRIVATE IsoSubspace(CString name, Heap&, const HeapCellType&, size_t size, uint8_t numberOfLowerTierCells, std::unique_ptr<AlignedMemoryAllocator>&& = nullptr);
     JS_EXPORT_PRIVATE ~IsoSubspace() override;
 
     size_t cellSize() { return m_directory.cellSize(); }
@@ -67,7 +67,7 @@ private:
     void didBeginSweepingToFreeList(MarkedBlock::Handle*) override;
 
     BlockDirectory m_directory;
-    std::unique_ptr<IsoMemoryAllocatorBase> m_isoAlignedMemoryAllocator;
+    std::unique_ptr<AlignedMemoryAllocator> m_isoAlignedMemoryAllocator;
     SentinelLinkedList<PreciseAllocation, BasicRawSentinelNode<PreciseAllocation>> m_lowerTierFreeList;
     SentinelLinkedList<IsoCellSet, BasicRawSentinelNode<IsoCellSet>> m_cellSets;
 };

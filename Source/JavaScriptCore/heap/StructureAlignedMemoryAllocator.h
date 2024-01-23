@@ -32,7 +32,38 @@
 #include <wtf/DebugHeap.h>
 #endif
 
+#if CPU(ADDRESS64) && !ENABLE(STRUCTURE_ID_WITH_SHIFT)
+#if !USE(SYSTEM_MALLOC)
+#include <bmalloc/BPlatform.h>
+#if BUSE(LIBPAS)
+#define USE_LIBPAS_STRUCTURE_MEMORY_ALLOCATOR 1
+#endif
+#endif
+#endif
+
 namespace JSC {
+
+#if USE(LIBPAS_STRUCTURE_MEMORY_ALLOCATOR)
+
+class StructureAlignedMemoryAllocator final : public AlignedMemoryAllocator {
+public:
+    using Base = AlignedMemoryAllocator;
+
+    StructureAlignedMemoryAllocator(CString);
+    ~StructureAlignedMemoryAllocator() final;
+
+    void* tryAllocateAlignedMemory(size_t alignment, size_t size) final;
+    void freeAlignedMemory(void*) final;
+    void* tryAllocateMemory(size_t) final;
+    void freeMemory(void*) final;
+    void* tryReallocateMemory(void*, size_t) final;
+    void dump(PrintStream&) const final;
+
+    static void initializeStructureAddressSpace();
+protected:
+};
+
+#else
 
 class StructureAlignedMemoryAllocator final : public IsoMemoryAllocatorBase {
 public:
@@ -55,6 +86,8 @@ protected:
     void commitBlock(void* block) final;
     void decommitBlock(void* block) final;
 };
+
+#endif
 
 } // namespace JSC
 

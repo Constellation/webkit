@@ -32,6 +32,17 @@
 
 #if CPU(ADDRESS64) && !ENABLE(STRUCTURE_ID_WITH_SHIFT)
 #include <wtf/NeverDestroyed.h>
+#if USE(LIBPAS_STRUCTURE_MEMORY_ALLOCATOR)
+#include <bmalloc/BPlatform.h>
+#include <bmalloc/bmalloc_heap_config.h>
+#include <bmalloc/bmalloc_heap_inlines.h>
+#include <bmalloc/bmalloc_heap_ref.h>
+#include <bmalloc/pas_debug_spectrum.h>
+#include <bmalloc/pas_fd_stream.h>
+#include <bmalloc/pas_heap_lock.h>
+#include <bmalloc/pas_primitive_heap_ref.h>
+#include <bmalloc/pas_thread_local_cache.h>
+#endif
 #endif
 
 #include <wtf/OSAllocator.h>
@@ -42,15 +53,21 @@
 
 namespace JSC {
 
+#if USE(LIBPAS_STRUCTURE_MEMORY_ALLOCATOR)
+
+StructureAlignedMemoryAllocator::StructureAlignedMemoryAllocator(CString)
+    : Base()
+{
+}
+
+#else
+
 StructureAlignedMemoryAllocator::StructureAlignedMemoryAllocator(CString name)
     : Base(name)
 {
 }
 
-StructureAlignedMemoryAllocator::~StructureAlignedMemoryAllocator()
-{
-    releaseMemoryFromSubclassDestructor();
-}
+#endif
 
 void StructureAlignedMemoryAllocator::dump(PrintStream& out) const
 {
@@ -76,13 +93,15 @@ void* StructureAlignedMemoryAllocator::tryReallocateMemory(void*, size_t)
 
 #if CPU(ADDRESS64) && !ENABLE(STRUCTURE_ID_WITH_SHIFT)
 
+#if USE(LIBPAS_STRUCTURE_MEMORY_ALLOCATOR)
+static constexpr bmalloc_type structureType = BMALLOC_TYPE_INITIALIZER(MarkedBlock::blockSize, MarkedBlock::blockSize, "Structure");
+static pas_primitive_heap_ref structureHeap = BMALLOC_AUXILIARY_HEAP_REF_INITIALIZER(&structureType);
+#endif
+
 class StructureMemoryManager {
 public:
     StructureMemoryManager()
     {
-        // Don't use the first page because zero is used as the empty StructureID and the first allocation will conflict.
-        m_usedBlocks.set(0);
-
         uintptr_t mappedHeapSize = structureHeapAddressSize;
         for (unsigned i = 0; i < 8; ++i) {
             g_jscConfig.startOfStructureHeap = reinterpret_cast<uintptr_t>(OSAllocator::tryReserveUncommittedAligned(mappedHeapSize, structureHeapAddressSize, OSAllocator::FastMallocPages));
@@ -92,10 +111,20 @@ public:
         }
         g_jscConfig.sizeOfStructureHeap = mappedHeapSize;
         RELEASE_ASSERT(g_jscConfig.startOfStructureHeap && ((g_jscConfig.startOfStructureHeap & ~StructureID::structureIDMask) == g_jscConfig.startOfStructureHeap));
+
+#if USE(LIBPAS_STRUCTURE_MEMORY_ALLOCATOR)
+        bmalloc_force_auxiliary_heap_into_reserved_memory(&structureHeap,  g_jscConfig.startOfStructureHeap, g_jscConfig.startOfStructureHeap + g_jscConfig.sizeOfStructureHeap);
+#else
+        // Don't use the first page because zero is used as the empty StructureID and the first allocation will conflict.
+        m_usedBlocks.set(0);
+#endif
     }
 
     void* tryMallocStructureBlock()
     {
+#if USE(LIBPAS_STRUCTURE_MEMORY_ALLOCATOR)
+        return bmalloc_try_allocate_auxiliary_inline(&structureHeap, MarkedBlock::blockSize);
+#else
         size_t freeIndex;
         {
             Locker locker(m_lock);
@@ -112,10 +141,14 @@ public:
         auto* block = reinterpret_cast<uint8_t*>(g_jscConfig.startOfStructureHeap) + freeIndex * MarkedBlock::blockSize;
         commitBlock(block);
         return block;
+#endif
     }
 
     void freeStructureBlock(void* blockPtr)
     {
+#if USE(LIBPAS_STRUCTURE_MEMORY_ALLOCATOR)
+        bmalloc_deallocate_inline(blockPtr);
+#else
         decommitBlock(blockPtr);
         uintptr_t block = reinterpret_cast<uintptr_t>(blockPtr);
         RELEASE_ASSERT(g_jscConfig.startOfStructureHeap <= block && block < g_jscConfig.startOfStructureHeap + g_jscConfig.sizeOfStructureHeap);
@@ -123,8 +156,10 @@ public:
 
         Locker locker(m_lock);
         m_usedBlocks.quickClear((block - g_jscConfig.startOfStructureHeap) / MarkedBlock::blockSize);
+#endif
     }
 
+#if !USE(LIBPAS_STRUCTURE_MEMORY_ALLOCATOR)
     static void commitBlock(void* block)
     {
 #if OS(UNIX) && ASSERT_ENABLED
@@ -152,6 +187,7 @@ public:
 private:
     Lock m_lock;
     BitVector m_usedBlocks;
+#endif
 };
 
 static LazyNeverDestroyed<StructureMemoryManager> s_structureMemoryManager;
@@ -161,6 +197,8 @@ void StructureAlignedMemoryAllocator::initializeStructureAddressSpace()
     static_assert(hasOneBitSet(structureHeapAddressSize));
     s_structureMemoryManager.construct();
 }
+
+#if !USE(LIBPAS_STRUCTURE_MEMORY_ALLOCATOR)
 
 void* StructureAlignedMemoryAllocator::tryMallocBlock()
 {
@@ -185,6 +223,8 @@ void StructureAlignedMemoryAllocator::decommitBlock(void* block)
 {
     StructureMemoryManager::decommitBlock(block);
 }
+
+#endif
 
 #else // not CPU(ADDRESS64)
 
@@ -217,6 +257,36 @@ void StructureAlignedMemoryAllocator::decommitBlock(void* block)
 }
 
 #endif // CPU(ADDRESS64)
+
+#if USE(LIBPAS_STRUCTURE_MEMORY_ALLOCATOR)
+
+StructureAlignedMemoryAllocator::~StructureAlignedMemoryAllocator() = default;
+
+void* StructureAlignedMemoryAllocator::tryAllocateAlignedMemory(size_t alignment, size_t size)
+{
+    RELEASE_ASSERT(alignment == MarkedBlock::blockSize);
+    RELEASE_ASSERT(size == MarkedBlock::blockSize);
+    static std::once_flag s_onceFlag;
+    std::call_once(s_onceFlag, [] {
+        initializeStructureAddressSpace();
+    });
+    return s_structureMemoryManager->tryMallocStructureBlock();
+}
+
+void StructureAlignedMemoryAllocator::freeAlignedMemory(void* block)
+{
+    if (block)
+        s_structureMemoryManager->freeStructureBlock(block);
+}
+
+#else
+
+StructureAlignedMemoryAllocator::~StructureAlignedMemoryAllocator()
+{
+    releaseMemoryFromSubclassDestructor();
+}
+
+#endif
 
 } // namespace JSC
 
