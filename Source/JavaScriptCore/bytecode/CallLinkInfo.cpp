@@ -420,13 +420,30 @@ JSGlobalObject* CallLinkInfo::globalObjectForSlowPath(JSCell* owner)
     return nullptr;
 }
 
-void DirectCallLinkInfo::unlinkOrUpgradeImpl(VM&)
+void DirectCallLinkInfo::unlinkOrUpgradeImpl(VM& vm, CodeBlock* oldCodeBlock, CodeBlock* newCodeBlock)
 {
     if (isOnList())
         remove();
-    m_target = { };
-    m_codeBlock = nullptr;
+
+    if (isLinked()) {
+        if (newCodeBlock && isDataIC() && oldCodeBlock == m_codeBlock) {
+            ArityCheckMode arityCheck = oldCodeBlock->jitCode()->addressForCall(ArityCheckNotRequired) == m_target ? ArityCheckNotRequired : MustCheckArity;
+            auto target = newCodeBlock->jitCode()->addressForCall(arityCheck);
+            m_target = target;
+            m_codeBlock = newCodeBlock;
+            newCodeBlock->linkIncomingCall(owner(), this); // This is just relinking. So owner and caller frame can be nullptr.
+            return;
+        }
+        dataLogLnIf(Options::dumpDisassembly(), "Unlinking CallLinkInfo: ", RawPointer(this));
+        m_target = { };
+        m_codeBlock = nullptr;
+    }
+
+    // Either we were unlinked, in which case we should not have been on any list, or we unlinked
+    // ourselves so that we're not on any list anymore.
+    RELEASE_ASSERT(!isOnList());
 }
+
 
 void DirectCallLinkInfo::visitWeak(VM& vm)
 {
