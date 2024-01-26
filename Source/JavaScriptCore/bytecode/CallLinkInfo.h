@@ -484,7 +484,7 @@ public:
 
     bool isLinked() const { return m_codeBlock; }
     CodeOrigin codeOrigin() const { return m_codeOrigin; }
-    bool isDataIC() const { return useDataIC() == UseDataIC::Yes; }
+    bool isDataIC() const { return m_useDataIC == UseDataIC::Yes; }
 
     template<typename Functor>
     void forEachDependentCell(const Functor& functor) const
