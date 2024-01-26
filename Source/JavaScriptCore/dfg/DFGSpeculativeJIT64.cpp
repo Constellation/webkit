@@ -1055,6 +1055,7 @@ void SpeculativeJIT::emitCall(Node* node)
         Label mainPath = label();
         emitStoreCallSiteIndex(callSite);
         auto slowCases = callLinkInfo->emitDirectFastPath(*this, executable, callLinkInfoGPR);
+        Label slowPath = label();
         if (!slowCases.empty()) {
             Jump done = jump();
 
