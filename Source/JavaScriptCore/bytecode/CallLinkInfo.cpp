@@ -371,11 +371,11 @@ void DirectCallLinkInfo::unlinkOrUpgradeImpl(VM& vm, CodeBlock* oldCodeBlock, Co
     if (isOnList())
         remove();
 
-    if (m_codeBlock) {
-        if (newCodeBlock && oldCodeBlock == m_codeBlock) {
+    if (!!m_target) {
+        if (m_codeBlock && newCodeBlock && oldCodeBlock == m_codeBlock) {
             ArityCheckMode arityCheck = oldCodeBlock->jitCode()->addressForCall(ArityCheckNotRequired) == m_target ? ArityCheckNotRequired : MustCheckArity;
             auto target = newCodeBlock->jitCode()->addressForCall(arityCheck);
-            setCallTarget(target, newCodeBlock);
+            setCallTarget(newCodeBlock, CodeLocationLabel { target });
             newCodeBlock->linkIncomingCall(owner(), this); // This is just relinking. So owner and caller frame can be nullptr.
             return;
         }
