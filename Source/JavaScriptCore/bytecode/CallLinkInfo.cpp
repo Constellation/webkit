@@ -381,9 +381,6 @@ void DirectCallLinkInfo::unlinkOrUpgradeImpl(VM& vm, CodeBlock* oldCodeBlock, Co
 
 void DirectCallLinkInfo::visitWeak(VM& vm)
 {
-    if (!isLinked())
-        return;
-
     if (m_codeBlock && !vm.heap.isMarked(m_codeBlock)) {
         dataLogLnIf(Options::verboseOSR(), "Clearing call to ", RawPointer(m_codeBlock), " (", pointerDump(m_codeBlock), ").");
         unlinkOrUpgrade(vm, nullptr, nullptr);
