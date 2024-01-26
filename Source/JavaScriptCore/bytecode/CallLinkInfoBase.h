@@ -26,6 +26,7 @@
 #pragma once
 
 #include "ArityCheckMode.h"
+#include "CallMode.h"
 #include "JSCPtrTag.h"
 #include <wtf/CodePtr.h>
 #include <wtf/SentinelLinkedList.h>
