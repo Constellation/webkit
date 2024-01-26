@@ -476,13 +476,6 @@ public:
     CodeOrigin codeOrigin() const { return m_codeOrigin; }
     bool isDataIC() const { return m_useDataIC == UseDataIC::Yes; }
 
-    template<typename Functor>
-    void forEachDependentCell(const Functor& functor) const
-    {
-        if (m_codeBlock)
-            functor(m_codeBlock);
-    }
-
     MacroAssembler::JumpList emitDirectFastPath(CCallHelpers&, ExecutableBase*, GPRReg callLinkInfoGPR);
     MacroAssembler::JumpList emitDirectTailCallFastPath(CCallHelpers&, ExecutableBase*, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall);
     void setCallTarget(CodeBlock*, CodeLocationLabel<JSEntryPtrTag>);
