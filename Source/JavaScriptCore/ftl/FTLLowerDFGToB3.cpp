@@ -11407,17 +11407,16 @@ IGNORE_CLANG_WARNINGS_END
                     shuffleData.numParameters = jit.codeBlock()->numParameters();
                     shuffleData.setupCalleeSaveRegisters(state->jitCode->calleeSaveRegisters());
                     
-                    auto* callLinkInfo = state->addCallLinkInfo(semanticNodeOrigin);
-                    callLinkInfo->setUpCall(CallLinkInfo::DirectTailCall);
-                    callLinkInfo->setExecutableDuringCompilation(executable);
+                    auto* callLinkInfo = state->jitCode->common.m_directCallLinkInfos.add(semanticNodeOrigin, CallLinkInfo::UseDataIC::No, state->graph.m_codeBlock);
+                    callLinkInfo->setCallType(CallLinkInfo::DirectTailCall);
                     if (numAllocatedArgs > numPassedArgs)
-                        callLinkInfo->setDirectCallMaxArgumentCountIncludingThis(numAllocatedArgs);
+                        callLinkInfo->setMaxArgumentCountIncludingThis(numAllocatedArgs);
 
                     CCallHelpers::Label mainPath = jit.label();
                     jit.store32(
                         CCallHelpers::TrustedImm32(callSiteIndex.bits()),
                         CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
-                    callLinkInfo->emitDirectTailCallFastPath(jit, scopedLambda<void()>([&]{
+                    callLinkInfo->emitDirectTailCallFastPath(jit, executable, InvalidGPRReg, scopedLambda<void()>([&]{
                         CallFrameShuffler(jit, shuffleData).prepareForTailCall();
                     }));
                     
@@ -11431,25 +11430,22 @@ IGNORE_CLANG_WARNINGS_END
                     jit.jump().linkTo(mainPath, &jit);
 
                     jit.addLinkTask([=] (LinkBuffer& linkBuffer) {
-                        callLinkInfo->setCodeLocations(
-                            linkBuffer.locationOf<JSInternalPtrTag>(slowPath),
-                            CodeLocationLabel<JSInternalPtrTag>());
+                        callLinkInfo->setCodeLocations(linkBuffer.locationOf<JSInternalPtrTag>(slowPath));
                     });
                     return;
                 }
                 
-                auto* callLinkInfo = state->addCallLinkInfo(semanticNodeOrigin);
-                callLinkInfo->setUpCall(isConstruct ? CallLinkInfo::DirectConstruct : CallLinkInfo::DirectCall);
+                auto* callLinkInfo = state->jitCode->common.m_directCallLinkInfos.add(semanticNodeOrigin, CallLinkInfo::UseDataIC::No, state->graph.m_codeBlock);
+                callLinkInfo->setCallType(isConstruct ? CallLinkInfo::DirectConstruct : CallLinkInfo::DirectCall);
 
-                callLinkInfo->setExecutableDuringCompilation(executable);
                 if (numAllocatedArgs > numPassedArgs)
-                    callLinkInfo->setDirectCallMaxArgumentCountIncludingThis(numAllocatedArgs);
+                    callLinkInfo->setMaxArgumentCountIncludingThis(numAllocatedArgs);
 
                 CCallHelpers::Label mainPath = jit.label();
                 jit.store32(
                     CCallHelpers::TrustedImm32(callSiteIndex.bits()),
                     CCallHelpers::tagFor(CallFrameSlot::argumentCountIncludingThis));
-                callLinkInfo->emitDirectFastPath(jit);
+                callLinkInfo->emitDirectFastPath(jit, executable, InvalidGPRReg);
                 jit.addPtr(
                     CCallHelpers::TrustedImm32(-params.proc().frameSize()),
                     GPRInfo::callFrameRegister, CCallHelpers::stackPointerRegister);
@@ -11471,9 +11467,7 @@ IGNORE_CLANG_WARNINGS_END
                         
                         jit.addLinkTask(
                             [=] (LinkBuffer& linkBuffer) {
-                                callLinkInfo->setCodeLocations(
-                                    linkBuffer.locationOf<JSInternalPtrTag>(slowPath), 
-                                    CodeLocationLabel<JSInternalPtrTag>());
+                                callLinkInfo->setCodeLocations(linkBuffer.locationOf<JSInternalPtrTag>(slowPath));
                             });
                     });
             });

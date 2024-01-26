@@ -101,29 +101,6 @@ public:
         RELEASE_ASSERT_NOT_REACHED();
     }
 
-    static bool isDirect(CallType callType)
-    {
-        switch (callType) {
-        case DirectCall:
-        case DirectTailCall:
-        case DirectConstruct:
-            return true;
-        case Call:
-        case CallVarargs:
-        case TailCall:
-        case TailCallVarargs:
-        case Construct:
-        case ConstructVarargs:
-            return false;
-        case None:
-            RELEASE_ASSERT_NOT_REACHED();
-            return false;
-        }
-
-        RELEASE_ASSERT_NOT_REACHED();
-        return false;
-    }
-
     explicit CallLinkInfoBase(CallSiteType callSiteType)
         : m_callSiteType(callSiteType)
     {
