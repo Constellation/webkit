@@ -472,7 +472,6 @@ public:
 
     void visitWeak(VM&);
 
-    bool isLinked() const { return !!m_target; }
     CodeOrigin codeOrigin() const { return m_codeOrigin; }
     bool isDataIC() const { return m_useDataIC == UseDataIC::Yes; }
 

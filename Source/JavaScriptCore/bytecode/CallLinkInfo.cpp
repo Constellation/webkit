@@ -102,8 +102,18 @@ void CallLinkInfo::unlinkOrUpgradeImpl(VM& vm, CodeBlock* oldCodeBlock, CodeBloc
             remove();
             ArityCheckMode arityCheck = oldCodeBlock->jitCode()->addressForCall(ArityCheckNotRequired) == u.dataIC.m_monomorphicCallDestination ? ArityCheckNotRequired : MustCheckArity;
             auto target = newCodeBlock->jitCode()->addressForCall(arityCheck);
-            u.dataIC.m_codeBlock = newCodeBlock;
-            u.dataIC.m_monomorphicCallDestination = target;
+            if (isDataIC()) {
+                u.dataIC.m_codeBlock = newCodeBlock;
+                u.dataIC.m_monomorphicCallDestination = target;
+            } else {
+#if ENABLE(JIT)
+                MacroAssembler::repatchNearCall(static_cast<OptimizingCallLinkInfo*>(this)->m_callLocation, CodeLocationLabel<JSEntryPtrTag>(target));
+                MacroAssembler::repatchPointer(u.codeIC.m_codeBlockLocation, newCodeBlock);
+                MacroAssembler::repatchPointer(u.codeIC.m_calleeLocation, m_callee.get());
+#else
+                RELEASE_ASSERT_NOT_REACHED();
+#endif
+            }
             newCodeBlock->linkIncomingCall(owner(), this); // This is just relinking. So owner and caller frame can be nullptr.
             return;
         }
@@ -361,12 +371,11 @@ void DirectCallLinkInfo::unlinkOrUpgradeImpl(VM& vm, CodeBlock* oldCodeBlock, Co
     if (isOnList())
         remove();
 
-    if (isLinked()) {
-        if (newCodeBlock && isDataIC() && oldCodeBlock == m_codeBlock) {
+    if (m_codeBlock) {
+        if (newCodeBlock && oldCodeBlock == m_codeBlock) {
             ArityCheckMode arityCheck = oldCodeBlock->jitCode()->addressForCall(ArityCheckNotRequired) == m_target ? ArityCheckNotRequired : MustCheckArity;
             auto target = newCodeBlock->jitCode()->addressForCall(arityCheck);
-            m_target = target;
-            m_codeBlock = newCodeBlock;
+            setCallTarget(target, newCodeBlock);
             newCodeBlock->linkIncomingCall(owner(), this); // This is just relinking. So owner and caller frame can be nullptr.
             return;
         }

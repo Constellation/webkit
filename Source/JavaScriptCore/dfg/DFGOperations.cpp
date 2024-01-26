@@ -4303,7 +4303,7 @@ JSC_DEFINE_JIT_OPERATION(operationLinkDirectCall, void, (DirectCallLinkInfo* cal
             codePtr = functionExecutable->entrypointFor(kind, ArityCheckNotRequired);
     }
 
-    linkDirectCall(callFrame, *callLinkInfo, codeBlock, codePtr);
+    linkDirectCall(*callLinkInfo, codeBlock, codePtr);
 }
 
 JSC_DEFINE_JIT_OPERATION(operationTriggerReoptimizationNow, void, (CodeBlock* codeBlock, CodeBlock* optimizedCodeBlock, OSRExitBase* exit))
