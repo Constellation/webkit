@@ -420,6 +420,25 @@ JSGlobalObject* CallLinkInfo::globalObjectForSlowPath(JSCell* owner)
     return nullptr;
 }
 
+void DirectCallLinkInfo::unlinkImpl(VM&)
+{
+    if (isOnList())
+        remove();
+    m_target = { };
+    m_codeBlock = nullptr;
+}
+
+void DirectCallLinkInfo::visitWeak(VM& vm)
+{
+    if (!isLinked())
+        return;
+
+    if (!vm.heap.isMarked(m_codeBlock)) {
+        dataLogLnIf(Options::verboseOSR(), "Clearing call to ", RawPointer(m_codeBlock), " (", pointerDump(m_codeBlock), ").");
+        unlink(vm);
+    }
+}
+
 #if ENABLE(JIT)
 
 void OptimizingCallLinkInfo::setSlowPathCallDestination(CodePtr<JSEntryPtrTag> codePtr)
@@ -755,6 +774,76 @@ void OptimizingCallLinkInfo::initializeFromDFGUnlinkedCallLinkInfo(VM&, const DF
     m_callLinkInfoGPR = unlinkedCallLinkInfo.callLinkInfoGPR;
 }
 #endif
+
+CCallHelpers::JumpList DirectCallLinkInfo::emitDirectFastPath(CCallHelpers& jit, ExecutableBase* executable, GPRReg callLinkInfoGPR)
+{
+    RELEASE_ASSERT(!isTailCall());
+
+    CCallHelpers::JumpList slowPath;
+
+    if (executable->isHostFunction()) {
+        CodeSpecializationKind kind = specializationKind();
+        CodePtr<JSEntryPtrTag> codePtr;
+        if (kind == CodeForCall)
+            codePtr = executable->generatedJITCodeWithArityCheckForCall();
+        else
+            codePtr = executable->generatedJITCodeWithArityCheckForConstruct();
+        if (codePtr) {
+            jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeCall());
+            jit.nearCallThunk(CodeLocationLabel { codePtr.retagged<NoPtrTag>() });
+            return slowPath;
+        }
+    }
+
+    jit.move(CCallHelpers::TrustedImmPtr(this), callLinkInfoGPR);
+    slowPath.append(jit.branchTestPtr(CCallHelpers::Zero, CCallHelpers::Address(callLinkInfoGPR, offsetOfTarget())));
+    jit.transferPtr(CCallHelpers::Address(callLinkInfoGPR, offsetOfCodeBlock()), CCallHelpers::calleeFrameCodeBlockBeforeCall());
+    jit.call(CCallHelpers::Address(callLinkInfoGPR, offsetOfTarget()), JSEntryPtrTag);
+
+    return slowPath;
+}
+
+CCallHelpers::JumpList DirectCallLinkInfo::emitDirectTailCallFastPath(CCallHelpers& jit, ExecutableBase* executable, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall)
+{
+    RELEASE_ASSERT(isTailCall());
+
+    CCallHelpers::JumpList slowPath;
+
+    if (executable->isHostFunction()) {
+        CodeSpecializationKind kind = specializationKind();
+        CodePtr<JSEntryPtrTag> codePtr;
+        if (kind == CodeForCall)
+            codePtr = executable->generatedJITCodeWithArityCheckForCall();
+        else
+            codePtr = executable->generatedJITCodeWithArityCheckForConstruct();
+        if (codePtr) {
+            prepareForTailCall();
+            jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
+            jit.nearTailCallThunk(CodeLocationLabel { codePtr.retagged<NoPtrTag>() });
+            return slowPath;
+        }
+    }
+
+    jit.move(CCallHelpers::TrustedImmPtr(this), callLinkInfoGPR);
+    slowPath.append(jit.branchTestPtr(CCallHelpers::Zero, CCallHelpers::Address(callLinkInfoGPR, offsetOfTarget())));
+    prepareForTailCall();
+    jit.transferPtr(CCallHelpers::Address(callLinkInfoGPR, offsetOfCodeBlock()), CCallHelpers::calleeFrameCodeBlockBeforeTailCall());
+    jit.farJump(CCallHelpers::Address(callLinkInfoGPR, offsetOfTarget()), JSEntryPtrTag);
+
+    return slowPath;
+}
+
+void DirectCallLinkInfo::setCallTarget(CodeBlock* codeBlock, CodeLocationLabel<JSEntryPtrTag> target)
+{
+    m_codeBlock = codeBlock;
+    m_target = target;
+}
+
+void DirectCallLinkInfo::setMaxArgumentCountIncludingThis(unsigned value)
+{
+    RELEASE_ASSERT(value);
+    m_maxArgumentCountIncludingThis = value;
+}
 
 #endif
 
