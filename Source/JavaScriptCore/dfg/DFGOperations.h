@@ -38,6 +38,7 @@
 namespace JSC {
 
 class DateInstance;
+class DirectCallLinkInfo;
 class JSBigInt;
 class JSBoundFunction;
 class JSPropertyNameEnumerator;
