@@ -431,6 +431,77 @@ struct BaselineUnlinkedCallLinkInfo : public JSC::UnlinkedCallLinkInfo {
 #endif
 };
 
+class DirectCallLinkInfo final : public CallLinkInfoBase {
+    WTF_MAKE_NONCOPYABLE(DirectCallLinkInfo);
+public:
+    DirectCallLinkInfo(CodeOrigin codeOrigin)
+        : CallLinkInfoBase(CallSiteType::DirectCall)
+        , m_codeOrigin(codeOrigin)
+    { }
+
+    ~DirectCallLinkInfo()
+    {
+        m_target = { };
+        m_codeBlock = nullptr;
+    }
+
+    void setCallType(CallType callType)
+    {
+        m_callType = callType;
+    }
+
+    CallType callType()
+    {
+        return static_cast<CallType>(m_callType);
+    }
+
+    CallMode callMode() const
+    {
+        return callModeFor(static_cast<CallType>(m_callType));
+    }
+
+    bool isTailCall() const
+    {
+        return callMode() == CallMode::Tail;
+    }
+
+    CodeSpecializationKind specializationKind() const
+    {
+        auto callType = static_cast<CallType>(m_callType);
+        return specializationFromIsConstruct(callType == Construct || callType == ConstructVarargs || callType == DirectConstruct);
+    }
+
+    static ptrdiff_t offsetOfTarget() { return OBJECT_OFFSETOF(DirectCallLinkInfo, m_target); };
+    static ptrdiff_t offsetOfCodeBlock() { return OBJECT_OFFSETOF(DirectCallLinkInfo, m_codeBlock); };
+
+    void unlinkOrUpgradeImpl(VM&, CodeBlock* oldCodeBlock, CodeBlock* newCodeBlock);
+
+    void visitWeak(VM&);
+
+    bool isLinked() const { return m_codeBlock; }
+    CodeOrigin codeOrigin() const { return m_codeOrigin; }
+
+    template<typename Functor>
+    void forEachDependentCell(const Functor& functor) const
+    {
+        if (isLinked())
+            functor(m_codeBlock);
+    }
+
+    MacroAssembler::JumpList emitDirectFastPath(CCallHelpers&, ExecutableBase*, GPRReg callLinkInfoGPR);
+    MacroAssembler::JumpList emitDirectTailCallFastPath(CCallHelpers&, ExecutableBase*, GPRReg callLinkInfoGPR, ScopedLambda<void()>&& prepareForTailCall);
+    void setCallTarget(CodeBlock*, CodeLocationLabel<JSEntryPtrTag>);
+    void setMaxArgumentCountIncludingThis(unsigned);
+    unsigned maxArgumentCountIncludingThis() const { return m_maxArgumentCountIncludingThis; }
+
+private:
+    unsigned m_callType : 4; // CallType
+    unsigned m_maxArgumentCountIncludingThis { 0 };
+    CodePtr<JSEntryPtrTag> m_target;
+    CodeBlock* m_codeBlock { nullptr }; // This is weakly held. And cleared whenever m_target is changed.
+    CodeOrigin m_codeOrigin { };
+};
+
 #if ENABLE(JIT)
 
 class OptimizingCallLinkInfo final : public CallLinkInfo {

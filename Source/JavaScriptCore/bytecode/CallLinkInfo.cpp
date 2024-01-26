@@ -420,7 +420,7 @@ JSGlobalObject* CallLinkInfo::globalObjectForSlowPath(JSCell* owner)
     return nullptr;
 }
 
-void DirectCallLinkInfo::unlinkImpl(VM&)
+void DirectCallLinkInfo::unlinkOrUpgradeImpl(VM&)
 {
     if (isOnList())
         remove();
