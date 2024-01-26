@@ -432,10 +432,11 @@ struct BaselineUnlinkedCallLinkInfo : public JSC::UnlinkedCallLinkInfo {
 class DirectCallLinkInfo final : public CallLinkInfoBase {
     WTF_MAKE_NONCOPYABLE(DirectCallLinkInfo);
 public:
-    DirectCallLinkInfo(CodeOrigin codeOrigin, UseDataIC useDataIC)
+    DirectCallLinkInfo(CodeOrigin codeOrigin, UseDataIC useDataIC, JSCell* owner)
         : CallLinkInfoBase(CallSiteType::DirectCall)
         , m_useDataIC(useDataIC)
         , m_codeOrigin(codeOrigin)
+        , m_owner(owner)
     { }
 
     ~DirectCallLinkInfo()
@@ -478,6 +479,8 @@ public:
     static ptrdiff_t offsetOfTarget() { return OBJECT_OFFSETOF(DirectCallLinkInfo, m_target); };
     static ptrdiff_t offsetOfCodeBlock() { return OBJECT_OFFSETOF(DirectCallLinkInfo, m_codeBlock); };
 
+    JSCell* owner() const { return m_owner; }
+
     void unlinkOrUpgradeImpl(VM&, CodeBlock* oldCodeBlock, CodeBlock* newCodeBlock);
 
     void visitWeak(VM&);
@@ -507,6 +510,7 @@ private:
     CodeBlock* m_codeBlock { nullptr }; // This is weakly held. And cleared whenever m_target is changed.
     CodeOrigin m_codeOrigin { };
     CodeLocationLabel<JSInternalPtrTag> m_slowPathStart;
+    JSCell* m_owner;
 };
 
 #if ENABLE(JIT)
