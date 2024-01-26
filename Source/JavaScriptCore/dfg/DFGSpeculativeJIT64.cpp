@@ -1023,7 +1023,7 @@ void SpeculativeJIT::emitCall(Node* node)
     
     if (isDirect) {
         ASSERT(!m_graph.m_plan.isUnlinked());
-        auto* callLinkInfo = jitCode()->common.m_directCallLinkInfos.add(m_currentNode->origin.semantic);
+        auto* callLinkInfo = jitCode()->common.m_directCallLinkInfos.add(m_currentNode->origin.semantic, DirectCallLinkInfo::UseDataIC::Yes);
         callLinkInfo->setCallType(callType);
         callLinkInfo->setMaxArgumentCountIncludingThis(numAllocatedArgs);
 

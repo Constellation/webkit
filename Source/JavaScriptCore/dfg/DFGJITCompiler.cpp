@@ -292,9 +292,7 @@ void JITCompiler::link(LinkBuffer& linkBuffer)
     
     for (auto& record : m_jsDirectCalls) {
         auto& info = *record.info;
-        info.setCodeLocations(
-            linkBuffer.locationOf<JSInternalPtrTag>(record.slowPath),
-            CodeLocationLabel<JSInternalPtrTag>());
+        info.setCodeLocations(linkBuffer.locationOf<JSInternalPtrTag>(record.slowPath));
     }
 
     if (m_graph.m_plan.isUnlinked()) {

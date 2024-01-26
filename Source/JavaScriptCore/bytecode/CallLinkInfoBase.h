@@ -77,6 +77,8 @@ public:
         DirectTailCall
     };
 
+    enum class UseDataIC : bool { No, Yes };
+
     static CallMode callModeFor(CallType callType)
     {
         switch (callType) {

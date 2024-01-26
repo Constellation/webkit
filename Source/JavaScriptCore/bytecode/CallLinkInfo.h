@@ -133,8 +133,6 @@ public:
     bool isLinked() const { return mode() != Mode::Init && mode() != Mode::Virtual; }
     void unlinkOrUpgradeImpl(VM&, CodeBlock* oldCodeBlock, CodeBlock* newCodeBlock);
 
-    enum class UseDataIC : bool { No, Yes };
-
 #if ENABLE(JIT)
 protected:
     static std::tuple<MacroAssembler::JumpList, MacroAssembler::Label> emitFastPathImpl(CallLinkInfo*, CCallHelpers&, GPRReg callLinkInfoGPR, UseDataIC, bool isTailCall, ScopedLambda<void()>&& prepareForTailCall) WARN_UNUSED_RETURN;
@@ -434,8 +432,9 @@ struct BaselineUnlinkedCallLinkInfo : public JSC::UnlinkedCallLinkInfo {
 class DirectCallLinkInfo final : public CallLinkInfoBase {
     WTF_MAKE_NONCOPYABLE(DirectCallLinkInfo);
 public:
-    DirectCallLinkInfo(CodeOrigin codeOrigin)
+    DirectCallLinkInfo(CodeOrigin codeOrigin, UseDataIC useDataIC)
         : CallLinkInfoBase(CallSiteType::DirectCall)
+        , m_useDataIC(useDataIC)
         , m_codeOrigin(codeOrigin)
     { }
 
@@ -471,6 +470,11 @@ public:
         return specializationFromIsConstruct(callType == Construct || callType == ConstructVarargs || callType == DirectConstruct);
     }
 
+    void setCodeLocations(CodeLocationLabel<JSInternalPtrTag> slowPathStart)
+    {
+        m_slowPathStart = slowPathStart;
+    }
+
     static ptrdiff_t offsetOfTarget() { return OBJECT_OFFSETOF(DirectCallLinkInfo, m_target); };
     static ptrdiff_t offsetOfCodeBlock() { return OBJECT_OFFSETOF(DirectCallLinkInfo, m_codeBlock); };
 
@@ -495,11 +499,13 @@ public:
     unsigned maxArgumentCountIncludingThis() const { return m_maxArgumentCountIncludingThis; }
 
 private:
-    unsigned m_callType : 4; // CallType
+    CallType m_callType : 4;
+    UseDataIC m_useDataIC : 1;
     unsigned m_maxArgumentCountIncludingThis { 0 };
     CodePtr<JSEntryPtrTag> m_target;
     CodeBlock* m_codeBlock { nullptr }; // This is weakly held. And cleared whenever m_target is changed.
     CodeOrigin m_codeOrigin { };
+    CodeLocationLabel<JSInternalPtrTag> m_slowPathStart;
 };
 
 #if ENABLE(JIT)
