@@ -435,7 +435,7 @@ void DirectCallLinkInfo::visitWeak(VM& vm)
 
     if (!vm.heap.isMarked(m_codeBlock)) {
         dataLogLnIf(Options::verboseOSR(), "Clearing call to ", RawPointer(m_codeBlock), " (", pointerDump(m_codeBlock), ").");
-        unlink(vm);
+        unlinkOrUpgrade(vm, nullptr, nullptr);
     }
 }
 
