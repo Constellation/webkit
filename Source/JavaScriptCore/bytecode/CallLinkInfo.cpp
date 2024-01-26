@@ -734,21 +734,20 @@ void DirectCallLinkInfo::initialize()
 
 void DirectCallLinkInfo::setCallTarget(CodeBlock* codeBlock, CodeLocationLabel<JSEntryPtrTag> target)
 {
-    if (isDataIC()) {
-        m_codeBlock = codeBlock;
-        m_target = target;
-        return;
-    }
+    m_codeBlock = codeBlock;
+    m_target = target;
 
-    if (isTailCall()) {
-        RELEASE_ASSERT(fastPathStart());
-        // We reserved this many bytes for the jump at fastPathStart(). Make that
-        // code nops now so we fall through to the jump to the fast path.
-        CCallHelpers::replaceWithNops(fastPathStart(), CCallHelpers::patchableJumpSize());
-    }
+    if (!isDataIC()) {
+        if (isTailCall()) {
+            RELEASE_ASSERT(fastPathStart());
+            // We reserved this many bytes for the jump at fastPathStart(). Make that
+            // code nops now so we fall through to the jump to the fast path.
+            CCallHelpers::replaceWithNops(fastPathStart(), CCallHelpers::patchableJumpSize());
+        }
 
-    MacroAssembler::repatchNearCall(m_callLocation, target);
-    MacroAssembler::repatchPointer(m_codeBlockLocation, codeBlock);
+        MacroAssembler::repatchNearCall(m_callLocation, target);
+        MacroAssembler::repatchPointer(m_codeBlockLocation, codeBlock);
+    }
 }
 
 void DirectCallLinkInfo::setMaxArgumentCountIncludingThis(unsigned value)
