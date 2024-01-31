@@ -6235,7 +6235,7 @@ void SpeculativeJIT::compile(Node* node)
         Jump callTierUp = branchAdd32(
             PositiveOrZero,
             TrustedImm32(Options::ftlTierUpCounterIncrementForLoop()),
-            AbsoluteAddress(&jitCode()->tierUpCounter.m_counter));
+            Address(GPRInfo::jitDataRegister, DFG::JITData::offsetOfTierUpCounter()));
 
         Label toNextOperation = label();
 
@@ -6256,16 +6256,25 @@ void SpeculativeJIT::compile(Node* node)
     }
         
     case CheckTierUpAtReturn: {
-        Jump done = branchAdd32(
-            Signed,
+        Jump callTierUp = branchAdd32(
+            PositiveOrZero,
             TrustedImm32(Options::ftlTierUpCounterIncrementForReturn()),
-            AbsoluteAddress(&jitCode()->tierUpCounter.m_counter));
-        
-        silentSpillAllRegisters(InvalidGPRReg);
-        callOperation(operationTriggerTierUpNow, TrustedImmPtr(&vm()));
-        silentFillAllRegisters();
-        
-        done.link(this);
+            Address(GPRInfo::jitDataRegister, DFG::JITData::offsetOfTierUpCounter()));
+
+        Label toNextOperation = label();
+
+        Vector<SilentRegisterSavePlan> savePlans;
+        silentSpillAllRegistersImpl(false, savePlans, InvalidGPRReg);
+
+        addSlowPathGeneratorLambda([=, this]() {
+            callTierUp.link(this);
+
+            silentSpill(savePlans);
+            callOperation(operationTriggerTierUpNow, TrustedImmPtr(&vm()));
+            silentFill(savePlans);
+
+            jump().linkTo(toNextOperation, this);
+        });
         break;
     }
         
@@ -6286,7 +6295,7 @@ void SpeculativeJIT::compile(Node* node)
         Jump overflowedCounter = branchAdd32(
             PositiveOrZero,
             TrustedImm32(Options::ftlTierUpCounterIncrementForLoop()),
-            AbsoluteAddress(&jitCode()->tierUpCounter.m_counter));
+            Address(GPRInfo::jitDataRegister, DFG::JITData::offsetOfTierUpCounter()));
         Label toNextOperation = label();
 
         Vector<SilentRegisterSavePlan> savePlans;
