@@ -6285,13 +6285,7 @@ void SpeculativeJIT::compile(Node* node)
         GPRReg tempGPR = temp.gpr();
 
         BytecodeIndex bytecodeIndex = node->origin.semantic.bytecodeIndex();
-        auto triggerIterator = jitCode()->tierUpEntryTriggers.find(bytecodeIndex);
-        DFG_ASSERT(m_graph, node, triggerIterator != jitCode()->tierUpEntryTriggers.end());
-        JITCode::TriggerReason* forceEntryTrigger = &(jitCode()->tierUpEntryTriggers.find(bytecodeIndex)->value);
-        static_assert(!static_cast<uint8_t>(JITCode::TriggerReason::DontTrigger), "the JIT code assumes non-zero means 'enter'");
-        static_assert(sizeof(JITCode::TriggerReason) == 1, "branchTest8 assumes this size");
 
-        Jump forceOSREntry = branchTest8(NonZero, AbsoluteAddress(forceEntryTrigger));
         Jump overflowedCounter = branchAdd32(
             PositiveOrZero,
             TrustedImm32(Options::ftlTierUpCounterIncrementForLoop()),
@@ -6305,7 +6299,6 @@ void SpeculativeJIT::compile(Node* node)
         jitCode()->bytecodeIndexToStreamIndex.add(bytecodeIndex, streamIndex);
 
         addSlowPathGeneratorLambda([=, this]() {
-            forceOSREntry.link(this);
             overflowedCounter.link(this);
 
             silentSpill(savePlans);
