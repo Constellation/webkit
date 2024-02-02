@@ -32,6 +32,79 @@
 namespace WTF {
 
 template<typename OffsetType>
+class BoyerMooreTable {
+    WTF_MAKE_FAST_ALLOCATED(BoyerMooreTable);
+public:
+    static constexpr unsigned size = 256;
+    static constexpr unsigned maxPatternLength = std::numeric_limits<OffsetType>::max();
+
+    explicit BoyerMooreTable(StringView pattern)
+    {
+        if (pattern.is8Bit())
+            initializeTable(std::span(pattern.characters8(), pattern.characters8() + pattern.length()));
+        else
+            initializeTable(std::span(pattern.characters16(), pattern.characters16() + pattern.length()));
+    }
+
+    explicit constexpr BoyerMooreTable(ASCIILiteral pattern)
+    {
+        initializeTable(std::span(pattern.characters(), pattern.characters() + pattern.length()));
+    }
+
+    ALWAYS_INLINE size_t find(StringView string, StringView matchString) const
+    {
+        unsigned length = string.length();
+        unsigned matchLength = matchString.length();
+        if (matchLength > length)
+            return notFound;
+
+        if (UNLIKELY(!matchLength))
+            return 0;
+
+        if (string.is8Bit()) {
+            if (matchString.is8Bit())
+                return findInner(string.characters8(), matchString.characters8(), length, matchLength);
+            return findInner(string.characters8(), matchString.characters16(), length, matchLength);
+        }
+
+        if (matchString.is8Bit())
+            return findInner(string.characters16(), matchString.characters8(), length, matchLength);
+        return findInner(string.characters16(), matchString.characters16(), length, matchLength);
+    }
+
+private:
+    template<typename CharacterType>
+    constexpr void initializeTable(std::span<CharacterType> pattern)
+    {
+        size_t length = pattern.size();
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(length <= maxPatternLength);
+        if (length) {
+            for (auto& element : m_table)
+                element = length;
+            for (unsigned i = 0; i < (pattern.size() - 1); ++i) {
+                unsigned index = pattern.data()[i] & 0xff;
+                m_table[index] = length - 1 - i;
+            }
+        }
+    }
+
+    template <typename SearchCharacterType, typename MatchCharacterType>
+    ALWAYS_INLINE size_t findInner(const SearchCharacterType* characters, const MatchCharacterType* matchCharacters, unsigned length, unsigned matchLength) const
+    {
+        auto* cursor = characters;
+        auto* last = characters + length - matchLength;
+        while (cursor <= last) {
+            if (equal(cursor, matchCharacters, matchLength))
+                return cursor - characters;
+            cursor += m_table[static_cast<uint8_t>(cursor[matchLength - 1])];
+        }
+        return notFound;
+    }
+
+    OffsetType m_table[size];
+};
+
+template<typename OffsetType>
 class BoyerMooreHorspoolTable {
     WTF_MAKE_FAST_ALLOCATED(BoyerMooreHorspoolTable);
 public:
