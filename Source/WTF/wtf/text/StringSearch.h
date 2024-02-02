@@ -36,7 +36,7 @@ class BoyerMooreTable {
     WTF_MAKE_FAST_ALLOCATED(BoyerMooreTable);
 public:
     static constexpr unsigned size = 256;
-    static constexpr unsigned maxPatternLength = std::numeric_limits<OffsetType>::max();
+    static constexpr unsigned maxPatternLength = std::numeric_limits<OffsetType>::max() - 1;
 
     explicit BoyerMooreTable(StringView pattern)
     {
@@ -76,14 +76,58 @@ private:
     template<typename CharacterType>
     constexpr void initializeTable(std::span<CharacterType> pattern)
     {
-        size_t length = pattern.size();
-        ASSERT_UNDER_CONSTEXPR_CONTEXT(length <= maxPatternLength);
+        ASSERT_UNDER_CONSTEXPR_CONTEXT(pattern.size() <= maxPatternLength);
+        int length = pattern.size();
         if (length) {
-            for (auto& element : m_table)
+            for (auto& element : m_badCharShiftTable)
                 element = length;
             for (unsigned i = 0; i < (pattern.size() - 1); ++i) {
                 unsigned index = pattern.data()[i] & 0xff;
-                m_table[index] = length - 1 - i;
+                m_badCharShiftTable[index] = length - 1 - i;
+            }
+        }
+
+        for (unsigned i = 0; i < length; ++i)
+            m_goodSuffixShiftTable[i] = length;
+        m_goodSuffixShiftTable[length] = 1;
+        if (!length)
+            return;
+
+        OffsetType suffixTable[size + 1] { };
+        suffixTable[length] = length;
+
+        // Find suffixes.
+        auto lastChar = pattern[length - 1];
+        unsigned suffix = length + 1;
+        {
+            int i = length;
+            while (i > 0) {
+                PatternChar c = pattern[i - 1];
+                while (suffix <= length && c != pattern[suffix - 1]) {
+                    if (m_goodSuffixShiftTable[suffix] == length)
+                        m_goodSuffixShiftTable[suffix] = suffix - i;
+                    suffix = suffixTable[suffix];
+                }
+                suffixTable[--i] = --suffix;
+                if (suffix == length) {
+                    // No suffix to extend, so we check against lastChar only.
+                    while ((i > 0) && (pattern[i - 1] != lastChar)) {
+                        if (m_goodSuffixShiftTable[length] == length)
+                            m_goodSuffixShiftTable[length] = length - i;
+                        suffixTable[--i] = length;
+                    }
+                    if (i > 0)
+                        suffixTable[--i] = --suffix;
+                }
+            }
+        }
+        // Build shift table using suffixes.
+        if (suffix < length) {
+            for (int i = 0; i <= length; i++) {
+                if (m_goodSuffixShiftTable[i] == length)
+                    m_goodSuffixShiftTable[i] = suffix;
+                if (i == suffix)
+                    suffix = suffixTable[suffix];
             }
         }
     }
@@ -96,12 +140,13 @@ private:
         while (cursor <= last) {
             if (equal(cursor, matchCharacters, matchLength))
                 return cursor - characters;
-            cursor += m_table[static_cast<uint8_t>(cursor[matchLength - 1])];
+            cursor += m_badCharShiftTable[static_cast<uint8_t>(cursor[matchLength - 1])];
         }
         return notFound;
     }
 
-    OffsetType m_table[size];
+    OffsetType m_badCharShiftTable[size] { };
+    OffsetType m_goodSuffixShiftTable[size] { };
 };
 
 template<typename OffsetType>
@@ -152,11 +197,11 @@ private:
         size_t length = pattern.size();
         ASSERT_UNDER_CONSTEXPR_CONTEXT(length <= maxPatternLength);
         if (length) {
-            for (auto& element : m_table)
+            for (auto& element : m_badCharShiftTable)
                 element = length;
             for (unsigned i = 0; i < (pattern.size() - 1); ++i) {
                 unsigned index = pattern.data()[i] & 0xff;
-                m_table[index] = length - 1 - i;
+                m_badCharShiftTable[index] = length - 1 - i;
             }
         }
     }
@@ -169,12 +214,12 @@ private:
         while (cursor <= last) {
             if (equal(cursor, matchCharacters, matchLength))
                 return cursor - characters;
-            cursor += m_table[static_cast<uint8_t>(cursor[matchLength - 1])];
+            cursor += m_badCharShiftTable[static_cast<uint8_t>(cursor[matchLength - 1])];
         }
         return notFound;
     }
 
-    OffsetType m_table[size];
+    OffsetType m_badCharShiftTable[size] { };
 };
 
 }
