@@ -330,6 +330,8 @@ Plan::CompilationPath Plan::compileInThreadImpl()
 
         RUN_PHASE(performFastStoreBarrierInsertion);
         RUN_PHASE(performStoreBarrierClustering);
+        if (Options::useMovHintRemoval())
+            RUN_PHASE(performMovHintRemoval);
         RUN_PHASE(performCleanUp);
         RUN_PHASE(performCPSRethreading);
         RUN_PHASE(performDCE);

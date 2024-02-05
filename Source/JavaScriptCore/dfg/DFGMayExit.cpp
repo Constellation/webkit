@@ -164,6 +164,13 @@ ExitMode mayExitImpl(Graph& graph, Node* node, StateType& state)
         result = ExitsForExceptions;
         break;
 
+    case StringReplaceString: {
+        if (node->child3().useKind() != StringUse)
+            return Exits;
+        result = ExitsForExceptions;
+        break;
+    }
+
     case SetRegExpObjectLastIndex:
         if (node->ignoreLastIndexIsWritable())
             break;

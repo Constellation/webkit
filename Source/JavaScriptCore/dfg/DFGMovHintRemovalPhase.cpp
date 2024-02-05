@@ -65,7 +65,8 @@ public:
         for (BasicBlock* block : m_graph.blocksInNaturalOrder())
             handleBlock(block);
 
-        m_insertionSet.execute(m_graph.block(0));
+        if (m_graph.m_plan.isFTL())
+            m_insertionSet.execute(m_graph.block(0));
 
         return m_changed;
     }
@@ -111,9 +112,13 @@ private:
                     // then it is totally fine).
                     node->setOpAndDefaultFlags(ZombieHint);
                     UseKind useKind = node->child1().useKind();
-                    Node* constant = m_constants.ensure(static_cast<std::underlying_type_t<UseKind>>(useKind), [&]() -> Node* {
-                        return m_insertionSet.insertBottomConstantForUse(0, m_graph.block(0)->at(0)->origin, useKind).node();
-                    }).iterator->value;
+                    Node* constant = nullptr;
+                    if (m_graph.m_plan.isFTL()) {
+                        constant = m_constants.ensure(static_cast<std::underlying_type_t<UseKind>>(useKind), [&]() -> Node* {
+                            return m_insertionSet.insertBottomConstantForUse(0, m_graph.block(0)->at(0)->origin, useKind).node();
+                        }).iterator->value;
+                    } else
+                        constant = m_insertionSet.insertBottomConstantForUse(nodeIndex, node->origin, useKind).node();
                     node->child1() = Edge(constant, useKind);
                     m_changed = true;
                 }
@@ -138,6 +143,9 @@ private:
                     });
             }
         }
+
+        if (!m_graph.m_plan.isFTL())
+            m_insertionSet.execute(block);
     }
 
     InsertionSet m_insertionSet;
