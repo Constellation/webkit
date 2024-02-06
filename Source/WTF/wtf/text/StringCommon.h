@@ -779,10 +779,33 @@ inline size_t find(const CharacterType* characters, unsigned length, CharacterTy
     if constexpr (sizeof(CharacterType) == 2) {
         if (index >= length)
             return notFound;
-        auto* result = reinterpret_cast<const CharacterType*>(find16(bitwise_cast<const uint16_t*>(characters + index), matchCharacter, length - index));
-        ASSERT(!result || static_cast<unsigned>(result - characters) >= index);
-        if (result)
-            return result - characters;
+
+        const uint16_t* subjectPtr = bitwise_cast<const uint16_t*>(characters + index);
+        size_t subjectLength = length - index;
+        if (!matchCharacter) {
+            auto* result = reinterpret_cast<const CharacterType*>(find16(subjectPtr, matchCharacter, subjectLength));
+            ASSERT(!result || static_cast<unsigned>(result - characters) >= index);
+            if (result)
+                return result - characters;
+            return notFound;
+        }
+
+        auto alignDown = [](auto value, auto alignment) ALWAYS_INLINE_LAMBDA {
+            return reinterpret_cast<decltype(value)>((reinterpret_cast<uintptr_t>(value) & ~(alignment - 1)));
+        };
+
+        const uint8_t searchByte = std::max<uint8_t>(static_cast<uint8_t>(matchCharacter), static_cast<uint8_t>(matchCharacter >> 8));
+        size_t pos = 0;
+        do {
+            ASSERT(subjectLength - pos >= 0);
+            const uint16_t* charPos = bitwise_cast<const uint16_t*>(memchr(subjectPtr + pos, searchByte, (subjectLength - pos) * sizeof(uint16_t)));
+            if (charPos == nullptr)
+                return notFound;
+            charPos = alignDown(charPos, sizeof(uint16_t));
+            pos = charPos - subjectPtr;
+            if (subjectPtr[pos] == matchCharacter)
+                return pos + index;
+        } while (++pos < subjectLength);
         return notFound;
     }
 
