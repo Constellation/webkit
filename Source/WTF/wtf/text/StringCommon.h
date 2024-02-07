@@ -794,7 +794,7 @@ inline size_t find(const CharacterType* characters, unsigned length, CharacterTy
             return reinterpret_cast<decltype(value)>((reinterpret_cast<uintptr_t>(value) & ~(alignment - 1)));
         };
 
-        const uint8_t searchByte = std::max<uint8_t>(static_cast<uint8_t>(patternFirstChar), static_cast<uint8_t>(patternFirstChar >> 8));
+        const uint8_t searchByte = std::max<uint8_t>(static_cast<uint8_t>(matchCharacter), static_cast<uint8_t>(matchCharacter >> 8));
         size_t pos = 0;
         do {
             ASSERT(subjectLength - pos >= 0);
