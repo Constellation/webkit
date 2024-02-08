@@ -33,9 +33,17 @@ class VM;
 
 class JSONAtomStringCache {
 public:
-    static constexpr auto maxStringLengthForCache = 32;
-    static constexpr auto capacity = 512;
-    using Cache = std::array<RefPtr<AtomStringImpl>, capacity>;
+    static constexpr auto maxStringLengthForCache = 27;
+    static constexpr auto capacity = 256;
+
+    struct Slot {
+        UChar m_buffer[maxStringLengthForCache] { };
+        UChar m_length { 0 };
+        RefPtr<AtomStringImpl> m_impl;
+    };
+    static_assert(sizeof(Slot) <= 64);
+
+    using Cache = std::array<Slot, capacity>;
 
     enum class Type : bool { Identifier };
     static constexpr unsigned numberOfTypes = 1;
@@ -58,7 +66,7 @@ private:
     template<typename CharacterType>
     Ref<AtomStringImpl> make(Type, const CharacterType*, unsigned length);
 
-    ALWAYS_INLINE RefPtr<AtomStringImpl>& cacheSlot(Type type, UChar firstCharacter, UChar lastCharacter, UChar length)
+    ALWAYS_INLINE Slot& cacheSlot(Type type, UChar firstCharacter, UChar lastCharacter, UChar length)
     {
         unsigned hash = (firstCharacter << 6) ^ ((lastCharacter << 14) ^ firstCharacter);
         hash += (hash >> 14) + (length << 14);
