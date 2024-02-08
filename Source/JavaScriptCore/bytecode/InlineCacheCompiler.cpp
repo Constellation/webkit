@@ -2508,7 +2508,7 @@ void InlineCacheCompiler::generateImpl(AccessCase& accessCase)
             setSpillStateForJSCall(spillState);
 
             RELEASE_ASSERT(!access.callLinkInfo());
-            auto* callLinkInfo = m_callLinkInfos.add(stubInfo.codeOrigin, codeBlock->useDataIC() ? CallLinkInfo::UseDataIC::Yes : CallLinkInfo::UseDataIC::No, nullptr);
+            auto* callLinkInfo = m_callLinkInfos.add(stubInfo.codeOrigin, CallLinkInfo::UseDataIC::Yes, nullptr);
             access.m_callLinkInfo = callLinkInfo;
 
             // FIXME: If we generated a polymorphic call stub that jumped back to the getter
@@ -2588,21 +2588,11 @@ void InlineCacheCompiler::generateImpl(AccessCase& accessCase)
             // We *always* know that the getter/setter, if non-null, is a cell.
             jit.move(CCallHelpers::TrustedImm32(JSValue::CellTag), BaselineJITRegisters::Call::calleeJSR.tagGPR());
 #endif
-            auto [slowCase, dispatchLabel] = CallLinkInfo::emitFastPath(jit, callLinkInfo);
+            auto [slowCases, dispatchLabel] = CallLinkInfo::emitFastPath(jit, callLinkInfo);
             auto doneLocation = jit.label();
-
             if (accessCase.m_type == AccessCase::Getter)
                 jit.setupResults(valueRegs);
             done.append(jit.jump());
-
-            if (!slowCase.empty()) {
-                slowCase.link(&jit);
-                CallLinkInfo::emitSlowPath(vm, jit, callLinkInfo);
-
-                if (accessCase.m_type == AccessCase::Getter)
-                    jit.setupResults(valueRegs);
-                done.append(jit.jump());
-            }
 
             if (returnUndefined) {
                 ASSERT(accessCase.m_type == AccessCase::Getter);
@@ -3228,7 +3218,6 @@ void InlineCacheCompiler::emitProxyObjectAccess(ProxyObjectAccessCase& accessCas
 {
     CCallHelpers& jit = *m_jit;
     CodeBlock* codeBlock = jit.codeBlock();
-    VM& vm = m_vm;
     ECMAMode ecmaMode = m_ecmaMode;
     StructureStubInfo& stubInfo = *m_stubInfo;
     JSValueRegs valueRegs = stubInfo.valueRegs();
@@ -3252,7 +3241,7 @@ void InlineCacheCompiler::emitProxyObjectAccess(ProxyObjectAccessCase& accessCas
     setSpillStateForJSCall(spillState);
 
     ASSERT(!accessCase.callLinkInfo());
-    auto* callLinkInfo = m_callLinkInfos.add(stubInfo.codeOrigin, codeBlock->useDataIC() ? CallLinkInfo::UseDataIC::Yes : CallLinkInfo::UseDataIC::No, nullptr);
+    auto* callLinkInfo = m_callLinkInfos.add(stubInfo.codeOrigin, CallLinkInfo::UseDataIC::Yes, nullptr);
     accessCase.m_callLinkInfo = callLinkInfo;
 
     callLinkInfo->disallowStubs();
@@ -3328,23 +3317,10 @@ void InlineCacheCompiler::emitProxyObjectAccess(ProxyObjectAccessCase& accessCas
     // We *always* know that the proxy function, if non-null, is a cell.
     jit.move(CCallHelpers::TrustedImm32(JSValue::CellTag), BaselineJITRegisters::Call::calleeJSR.tagGPR());
 #endif
-    auto [slowCase, dispatchLabel] = CallLinkInfo::emitFastPath(jit, callLinkInfo);
+    auto [slowCases, dispatchLabel] = CallLinkInfo::emitFastPath(jit, callLinkInfo);
     auto doneLocation = jit.label();
-
     if (accessCase.m_type != AccessCase::ProxyObjectStore)
         jit.setupResults(valueRegs);
-
-    if (!slowCase.empty()) {
-        auto done = jit.jump();
-
-        slowCase.link(&jit);
-        CallLinkInfo::emitSlowPath(vm, jit, callLinkInfo);
-
-        if (accessCase.m_type != AccessCase::ProxyObjectStore)
-            jit.setupResults(valueRegs);
-
-        done.link(&jit);
-    }
 
     if (codeBlock->useDataIC()) {
         jit.loadPtr(CCallHelpers::Address(GPRInfo::jitDataRegister, BaselineJITData::offsetOfStackOffset()), m_scratchGPR);
