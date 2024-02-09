@@ -62,6 +62,24 @@ public:
     }
 
 private:
+    static constexpr auto maxStringLengthForCache = 36;
+    static constexpr auto capacity = 512;
+
+    struct AtomStringCacheSlot {
+        UChar m_buffer[maxStringLengthForCache];
+        UChar m_length { 0 };
+        AtomString m_data;
+    };
+
+    struct QualifiedNameCacheSlot {
+        UChar m_buffer[maxStringLengthForCache];
+        UChar m_length { 0 };
+        RefPtr<QualifiedName::QualifiedNameImpl> m_data;
+    };
+
+    using AtomStringCache = std::array<AtomStringCacheSlot, capacity>;
+    using QualifiedNameCache = std::array<QualifiedNameCacheSlot, capacity>;
+
     template<typename CharacterType>
     ALWAYS_INLINE static AtomString makeAtomString(std::span<const CharacterType> string)
     {
@@ -75,13 +93,18 @@ private:
         auto firstCharacter = string[0];
         auto lastCharacter = string[length - 1];
         auto& slot = atomStringCacheSlot(firstCharacter, lastCharacter, length);
-        if (!equal(slot.impl(), string.data(), length)) {
+        if (UNLIKELY(slot.m_length != length || !equal(slot.m_buffer, string.data(), length))) {
             AtomString result(string.data(), length);
-            slot = result;
+            if constexpr (sizeof(CharacterType) == 1)
+                WTF::copyElements(bitwise_cast<uint16_t*>(slot.m_buffer), bitwise_cast<const uint8_t*>(string.data()), length);
+            else
+                WTF::copyElements(bitwise_cast<uint16_t*>(slot.m_buffer), bitwise_cast<const uint16_t*>(string.data()), length);
+            slot.m_length = length;
+            slot.m_data = result;
             return result;
         }
 
-        return slot;
+        return slot.m_data;
     }
 
     template<typename CharacterType>
@@ -97,13 +120,18 @@ private:
         auto firstCharacter = string[0];
         auto lastCharacter = string[length - 1];
         auto& slot = qualifiedNameCacheSlot(firstCharacter, lastCharacter, length);
-        if (!slot || !equal(slot->m_localName.impl(), string.data(), length)) {
+        if (UNLIKELY(slot.m_length != length || !equal(slot.m_buffer, string.data(), length))) {
             QualifiedName result(nullAtom(), AtomString(string.data(), length), nullAtom());
-            slot = result.impl();
+            if constexpr (sizeof(CharacterType) == 1)
+                WTF::copyElements(bitwise_cast<uint16_t*>(slot.m_buffer), bitwise_cast<const uint8_t*>(string.data()), length);
+            else
+                WTF::copyElements(bitwise_cast<uint16_t*>(slot.m_buffer), bitwise_cast<const uint16_t*>(string.data()), length);
+            slot.m_length = length;
+            slot.m_data = result.impl();
             return result;
         }
 
-        return *slot;
+        return *slot.m_data;
     }
 
     ALWAYS_INLINE static size_t slotIndex(UChar firstCharacter, UChar lastCharacter, UChar length)
@@ -114,23 +142,17 @@ private:
         return (hash + (hash >> 6)) % capacity;
     }
 
-    ALWAYS_INLINE static AtomString& atomStringCacheSlot(UChar firstCharacter, UChar lastCharacter, UChar length)
+    ALWAYS_INLINE static AtomStringCacheSlot& atomStringCacheSlot(UChar firstCharacter, UChar lastCharacter, UChar length)
     {
         auto index = slotIndex(firstCharacter, lastCharacter, length);
         return atomStringCache()[index];
     }
 
-    ALWAYS_INLINE static RefPtr<QualifiedName::QualifiedNameImpl>& qualifiedNameCacheSlot(UChar firstCharacter, UChar lastCharacter, UChar length)
+    ALWAYS_INLINE static QualifiedNameCacheSlot& qualifiedNameCacheSlot(UChar firstCharacter, UChar lastCharacter, UChar length)
     {
         auto index = slotIndex(firstCharacter, lastCharacter, length);
         return qualifiedNameCache()[index];
     }
-
-    static constexpr auto maxStringLengthForCache = 36;
-    static constexpr auto capacity = 512;
-
-    using AtomStringCache = std::array<AtomString, capacity>;
-    using QualifiedNameCache = std::array<RefPtr<QualifiedName::QualifiedNameImpl>, capacity>;
 
     static AtomStringCache& atomStringCache();
     static QualifiedNameCache& qualifiedNameCache();
