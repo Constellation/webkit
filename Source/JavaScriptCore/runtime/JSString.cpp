@@ -86,7 +86,7 @@ void JSString::dumpToStream(const JSCell* cell, PrintStream& out)
 
 bool JSString::equalSlowCase(JSGlobalObject* globalObject, JSString* other) const
 {
-    return equalInline(globalObject, other);
+    return equalSlowCaseInline(globalObject, other);
 }
 
 size_t JSString::estimatedSize(JSCell* cell, VM& vm)

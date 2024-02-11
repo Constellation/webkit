@@ -264,6 +264,7 @@ protected:
     friend class JSCell;
 
     JS_EXPORT_PRIVATE bool equalSlowCase(JSGlobalObject*, JSString* other) const;
+    ALWAYS_INLINE bool equalSlowCaseInline(JSGlobalObject*, JSString* other) const;
     bool isSubstring() const;
 
     uintptr_t fiberConcurrently() const { return m_fiber; }

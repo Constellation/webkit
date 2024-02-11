@@ -45,30 +45,60 @@ ALWAYS_INLINE void JSRopeString::destroy(JSCell* cell)
     string->valueInternal().~String();
 }
 
-bool JSString::equal(JSGlobalObject* globalObject, JSString* other) const
-{
-    if (isRope() || other->isRope())
-        return equalSlowCase(globalObject, other);
-    return WTF::equal(*valueInternal().impl(), *other->valueInternal().impl());
-}
-
-ALWAYS_INLINE bool JSString::equalInline(JSGlobalObject* globalObject, JSString* other) const
+bool JSString::equalSlowCaseInline(JSGlobalObject* globalObject, JSString* other) const
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    unsigned length = this->length();
-    if (length != other->length())
-        return false;
+    ASSERT(this->length() == other->length());
 
     auto str1 = unsafeView(globalObject);
     RETURN_IF_EXCEPTION(scope, false);
     auto str2 = other->unsafeView(globalObject);
     RETURN_IF_EXCEPTION(scope, false);
 
+    if (!isRope() && !other->isRope()) {
+        auto* lhs = valueInternal().impl();
+        auto* rhs = other->valueInternal().impl();
+        if (lhs->isAtom() && rhs->isAtom())
+            return lhs == rhs;
+    }
+
     ensureStillAliveHere(this);
     ensureStillAliveHere(other);
-    return WTF::equal(str1, str2, length);
+    return WTF::equal(str1, str2, str1.length());
+}
+
+bool JSString::equal(JSGlobalObject* globalObject, JSString* other) const
+{
+    unsigned length = this->length();
+    if (length != other->length())
+        return false;
+
+    if (isRope() || other->isRope())
+        return equalSlowCase(globalObject, other);
+
+    auto* lhs = valueInternal().impl();
+    auto* rhs = other->valueInternal().impl();
+    if (lhs->isAtom() && rhs->isAtom())
+        return lhs == rhs;
+    return WTF::equal(*lhs, *rhs);
+}
+
+ALWAYS_INLINE bool JSString::equalInline(JSGlobalObject* globalObject, JSString* other) const
+{
+    unsigned length = this->length();
+    if (length != other->length())
+        return false;
+
+    if (isRope() || other->isRope())
+        return equalSlowCaseInline(globalObject, other);
+
+    auto* lhs = valueInternal().impl();
+    auto* rhs = other->valueInternal().impl();
+    if (lhs->isAtom() && rhs->isAtom())
+        return lhs == rhs;
+    return WTF::equal(*lhs, *rhs);
 }
 
 template<typename StringType>
