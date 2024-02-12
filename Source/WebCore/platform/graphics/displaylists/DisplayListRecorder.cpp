@@ -500,6 +500,10 @@ void Recorder::fillRect(const FloatRect& rect, const Color& color, CompositeOper
 
 void Recorder::fillRoundedRect(const FloatRoundedRect& rect, const Color& color, BlendMode blendMode)
 {
+    if (!rect.isRounded()) {
+        fillRect(rect.rect(), color, compositeOperation(), blendMode);
+        return;
+    }
     appendStateChangeItemIfNecessary();
     recordFillRoundedRect(rect, color, blendMode);
 }
@@ -646,18 +650,46 @@ void Recorder::clipOut(const FloatRect& rect)
 
 void Recorder::clipOutRoundedRect(const FloatRoundedRect& rect)
 {
+    if (!rect.isRounded()) {
+        clipOut(rect.rect());
+        return;
+    }
     appendStateChangeItemIfNecessary(); // Conservative: we do not know if the clip application might use state such as antialiasing.
     recordClipOutRoundedRect(rect);
 }
 
 void Recorder::clipOut(const Path& path)
 {
+    if (auto segment = path.singleSegment()) {
+        if (auto* rect = std::get_if<PathRect>(&segment->data())) {
+            clipOut(rect->rect);
+            return;
+        } else if (auto* rect = std::get_if<PathRoundedRect>(&segment->data())) {
+            if (rect->strategy == PathRoundedRect::Strategy::PreferNative) {
+                clipOutRoundedRect(rect->roundedRect);
+                return;
+            }
+        }
+    }
     appendStateChangeItemIfNecessary(); // Conservative: we do not know if the clip application might use state such as antialiasing.
     recordClipOutToPath(path);
 }
 
 void Recorder::clipPath(const Path& path, WindRule windRule)
 {
+    if (windRule == WindRule::NonZero) {
+        if (auto segment = path.singleSegment()) {
+            if (auto* rect = std::get_if<PathRect>(&segment->data())) {
+                clip(rect->rect);
+                return;
+            } else if (auto* rect = std::get_if<PathRoundedRect>(&segment->data())) {
+                if (rect->strategy == PathRoundedRect::Strategy::PreferNative) {
+                    clipRoundedRect(rect->roundedRect);
+                    return;
+                }
+            }
+        }
+    }
     appendStateChangeItemIfNecessary(); // Conservative: we do not know if the clip application might use state such as antialiasing.
     currentState().clipBounds.intersect(currentState().ctm.mapRect(path.fastBoundingRect()));
     recordClipPath(path, windRule);
