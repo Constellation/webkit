@@ -160,7 +160,7 @@ void ReportingScope::generateTestReport(String&& message, String&& group)
     RefPtr document = dynamicDowncast<Document>(scriptExecutionContext());
     if (document) {
         testReportURL = document->url();
-        reportURL = testReportURL.strippedForUseAsReferrer();
+        reportURL = std::get<0>(testReportURL.strippedForUseAsReferrer());
     }
 
     auto testReportBody = TestReportBody::create(WTFMove(message));

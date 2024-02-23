@@ -170,7 +170,7 @@ void CrossOriginPreflightChecker::doPreflight(DocumentThreadableLoader& loader, 
     }
 
     // FIXME: Ideally, we should ask platformLoadResourceSynchronously to set ResourceResponse isRedirected and use it here.
-    bool isRedirect = preflightRequest.url().strippedForUseAsReferrer() != response.url().strippedForUseAsReferrer();
+    bool isRedirect = std::get<0>(preflightRequest.url().strippedForUseAsReferrer()) != std::get<0>(response.url().strippedForUseAsReferrer());
     if (isRedirect || !response.isSuccessful()) {
         auto errorMessage = makeString("Preflight response is not successful. Status code: ", response.httpStatusCode());
         loader.protectedDocument()->addConsoleMessage(MessageSource::Security, MessageLevel::Error, errorMessage);

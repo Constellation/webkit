@@ -171,6 +171,7 @@ public:
     ReferrerPolicy effectiveReferrerPolicy() const;
     String referrer() const;
     WEBCORE_EXPORT String outgoingReferrer() const;
+    WEBCORE_EXPORT URL outgoingReferrerURL();
     String outgoingOrigin() const;
 
     WEBCORE_EXPORT DocumentLoader* activeDocumentLoader() const;
@@ -491,6 +492,7 @@ private:
     bool m_provisionalLoadHappeningInAnotherProcess { false };
 
     String m_outgoingReferrer;
+    URL m_outgoingReferrerURL;
 
     bool m_isExecutingJavaScriptFormAction { false };
 

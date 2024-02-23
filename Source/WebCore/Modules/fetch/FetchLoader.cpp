@@ -113,7 +113,7 @@ void FetchLoader::start(ScriptExecutionContext& context, const FetchRequest& req
         options.referrerPolicy = ReferrerPolicy::NoReferrer;
         referrer = String();
     } else
-        referrer = (referrer == "client"_s) ? context.url().strippedForUseAsReferrer() : URL(context.url(), referrer).strippedForUseAsReferrer();
+        referrer = std::get<0>((referrer == "client"_s) ? context.url().strippedForUseAsReferrer() : URL(context.url(), referrer).strippedForUseAsReferrer());
     if (options.referrerPolicy == ReferrerPolicy::EmptyString)
         options.referrerPolicy = context.referrerPolicy();
 

@@ -117,8 +117,8 @@ public:
     WTF_EXPORT_PRIVATE static URL fakeURLWithRelativePart(StringView);
     WTF_EXPORT_PRIVATE static URL fileURLWithFileSystemPath(StringView);
 
-    WTF_EXPORT_PRIVATE String strippedForUseAsReferrer() const;
-    WTF_EXPORT_PRIVATE String strippedForUseAsReferrerWithExplicitPort() const;
+    WTF_EXPORT_PRIVATE std::tuple<String, bool> strippedForUseAsReferrer() const;
+    WTF_EXPORT_PRIVATE std::tuple<String, bool> strippedForUseAsReferrerWithExplicitPort() const;
 
     // Similar to strippedForUseAsReferrer except we also remove the query component.
     WTF_EXPORT_PRIVATE String strippedForUseAsReport() const;
