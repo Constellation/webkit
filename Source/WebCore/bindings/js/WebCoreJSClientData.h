@@ -102,7 +102,7 @@ private:
 
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(JSVMClientData);
 
-class JSVMClientData : public JSC::VM::ClientData {
+class JSVMClientData final : public JSC::VM::ClientData {
     WTF_MAKE_NONCOPYABLE(JSVMClientData);
     WTF_MAKE_FAST_ALLOCATED_WITH_HEAP_IDENTIFIER(JSVMClientData);
     friend class VMWorldIterator;
@@ -110,7 +110,7 @@ class JSVMClientData : public JSC::VM::ClientData {
 public:
     explicit JSVMClientData(JSC::VM&);
 
-    virtual ~JSVMClientData();
+    ~JSVMClientData() final;
     
     WEBCORE_EXPORT static void initNormalWorld(JSC::VM*, WorkerThreadType);
 
@@ -130,7 +130,9 @@ public:
         m_worldSet.remove(&world);
     }
 
-    virtual String overrideSourceURL(const JSC::StackFrame&, const String& originalSourceURL) const;
+    String overrideSourceURL(const JSC::StackFrame&, const String& originalSourceURL) const final;
+
+    void finalizeUnconditionalFinalizers(JSC::VM&, JSC::CollectionScope) final;
 
     JSHeapData& heapData() { return *m_heapData; }
 

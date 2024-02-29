@@ -3275,6 +3275,11 @@ sub GenerateHeader
     if (NeedsImplementationClass($interface)) {
         push(@headerContent, "    static void analyzeHeap(JSCell*, JSC::HeapAnalyzer&);\n");
     }
+
+    if ($interface->extendedAttributes->{JSCustomUnconditionalFinalizer}) {
+        push(@headerContent, "    void finalizeUnconditionally(JSC::VM&, JSC::CollectionScope);\n");
+    }
+
     
     if ($numCustomAttributes > 0) {
         push(@headerContent, "\n    // Custom attributes\n");

@@ -181,4 +181,10 @@ void CustomElementRegistry::visitJSCustomElementInterfaces(Visitor& visitor) con
 template void CustomElementRegistry::visitJSCustomElementInterfaces(JSC::AbstractSlotVisitor&) const;
 template void CustomElementRegistry::visitJSCustomElementInterfaces(JSC::SlotVisitor&) const;
 
+void CustomElementRegistry::finalizeUnconditionally(JSC::VM& vm, JSC::CollectionScope collectionScope)
+{
+    for (const auto& iterator : m_constructorMap)
+        iterator.value->finalizeUnconditionally(vm, collectionScope);
+}
+
 }

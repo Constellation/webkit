@@ -287,6 +287,9 @@
         "JSCustomToNativeObject": {
             "contextsAllowed": ["interface"]
         },
+        "JSCustomUnconditionalFinalizer": {
+            "contextsAllowed": ["interface"]
+        },
         "JSGenerateToJSObject": {
             "contextsAllowed": ["interface", "dictionary", "callback-function"]
         },

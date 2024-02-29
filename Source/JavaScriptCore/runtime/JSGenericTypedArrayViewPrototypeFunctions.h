@@ -819,7 +819,7 @@ static ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSortImpl(VM& v
                 return { };
             }
 
-            JSValue jsResult = cachedCall.call();
+            JSValue jsResult = cachedCall.call(vm);
             RETURN_IF_EXCEPTION(scope, { });
 
             if (LIKELY(jsResult.isInt32()))

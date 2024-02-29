@@ -4116,7 +4116,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCachedCallFromCPP, (JSGlobalObject* globalObjec
         return JSValue::encode(jsUndefined());
 
     for (int32_t i = 0; i < count; ++i) {
-        cachedCall.call();
+        cachedCall.call(vm);
         RETURN_IF_EXCEPTION(scope, { });
     }
 

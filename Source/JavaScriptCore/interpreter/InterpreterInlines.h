@@ -114,7 +114,7 @@ ALWAYS_INLINE JSValue Interpreter::executeCachedCall(CachedCall& cachedCall)
 
     if (UNLIKELY(!cachedCall.m_addressForCall)) {
         DeferTraps deferTraps(vm); // We can't jettison this code if we're about to run it.
-        cachedCall.relink();
+        cachedCall.relink(vm);
         RETURN_IF_EXCEPTION(throwScope, throwScope.exception());
     }
 

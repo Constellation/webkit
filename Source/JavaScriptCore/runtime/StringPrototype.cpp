@@ -513,7 +513,7 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearchWithCache(VM& vm, JSGloba
             return nullptr;
         }
 
-        JSValue jsResult = cachedCall.call();
+        JSValue jsResult = cachedCall.call(vm);
         RETURN_IF_EXCEPTION(scope, nullptr);
         auto string = jsResult.toWTFString(globalObject);
         RETURN_IF_EXCEPTION(scope, nullptr);
@@ -633,7 +633,7 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearch(
                 return nullptr;
             }
 
-            JSValue jsResult = cachedCall.call();
+            JSValue jsResult = cachedCall.call(vm);
             RETURN_IF_EXCEPTION(scope, nullptr);
             replacements.append(jsResult.toWTFString(globalObject));
             RETURN_IF_EXCEPTION(scope, nullptr);

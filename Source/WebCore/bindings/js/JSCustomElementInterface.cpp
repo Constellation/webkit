@@ -439,4 +439,8 @@ void JSCustomElementInterface::visitJSFunctions(Visitor& visitor) const
 template void JSCustomElementInterface::visitJSFunctions(JSC::AbstractSlotVisitor&) const;
 template void JSCustomElementInterface::visitJSFunctions(JSC::SlotVisitor&) const;
 
+void JSCustomElementInterface::finalizeUnconditionally(JSC::VM&, JSC::CollectionScope)
+{
+}
+
 } // namespace WebCore
