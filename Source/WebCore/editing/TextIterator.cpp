@@ -112,7 +112,7 @@ private:
     bool isWordEndMatch(size_t start, size_t length) const;
 
     const String m_target;
-    const StringView::UpconvertedCharacters m_targetCharacters;
+    const StringView::UpconvertedCharacters<32> m_targetCharacters;
     FindOptions m_options;
 
     Vector<UChar> m_buffer;

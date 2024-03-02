@@ -133,8 +133,11 @@ public:
     template<typename Func>
     Expected<std::invoke_result_t<Func, std::span<const char>>, UTF8ConversionError> tryGetUTF8(const Func&, ConversionMode = LenientConversion) const;
 
+    template<size_t N>
     class UpconvertedCharacters;
-    UpconvertedCharacters upconvertedCharacters() const;
+
+    template<size_t N = 32>
+    UpconvertedCharacters<N> upconvertedCharacters() const;
 
     template<typename CharacterType> void getCharacters(CharacterType*) const;
     template<typename CharacterType> void getCharacters8(CharacterType*) const;
@@ -511,6 +514,7 @@ inline bool StringView::containsOnlyASCII() const
     return charactersAreAllASCII(characters16(), length());
 }
 
+template<size_t N>
 class StringView::UpconvertedCharacters {
     WTF_MAKE_FAST_ALLOCATED;
 public:
@@ -518,13 +522,14 @@ public:
     operator const UChar*() const { return m_characters; }
     const UChar* get() const { return m_characters; }
 private:
-    Vector<UChar, 32> m_upconvertedCharacters;
+    Vector<UChar, N> m_upconvertedCharacters;
     const UChar* m_characters;
 };
 
-inline StringView::UpconvertedCharacters StringView::upconvertedCharacters() const
+template<size_t N>
+inline StringView::UpconvertedCharacters<N> StringView::upconvertedCharacters() const
 {
-    return UpconvertedCharacters(*this);
+    return UpconvertedCharacters<N>(*this);
 }
 
 inline bool StringView::isNull() const
@@ -631,7 +636,8 @@ template<typename CharacterType> inline void StringView::getCharacters(Character
         getCharacters16(destination);
 }
 
-inline StringView::UpconvertedCharacters::UpconvertedCharacters(StringView string)
+template<size_t N>
+inline StringView::UpconvertedCharacters<N>::UpconvertedCharacters(StringView string)
 {
     if (!string.is8Bit()) {
         m_characters = string.characters16();

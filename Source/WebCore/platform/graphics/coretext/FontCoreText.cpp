@@ -596,8 +596,8 @@ GlyphBufferAdvance Font::applyTransforms(GlyphBuffer& glyphBuffer, unsigned begi
     };
 
     auto substring = text.substring(beginningStringIndex);
-    auto upconvertedCharacters = substring.upconvertedCharacters();
-    auto localeString = locale.isNull() ? nullptr : LocaleCocoa::canonicalLanguageIdentifierFromString(locale).string().createCFString();
+    auto upconvertedCharacters = substring.upconvertedCharacters<1024>();
+    auto localeString = locale.isNull() ? nullptr : LocaleCocoa::canonicalLanguageIdentifierFromString(locale);
     auto numberOfInputGlyphs = glyphBuffer.size() - beginningGlyphIndex;
     // FIXME: Enable kerning for single glyphs when rdar://82195405 is fixed
     CTFontShapeOptions options = kCTFontShapeWithClusterComposition
