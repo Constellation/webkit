@@ -278,6 +278,15 @@ bool CSSValueContainingVector::customTraverseSubresources(const Function<bool(co
     return false;
 }
 
+bool CSSValueContainingVector::customMayDependOnBaseURL() const
+{
+    for (auto& value : *this) {
+        if (const_cast<CSSValue&>(value).mayDependOnBaseURL())
+            return true;
+    }
+    return false;
+}
+
 void CSSValueContainingVector::customSetReplacementURLForSubresources(const HashMap<String, String>& replacementURLStrings)
 {
     for (auto& value : *this)

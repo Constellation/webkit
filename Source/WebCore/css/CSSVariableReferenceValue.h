@@ -68,6 +68,8 @@ public:
 
     template<typename CacheFunction> bool resolveAndCacheValue(Style::BuilderState&, CacheFunction&&) const;
 
+    bool customMayDependOnBaseURL() const { return true; }
+
 private:
     explicit CSSVariableReferenceValue(Ref<CSSVariableData>&&);
 

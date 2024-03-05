@@ -107,6 +107,8 @@ public:
 
     Ref<const CSSVariableData> asVariableData() const;
 
+    bool customMayDependOnBaseURL() const;
+
 private:
     CSSCustomPropertyValue(const AtomString& name, VariantValue&& value)
         : CSSValue(CustomPropertyClass)

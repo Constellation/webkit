@@ -137,6 +137,15 @@ bool StyleSheetContents::isCacheable() const
     return true;
 }
 
+bool StyleSheetContents::isCacheableAndNoBaseURLDependency() const
+{
+    if (!isCacheable())
+        return false;
+    if (mayDependOnBaseURL())
+        return false;
+    return true;
+}
+
 void StyleSheetContents::parserAppendRule(Ref<StyleRuleBase>&& rule)
 {
     ASSERT(!rule->isCharsetRule());
@@ -589,6 +598,43 @@ bool StyleSheetContents::isLoadingSubresources() const
 {
     return traverseSubresources([](const CachedResource& resource) {
         return resource.isLoading();
+    });
+}
+
+bool StyleSheetContents::mayDependOnBaseURL() const
+{
+    return traverseRules([&](const StyleRuleBase& rule) -> bool {
+        switch (rule.type()) {
+        case StyleRuleType::Style:
+            return uncheckedDowncast<StyleRule>(rule).properties().mayDependOnBaseURL();
+        case StyleRuleType::StyleWithNesting:
+            return uncheckedDowncast<StyleRuleWithNesting>(rule).properties().mayDependOnBaseURL();
+        case StyleRuleType::FontFace:
+            return uncheckedDowncast<StyleRuleFontFace>(rule).properties().mayDependOnBaseURL();
+        case StyleRuleType::Import:
+        case StyleRuleType::CounterStyle:
+        case StyleRuleType::Media:
+        case StyleRuleType::Page:
+        case StyleRuleType::Keyframes:
+        case StyleRuleType::Namespace:
+        case StyleRuleType::Unknown:
+        case StyleRuleType::Charset:
+        case StyleRuleType::Keyframe:
+        case StyleRuleType::Supports:
+        case StyleRuleType::LayerBlock:
+        case StyleRuleType::LayerStatement:
+        case StyleRuleType::Container:
+        case StyleRuleType::FontFeatureValues:
+        case StyleRuleType::FontFeatureValuesBlock:
+        case StyleRuleType::FontPaletteValues:
+        case StyleRuleType::Margin:
+        case StyleRuleType::Property:
+        case StyleRuleType::Scope:
+        case StyleRuleType::StartingStyle:
+            return false;
+        };
+        ASSERT_NOT_REACHED();
+        return false;
     });
 }
 
