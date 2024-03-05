@@ -349,6 +349,15 @@ bool StyleProperties::traverseSubresources(const Function<bool(const CachedResou
     return false;
 }
 
+bool StyleProperties::mayDependOnBaseURL() const
+{
+    for (auto property : *this) {
+        if (property.value()->mayDependOnBaseURL())
+            return true;
+    }
+    return false;
+}
+
 void StyleProperties::setReplacementURLForSubresources(const HashMap<String, String>& replacementURLStrings)
 {
     for (auto property : *this)

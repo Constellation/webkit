@@ -271,6 +271,13 @@ void CSSValue::clearReplacementURLForSubresources()
     });
 }
 
+bool CSSValue::mayDependOnBaseURL() const
+{
+    return visitDerived([&](auto& value) {
+        return value.customMayDependOnBaseURL();
+    });
+}
+
 ComputedStyleDependencies CSSValue::computedStyleDependencies() const
 {
     ComputedStyleDependencies dependencies;

@@ -155,6 +155,8 @@ public:
     void setReplacementURLForSubresources(const HashMap<String, String>&);
     void clearReplacementURLForSubresources();
 
+    bool mayDependOnBaseURL() const;
+
     // What properties does this value rely on (eg, font-size for em units)
     ComputedStyleDependencies computedStyleDependencies() const;
     void collectComputedStyleDependencies(ComputedStyleDependencies&) const;
@@ -196,6 +198,7 @@ public:
 
     void customSetReplacementURLForSubresources(const HashMap<String, String>&) { }
     void customClearReplacementURLForSubresources() { }
+    bool customMayDependOnBaseURL() const { return false; }
 
 protected:
     static const size_t ClassTypeBits = 7;

@@ -192,4 +192,9 @@ bool CSSCustomPropertyValue::isAnimatable() const
     return std::holds_alternative<SyntaxValue>(m_value) || std::holds_alternative<SyntaxValueList>(m_value);
 }
 
+bool CSSCustomPropertyValue::customMayDependOnBaseURL() const
+{
+    return false;
+}
+
 }
