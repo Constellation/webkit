@@ -39,8 +39,8 @@ public:
 
     static JSWeakObjectRef* create(VM& vm, Structure* structure, JSCell* target)
     {
-        JSWeakObjectRef* instance = new (NotNull, allocateCell<JSWeakObjectRef>(vm)) JSWeakObjectRef(vm, structure);
-        instance->finishCreation(vm, target);
+        JSWeakObjectRef* instance = new (NotNull, allocateCell<JSWeakObjectRef>(vm)) JSWeakObjectRef(vm, structure, target);
+        instance->finishCreation(vm);
         return instance;
     }
 
@@ -65,12 +65,9 @@ public:
     DECLARE_VISIT_CHILDREN;
 
 private:
-    JSWeakObjectRef(VM& vm, Structure* structure)
-        : Base(vm, structure)
-    {
-    }
+    JS_EXPORT_PRIVATE JSWeakObjectRef(VM&, Structure*, JSCell*);
 
-    JS_EXPORT_PRIVATE void finishCreation(VM&, JSCell* value);
+    DECLARE_DEFAULT_FINISH_CREATION;
 
     uintptr_t m_lastAccessVersion;
     WriteBarrier<JSCell> m_value;

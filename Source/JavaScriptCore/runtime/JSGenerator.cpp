@@ -48,15 +48,10 @@ Structure* JSGenerator::createStructure(VM& vm, JSGlobalObject* globalObject, JS
 JSGenerator::JSGenerator(VM& vm, Structure* structure)
     : Base(vm, structure)
 {
-}
-
-void JSGenerator::finishCreation(VM& vm)
-{
-    Base::finishCreation(vm);
     auto values = initialValues();
     ASSERT(values.size() == numberOfInternalFields);
     for (unsigned index = 0; index < values.size(); ++index)
-        internalField(index).set(vm, this, values[index]);
+        internalField(index).setStartingValue(values[index]);
 }
 
 template<typename Visitor>

@@ -34,12 +34,21 @@ namespace JSC {
 
 const ClassInfo JSStringIterator::s_info = { "String Iterator"_s, &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(JSStringIterator) };
 
-void JSStringIterator::finishCreation(VM& vm, JSString* iteratedString)
+JSStringIterator::JSStringIterator(VM& vm, Structure* structure)
+    : Base(vm, structure)
 {
-    Base::finishCreation(vm);
-    ASSERT(inherits(info()));
-    internalField(Field::Index).set(vm, this, jsNumber(0));
-    internalField(Field::IteratedString).set(vm, this, iteratedString);
+    auto values = initialValues();
+    for (unsigned index = 0; index < values.size(); ++index)
+        Base::internalField(index).setStartingValue(values[index]);
+}
+
+JSStringIterator* JSStringIterator::create(VM& vm, Structure* structure, JSString* iteratedString)
+{
+    JSStringIterator* instance = new (NotNull, allocateCell<JSStringIterator>(vm)) JSStringIterator(vm, structure);
+    instance->finishCreation(vm);
+    instance->internalField(Field::Index).set(vm, instance, jsNumber(0));
+    instance->internalField(Field::IteratedString).set(vm, instance, iteratedString);
+    return instance;
 }
 
 JSStringIterator* JSStringIterator::clone(JSGlobalObject* globalObject)

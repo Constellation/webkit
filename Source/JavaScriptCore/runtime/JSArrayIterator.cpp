@@ -58,14 +58,9 @@ Structure* JSArrayIterator::createStructure(VM& vm, JSGlobalObject* globalObject
 JSArrayIterator::JSArrayIterator(VM& vm, Structure* structure)
     : Base(vm, structure)
 {
-}
-
-void JSArrayIterator::finishCreation(VM& vm)
-{
-    Base::finishCreation(vm);
     auto values = initialValues();
     for (unsigned index = 0; index < values.size(); ++index)
-        Base::internalField(index).set(vm, this, values[index]);
+        Base::internalField(index).setStartingValue(values[index]);
 }
 
 template<typename Visitor>

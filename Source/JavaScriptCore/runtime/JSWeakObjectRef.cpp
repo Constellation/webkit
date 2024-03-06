@@ -32,11 +32,11 @@ namespace JSC {
 
 const ClassInfo JSWeakObjectRef::s_info = { "WeakRef"_s, &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(JSWeakObjectRef) };
 
-void JSWeakObjectRef::finishCreation(VM& vm, JSCell* value)
+JSWeakObjectRef::JSWeakObjectRef(VM& vm, Structure* structure, JSCell* value)
+    : Base(vm, structure)
+    , m_lastAccessVersion(vm.currentWeakRefVersion())
+    , m_value(value, WriteBarrierEarlyInit)
 {
-    m_lastAccessVersion = vm.currentWeakRefVersion();
-    m_value.set(vm, this, value);
-    Base::finishCreation(vm);
 }
 
 template<typename Visitor>

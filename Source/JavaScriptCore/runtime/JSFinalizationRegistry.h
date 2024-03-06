@@ -62,7 +62,6 @@ public:
     JSObject* callback() const { return jsCast<JSObject*>(internalField(Field::Callback).get()); }
 
     static JSFinalizationRegistry* create(VM&, Structure*, JSObject* callback);
-    static JSFinalizationRegistry* createWithInitialValues(VM&, Structure*);
     static Structure* createStructure(VM&, JSGlobalObject*, JSValue prototype);
 
     void runFinalizationCleanup(JSGlobalObject*);
@@ -84,12 +83,9 @@ public:
     JS_EXPORT_PRIVATE size_t deadCount(const Locker<JSCellLock>&);
 
 private:
-    JSFinalizationRegistry(VM& vm, Structure* structure)
-        : Base(vm, structure)
-    {
-    }
+    JSFinalizationRegistry(VM&, Structure*, JSObject* callback);
 
-    JS_EXPORT_PRIVATE void finishCreation(VM&, JSGlobalObject*, JSObject* callback);
+    DECLARE_DEFAULT_FINISH_CREATION;
 
     struct Registration {
         JSCell* target;

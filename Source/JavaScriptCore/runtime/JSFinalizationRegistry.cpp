@@ -43,23 +43,23 @@ Structure* JSFinalizationRegistry::createStructure(VM& vm, JSGlobalObject* globa
 
 JSFinalizationRegistry* JSFinalizationRegistry::create(VM& vm, Structure* structure, JSObject* callback)
 {
-    JSFinalizationRegistry* instance = new (NotNull, allocateCell<JSFinalizationRegistry>(vm)) JSFinalizationRegistry(vm, structure);
-    instance->finishCreation(vm, structure->globalObject(), callback);
+    JSFinalizationRegistry* instance = new (NotNull, allocateCell<JSFinalizationRegistry>(vm)) JSFinalizationRegistry(vm, structure, callback);
+    instance->finishCreation(vm);
+    // Make sure we init the DOM wrapper for our document since it must be allocated before finalizeUnconditionally is called. finalizeUnconditionally,
+    // is called during the GC flip so no JS objects can be allocated there. This only works because we no longer weakly hold on to DOM wrappers.
+    auto* globalObject = structure->globalObject();
+    globalObject->globalObjectMethodTable()->currentScriptExecutionOwner(globalObject);
     return instance;
 }
 
-void JSFinalizationRegistry::finishCreation(VM& vm, JSGlobalObject* globalObject, JSObject* callback)
+JSFinalizationRegistry::JSFinalizationRegistry(VM& vm, Structure* structure, JSObject* callback)
+    : Base(vm, structure)
 {
-    Base::finishCreation(vm);
     ASSERT(callback->isCallable());
     auto values = initialValues();
     for (unsigned index = 0; index < values.size(); ++index)
-        Base::internalField(index).setWithoutWriteBarrier(values[index]);
-    internalField(Field::Callback).setWithoutWriteBarrier(callback);
-
-    // Make sure we init the DOM wrapper for our document since it must be allocated before finalizeUnconditionally is called. finalizeUnconditionally,
-    // is called during the GC flip so no JS objects can be allocated there. This only works because we no longer weakly hold on to DOM wrappers.
-    globalObject->globalObjectMethodTable()->currentScriptExecutionOwner(globalObject);
+        Base::internalField(index).setStartingValue(values[index]);
+    internalField(Field::Callback).setStartingValue(callback);
 }
 
 template<typename Visitor>

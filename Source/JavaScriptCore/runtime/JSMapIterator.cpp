@@ -34,6 +34,16 @@ namespace JSC {
 
 const ClassInfo JSMapIterator::s_info = { "Map Iterator"_s, &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(JSMapIterator) };
 
+JSMapIterator* JSMapIterator::create(VM& vm, Structure* structure, JSMap* iteratedObject, IterationKind kind)
+{
+    JSMapIterator* instance = new (NotNull, allocateCell<JSMapIterator>(vm)) JSMapIterator(vm, structure);
+    instance->finishCreation(vm);
+    instance->internalField(Field::MapBucket).set(vm, instance, iteratedObject->head());
+    instance->internalField(Field::IteratedObject).set(vm, instance, iteratedObject);
+    instance->internalField(Field::Kind).set(vm, instance, jsNumber(static_cast<int32_t>(kind)));
+    return instance;
+}
+
 JSMapIterator* JSMapIterator::createWithInitialValues(VM& vm, Structure* structure)
 {
     JSMapIterator* iterator = new (NotNull, allocateCell<JSMapIterator>(vm)) JSMapIterator(vm, structure);
@@ -41,20 +51,12 @@ JSMapIterator* JSMapIterator::createWithInitialValues(VM& vm, Structure* structu
     return iterator;
 }
 
-void JSMapIterator::finishCreation(VM& vm, JSMap* iteratedObject, IterationKind kind)
+JSMapIterator::JSMapIterator(VM& vm, Structure* structure)
+    : Base(vm, structure)
 {
-    Base::finishCreation(vm);
-    internalField(Field::MapBucket).set(vm, this, iteratedObject->head());
-    internalField(Field::IteratedObject).set(vm, this, iteratedObject);
-    internalField(Field::Kind).set(vm, this, jsNumber(static_cast<int32_t>(kind)));
-}
-
-void JSMapIterator::finishCreation(VM& vm)
-{
-    Base::finishCreation(vm);
     auto values = initialValues();
     for (unsigned index = 0; index < values.size(); ++index)
-        Base::internalField(index).set(vm, this, values[index]);
+        Base::internalField(index).setStartingValue(values[index]);
 }
 
 template<typename Visitor>

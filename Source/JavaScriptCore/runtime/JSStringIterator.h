@@ -66,12 +66,7 @@ public:
 
     inline static Structure* createStructure(VM&, JSGlobalObject*, JSValue);
 
-    static JSStringIterator* create(VM& vm, Structure* structure, JSString* iteratedString)
-    {
-        JSStringIterator* instance = new (NotNull, allocateCell<JSStringIterator>(vm)) JSStringIterator(vm, structure);
-        instance->finishCreation(vm, iteratedString);
-        return instance;
-    }
+    JS_EXPORT_PRIVATE static JSStringIterator* create(VM& vm, Structure* structure, JSString* iteratedString);
 
     JSValue iteratedString() const { return internalField(Field::IteratedString).get(); }
     JSValue index() const { return internalField(Field::Index).get(); }
@@ -80,12 +75,9 @@ public:
     DECLARE_VISIT_CHILDREN;
 
 private:
-    JSStringIterator(VM& vm, Structure* structure)
-        : Base(vm, structure)
-    {
-    }
+    JSStringIterator(VM&, Structure*);
 
-    void finishCreation(VM&, JSString* iteratedString);
+    DECLARE_DEFAULT_FINISH_CREATION;
 };
 
 } // namespace JSC

@@ -42,16 +42,14 @@ public:
 
     static DateInstance* create(VM& vm, Structure* structure, double date)
     {
-        DateInstance* instance = new (NotNull, allocateCell<DateInstance>(vm)) DateInstance(vm, structure);
-        instance->finishCreation(vm, date);
+        DateInstance* instance = new (NotNull, allocateCell<DateInstance>(vm)) DateInstance(vm, structure, date);
+        instance->finishCreation(vm);
         return instance;
     }
 
     static DateInstance* create(VM& vm, Structure* structure)
     {
-        DateInstance* instance = new (NotNull, allocateCell<DateInstance>(vm)) DateInstance(vm, structure);
-        instance->finishCreation(vm);
-        return instance;
+        return create(vm, structure, PNaN);
     }
 
     double internalNumber() const { return m_internalNumber; }
@@ -79,10 +77,9 @@ public:
     static ptrdiff_t offsetOfData() { return OBJECT_OFFSETOF(DateInstance, m_data); }
 
 private:
-    JS_EXPORT_PRIVATE DateInstance(VM&, Structure*);
+    JS_EXPORT_PRIVATE DateInstance(VM&, Structure*, double);
 
     DECLARE_DEFAULT_FINISH_CREATION;
-    JS_EXPORT_PRIVATE void finishCreation(VM&, double);
     JS_EXPORT_PRIVATE const GregorianDateTime* calculateGregorianDateTime(DateCache&) const;
     JS_EXPORT_PRIVATE const GregorianDateTime* calculateGregorianDateTimeUTC(DateCache&) const;
 

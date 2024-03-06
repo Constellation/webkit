@@ -82,7 +82,8 @@ public:
 
 private:
     JSArrayIterator(VM&, Structure*);
-    void finishCreation(VM&);
+
+    DECLARE_DEFAULT_FINISH_CREATION;
 };
 
 } // namespace JSC

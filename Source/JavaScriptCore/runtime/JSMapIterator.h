@@ -65,13 +65,7 @@ public:
 
     inline static Structure* createStructure(VM&, JSGlobalObject*, JSValue);
 
-    static JSMapIterator* create(VM& vm, Structure* structure, JSMap* iteratedObject, IterationKind kind)
-    {
-        JSMapIterator* instance = new (NotNull, allocateCell<JSMapIterator>(vm)) JSMapIterator(vm, structure);
-        instance->finishCreation(vm, iteratedObject, kind);
-        return instance;
-    }
-
+    JS_EXPORT_PRIVATE static JSMapIterator* create(VM&, Structure*, JSMap*, IterationKind);
     static JSMapIterator* createWithInitialValues(VM&, Structure*);
 
     ALWAYS_INLINE HashMapBucketType* advanceIter(VM& vm)
@@ -127,19 +121,18 @@ public:
     HashMapBucketType* iterator() const { return jsCast<HashMapBucketType*>(internalField(Field::MapBucket).get()); }
 
 private:
-    JSMapIterator(VM& vm, Structure* structure)
-        : Base(vm, structure)
-    { }
+    JSMapIterator(VM&, Structure*);
 
     void setIterator(VM& vm, HashMapBucketType* bucket)
     {
         internalField(Field::MapBucket).set(vm, this, bucket);
     }
 
-    JS_EXPORT_PRIVATE void finishCreation(VM&, JSMap*, IterationKind);
-    void finishCreation(VM&);
     JSValue createPair(JSGlobalObject*, JSValue, JSValue);
+
     DECLARE_VISIT_CHILDREN;
+
+    DECLARE_DEFAULT_FINISH_CREATION;
 };
 STATIC_ASSERT_IS_TRIVIALLY_DESTRUCTIBLE(JSMapIterator);
 

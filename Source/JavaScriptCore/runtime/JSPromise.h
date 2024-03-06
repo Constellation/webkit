@@ -103,7 +103,8 @@ public:
 
 protected:
     JSPromise(VM&, Structure*);
-    void finishCreation(VM&);
+
+    DECLARE_DEFAULT_FINISH_CREATION;
 
     uint32_t flags() const;
 };

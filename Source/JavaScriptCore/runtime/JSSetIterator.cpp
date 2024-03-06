@@ -41,20 +41,22 @@ JSSetIterator* JSSetIterator::createWithInitialValues(VM& vm, Structure* structu
     return iterator;
 }
 
-void JSSetIterator::finishCreation(VM& vm, JSSet* iteratedObject, IterationKind kind)
+JSSetIterator* JSSetIterator::create(VM& vm, Structure* structure, JSSet* iteratedObject, IterationKind kind)
 {
-    Base::finishCreation(vm);
-    internalField(Field::SetBucket).set(vm, this, iteratedObject->head());
-    internalField(Field::IteratedObject).set(vm, this, iteratedObject);
-    internalField(Field::Kind).set(vm, this, jsNumber(static_cast<int32_t>(kind)));
+    JSSetIterator* instance = new (NotNull, allocateCell<JSSetIterator>(vm)) JSSetIterator(vm, structure);
+    instance->finishCreation(vm);
+    instance->internalField(Field::SetBucket).set(vm, instance, iteratedObject->head());
+    instance->internalField(Field::IteratedObject).set(vm, instance, iteratedObject);
+    instance->internalField(Field::Kind).set(vm, instance, jsNumber(static_cast<int32_t>(kind)));
+    return instance;
 }
 
-void JSSetIterator::finishCreation(VM& vm)
+JSSetIterator::JSSetIterator(VM& vm, Structure* structure)
+    : Base(vm, structure)
 {
-    Base::finishCreation(vm);
     auto values = initialValues();
     for (unsigned index = 0; index < values.size(); ++index)
-        Base::internalField(index).set(vm, this, values[index]);
+        Base::internalField(index).setStartingValue(values[index]);
 }
 
 template<typename Visitor>

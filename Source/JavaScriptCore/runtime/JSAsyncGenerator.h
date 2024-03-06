@@ -99,7 +99,8 @@ public:
 
 private:
     JSAsyncGenerator(VM&, Structure*);
-    void finishCreation(VM&);
+
+    DECLARE_DEFAULT_FINISH_CREATION;
 };
 
 } // namespace JSC
