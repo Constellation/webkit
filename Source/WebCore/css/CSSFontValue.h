@@ -39,6 +39,39 @@ public:
 
     bool equals(const CSSFontValue&) const;
 
+    IterationStatus customVisitChildren(const Function<IterationStatus(CSSValue&)>& func) const
+    {
+        if (style) {
+            if (func(*style) == IterationStatus::Done)
+                return IterationStatus::Done;
+        }
+        if (variant) {
+            if (func(*variant) == IterationStatus::Done)
+                return IterationStatus::Done;
+        }
+        if (weight) {
+            if (func(*weight) == IterationStatus::Done)
+                return IterationStatus::Done;
+        }
+        if (stretch) {
+            if (func(*stretch) == IterationStatus::Done)
+                return IterationStatus::Done;
+        }
+        if (size) {
+            if (func(*size) == IterationStatus::Done)
+                return IterationStatus::Done;
+        }
+        if (lineHeight) {
+            if (func(*lineHeight) == IterationStatus::Done)
+                return IterationStatus::Done;
+        }
+        if (family) {
+            if (func(*family) == IterationStatus::Done)
+                return IterationStatus::Done;
+        }
+        return IterationStatus::Continue;
+    }
+
     RefPtr<CSSValue> style;
     RefPtr<CSSPrimitiveValue> variant;
     RefPtr<CSSPrimitiveValue> weight;

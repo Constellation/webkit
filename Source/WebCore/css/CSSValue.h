@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <wtf/IterationStatus.h>
 #include <wtf/Noncopyable.h>
 #include <wtf/RefPtr.h>
 #include <wtf/TypeCasts.h>
@@ -199,6 +200,8 @@ public:
     void customSetReplacementURLForSubresources(const HashMap<String, String>&) { }
     void customClearReplacementURLForSubresources() { }
     bool customMayDependOnBaseURL() const { return false; }
+
+    IterationStatus customVisitChildren(const Function<IterationStatus(CSSValue&)>&) const { return IterationStatus::Continue; }
 
 protected:
     static const size_t ClassTypeBits = 7;
