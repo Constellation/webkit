@@ -98,7 +98,6 @@ PolymorphicAccessJITStubRoutine::PolymorphicAccessJITStubRoutine(Type type, cons
 
 void PolymorphicAccessJITStubRoutine::observeZeroRefCountImpl()
 {
-    // FIXME: We think that this is not a great option (Right now, this is not used so we do not care). GC should proactively kill it instead.
     if (m_vm.m_sharedJITStubs)
         m_vm.m_sharedJITStubs->remove(this);
     Base::observeZeroRefCountImpl();
