@@ -29,6 +29,7 @@
 #if ENABLE(JIT)
 
 #include "AccessCase.h"
+#include "CacheableIdentifierInlines.h"
 #include "CodeBlock.h"
 #include "DFGCommonData.h"
 #include "Heap.h"
