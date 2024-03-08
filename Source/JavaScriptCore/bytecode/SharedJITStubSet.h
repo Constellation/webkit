@@ -136,7 +136,7 @@ public:
             m_stubs.remove(iter);
     }
 
-    PolymorphicAccessJITStubRoutine* find(const Searcher& searcher)
+    RefPtr<PolymorphicAccessJITStubRoutine> find(const Searcher& searcher)
     {
         auto entry = m_stubs.find<SharedJITStubSet::Searcher::Translator>(searcher);
         if (entry != m_stubs.end())
