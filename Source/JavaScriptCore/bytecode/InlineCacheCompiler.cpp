@@ -4251,6 +4251,8 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
                     return finishCodeGeneration(stub.releaseNonNull());
                 }
             } else if (isMegamorphicById(accessCase->m_type)) {
+                // FIXME: Right now, this is wrong. CacheableIdentifier in AccessCase is tied to CodeBlock etc. Thus, we cannot share.
+                // We should collect identifiers, and keep them alive in PolymorphicCallStubRoutine.
                 isMegamorphicByIdAccessCase = true;
                 FixedVector<RefPtr<AccessCase>> keys(cases.size());
                 keys[0] = accessCase;
