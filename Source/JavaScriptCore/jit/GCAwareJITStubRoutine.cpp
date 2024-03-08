@@ -104,13 +104,11 @@ void PolymorphicAccessJITStubRoutine::observeZeroRefCountImpl()
     Base::observeZeroRefCountImpl();
 }
 
-unsigned PolymorphicAccessJITStubRoutine::computeHash(const FixedVector<RefPtr<AccessCase>>& cases, const FixedVector<StructureID>& weakStructures)
+unsigned PolymorphicAccessJITStubRoutine::computeHash(const FixedVector<RefPtr<AccessCase>>& cases)
 {
     Hasher hasher;
     for (auto& key : cases)
         WTF::add(hasher, key->hash());
-    for (auto& structureID : weakStructures)
-        WTF::add(hasher, structureID.bits());
     return hasher.hash();
 }
 

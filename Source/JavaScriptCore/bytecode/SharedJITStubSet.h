@@ -36,19 +36,21 @@ class SharedJITStubSet {
 public:
     SharedJITStubSet() = default;
 
+    using StructureStubInfoKey = std::tuple<AccessType, bool, bool, bool, bool>;
+    using StatelessCacheKey = std::tuple<StructureStubInfoKey, AccessCase::AccessType>;
+
+    static StructureStubInfoKey stubInfoKey(const StructureStubInfo& stubInfo)
+    {
+        return std::tuple { stubInfo.accessType, static_cast<bool>(stubInfo.propertyIsInt32), static_cast<bool>(stubInfo.propertyIsString), static_cast<bool>(stubInfo.propertyIsSymbol), static_cast<bool>(stubInfo.prototypeIsKnownObject) };
+    }
+
     struct Hash {
         struct Key {
             Key() = default;
 
-            Key(GPRReg baseGPR, GPRReg valueGPR, GPRReg extraGPR, GPRReg extra2GPR, GPRReg stubInfoGPR, GPRReg arrayProfileGPR, ScalarRegisterSet usedRegisters, PolymorphicAccessJITStubRoutine* wrapped)
+            Key(StructureStubInfoKey stubInfoKey, PolymorphicAccessJITStubRoutine* wrapped)
                 : m_wrapped(wrapped)
-                , m_baseGPR(baseGPR)
-                , m_valueGPR(valueGPR)
-                , m_extraGPR(extraGPR)
-                , m_extra2GPR(extra2GPR)
-                , m_stubInfoGPR(stubInfoGPR)
-                , m_arrayProfileGPR(arrayProfileGPR)
-                , m_usedRegisters(usedRegisters)
+                , m_stubInfoKey(stubInfoKey)
             { }
 
             Key(WTF::HashTableDeletedValueType)
@@ -60,13 +62,7 @@ public:
             friend bool operator==(const Key&, const Key&) = default;
 
             PolymorphicAccessJITStubRoutine* m_wrapped { nullptr };
-            GPRReg m_baseGPR;
-            GPRReg m_valueGPR;
-            GPRReg m_extraGPR;
-            GPRReg m_extra2GPR;
-            GPRReg m_stubInfoGPR;
-            GPRReg m_arrayProfileGPR;
-            ScalarRegisterSet m_usedRegisters;
+            StructureStubInfoKey m_stubInfoKey { };
         };
 
         using KeyTraits = SimpleClassHashTraits<Key>;
@@ -90,18 +86,12 @@ public:
         struct Translator {
             static unsigned hash(const Searcher& searcher)
             {
-                return PolymorphicAccessJITStubRoutine::computeHash(searcher.m_cases, searcher.m_weakStructures);
+                return PolymorphicAccessJITStubRoutine::computeHash(searcher.m_cases);
             }
 
             static bool equal(const Hash::Key a, const Searcher& b)
             {
-                if (a.m_baseGPR == b.m_baseGPR
-                    && a.m_valueGPR == b.m_valueGPR
-                    && a.m_extraGPR == b.m_extraGPR
-                    && a.m_extra2GPR == b.m_extra2GPR
-                    && a.m_stubInfoGPR == b.m_stubInfoGPR
-                    && a.m_arrayProfileGPR == b.m_arrayProfileGPR
-                    && a.m_usedRegisters == b.m_usedRegisters) {
+                if (a.m_stubInfoKey == b.m_stubInfoKey) {
                     // FIXME: The ordering of cases does not matter for sharing capabilities.
                     // We can potentially increase success rate by making this comparison / hashing non ordering sensitive.
                     const auto& aCases = a.m_wrapped->cases();
@@ -112,29 +102,14 @@ public:
                         if (!AccessCase::canBeShared(*aCases[index], *bCases[index]))
                             return false;
                     }
-                    const auto& aWeak = a.m_wrapped->weakStructures();
-                    const auto& bWeak = b.m_weakStructures;
-                    if (aWeak.size() != bWeak.size())
-                        return false;
-                    for (unsigned i = 0, size = aWeak.size(); i < size; ++i) {
-                        if (aWeak[i] != bWeak[i])
-                            return false;
-                    }
                     return true;
                 }
                 return false;
             }
         };
 
-        GPRReg m_baseGPR;
-        GPRReg m_valueGPR;
-        GPRReg m_extraGPR;
-        GPRReg m_extra2GPR;
-        GPRReg m_stubInfoGPR;
-        GPRReg m_arrayProfileGPR;
-        ScalarRegisterSet m_usedRegisters;
+        StructureStubInfoKey m_stubInfoKey;
         const FixedVector<RefPtr<AccessCase>>& m_cases;
-        const FixedVector<StructureID>& m_weakStructures;
     };
 
     struct PointerTranslator {
@@ -168,8 +143,6 @@ public:
             return entry->m_wrapped;
         return nullptr;
     }
-
-    using StatelessCacheKey = std::tuple<AccessType, AccessCase::AccessType, bool, bool, bool, bool>;
 
     RefPtr<PolymorphicAccessJITStubRoutine> getStatelessStub(StatelessCacheKey) const;
     void setStatelessStub(StatelessCacheKey, Ref<PolymorphicAccessJITStubRoutine>);

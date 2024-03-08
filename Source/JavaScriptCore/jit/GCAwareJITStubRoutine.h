@@ -100,11 +100,11 @@ public:
     unsigned hash() const
     {
         if (!m_hash)
-            m_hash = computeHash(m_cases, m_weakStructures);
+            m_hash = computeHash(m_cases);
         return m_hash;
     }
 
-    static unsigned computeHash(const FixedVector<RefPtr<AccessCase>>&, const FixedVector<StructureID>&);
+    static unsigned computeHash(const FixedVector<RefPtr<AccessCase>>&);
 
 protected:
     void observeZeroRefCountImpl();

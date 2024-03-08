@@ -4121,9 +4121,9 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         auto& accessCase = cases.first();
         if (isStateless(accessCase->m_type) && useHandlerIC()) {
             ASSERT(codeBlock->useDataIC());
-            statelessType = std::tuple { m_stubInfo->accessType, accessCase->m_type, static_cast<bool>(m_stubInfo->propertyIsInt32), static_cast<bool>(m_stubInfo->propertyIsString), static_cast<bool>(m_stubInfo->propertyIsSymbol), static_cast<bool>(m_stubInfo->prototypeIsKnownObject) };
+            statelessType = std::tuple { SharedJITStubSet::stubInfoKey(*m_stubInfo), accessCase->m_type };
             if (auto stub = vm().m_sharedJITStubs->getStatelessStub(statelessType.value())) {
-                dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", std::get<0>(statelessType.value()), " / ", std::get<1>(statelessType.value()));
+                dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", std::get<0>(std::get<0>(statelessType.value())), " / ", std::get<1>(statelessType.value()));
                 return finishCodeGeneration(stub.releaseNonNull());
             }
         }
@@ -4456,15 +4456,8 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
     FixedVector<StructureID> weakStructures(WTFMove(m_weakStructures));
     if (codeBlock->useDataIC() && canBeShared) {
         SharedJITStubSet::Searcher searcher {
-            m_stubInfo->m_baseGPR,
-            m_stubInfo->m_valueGPR,
-            m_stubInfo->m_extraGPR,
-            m_stubInfo->m_extra2GPR,
-            m_stubInfo->m_stubInfoGPR,
-            m_stubInfo->m_arrayProfileGPR,
-            m_stubInfo->usedRegisters,
+            SharedJITStubSet::stubInfoKey(*m_stubInfo),
             keys,
-            weakStructures,
         };
         stub = vm().m_sharedJITStubs->find(searcher);
         if (stub) {
@@ -4498,13 +4491,13 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
 
     if (statelessType) {
         ASSERT(codeBlock->useDataIC());
-        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", std::get<0>(statelessType.value()), " / ", std::get<1>(statelessType.value()));
+        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", std::get<0>(std::get<0>(statelessType.value())), " / ", std::get<1>(statelessType.value()));
         vm().m_sharedJITStubs->setStatelessStub(statelessType.value(), *stub);
     }
 
     if (codeBlock->useDataIC()) {
         if (canBeShared)
-            vm().m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(m_stubInfo->m_baseGPR, m_stubInfo->m_valueGPR, m_stubInfo->m_extraGPR, m_stubInfo->m_extra2GPR, m_stubInfo->m_stubInfoGPR, m_stubInfo->m_arrayProfileGPR, m_stubInfo->usedRegisters, stub.get()));
+            vm().m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(SharedJITStubSet::stubInfoKey(*m_stubInfo), stub.get()));
     }
 
     return finishCodeGeneration(stub.releaseNonNull());
