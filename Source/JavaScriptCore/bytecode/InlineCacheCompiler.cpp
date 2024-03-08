@@ -4247,7 +4247,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             if (isStateless(accessCase->m_type)) {
                 statelessType = std::tuple { SharedJITStubSet::stubInfoKey(*m_stubInfo), accessCase->m_type };
                 if (auto stub = vm().m_sharedJITStubs->getStatelessStub(statelessType.value())) {
-                    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", std::get<0>(std::get<0>(statelessType.value())), " / ", std::get<1>(statelessType.value()));
+                    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", stub->cases().first()->m_type);
                     return finishCodeGeneration(stub.releaseNonNull());
                 }
             } else if (isMegamorphicById(accessCase->m_type)) {
@@ -4259,7 +4259,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
                     keys,
                 };
                 if (auto stub = vm().m_sharedJITStubs->find(searcher)) {
-                    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Found existing code stub ", stub->code());
+                    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", stub->cases().first()->m_type);
                     return finishCodeGeneration(stub.releaseNonNull());
                 }
             }
