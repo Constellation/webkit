@@ -558,14 +558,20 @@ struct BaselineUnlinkedStructureStubInfo : JSC::UnlinkedStructureStubInfo {
 
 using StubInfoMap = HashMap<CodeOrigin, StructureStubInfo*, CodeOriginApproximateHash>;
 
+#endif
+
 } // namespace JSC
 
 namespace WTF {
+
+#if ENABLE(JIT)
 
 template<typename T> struct DefaultHash;
 template<> struct DefaultHash<JSC::AccessType> : public IntHash<JSC::AccessType> { };
 
 template<typename T> struct HashTraits;
 template<> struct HashTraits<JSC::AccessType> : public StrongEnumHashTraits<JSC::AccessType> { };
+
+#endif
 
 } // namespace WTF
