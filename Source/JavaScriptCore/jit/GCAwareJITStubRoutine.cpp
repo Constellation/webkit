@@ -55,11 +55,6 @@ void GCAwareJITStubRoutine::makeGCAware(VM& vm, bool isCodeImmutable)
 
 void GCAwareJITStubRoutine::observeZeroRefCountImpl()
 {
-    // Clear WeakPtr explicitly here. JITStubRoutine can clear it automatically when it gets destroyed.
-    // But GCAwareJITStubRoutine's ref-count-zero timing and actually destroying timing is different. And we
-    // would like to clear WeakPtr at this timing.
-    weakPtrFactory().revokeAll();
-
     if (m_isJettisoned || !m_isGCAware) {
         // This case is needed for when the system shuts down. It may be that
         // the JIT stub routine set gets deleted before we get around to deleting
@@ -98,8 +93,10 @@ PolymorphicAccessJITStubRoutine::PolymorphicAccessJITStubRoutine(Type type, cons
 
 void PolymorphicAccessJITStubRoutine::observeZeroRefCountImpl()
 {
-    if (m_vm.m_sharedJITStubs)
+    if (m_isInSharedJITStubSet) {
+        ASSERT(m_vm.m_sharedJITStubs);
         m_vm.m_sharedJITStubs->remove(this);
+    }
     Base::observeZeroRefCountImpl();
 }
 
@@ -109,6 +106,17 @@ unsigned PolymorphicAccessJITStubRoutine::computeHash(const FixedVector<RefPtr<A
     for (auto& key : cases)
         WTF::add(hasher, key->hash());
     return hasher.hash();
+}
+
+void PolymorphicAccessJITStubRoutine::addedToSharedJITStubSet()
+{
+    m_isInSharedJITStubSet = true;
+    m_identifiers = FixedVector<Identifier>(m_cases.size());
+    unsigned index = 0;
+    for (auto& acccessCase : m_cases) {
+        m_identifiers[index] = Identifier::fromUid(m_vm, acccessCase->uid());
+        ++index;
+    }
 }
 
 MarkingGCAwareJITStubRoutine::MarkingGCAwareJITStubRoutine(

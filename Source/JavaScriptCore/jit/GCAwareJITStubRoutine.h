@@ -76,7 +76,6 @@ public:
 protected:
     void observeZeroRefCountImpl();
 
-private:
     friend class JITStubRoutineSet;
 
     JSCell* m_owner { nullptr };
@@ -85,6 +84,7 @@ private:
     bool m_ownerIsDead : 1 { false };
     bool m_isGCAware : 1 { false };
     bool m_isCodeImmutable : 1 { false };
+    bool m_isInSharedJITStubSet : 1 { false };
 };
 
 class PolymorphicAccessJITStubRoutine : public GCAwareJITStubRoutine {
@@ -106,6 +106,8 @@ public:
 
     static unsigned computeHash(const FixedVector<RefPtr<AccessCase>>&);
 
+    void addedToSharedJITStubSet();
+
 protected:
     void observeZeroRefCountImpl();
 
@@ -113,6 +115,7 @@ private:
     VM& m_vm;
     FixedVector<RefPtr<AccessCase>> m_cases;
     FixedVector<StructureID> m_weakStructures;
+    FixedVector<Identifier> m_identifiers;
 };
 
 // Use this if you want to mark one additional object during GC if your stub
