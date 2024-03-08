@@ -54,7 +54,7 @@ class AccessCase;
 // such a routine you know that it cannot be on the stack when anything
 // interesting happens.
 // See GCAwareJITStubRoutine.h for the other stub routines.
-class JITStubRoutine {
+class JITStubRoutine : public CanMakeSingleThreadWeakPtr<JITStubRoutine> {
     WTF_MAKE_NONCOPYABLE(JITStubRoutine);
     WTF_MAKE_FAST_ALLOCATED;
 public:

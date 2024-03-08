@@ -54,6 +54,11 @@ void GCAwareJITStubRoutine::makeGCAware(VM& vm, bool isCodeImmutable)
 
 void GCAwareJITStubRoutine::observeZeroRefCountImpl()
 {
+    // Clear WeakPtr explicitly here. JITStubRoutine can clear it automatically when it gets destroyed.
+    // But GCAwareJITStubRoutine's ref-count-zero timing and actually destroying timing is different. And we
+    // would like to clear WeakPtr at this timing.
+    weakPtrFactory().revokeAll();
+
     if (m_isJettisoned || !m_isGCAware) {
         // This case is needed for when the system shuts down. It may be that
         // the JIT stub routine set gets deleted before we get around to deleting

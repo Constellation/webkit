@@ -55,6 +55,7 @@ class OptimizingCallLinkInfo;
 // list which does not get reclaimed all at once).
 class GCAwareJITStubRoutine : public JITStubRoutine {
 public:
+    using Base = JITStubRoutine;
     friend class JITStubRoutine;
     GCAwareJITStubRoutine(Type, const MacroAssemblerCodeRef<JITStubRoutinePtrTag>&, JSCell* owner);
 
