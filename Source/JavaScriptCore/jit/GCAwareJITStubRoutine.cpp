@@ -116,8 +116,8 @@ void PolymorphicAccessJITStubRoutine::addedToSharedJITStubSet()
     // identifiers need to be owned by this stub itself.
     m_identifiers = FixedVector<Identifier>(m_cases.size());
     unsigned index = 0;
-    for (auto& acccessCase : m_cases) {
-        auto identifier = Identifier::fromUid(m_vm, acccessCase->uid());
+    for (auto& accessCase : m_cases) {
+        auto identifier = Identifier::fromUid(m_vm, accessCase->uid());
         accessCase->updateIdentifier(CacheableIdentifier::createFromSharedStub(fidentifier.impl()));
         m_identifiers[index] = WTFMove(identifier);
         ++index;
