@@ -112,10 +112,14 @@ unsigned PolymorphicAccessJITStubRoutine::computeHash(const FixedVector<RefPtr<A
 void PolymorphicAccessJITStubRoutine::addedToSharedJITStubSet()
 {
     m_isInSharedJITStubSet = true;
+    // Since this stub no longer belongs to any CodeBlocks (since it is shared),
+    // identifiers need to be owned by this stub itself.
     m_identifiers = FixedVector<Identifier>(m_cases.size());
     unsigned index = 0;
     for (auto& acccessCase : m_cases) {
-        m_identifiers[index] = Identifier::fromUid(m_vm, acccessCase->uid());
+        auto identifier = Identifier::fromUid(m_vm, acccessCase->uid());
+        accessCase->updateIdentifier(CacheableIdentifier::createFromSharedStub(fidentifier.impl()));
+        m_identifiers[index] = WTFMove(identifier);
         ++index;
     }
 }
