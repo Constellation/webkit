@@ -1509,12 +1509,14 @@ bool equalIgnoringASCIICaseNonNull(const StringImpl* a, const StringImpl* b)
 std::optional<UCharDirection> StringImpl::defaultWritingDirection()
 {
     for (auto codePoint : StringView(this).codePoints()) {
+        if (isLatin1(codePoint))
+            return U_LEFT_TO_RIGHT;
+
         auto charDirection = u_charDirection(codePoint);
         if (charDirection == U_LEFT_TO_RIGHT)
             return U_LEFT_TO_RIGHT;
-        if (charDirection == U_RIGHT_TO_LEFT || charDirection == U_RIGHT_TO_LEFT_ARABIC) {
+        if (charDirection == U_RIGHT_TO_LEFT || charDirection == U_RIGHT_TO_LEFT_ARABIC)
             return U_RIGHT_TO_LEFT;
-        }
     }
     return std::nullopt;
 }
