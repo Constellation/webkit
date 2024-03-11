@@ -1338,7 +1338,7 @@ CodeBlock* Interpreter::prepareForCachedCall(CachedCall& cachedCall, JSFunction*
 
     // Compile the callee:
     CodeBlock* newCodeBlock;
-    cachedCall.functionExecutable()->prepareForExecution<FunctionExecutable>(vm, function, cachedCall.scope(), CodeForCall, newCodeBlock);
+    function->jsExecutable()->prepareForExecution<FunctionExecutable>(vm, function, function->scope(), CodeForCall, newCodeBlock);
     RETURN_IF_EXCEPTION(throwScope, { });
 
     ASSERT(newCodeBlock);

@@ -763,6 +763,9 @@ void Heap::finalizeUnconditionalFinalizers()
     if (m_webAssemblyModuleSpace)
         finalizeMarkedUnconditionalFinalizers<JSWebAssemblyModule>(*m_webAssemblyModuleSpace, collectionScope);
 #endif
+
+    if (vm.clientData)
+        vm.clientData->finalizeUnconditionalFinalizers(vm, collectionScope);
 }
 
 void Heap::willStartIterating()

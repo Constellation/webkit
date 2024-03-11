@@ -282,7 +282,7 @@ inline JSString* replaceUsingStringSearch(VM& vm, JSGlobalObject* globalObject, 
                 cachedCall->appendArgument(jsNumber(matchStart));
                 cachedCall->appendArgument(jsString);
                 ASSERT(!cachedCall->hasOverflowedArguments());
-                replacement = cachedCall->call();
+                replacement = cachedCall->call(vm);
             } else {
                 MarkedArgumentBuffer args;
                 auto* substring = jsSubstring(vm, globalObject, jsString, matchStart, searchString.impl()->length());

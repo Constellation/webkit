@@ -43,12 +43,9 @@ class CachedCall : public CallLinkInfoBase {
 public:
     CachedCall(JSGlobalObject* globalObject, JSFunction* function, int argumentCount)
         : CallLinkInfoBase(CallSiteType::CachedCall)
-        , m_vm(globalObject->vm())
-        , m_entryScope(m_vm, function->scope()->globalObject())
-        , m_functionExecutable(function->jsExecutable())
-        , m_scope(function->scope())
+        , m_entryScope(globalObject->vm(), function->scope()->globalObject())
     {
-        VM& vm = m_vm;
+        VM& vm = globalObject->vm();
         auto scope = DECLARE_THROW_SCOPE(vm);
 #if ASSERT_ENABLED
         auto updateValidStatus = makeScopeExit([&] {
@@ -73,7 +70,7 @@ public:
             return;
         }
 
-        auto* newCodeBlock = m_vm.interpreter.prepareForCachedCall(*this, function);
+        auto* newCodeBlock = vm.interpreter.prepareForCachedCall(*this, function);
         if (UNLIKELY(scope.exception()))
             return;
         m_protoCallFrame.init(newCodeBlock, function->globalObject(), function, jsUndefined(), argumentCount + 1, const_cast<EncodedJSValue*>(m_arguments.data()));
@@ -84,11 +81,11 @@ public:
         m_addressForCall = nullptr;
     }
 
-    ALWAYS_INLINE JSValue call()
+    ALWAYS_INLINE JSValue call(VM& vm)
     {
         ASSERT(m_valid);
         ASSERT(m_arguments.size() == static_cast<size_t>(m_protoCallFrame.argumentCount()));
-        return m_vm.interpreter.executeCachedCall(*this);
+        return vm.interpreter.executeCachedCall(*this);
     }
 
     JSFunction* function()
@@ -96,8 +93,6 @@ public:
         ASSERT(m_valid);
         return jsCast<JSFunction*>(m_protoCallFrame.calleeValue.unboxedCell());
     }
-    FunctionExecutable* functionExecutable() { return m_functionExecutable; }
-    JSScope* scope() { return m_scope; }
 
     void setThis(JSValue v) { m_protoCallFrame.setThisValue(v); }
 
@@ -120,23 +115,19 @@ public:
         m_addressForCall = nullptr;
     }
 
-    void relink()
+    void relink(VM& vm)
     {
-        VM& vm = m_vm;
         auto scope = DECLARE_THROW_SCOPE(vm);
-        auto* codeBlock = m_vm.interpreter.prepareForCachedCall(*this, this->function());
+        auto* codeBlock = vm.interpreter.prepareForCachedCall(*this, this->function());
         RETURN_IF_EXCEPTION(scope, void());
         m_protoCallFrame.setCodeBlock(codeBlock);
     }
 
 private:
-    VM& m_vm;
     VMEntryScope m_entryScope;
     ProtoCallFrame m_protoCallFrame;
     MarkedArgumentBuffer m_arguments;
 
-    FunctionExecutable* m_functionExecutable;
-    JSScope* m_scope;
     void* m_addressForCall;
 #if ASSERT_ENABLED
     bool m_valid { false };

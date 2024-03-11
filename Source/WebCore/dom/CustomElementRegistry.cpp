@@ -40,6 +40,8 @@
 #include "ShadowRoot.h"
 #include "TypedElementDescendantIteratorInlines.h"
 #include <JavaScriptCore/JSCJSValueInlines.h>
+#include <JavaScriptCore/MarkedBlockInlines.h>
+#include <JavaScriptCore/SubspaceInlines.h>
 #include <wtf/text/AtomString.h>
 
 namespace WebCore {
@@ -180,5 +182,12 @@ void CustomElementRegistry::visitJSCustomElementInterfaces(Visitor& visitor) con
 
 template void CustomElementRegistry::visitJSCustomElementInterfaces(JSC::AbstractSlotVisitor&) const;
 template void CustomElementRegistry::visitJSCustomElementInterfaces(JSC::SlotVisitor&) const;
+
+void CustomElementRegistry::finalizeUnconditionally(JSC::VM& vm, JSC::CollectionScope collectionScope)
+{
+    Locker locker { m_constructorMapLock };
+    for (const auto& iterator : m_constructorMap)
+        iterator.value->finalizeUnconditionally(vm, collectionScope);
+}
 
 }

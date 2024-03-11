@@ -110,6 +110,7 @@ class BuiltinExecutables;
 class BytecodeIntrinsicRegistry;
 class CallFrame;
 enum class CallMode;
+enum class CollectionScope : uint8_t;
 enum class CommonJITThunkID : uint8_t;
 struct CheckpointOSRExitSideState;
 class CodeBlock;
@@ -306,9 +307,11 @@ public:
     enum VMType { Default, APIContextGroup, APIShared };
 
     struct ClientData {
-        JS_EXPORT_PRIVATE virtual ~ClientData() { };
+        JS_EXPORT_PRIVATE virtual ~ClientData() { }
 
         JS_EXPORT_PRIVATE virtual String overrideSourceURL(const StackFrame&, const String& originalSourceURL) const = 0;
+
+        JS_EXPORT_PRIVATE virtual void finalizeUnconditionalFinalizers(VM&, CollectionScope) { }
     };
 
     bool isSharedInstance() { return vmType == APIShared; }

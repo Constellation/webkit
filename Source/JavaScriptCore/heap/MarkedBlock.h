@@ -187,9 +187,9 @@ public:
         bool isFreeListedCell(const void* target) const;
 
         template <typename Functor> IterationStatus forEachCell(const Functor&);
-        template <typename Functor> inline IterationStatus forEachLiveCell(const Functor&);
-        template <typename Functor> inline IterationStatus forEachDeadCell(const Functor&);
-        template <typename Functor> inline IterationStatus forEachMarkedCell(const Functor&);
+        template <typename Functor> IterationStatus forEachLiveCell(const Functor&);
+        template <typename Functor> IterationStatus forEachDeadCell(const Functor&);
+        template <typename Functor> IterationStatus forEachMarkedCell(const Functor&);
             
         JS_EXPORT_PRIVATE bool areMarksStale();
         bool areMarksStaleForSweep();

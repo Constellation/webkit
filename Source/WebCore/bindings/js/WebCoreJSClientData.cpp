@@ -31,6 +31,7 @@
 #include "ExtendedDOMClientIsoSubspaces.h"
 #include "ExtendedDOMIsoSubspaces.h"
 #include "JSAudioWorkletGlobalScope.h"
+#include "JSCustomElementRegistry.h"
 #include "JSDOMBinding.h"
 #include "JSDOMBuiltinConstructorBase.h"
 #include "JSDOMWindowProperties.h"
@@ -210,6 +211,16 @@ String JSVMClientData::overrideSourceURL(const JSC::StackFrame& frame, const Str
         return nullString();
 
     return document->maskedURLForBindingsIfNeeded(URL(originalSourceURL)).string();
+}
+
+void JSVMClientData::finalizeUnconditionalFinalizers(JSC::VM& vm, JSC::CollectionScope collectionScope)
+{
+    if (auto* subspace = heapData().subspaces().m_subspaceForCustomElementRegistry.get()) {
+        subspace->forEachMarkedCell(
+            [&](HeapCell* cell, HeapCell::Kind) {
+                static_cast<JSCustomElementRegistry*>(cell)->finalizeUnconditionally(vm, collectionScope);
+            });
+    }
 }
 
 } // namespace WebCore

@@ -53,7 +53,7 @@ class JSDOMGlobalObject;
 
 enum class ParserConstructElementWithEmptyStack : bool { No, Yes };
 
-class JSCustomElementInterface : public RefCounted<JSCustomElementInterface>, public ActiveDOMCallback {
+class JSCustomElementInterface final : public RefCounted<JSCustomElementInterface>, public ActiveDOMCallback {
 public:
     static Ref<JSCustomElementInterface> create(const QualifiedName& name, JSC::JSObject* callback, JSDOMGlobalObject* globalObject)
     {
@@ -119,6 +119,8 @@ public:
     virtual ~JSCustomElementInterface();
 
     template<typename Visitor> void visitJSFunctions(Visitor&) const;
+
+    void finalizeUnconditionally(JSC::VM& vm, JSC::CollectionScope);
 private:
     JSCustomElementInterface(const QualifiedName&, JSC::JSObject* callback, JSDOMGlobalObject*);
 
