@@ -270,7 +270,8 @@ void JSCustomElementInterface::upgradeElement(Element& element)
     }
 }
 
-void JSCustomElementInterface::invokeCallback(Element& element, JSObject* callback, const Function<void(JSGlobalObject*, JSDOMGlobalObject*, MarkedArgumentBuffer&)>& addArguments)
+template<typename AddArguments>
+inline void JSCustomElementInterface::invokeCallback(Element& element, JSObject* callback, const AddArguments& addArguments)
 {
     if (!canInvokeCallback())
         return;
@@ -306,6 +307,11 @@ void JSCustomElementInterface::invokeCallback(Element& element, JSObject* callba
 
     if (exception)
         reportException(callback->globalObject(), exception);
+}
+
+inline void JSCustomElementInterface::invokeCallback(Element& element, JSC::JSObject* callback)
+{
+    invokeCallback(element, callback, [](JSC::JSGlobalObject*, JSDOMGlobalObject*, JSC::MarkedArgumentBuffer&) { });
 }
 
 void JSCustomElementInterface::setConnectedCallback(JSC::JSObject* callback)
