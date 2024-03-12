@@ -48,7 +48,7 @@ inline CustomElementReactionQueueItem::FormAssociatedPayload::~FormAssociatedPay
 inline CustomElementReactionQueueItem::CustomElementReactionQueueItem() = default;
 inline CustomElementReactionQueueItem::CustomElementReactionQueueItem(CustomElementReactionQueueItem&&) = default;
 
-inline CustomElementReactionQueueItem::CustomElementReactionQueueItem(Type type, Payload payload)
+inline CustomElementReactionQueueItem::CustomElementReactionQueueItem(CustomElementReactionType type, Payload payload)
     : m_type(type)
     , m_payload(payload)
 { }
@@ -58,46 +58,46 @@ inline CustomElementReactionQueueItem::~CustomElementReactionQueueItem() = defau
 inline void CustomElementReactionQueueItem::invoke(Element& element, JSCustomElementInterface& elementInterface)
 {
     switch (m_type) {
-    case Type::Invalid:
+    case CustomElementReactionType::Invalid:
         ASSERT_NOT_REACHED();
         break;
-    case Type::ElementUpgrade:
+    case CustomElementReactionType::ElementUpgrade:
         ASSERT(!m_payload.has_value());
         elementInterface.upgradeElement(element);
         break;
-    case Type::Connected:
+    case CustomElementReactionType::Connected:
         ASSERT(!m_payload.has_value());
         elementInterface.invokeConnectedCallback(element);
         break;
-    case Type::Disconnected:
+    case CustomElementReactionType::Disconnected:
         ASSERT(!m_payload.has_value());
         elementInterface.invokeDisconnectedCallback(element);
         break;
-    case Type::Adopted: {
+    case CustomElementReactionType::Adopted: {
         ASSERT(m_payload.has_value() && std::holds_alternative<AdoptedPayload>(m_payload.value()));
         auto& payload = std::get<AdoptedPayload>(m_payload.value());
         elementInterface.invokeAdoptedCallback(element, payload.oldDocument, payload.newDocument);
         break;
     }
-    case Type::AttributeChanged: {
+    case CustomElementReactionType::AttributeChanged: {
         ASSERT(m_payload.has_value() && std::holds_alternative<AttributeChangedPayload>(m_payload.value()));
         auto& payload = std::get<AttributeChangedPayload>(m_payload.value());
         elementInterface.invokeAttributeChangedCallback(element, std::get<0>(payload), std::get<1>(payload), std::get<2>(payload));
         break;
     }
-    case Type::FormAssociated:
+    case CustomElementReactionType::FormAssociated:
         ASSERT(m_payload.has_value() && std::holds_alternative<FormAssociatedPayload>(m_payload.value()));
         elementInterface.invokeFormAssociatedCallback(element, std::get<FormAssociatedPayload>(m_payload.value()).form.get());
         break;
-    case Type::FormReset:
+    case CustomElementReactionType::FormReset:
         ASSERT(!m_payload.has_value());
         elementInterface.invokeFormResetCallback(element);
         break;
-    case Type::FormDisabled:
+    case CustomElementReactionType::FormDisabled:
         ASSERT(m_payload.has_value() && std::holds_alternative<FormDisabledPayload>(m_payload.value()));
         elementInterface.invokeFormDisabledCallback(element, std::get<FormDisabledPayload>(m_payload.value()));
         break;
-    case Type::FormStateRestore:
+    case CustomElementReactionType::FormStateRestore:
         ASSERT(m_payload.has_value() && std::holds_alternative<FormStateRestorePayload>(m_payload.value()));
         elementInterface.invokeFormStateRestoreCallback(element, std::get<FormStateRestorePayload>(m_payload.value()));
         break;
@@ -121,7 +121,7 @@ void CustomElementReactionQueue::clear()
 #if ASSERT_ENABLED
 bool CustomElementReactionQueue::hasJustUpgradeReaction() const
 {
-    return m_items.size() == 1 && m_items[0].type() == CustomElementReactionQueueItem::Type::ElementUpgrade;
+    return m_items.size() == 1 && m_items[0].type() == CustomElementReactionType::ElementUpgrade;
 }
 #endif
 
@@ -133,7 +133,7 @@ void CustomElementReactionQueue::enqueueElementUpgrade(Element& element, bool al
     if (alreadyScheduledToUpgrade)
         ASSERT(queue.hasJustUpgradeReaction());
     else
-        queue.m_items.append(Item::Type::ElementUpgrade);
+        queue.m_items.append(CustomElementReactionType::ElementUpgrade);
     enqueueElementOnAppropriateElementQueue(element);
 }
 
@@ -166,7 +166,7 @@ void CustomElementReactionQueue::enqueueConnectedCallbackIfNeeded(Element& eleme
     auto& queue = *element.reactionQueue();
     if (!queue.m_interface->hasConnectedCallback())
         return;
-    queue.m_items.append(Item::Type::Connected);
+    queue.m_items.append(CustomElementReactionType::Connected);
     enqueueElementOnAppropriateElementQueue(element);
 }
 
@@ -180,7 +180,7 @@ void CustomElementReactionQueue::enqueueDisconnectedCallbackIfNeeded(Element& el
     auto& queue = *element.reactionQueue();
     if (!queue.m_interface->hasDisconnectedCallback())
         return;
-    queue.m_items.append(Item::Type::Disconnected);
+    queue.m_items.append(CustomElementReactionType::Disconnected);
     enqueueElementOnAppropriateElementQueue(element);
 }
 
@@ -193,7 +193,7 @@ void CustomElementReactionQueue::enqueueAdoptedCallbackIfNeeded(Element& element
     auto& queue = *element.reactionQueue();
     if (!queue.m_interface->hasAdoptedCallback())
         return;
-    queue.m_items.append({ Item::Type::Adopted, Item::AdoptedPayload { Ref { oldDocument }, Ref { newDocument } } });
+    queue.m_items.append({ CustomElementReactionType::Adopted, Item::AdoptedPayload { Ref { oldDocument }, Ref { newDocument } } });
     enqueueElementOnAppropriateElementQueue(element);
 }
 
@@ -206,7 +206,7 @@ void CustomElementReactionQueue::enqueueAttributeChangedCallbackIfNeeded(Element
     auto& queue = *element.reactionQueue();
     if (!queue.m_interface->observesAttribute(attributeName.localName()))
         return;
-    queue.m_items.append({ Item::Type::AttributeChanged, std::make_tuple(attributeName, oldValue, newValue) });
+    queue.m_items.append({ CustomElementReactionType::AttributeChanged, std::make_tuple(attributeName, oldValue, newValue) });
     enqueueElementOnAppropriateElementQueue(element);
 }
 
@@ -219,7 +219,7 @@ void CustomElementReactionQueue::enqueueFormAssociatedCallbackIfNeeded(Element& 
     if (!queue.m_interface->hasFormAssociatedCallback())
         return;
     ASSERT(queue.isFormAssociated());
-    queue.m_items.append({ Item::Type::FormAssociated, Item::FormAssociatedPayload { associatedForm } });
+    queue.m_items.append({ CustomElementReactionType::FormAssociated, Item::FormAssociatedPayload { associatedForm } });
     enqueueElementOnAppropriateElementQueue(element);
 }
 
@@ -231,7 +231,7 @@ void CustomElementReactionQueue::enqueueFormResetCallbackIfNeeded(Element& eleme
     if (!queue.m_interface->hasFormResetCallback())
         return;
     ASSERT(queue.isFormAssociated());
-    queue.m_items.append(Item::Type::FormReset);
+    queue.m_items.append(CustomElementReactionType::FormReset);
     enqueueElementOnAppropriateElementQueue(element);
 }
 
@@ -243,7 +243,7 @@ void CustomElementReactionQueue::enqueueFormDisabledCallbackIfNeeded(Element& el
     if (!queue.m_interface->hasFormDisabledCallback())
         return;
     ASSERT(queue.isFormAssociated());
-    queue.m_items.append({ Item::Type::FormDisabled, isDisabled });
+    queue.m_items.append({ CustomElementReactionType::FormDisabled, isDisabled });
     enqueueElementOnAppropriateElementQueue(element);
 }
 
@@ -255,7 +255,7 @@ void CustomElementReactionQueue::enqueueFormStateRestoreCallbackIfNeeded(Element
     if (!queue.m_interface->hasFormStateRestoreCallback())
         return;
     ASSERT(queue.isFormAssociated());
-    queue.m_items.append({ Item::Type::FormStateRestore, WTFMove(state) });
+    queue.m_items.append({ CustomElementReactionType::FormStateRestore, WTFMove(state) });
     enqueueElementOnAppropriateElementQueue(element);
 }
 
@@ -272,12 +272,12 @@ void CustomElementReactionQueue::enqueuePostUpgradeReactions(Element& element)
     if (element.hasAttributes()) {
         for (auto& attribute : element.attributesIterator()) {
             if (queue.m_interface->observesAttribute(attribute.localName()))
-                queue.m_items.append({ Item::Type::AttributeChanged, std::make_tuple(attribute.name(), nullAtom(), attribute.value()) });
+                queue.m_items.append({ CustomElementReactionType::AttributeChanged, std::make_tuple(attribute.name(), nullAtom(), attribute.value()) });
         }
     }
 
     if (element.isConnected() && queue.m_interface->hasConnectedCallback())
-        queue.m_items.append(Item::Type::Connected);
+        queue.m_items.append(CustomElementReactionType::Connected);
 }
 
 bool CustomElementReactionQueue::observesStyleAttribute() const

@@ -50,23 +50,23 @@ class Element;
 class HTMLFormElement;
 class JSCustomElementInterface;
 
+enum class CustomElementReactionType : uint8_t {
+    Invalid,
+    ElementUpgrade,
+    Connected,
+    Disconnected,
+    Adopted,
+    AttributeChanged,
+    FormAssociated,
+    FormReset,
+    FormDisabled,
+    FormStateRestore,
+};
+
 class CustomElementReactionQueueItem {
     WTF_MAKE_FAST_ALLOCATED;
     WTF_MAKE_NONCOPYABLE(CustomElementReactionQueueItem);
 public:
-    enum class Type : uint8_t {
-        Invalid,
-        ElementUpgrade,
-        Connected,
-        Disconnected,
-        Adopted,
-        AttributeChanged,
-        FormAssociated,
-        FormReset,
-        FormDisabled,
-        FormStateRestore,
-    };
-
     struct AdoptedPayload {
         Ref<Document> oldDocument;
         Ref<Document> newDocument;
@@ -85,13 +85,13 @@ public:
 
     CustomElementReactionQueueItem();
     CustomElementReactionQueueItem(CustomElementReactionQueueItem&&);
-    CustomElementReactionQueueItem(Type, Payload = std::nullopt);
+    CustomElementReactionQueueItem(CustomElementReactionType, Payload = std::nullopt);
     ~CustomElementReactionQueueItem();
-    Type type() const { return m_type; }
+    CustomElementReactionType type() const { return m_type; }
     void invoke(Element&, JSCustomElementInterface&);
 
 private:
-    Type m_type { Type::Invalid };
+    CustomElementReactionType m_type { CustomElementReactionType::Invalid };
     Payload m_payload;
 };
 
