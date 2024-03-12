@@ -50,7 +50,7 @@ inline CustomElementReactionQueueItem::CustomElementReactionQueueItem(CustomElem
 
 inline CustomElementReactionQueueItem::CustomElementReactionQueueItem(CustomElementReactionType type, Payload payload)
     : m_type(type)
-    , m_payload(payload)
+    , m_payload(WTFMove(payload))
 { }
 
 inline CustomElementReactionQueueItem::~CustomElementReactionQueueItem() = default;
@@ -62,44 +62,44 @@ inline void CustomElementReactionQueueItem::invoke(Element& element, JSCustomEle
         ASSERT_NOT_REACHED();
         break;
     case CustomElementReactionType::ElementUpgrade:
-        ASSERT(!m_payload.has_value());
+        ASSERT(std::holds_alternative<std::monostate>(m_payload));
         elementInterface.upgradeElement(element);
         break;
     case CustomElementReactionType::Connected:
-        ASSERT(!m_payload.has_value());
+        ASSERT(std::holds_alternative<std::monostate>(m_payload));
         elementInterface.invokeConnectedCallback(element);
         break;
     case CustomElementReactionType::Disconnected:
-        ASSERT(!m_payload.has_value());
+        ASSERT(std::holds_alternative<std::monostate>(m_payload));
         elementInterface.invokeDisconnectedCallback(element);
         break;
     case CustomElementReactionType::Adopted: {
-        ASSERT(m_payload.has_value() && std::holds_alternative<AdoptedPayload>(m_payload.value()));
-        auto& payload = std::get<AdoptedPayload>(m_payload.value());
+        ASSERT(std::holds_alternative<AdoptedPayload>(m_payload));
+        auto& payload = std::get<AdoptedPayload>(m_payload);
         elementInterface.invokeAdoptedCallback(element, payload.oldDocument, payload.newDocument);
         break;
     }
     case CustomElementReactionType::AttributeChanged: {
-        ASSERT(m_payload.has_value() && std::holds_alternative<AttributeChangedPayload>(m_payload.value()));
-        auto& payload = std::get<AttributeChangedPayload>(m_payload.value());
+        ASSERT(std::holds_alternative<AttributeChangedPayload>(m_payload));
+        auto& payload = std::get<AttributeChangedPayload>(m_payload);
         elementInterface.invokeAttributeChangedCallback(element, std::get<0>(payload), std::get<1>(payload), std::get<2>(payload));
         break;
     }
     case CustomElementReactionType::FormAssociated:
-        ASSERT(m_payload.has_value() && std::holds_alternative<FormAssociatedPayload>(m_payload.value()));
-        elementInterface.invokeFormAssociatedCallback(element, std::get<FormAssociatedPayload>(m_payload.value()).form.get());
+        ASSERT(std::holds_alternative<FormAssociatedPayload>(m_payload));
+        elementInterface.invokeFormAssociatedCallback(element, std::get<FormAssociatedPayload>(m_payload).form.get());
         break;
     case CustomElementReactionType::FormReset:
-        ASSERT(!m_payload.has_value());
+        ASSERT(std::holds_alternative<std::monostate>(m_payload));
         elementInterface.invokeFormResetCallback(element);
         break;
     case CustomElementReactionType::FormDisabled:
-        ASSERT(m_payload.has_value() && std::holds_alternative<FormDisabledPayload>(m_payload.value()));
-        elementInterface.invokeFormDisabledCallback(element, std::get<FormDisabledPayload>(m_payload.value()));
+        ASSERT(std::holds_alternative<FormDisabledPayload>(m_payload));
+        elementInterface.invokeFormDisabledCallback(element, std::get<FormDisabledPayload>(m_payload));
         break;
     case CustomElementReactionType::FormStateRestore:
-        ASSERT(m_payload.has_value() && std::holds_alternative<FormStateRestorePayload>(m_payload.value()));
-        elementInterface.invokeFormStateRestoreCallback(element, std::get<FormStateRestorePayload>(m_payload.value()));
+        ASSERT(std::holds_alternative<FormStateRestorePayload>(m_payload));
+        elementInterface.invokeFormStateRestoreCallback(element, std::get<FormStateRestorePayload>(m_payload));
         break;
     }
 }

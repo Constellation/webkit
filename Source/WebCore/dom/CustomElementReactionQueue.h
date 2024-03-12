@@ -81,11 +81,11 @@ public:
     using AttributeChangedPayload = std::tuple<QualifiedName, AtomString, AtomString>;
     using FormDisabledPayload = bool;
     using FormStateRestorePayload = CustomElementFormValue;
-    using Payload = std::optional<std::variant<AdoptedPayload, AttributeChangedPayload, FormAssociatedPayload, FormDisabledPayload, FormStateRestorePayload>>;
+    using Payload = std::variant<std::monostate, AdoptedPayload, AttributeChangedPayload, FormAssociatedPayload, FormDisabledPayload, FormStateRestorePayload>;
 
     CustomElementReactionQueueItem();
     CustomElementReactionQueueItem(CustomElementReactionQueueItem&&);
-    CustomElementReactionQueueItem(CustomElementReactionType, Payload = std::nullopt);
+    CustomElementReactionQueueItem(CustomElementReactionType, Payload = { });
     ~CustomElementReactionQueueItem();
     CustomElementReactionType type() const { return m_type; }
     void invoke(Element&, JSCustomElementInterface&);
