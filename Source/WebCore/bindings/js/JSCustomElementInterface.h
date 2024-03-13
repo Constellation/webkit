@@ -28,6 +28,7 @@
 
 #include "ActiveDOMCallback.h"
 #include "CustomElementFormValue.h"
+#include "CustomElementReactionQueue.h"
 #include "QualifiedName.h"
 #include <JavaScriptCore/JSObject.h>
 #include <JavaScriptCore/Weak.h>
@@ -68,15 +69,15 @@ public:
     void upgradeElement(Element&);
 
     void setConnectedCallback(JSC::JSObject*);
-    bool hasConnectedCallback() const { return !!m_connectedCallback; }
+    bool hasConnectedCallback() const { return !!callback(CustomElementReactionType::Connected); }
     void invokeConnectedCallback(Element&);
 
     void setDisconnectedCallback(JSC::JSObject*);
-    bool hasDisconnectedCallback() const { return !!m_disconnectedCallback; }
+    bool hasDisconnectedCallback() const { return !!callback(CustomElementReactionType::Disconnected); }
     void invokeDisconnectedCallback(Element&);
 
     void setAdoptedCallback(JSC::JSObject*);
-    bool hasAdoptedCallback() const { return !!m_adoptedCallback; }
+    bool hasAdoptedCallback() const { return !!callback(CustomElementReactionType::Adopted); }
     void invokeAdoptedCallback(Element&, Document& oldDocument, Document& newDocument);
 
     void setAttributeChangedCallback(JSC::JSObject* callback, Vector<AtomString>&& observedAttributes);
@@ -93,23 +94,23 @@ public:
     bool isFormAssociated() const { return m_isFormAssociated; }
 
     void setFormAssociatedCallback(JSC::JSObject*);
-    bool hasFormAssociatedCallback() const { return !!m_formAssociatedCallback; }
+    bool hasFormAssociatedCallback() const { return !!callback(CustomElementReactionType::FormAssociated); }
     void invokeFormAssociatedCallback(Element&, HTMLFormElement*);
 
     void setFormResetCallback(JSC::JSObject*);
-    bool hasFormResetCallback() const { return !!m_formResetCallback; }
+    bool hasFormResetCallback() const { return !!callback(CustomElementReactionType::FormReset); }
     void invokeFormResetCallback(Element&);
 
     void setFormDisabledCallback(JSC::JSObject*);
-    bool hasFormDisabledCallback() const { return !!m_formDisabledCallback; }
+    bool hasFormDisabledCallback() const { return !!callback(CustomElementReactionType::FormDisabled); }
     void invokeFormDisabledCallback(Element&, bool isDisabled);
 
     void setFormStateRestoreCallback(JSC::JSObject*);
-    bool hasFormStateRestoreCallback() const { return !!m_formStateRestoreCallback; }
+    bool hasFormStateRestoreCallback() const { return !!callback(CustomElementReactionType::FormStateRestore); }
     void invokeFormStateRestoreCallback(Element&, CustomElementFormValue state);
 
     ScriptExecutionContext* scriptExecutionContext() const { return ContextDestructionObserver::scriptExecutionContext(); }
-    JSC::JSObject* constructor() { return m_constructor.get(); }
+    JSC::JSObject* constructor() { return callback(CustomElementReactionType::ElementUpgrade).get(); }
 
     const QualifiedName& name() const { return m_name; }
 
@@ -125,22 +126,17 @@ public:
 private:
     JSCustomElementInterface(const QualifiedName&, JSC::JSObject* callback, JSDOMGlobalObject*);
 
+    JSC::WriteBarrier<JSC::JSObject>& callback(CustomElementReactionType type) { return m_callbacks[static_cast<unsigned>(type)]; }
+    const JSC::WriteBarrier<JSC::JSObject>& callback(CustomElementReactionType type) const { return m_callbacks[static_cast<unsigned>(type)]; }
+
     RefPtr<Element> tryToConstructCustomElement(Document&, const AtomString&, ParserConstructElementWithEmptyStack);
 
     template<typename AddArguments>
-    void invokeCallback(CustomElementReactionType, Element&, JSC::JSObject* callback, const AddArguments& addArguments);
-    void invokeCallback(CustomElementReactionType, Element&, JSC::JSObject* callback);
+    void invokeCallback(CustomElementReactionType, Element&, const AddArguments& addArguments);
+    void invokeCallback(CustomElementReactionType, Element&);
 
     QualifiedName m_name;
-    JSC::WriteBarrier<JSC::JSObject> m_constructor;
-    JSC::WriteBarrier<JSC::JSObject> m_connectedCallback;
-    JSC::WriteBarrier<JSC::JSObject> m_disconnectedCallback;
-    JSC::WriteBarrier<JSC::JSObject> m_adoptedCallback;
-    JSC::WriteBarrier<JSC::JSObject> m_attributeChangedCallback;
-    JSC::WriteBarrier<JSC::JSObject> m_formAssociatedCallback;
-    JSC::WriteBarrier<JSC::JSObject> m_formResetCallback;
-    JSC::WriteBarrier<JSC::JSObject> m_formDisabledCallback;
-    JSC::WriteBarrier<JSC::JSObject> m_formStateRestoreCallback;
+    std::array<JSC::WriteBarrier<JSC::JSObject>, numberOfCustomElementReactionTypes> m_callbacks { };
     Ref<DOMWrapperWorld> m_isolatedWorld;
     Vector<RefPtr<Element>, 1> m_constructionStack;
     MemoryCompactRobinHoodHashSet<AtomString> m_observedAttributes;

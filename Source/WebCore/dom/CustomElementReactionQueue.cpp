@@ -45,7 +45,6 @@ namespace WebCore {
 inline CustomElementReactionQueueItem::AdoptedPayload::~AdoptedPayload() = default;
 inline CustomElementReactionQueueItem::FormAssociatedPayload::~FormAssociatedPayload() = default;
 
-inline CustomElementReactionQueueItem::CustomElementReactionQueueItem() = default;
 inline CustomElementReactionQueueItem::CustomElementReactionQueueItem(CustomElementReactionQueueItem&&) = default;
 
 inline CustomElementReactionQueueItem::CustomElementReactionQueueItem(CustomElementReactionType type, Payload payload)
@@ -58,9 +57,6 @@ inline CustomElementReactionQueueItem::~CustomElementReactionQueueItem() = defau
 inline void CustomElementReactionQueueItem::invoke(Element& element, JSCustomElementInterface& elementInterface)
 {
     switch (m_type) {
-    case CustomElementReactionType::Invalid:
-        ASSERT_NOT_REACHED();
-        break;
     case CustomElementReactionType::ElementUpgrade:
         ASSERT(std::holds_alternative<std::monostate>(m_payload));
         elementInterface.upgradeElement(element);

@@ -53,12 +53,12 @@ using namespace JSC;
 JSCustomElementInterface::JSCustomElementInterface(const QualifiedName& name, JSObject* constructor, JSDOMGlobalObject* globalObject)
     : ActiveDOMCallback(globalObject->scriptExecutionContext())
     , m_name(name)
-    , m_constructor(constructor, WriteBarrierEarlyInit)
     , m_isolatedWorld(globalObject->world())
     , m_isElementInternalsDisabled(false)
     , m_isShadowDisabled(false)
     , m_isFormAssociated(false)
 {
+    callback(CustomElementReactionType::ElementUpgrade).setWithoutWriteBarrier(constructor);
     static_cast<JSVMClientData*>(commonVM().clientData)->addJSCustomElementInterface(*this);
 }
 
@@ -115,7 +115,8 @@ RefPtr<Element> JSCustomElementInterface::tryToConstructCustomElement(Document& 
     JSLockHolder lock(vm);
     auto scope = DECLARE_CATCH_SCOPE(vm);
 
-    if (!m_constructor)
+    auto* constructor = callback(CustomElementReactionType::ElementUpgrade).get();
+    if (!constructor)
         return nullptr;
 
     ASSERT(&document == scriptExecutionContext());
@@ -123,12 +124,12 @@ RefPtr<Element> JSCustomElementInterface::tryToConstructCustomElement(Document& 
     ASSERT(lexicalGlobalObject);
     if (!lexicalGlobalObject)
         return nullptr;
-    auto element = constructCustomElementSynchronously(document, vm, *lexicalGlobalObject, m_constructor.get(), localName, parserConstructElementWithEmptyStack);
+    auto element = constructCustomElementSynchronously(document, vm, *lexicalGlobalObject, constructor, localName, parserConstructElementWithEmptyStack);
     EXCEPTION_ASSERT(!!scope.exception() == !element);
     if (!element) {
         auto* exception = scope.exception();
         scope.clearException();
-        reportException(m_constructor->globalObject(), exception);
+        reportException(constructor->globalObject(), exception);
         return nullptr;
     }
 
@@ -208,7 +209,8 @@ void JSCustomElementInterface::upgradeElement(Element& element)
     JSLockHolder lock(vm);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    if (!m_constructor)
+    auto* constructor = callback(CustomElementReactionType::ElementUpgrade).get();
+    if (!constructor)
         return;
 
     auto* context = scriptExecutionContext();
@@ -219,7 +221,7 @@ void JSCustomElementInterface::upgradeElement(Element& element)
         return;
     JSGlobalObject* lexicalGlobalObject = globalObject;
 
-    auto constructData = JSC::getConstructData(m_constructor.get());
+    auto constructData = JSC::getConstructData(constructor);
     if (constructData.type == CallData::Type::None) {
         ASSERT_NOT_REACHED();
         return;
@@ -245,7 +247,7 @@ void JSCustomElementInterface::upgradeElement(Element& element)
     MarkedArgumentBuffer args;
     ASSERT(!args.hasOverflowed());
     JSExecState::instrumentFunction(context, constructData);
-    JSValue returnedElement = construct(lexicalGlobalObject, m_constructor.get(), constructData, args);
+    JSValue returnedElement = construct(lexicalGlobalObject, constructor, constructData, args);
     InspectorInstrumentation::didCallFunction(context);
 
     m_constructionStack.removeLast();
@@ -272,7 +274,7 @@ void JSCustomElementInterface::upgradeElement(Element& element)
 }
 
 template<typename AddArguments>
-inline void JSCustomElementInterface::invokeCallback(CustomElementReactionType, Element& element, JSObject* callback, const AddArguments& addArguments)
+inline void JSCustomElementInterface::invokeCallback(CustomElementReactionType reactionType, Element& element, const AddArguments& addArguments)
 {
     if (!canInvokeCallback())
         return;
@@ -292,6 +294,7 @@ inline void JSCustomElementInterface::invokeCallback(CustomElementReactionType, 
 
     JSObject* jsElement = asObject(toJS(lexicalGlobalObject, globalObject, element));
 
+    auto* callback = this->callback(reactionType).get();
     auto callData = JSC::getCallData(callback);
     ASSERT(callData.type != CallData::Type::None);
 
@@ -310,39 +313,39 @@ inline void JSCustomElementInterface::invokeCallback(CustomElementReactionType, 
         reportException(callback->globalObject(), exception);
 }
 
-inline void JSCustomElementInterface::invokeCallback(CustomElementReactionType reactionType, Element& element, JSC::JSObject* callback)
+inline void JSCustomElementInterface::invokeCallback(CustomElementReactionType reactionType, Element& element)
 {
-    invokeCallback(reactionType, element, callback, [](JSC::JSGlobalObject*, JSDOMGlobalObject*, JSC::MarkedArgumentBuffer&) { });
+    invokeCallback(reactionType, element, [](JSC::JSGlobalObject*, JSDOMGlobalObject*, JSC::MarkedArgumentBuffer&) { });
 }
 
 void JSCustomElementInterface::setConnectedCallback(JSC::JSObject* callback)
 {
-    m_connectedCallback.setWithoutWriteBarrier(callback);
+    this->callback(CustomElementReactionType::Connected).setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::invokeConnectedCallback(Element& element)
 {
-    invokeCallback(CustomElementReactionType::Connected, element, m_connectedCallback.get());
+    invokeCallback(CustomElementReactionType::Connected, element);
 }
 
 void JSCustomElementInterface::setDisconnectedCallback(JSC::JSObject* callback)
 {
-    m_disconnectedCallback.setWithoutWriteBarrier(callback);
+    this->callback(CustomElementReactionType::Disconnected).setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::invokeDisconnectedCallback(Element& element)
 {
-    invokeCallback(CustomElementReactionType::Disconnected, element, m_disconnectedCallback.get());
+    invokeCallback(CustomElementReactionType::Disconnected, element);
 }
 
 void JSCustomElementInterface::setAdoptedCallback(JSC::JSObject* callback)
 {
-    m_adoptedCallback.setWithoutWriteBarrier(callback);
+    this->callback(CustomElementReactionType::Adopted).setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::invokeAdoptedCallback(Element& element, Document& oldDocument, Document& newDocument)
 {
-    invokeCallback(CustomElementReactionType::Adopted, element, m_adoptedCallback.get(), [&](JSGlobalObject* lexicalGlobalObject, JSDOMGlobalObject* globalObject, MarkedArgumentBuffer& args) {
+    invokeCallback(CustomElementReactionType::Adopted, element, [&](JSGlobalObject* lexicalGlobalObject, JSDOMGlobalObject* globalObject, MarkedArgumentBuffer& args) {
         args.append(toJS(lexicalGlobalObject, globalObject, oldDocument));
         args.append(toJS(lexicalGlobalObject, globalObject, newDocument));
     });
@@ -350,7 +353,7 @@ void JSCustomElementInterface::invokeAdoptedCallback(Element& element, Document&
 
 void JSCustomElementInterface::setAttributeChangedCallback(JSC::JSObject* callback, Vector<AtomString>&& observedAttributes)
 {
-    m_attributeChangedCallback.setWithoutWriteBarrier(callback);
+    this->callback(CustomElementReactionType::AttributeChanged).setWithoutWriteBarrier(callback);
     m_observedAttributes.clear();
     for (auto&& name : WTFMove(observedAttributes))
         m_observedAttributes.add(WTFMove(name));
@@ -358,7 +361,7 @@ void JSCustomElementInterface::setAttributeChangedCallback(JSC::JSObject* callba
 
 void JSCustomElementInterface::invokeAttributeChangedCallback(Element& element, const QualifiedName& attributeName, const AtomString& oldValue, const AtomString& newValue)
 {
-    invokeCallback(CustomElementReactionType::AttributeChanged, element, m_attributeChangedCallback.get(), [&](JSGlobalObject* lexicalGlobalObject, JSDOMGlobalObject*, MarkedArgumentBuffer& args) {
+    invokeCallback(CustomElementReactionType::AttributeChanged, element, [&](JSGlobalObject* lexicalGlobalObject, JSDOMGlobalObject*, MarkedArgumentBuffer& args) {
         args.append(toJS<IDLDOMString>(*lexicalGlobalObject, attributeName.localName()));
         args.append(toJS<IDLNullable<IDLDOMString>>(*lexicalGlobalObject, oldValue));
         args.append(toJS<IDLNullable<IDLDOMString>>(*lexicalGlobalObject, newValue));
@@ -368,26 +371,26 @@ void JSCustomElementInterface::invokeAttributeChangedCallback(Element& element, 
 
 void JSCustomElementInterface::invokeFormAssociatedCallback(Element& element, HTMLFormElement* associatedForm)
 {
-    invokeCallback(CustomElementReactionType::FormAssociated, element, m_formAssociatedCallback.get(), [&](JSGlobalObject* lexicalGlobalObject, JSDOMGlobalObject* globalObject, MarkedArgumentBuffer& args) {
+    invokeCallback(CustomElementReactionType::FormAssociated, element, [&](JSGlobalObject* lexicalGlobalObject, JSDOMGlobalObject* globalObject, MarkedArgumentBuffer& args) {
         args.append(toJS(lexicalGlobalObject, globalObject, associatedForm));
     });
 }
 
 void JSCustomElementInterface::invokeFormResetCallback(Element& element)
 {
-    invokeCallback(CustomElementReactionType::FormReset, element, m_formResetCallback.get());
+    invokeCallback(CustomElementReactionType::FormReset, element);
 }
 
 void JSCustomElementInterface::invokeFormDisabledCallback(Element& element, bool isDisabled)
 {
-    invokeCallback(CustomElementReactionType::FormDisabled, element, m_formDisabledCallback.get(), [&](JSGlobalObject*, JSDOMGlobalObject*, MarkedArgumentBuffer& args) {
+    invokeCallback(CustomElementReactionType::FormDisabled, element, [&](JSGlobalObject*, JSDOMGlobalObject*, MarkedArgumentBuffer& args) {
         args.append(jsBoolean(isDisabled));
     });
 }
 
 void JSCustomElementInterface::invokeFormStateRestoreCallback(Element& element, CustomElementFormValue restoredState)
 {
-    invokeCallback(CustomElementReactionType::FormStateRestore, element, m_formStateRestoreCallback.get(), [&](JSGlobalObject* lexicalGlobalObject, JSDOMGlobalObject* globalObject, MarkedArgumentBuffer& args) {
+    invokeCallback(CustomElementReactionType::FormStateRestore, element, [&](JSGlobalObject* lexicalGlobalObject, JSDOMGlobalObject* globalObject, MarkedArgumentBuffer& args) {
         auto& vm = lexicalGlobalObject->vm();
 
         WTF::switchOn(restoredState, [&](RefPtr<DOMFormData> state) {
@@ -406,22 +409,22 @@ void JSCustomElementInterface::invokeFormStateRestoreCallback(Element& element, 
 
 void JSCustomElementInterface::setFormAssociatedCallback(JSObject* callback)
 {
-    m_formAssociatedCallback.setWithoutWriteBarrier(callback);
+    this->callback(CustomElementReactionType::FormAssociated).setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::setFormResetCallback(JSObject* callback)
 {
-    m_formResetCallback.setWithoutWriteBarrier(callback);
+    this->callback(CustomElementReactionType::FormReset).setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::setFormDisabledCallback(JSObject* callback)
 {
-    m_formDisabledCallback.setWithoutWriteBarrier(callback);
+    this->callback(CustomElementReactionType::FormDisabled).setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::setFormStateRestoreCallback(JSObject* callback)
 {
-    m_formStateRestoreCallback.setWithoutWriteBarrier(callback);
+    this->callback(CustomElementReactionType::FormStateRestore).setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::didUpgradeLastElementInConstructionStack()
@@ -432,15 +435,8 @@ void JSCustomElementInterface::didUpgradeLastElementInConstructionStack()
 template<typename Visitor>
 void JSCustomElementInterface::visitJSFunctions(Visitor& visitor) const
 {
-    visitor.append(m_constructor);
-    visitor.append(m_connectedCallback);
-    visitor.append(m_disconnectedCallback);
-    visitor.append(m_adoptedCallback);
-    visitor.append(m_attributeChangedCallback);
-    visitor.append(m_formAssociatedCallback);
-    visitor.append(m_formResetCallback);
-    visitor.append(m_formDisabledCallback);
-    visitor.append(m_formStateRestoreCallback);
+    for (auto& slot : m_callbacks)
+        visitor.append(slot);
 }
 
 template void JSCustomElementInterface::visitJSFunctions(JSC::AbstractSlotVisitor&) const;
@@ -448,23 +444,13 @@ template void JSCustomElementInterface::visitJSFunctions(JSC::SlotVisitor&) cons
 
 void JSCustomElementInterface::finalizeUnconditionally(JSC::VM& vm, JSC::CollectionScope)
 {
-    auto clearIfNotMarked = [&](auto& slot) {
+    for (auto& slot : m_callbacks) {
         if (!slot)
-            return;
+            continue;
         if (vm.heap.isMarked(slot.get()))
-            return;
+            continue;
         slot.clear();
-    };
-
-    clearIfNotMarked(m_constructor);
-    clearIfNotMarked(m_connectedCallback);
-    clearIfNotMarked(m_disconnectedCallback);
-    clearIfNotMarked(m_adoptedCallback);
-    clearIfNotMarked(m_attributeChangedCallback);
-    clearIfNotMarked(m_formAssociatedCallback);
-    clearIfNotMarked(m_formResetCallback);
-    clearIfNotMarked(m_formDisabledCallback);
-    clearIfNotMarked(m_formStateRestoreCallback);
+    }
 }
 
 } // namespace WebCore

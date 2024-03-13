@@ -51,7 +51,6 @@ class HTMLFormElement;
 class JSCustomElementInterface;
 
 #define WEBCORE_FOR_EACH_CUSTOM_ELEMENT_REACTION(macro) \
-    macro(Invalid) \
     macro(ElementUpgrade) \
     macro(Connected) \
     macro(Disconnected) \
@@ -91,7 +90,6 @@ public:
     using FormStateRestorePayload = CustomElementFormValue;
     using Payload = std::variant<std::monostate, AdoptedPayload, AttributeChangedPayload, FormAssociatedPayload, FormDisabledPayload, FormStateRestorePayload>;
 
-    CustomElementReactionQueueItem();
     CustomElementReactionQueueItem(CustomElementReactionQueueItem&&);
     CustomElementReactionQueueItem(CustomElementReactionType, Payload = { });
     ~CustomElementReactionQueueItem();
@@ -99,7 +97,7 @@ public:
     void invoke(Element&, JSCustomElementInterface&);
 
 private:
-    CustomElementReactionType m_type { CustomElementReactionType::Invalid };
+    CustomElementReactionType m_type;
     Payload m_payload;
 };
 
