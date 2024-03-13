@@ -272,7 +272,7 @@ void JSCustomElementInterface::upgradeElement(Element& element)
 }
 
 template<typename AddArguments>
-inline void JSCustomElementInterface::invokeCallback(CustomElementReactionType reactionType, Element& element, JSObject* callback, const AddArguments& addArguments)
+inline void JSCustomElementInterface::invokeCallback(CustomElementReactionType, Element& element, JSObject* callback, const AddArguments& addArguments)
 {
     if (!canInvokeCallback())
         return;
