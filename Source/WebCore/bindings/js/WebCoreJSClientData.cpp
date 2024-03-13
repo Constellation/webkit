@@ -31,7 +31,7 @@
 #include "ExtendedDOMClientIsoSubspaces.h"
 #include "ExtendedDOMIsoSubspaces.h"
 #include "JSAudioWorkletGlobalScope.h"
-#include "JSCustomElementRegistry.h"
+#include "JSCustomElementInterface.h"
 #include "JSDOMBinding.h"
 #include "JSDOMBuiltinConstructorBase.h"
 #include "JSDOMWindowProperties.h"
