@@ -121,7 +121,7 @@ public:
 
     template<typename Visitor> void visitJSFunctions(Visitor&) const;
 
-    void finalizeUnconditionally(JSC::VM& vm, JSC::CollectionScope);
+    void finalizeUnconditionally(JSC::VM&, JSC::CollectionScope);
 private:
     JSCustomElementInterface(const QualifiedName&, JSC::JSObject* callback, JSDOMGlobalObject*);
 

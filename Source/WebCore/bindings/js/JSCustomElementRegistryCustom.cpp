@@ -257,9 +257,4 @@ void JSCustomElementRegistry::visitAdditionalChildren(Visitor& visitor)
 
 DEFINE_VISIT_ADDITIONAL_CHILDREN(JSCustomElementRegistry);
 
-void JSCustomElementRegistry::finalizeUnconditionally(JSC::VM& vm, JSC::CollectionScope collectionScope)
-{
-    wrapped().finalizeUnconditionally(vm, collectionScope);
-}
-
 } // namespace WebCore

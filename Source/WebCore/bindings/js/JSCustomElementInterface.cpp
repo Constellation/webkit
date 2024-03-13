@@ -53,7 +53,7 @@ using namespace JSC;
 JSCustomElementInterface::JSCustomElementInterface(const QualifiedName& name, JSObject* constructor, JSDOMGlobalObject* globalObject)
     : ActiveDOMCallback(globalObject->scriptExecutionContext())
     , m_name(name)
-    , m_constructor(constructor)
+    , m_constructor(constructor, WriteBarrierEarlyInit)
     , m_isolatedWorld(globalObject->world())
     , m_isElementInternalsDisabled(false)
     , m_isShadowDisabled(false)
@@ -317,7 +317,7 @@ inline void JSCustomElementInterface::invokeCallback(CustomElementReactionType r
 
 void JSCustomElementInterface::setConnectedCallback(JSC::JSObject* callback)
 {
-    m_connectedCallback = callback;
+    m_connectedCallback.setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::invokeConnectedCallback(Element& element)
@@ -327,7 +327,7 @@ void JSCustomElementInterface::invokeConnectedCallback(Element& element)
 
 void JSCustomElementInterface::setDisconnectedCallback(JSC::JSObject* callback)
 {
-    m_disconnectedCallback = callback;
+    m_disconnectedCallback.setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::invokeDisconnectedCallback(Element& element)
@@ -337,7 +337,7 @@ void JSCustomElementInterface::invokeDisconnectedCallback(Element& element)
 
 void JSCustomElementInterface::setAdoptedCallback(JSC::JSObject* callback)
 {
-    m_adoptedCallback = callback;
+    m_adoptedCallback.setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::invokeAdoptedCallback(Element& element, Document& oldDocument, Document& newDocument)
@@ -350,7 +350,7 @@ void JSCustomElementInterface::invokeAdoptedCallback(Element& element, Document&
 
 void JSCustomElementInterface::setAttributeChangedCallback(JSC::JSObject* callback, Vector<AtomString>&& observedAttributes)
 {
-    m_attributeChangedCallback = callback;
+    m_attributeChangedCallback.setWithoutWriteBarrier(callback);
     m_observedAttributes.clear();
     for (auto&& name : WTFMove(observedAttributes))
         m_observedAttributes.add(WTFMove(name));
@@ -406,22 +406,22 @@ void JSCustomElementInterface::invokeFormStateRestoreCallback(Element& element, 
 
 void JSCustomElementInterface::setFormAssociatedCallback(JSObject* callback)
 {
-    m_formAssociatedCallback = callback;
+    m_formAssociatedCallback.setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::setFormResetCallback(JSObject* callback)
 {
-    m_formResetCallback = callback;
+    m_formResetCallback.setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::setFormDisabledCallback(JSObject* callback)
 {
-    m_formDisabledCallback = callback;
+    m_formDisabledCallback.setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::setFormStateRestoreCallback(JSObject* callback)
 {
-    m_formStateRestoreCallback = callback;
+    m_formStateRestoreCallback.setWithoutWriteBarrier(callback);
 }
 
 void JSCustomElementInterface::didUpgradeLastElementInConstructionStack()
