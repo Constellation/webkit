@@ -116,6 +116,7 @@ public:
 
     static ptrdiff_t offsetOfGlobalObject() { return OBJECT_OFFSETOF(BaselineJITData, m_globalObject); }
     static ptrdiff_t offsetOfStackOffset() { return OBJECT_OFFSETOF(BaselineJITData, m_stackOffset); }
+    static ptrdiff_t offsetOfCodeBlockConstants() { return OBJECT_OFFSETOF(BaselineJITData, m_codeBlockConstants); }
 
     StructureStubInfo& stubInfo(unsigned index)
     {
@@ -130,6 +131,7 @@ public:
 
     JSGlobalObject* m_globalObject { nullptr }; // This is not marked since owner CodeBlock will mark JSGlobalObject.
     intptr_t m_stackOffset { 0 };
+    WriteBarrier<Unknown>* m_codeBlockConstants { nullptr };
 };
 
 } // namespace JSC

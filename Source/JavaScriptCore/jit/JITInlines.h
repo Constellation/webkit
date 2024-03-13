@@ -519,23 +519,17 @@ ALWAYS_INLINE void JIT::loadStructureStubInfo(StructureStubInfoIndex index, GPRR
     loadStructureStubInfo(*this, index, result);
 }
 
-ALWAYS_INLINE static void loadAddrOfCodeBlockConstantBuffer(JIT &jit, GPRReg dst)
-{
-    jit.loadPtr(jit.addressFor(CallFrameSlot::codeBlock), dst);
-    jit.loadPtr(JIT::Address(dst, CodeBlock::offsetOfConstantsVectorBuffer()), dst);
-}
-
 ALWAYS_INLINE void JIT::loadCodeBlockConstant(VirtualRegister constant, JSValueRegs dst)
 {
     RELEASE_ASSERT(constant.isConstant());
-    loadAddrOfCodeBlockConstantBuffer(*this, dst.payloadGPR());
+    loadPtr(Address(s_constantsGPR, BaselineJITData::offsetOfCodeBlockConstants()), dst.payloadGPR());
     loadValue(Address(dst.payloadGPR(), constant.toConstantIndex() * sizeof(Register)), dst);
 }
 
 ALWAYS_INLINE void JIT::loadCodeBlockConstantPayload(VirtualRegister constant, RegisterID dst)
 {
     RELEASE_ASSERT(constant.isConstant());
-    loadAddrOfCodeBlockConstantBuffer(*this, dst);
+    loadPtr(Address(s_constantsGPR, BaselineJITData::offsetOfCodeBlockConstants()), dst);
     Address address(dst, constant.toConstantIndex() * sizeof(Register));
 #if USE(JSVALUE64)
     load64(address, dst);
