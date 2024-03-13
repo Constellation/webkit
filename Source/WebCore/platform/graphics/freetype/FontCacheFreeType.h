@@ -37,7 +37,7 @@ struct VariationDefaults {
 };
 
 typedef HashMap<FontTag, VariationDefaults, FourCharacterTagHash, FourCharacterTagHashTraits> VariationDefaultsMap;
-typedef HashMap<FontTag, float, FourCharacterTagHash, FourCharacterTagHashTraits> VariationsMap;
+typedef HashMap<FontTag, float, FourCharacterTagHash, FourCharacterTagHashTraits, WTF::FloatWithZeroEmptyKeyHashTraits<float>> VariationsMap;
 
 VariationDefaultsMap defaultVariationValues(FT_Face, ShouldLocalizeAxisNames);
 
