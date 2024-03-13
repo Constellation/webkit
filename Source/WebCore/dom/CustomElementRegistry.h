@@ -79,7 +79,6 @@ public:
     bool isShadowDisabled(const AtomString& name) const { return m_disabledShadowSet.contains(name); }
 
     template<typename Visitor> void visitJSCustomElementInterfaces(Visitor&) const;
-
 private:
     CustomElementRegistry(LocalDOMWindow&, ScriptExecutionContext*);
 
