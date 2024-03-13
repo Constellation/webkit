@@ -216,12 +216,19 @@ String JSVMClientData::overrideSourceURL(const JSC::StackFrame& frame, const Str
 
 void JSVMClientData::finalizeUnconditionalFinalizers(JSC::VM& vm, JSC::CollectionScope collectionScope)
 {
-    if (auto* subspace = heapData().subspaces().m_subspaceForCustomElementRegistry.get()) {
-        subspace->forEachMarkedCell(
-            [&](HeapCell* cell, HeapCell::Kind) {
-                static_cast<JSCustomElementRegistry*>(cell)->finalizeUnconditionally(vm, collectionScope);
-            });
-    }
+    Page::forEachPage([&](Page& page) {
+        page.forEachDocument([&](Document& document) {
+            RefPtr window = document.domWindow();
+            if (!window)
+                return;
+
+            RefPtr customElementRegistry = window->customElementRegistry();
+            if (!customElementRegistry)
+                return;
+
+            customElementRegistry->finalizeUnconditionally(vm, collectionScope);
+        });
+    });
 }
 
 } // namespace WebCore
