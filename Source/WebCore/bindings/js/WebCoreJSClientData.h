@@ -36,6 +36,7 @@ namespace WebCore {
 
 class ExtendedDOMClientIsoSubspaces;
 class ExtendedDOMIsoSubspaces;
+class JSCustomElementInterface;
 
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(JSHeapData);
 
@@ -108,7 +109,7 @@ class JSVMClientData final : public JSC::VM::ClientData {
     friend class VMWorldIterator;
 
 public:
-    explicit JSVMClientData(JSC::VM&);
+    explicit JSVMClientData(JSC::VM&, WorkerThreadType);
 
     ~JSVMClientData() final;
     
@@ -159,6 +160,8 @@ public:
     };
     void addClient(Client& client) { m_clients.add(client); }
 
+    void addJSCustomElementInterface(JSCustomElementInterface&);
+
 private:
     HashSet<DOMWrapperWorld*> m_worldSet;
     RefPtr<DOMWrapperWorld> m_normalWorld;
@@ -181,6 +184,8 @@ private:
     std::unique_ptr<ExtendedDOMClientIsoSubspaces> m_clientSubspaces;
 
     WeakHashSet<Client> m_clients;
+    SingleThreadWeakHashSet<JSCustomElementInterface> m_customElementInterfaces;
+    WorkerThreadType m_workerThreadType { WorkerThreadType::Main };
 };
 
 

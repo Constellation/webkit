@@ -117,7 +117,7 @@ JSHeapData* JSHeapData::ensureHeapData(Heap& heap)
 
 DEFINE_ALLOCATOR_WITH_HEAP_IDENTIFIER(JSVMClientData);
 
-JSVMClientData::JSVMClientData(VM& vm)
+JSVMClientData::JSVMClientData(VM& vm, WorkerThreadType workerThreadType)
     : m_builtinFunctions(vm)
     , m_builtinNames(vm)
     , m_heapData(JSHeapData::ensureHeapData(vm.heap))
@@ -132,6 +132,7 @@ JSVMClientData::JSVMClientData(VM& vm)
     , CLIENT_ISO_SUBSPACE_INIT(m_windowProxySpace)
     , CLIENT_ISO_SUBSPACE_INIT(m_idbSerializationSpace)
     , m_clientSubspaces(makeUnique<ExtendedDOMClientIsoSubspaces>())
+    , m_workerThreadType(workerThreadType)
 {
 }
 
@@ -184,15 +185,15 @@ void JSVMClientData::getAllWorlds(Vector<Ref<DOMWrapperWorld>>& worlds)
     }
 }
 
-void JSVMClientData::initNormalWorld(VM* vm, WorkerThreadType type)
+void JSVMClientData::initNormalWorld(VM* vm, WorkerThreadType workerThreadType)
 {
-    JSVMClientData* clientData = new JSVMClientData(*vm);
+    JSVMClientData* clientData = new JSVMClientData(*vm, workerThreadType);
     vm->clientData = clientData; // ~VM deletes this pointer.
 
     vm->heap.addMarkingConstraint(makeUnique<DOMGCOutputConstraint>(*vm, clientData->heapData()));
 
     clientData->m_normalWorld = DOMWrapperWorld::create(*vm, DOMWrapperWorld::Type::Normal);
-    vm->m_typedArrayController = adoptRef(new WebCoreTypedArrayController(type == WorkerThreadType::DedicatedWorker || type == WorkerThreadType::Worklet));
+    vm->m_typedArrayController = adoptRef(new WebCoreTypedArrayController(workerThreadType == WorkerThreadType::DedicatedWorker || workerThreadType == WorkerThreadType::Worklet));
 }
 
 String JSVMClientData::overrideSourceURL(const JSC::StackFrame& frame, const String& originalSourceURL) const
@@ -214,21 +215,18 @@ String JSVMClientData::overrideSourceURL(const JSC::StackFrame& frame, const Str
     return document->maskedURLForBindingsIfNeeded(URL(originalSourceURL)).string();
 }
 
+void JSVMClientData::addJSCustomElementInterface(JSCustomElementInterface& interface)
+{
+    ASSERT(m_workerThreadType == WorkerThreadType::Main);
+    m_customElementInterfaces.add(interface);
+}
+
 void JSVMClientData::finalizeUnconditionalFinalizers(JSC::VM& vm, JSC::CollectionScope collectionScope)
 {
-    Page::forEachPage([&](Page& page) {
-        page.forEachDocument([&](Document& document) {
-            RefPtr window = document.domWindow();
-            if (!window)
-                return;
-
-            RefPtr customElementRegistry = window->customElementRegistry();
-            if (!customElementRegistry)
-                return;
-
-            customElementRegistry->finalizeUnconditionally(vm, collectionScope);
-        });
-    });
+    if (m_workerThreadType == WorkerThreadType::Main) {
+        for (Ref customElementInterface : m_customElementInterfaces)
+            customElementInterface->finalizeUnconditionally(vm, collectionScope);
+    }
 }
 
 } // namespace WebCore

@@ -59,6 +59,7 @@ JSCustomElementInterface::JSCustomElementInterface(const QualifiedName& name, JS
     , m_isShadowDisabled(false)
     , m_isFormAssociated(false)
 {
+    static_cast<JSVMClientData*>(commonVM().clientData)->addJSCustomElementInterface(*this)
 }
 
 JSCustomElementInterface::~JSCustomElementInterface() = default;
@@ -298,7 +299,6 @@ inline void JSCustomElementInterface::invokeCallback(CustomElementReactionType r
     addArguments(lexicalGlobalObject, globalObject, args);
     RELEASE_ASSERT(!args.hasOverflowed());
 
-    dataLogLn("Reaction ", static_cast<unsigned>(reactionType));
     JSExecState::instrumentFunction(context, callData);
 
     NakedPtr<JSC::Exception> exception;
@@ -446,8 +446,25 @@ void JSCustomElementInterface::visitJSFunctions(Visitor& visitor) const
 template void JSCustomElementInterface::visitJSFunctions(JSC::AbstractSlotVisitor&) const;
 template void JSCustomElementInterface::visitJSFunctions(JSC::SlotVisitor&) const;
 
-void JSCustomElementInterface::finalizeUnconditionally(JSC::VM&, JSC::CollectionScope)
+void JSCustomElementInterface::finalizeUnconditionally(JSC::VM& vm, JSC::CollectionScope)
 {
+    auto clearIfNotMarked = [&](auto& slot) {
+        if (!slot)
+            return;
+        if (vm.heap.isMarked(slot.get()))
+            return;
+        slot.clear();
+    };
+
+    clearIfNotMarked(m_constructor);
+    clearIfNotMarked(m_connectedCallback);
+    clearIfNotMarked(m_disconnectedCallback);
+    clearIfNotMarked(m_adoptedCallback);
+    clearIfNotMarked(m_attributeChangedCallback);
+    clearIfNotMarked(m_formAssociatedCallback);
+    clearIfNotMarked(m_formResetCallback);
+    clearIfNotMarked(m_formDisabledCallback);
+    clearIfNotMarked(m_formStateRestoreCallback);
 }
 
 } // namespace WebCore

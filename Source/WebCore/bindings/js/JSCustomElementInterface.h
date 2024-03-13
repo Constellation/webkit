@@ -54,7 +54,7 @@ class JSDOMGlobalObject;
 enum class CustomElementReactionType : uint8_t;
 enum class ParserConstructElementWithEmptyStack : bool { No, Yes };
 
-class JSCustomElementInterface final : public RefCounted<JSCustomElementInterface>, public ActiveDOMCallback {
+class JSCustomElementInterface final : public RefCounted<JSCustomElementInterface>, public CanMakeSingleThreadWeakPtr<JSCustomElementInterface>, public ActiveDOMCallback {
 public:
     static Ref<JSCustomElementInterface> create(const QualifiedName& name, JSC::JSObject* callback, JSDOMGlobalObject* globalObject)
     {
@@ -132,15 +132,15 @@ private:
     void invokeCallback(CustomElementReactionType, Element&, JSC::JSObject* callback);
 
     QualifiedName m_name;
-    JSC::Weak<JSC::JSObject> m_constructor;
-    JSC::Weak<JSC::JSObject> m_connectedCallback;
-    JSC::Weak<JSC::JSObject> m_disconnectedCallback;
-    JSC::Weak<JSC::JSObject> m_adoptedCallback;
-    JSC::Weak<JSC::JSObject> m_attributeChangedCallback;
-    JSC::Weak<JSC::JSObject> m_formAssociatedCallback;
-    JSC::Weak<JSC::JSObject> m_formResetCallback;
-    JSC::Weak<JSC::JSObject> m_formDisabledCallback;
-    JSC::Weak<JSC::JSObject> m_formStateRestoreCallback;
+    JSC::WriteBarrier<JSC::JSObject> m_constructor;
+    JSC::WriteBarrier<JSC::JSObject> m_connectedCallback;
+    JSC::WriteBarrier<JSC::JSObject> m_disconnectedCallback;
+    JSC::WriteBarrier<JSC::JSObject> m_adoptedCallback;
+    JSC::WriteBarrier<JSC::JSObject> m_attributeChangedCallback;
+    JSC::WriteBarrier<JSC::JSObject> m_formAssociatedCallback;
+    JSC::WriteBarrier<JSC::JSObject> m_formResetCallback;
+    JSC::WriteBarrier<JSC::JSObject> m_formDisabledCallback;
+    JSC::WriteBarrier<JSC::JSObject> m_formStateRestoreCallback;
     Ref<DOMWrapperWorld> m_isolatedWorld;
     Vector<RefPtr<Element>, 1> m_constructionStack;
     MemoryCompactRobinHoodHashSet<AtomString> m_observedAttributes;

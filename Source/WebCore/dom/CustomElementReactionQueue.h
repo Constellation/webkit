@@ -50,18 +50,26 @@ class Element;
 class HTMLFormElement;
 class JSCustomElementInterface;
 
+#define WEBCORE_FOR_EACH_CUSTOM_ELEMENT_REACTION(macro) \
+    macro(Invalid) \
+    macro(ElementUpgrade) \
+    macro(Connected) \
+    macro(Disconnected) \
+    macro(Adopted) \
+    macro(AttributeChanged) \
+    macro(FormAssociated) \
+    macro(FormReset) \
+    macro(FormDisabled) \
+    macro(FormStateRestore) \
+
 enum class CustomElementReactionType : uint8_t {
-    Invalid,
-    ElementUpgrade,
-    Connected,
-    Disconnected,
-    Adopted,
-    AttributeChanged,
-    FormAssociated,
-    FormReset,
-    FormDisabled,
-    FormStateRestore,
+#define WEBCORE_DEFINE_CUSTOM_ELEMENT_REACTION_TYPE(name) name,
+    WEBCORE_FOR_EACH_CUSTOM_ELEMENT_REACTION(WEBCORE_DEFINE_CUSTOM_ELEMENT_REACTION_TYPE)
+#undef WEBCORE_DEFINE_CUSTOM_ELEMENT_REACTION_TYPE
 };
+#define WEBCORE_COUNT_CUSTOM_ELEMENT_REACTION_TYPE(name) + 1
+static constexpr unsigned numberOfCustomElementReactionTypes = 0 WEBCORE_FOR_EACH_CUSTOM_ELEMENT_REACTION(WEBCORE_COUNT_CUSTOM_ELEMENT_REACTION_TYPE);
+#undef WEBCORE_COUNT_CUSTOM_ELEMENT_REACTION_TYPE
 
 class CustomElementReactionQueueItem {
     WTF_MAKE_FAST_ALLOCATED;
