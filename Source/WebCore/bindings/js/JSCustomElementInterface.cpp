@@ -59,7 +59,7 @@ JSCustomElementInterface::JSCustomElementInterface(const QualifiedName& name, JS
     , m_isShadowDisabled(false)
     , m_isFormAssociated(false)
 {
-    static_cast<JSVMClientData*>(commonVM().clientData)->addJSCustomElementInterface(*this)
+    static_cast<JSVMClientData*>(commonVM().clientData)->addJSCustomElementInterface(*this);
 }
 
 JSCustomElementInterface::~JSCustomElementInterface() = default;
