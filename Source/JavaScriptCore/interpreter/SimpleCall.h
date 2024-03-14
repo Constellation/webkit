@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "CallData.h"
 #include "CallLinkInfoBase.h"
 #include "JSFunction.h"
 #include "Interpreter.h"
@@ -32,42 +33,70 @@
 
 namespace JSC {
 
+class JSScope;
+
 class SimpleCall final : public CallLinkInfoBase {
     WTF_MAKE_NONCOPYABLE(SimpleCall);
 public:
-    SimpleCall(JSGlobalObject* globalObject, JSObject* function, int argumentCount)
+    SimpleCall()
         : CallLinkInfoBase(CallSiteType::SimpleCall)
     {
-        VM& vm = globalObject->vm();
-        vm.interpreter.prepareForSimpleCall(*this, function);
     }
 
     ~SimpleCall()
     {
-        m_addressForCall = nullptr;
+        clear();
     }
 
-    ALWAYS_INLINE JSValue call(JSGlobalObject* globalObject, JSObject* function, JSValue thisValue, const ArgList& args, NakedPtr<Exception>& returnedException)
+    ALWAYS_INLINE JSValue call(VM& vm, JSObject* function, JSValue thisValue, const ArgList& args, NakedPtr<Exception>& returnedException)
     {
-        return vm.interpreter.executeSimpleCall(globalObject, *this, function, thisValue, args, returnedException);
+        auto scope = DECLARE_CATCH_SCOPE(vm);
+        JSValue result = vm.interpreter.executeSimpleCall(*this, function, thisValue, args);
+        if (UNLIKELY(scope.exception())) {
+            returnedException = scope.exception();
+            scope.clearException();
+            return jsUndefined();
+        }
+        return result;
+    }
+
+    void finalizeUnconditionally(VM& vm)
+    {
+        if (m_globalObject && !vm.heap.isMarked(m_globalObject)) {
+            unlinkOrUpgradeImpl(vm, nullptr, nullptr);
+            return;
+        }
+        if (m_codeBlock && !vm.heap.isMarked(m_codeBlock)) {
+            unlinkOrUpgradeImpl(vm, nullptr, nullptr);
+            return;
+        }
+    }
+
+    void clear()
+    {
+        if (isOnList())
+            remove();
+        m_globalObject = nullptr;
+        m_codeBlock = nullptr;
+        m_addressForCall = nullptr;
+        m_nativeFunction = { };
     }
 
     void unlinkOrUpgradeImpl(VM&, CodeBlock*, CodeBlock*)
     {
-        if (isOnList())
-            remove();
-        m_codeBlock = nullptr;
-        m_addressForCall = nullptr;
+        clear();
     }
 
-    const CallData& callData() const { return m_callData; }
+    JSGlobalObject* globalObject() const { return m_globalObject; }
     CodeBlock* codeBlock() const { return m_codeBlock; }
     void* addressForCall() const { return m_addressForCall; }
+    TaggedNativeFunction nativeFunction() const { return m_nativeFunction; };
 
 private:
-    CallData m_callData { };
+    JSGlobalObject* m_globalObject { nullptr };
     CodeBlock* m_codeBlock { nullptr };
     void* m_addressForCall { nullptr };
+    TaggedNativeFunction m_nativeFunction { };
     friend class Interpreter;
 };
 

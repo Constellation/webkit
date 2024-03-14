@@ -1330,6 +1330,50 @@ JSObject* Interpreter::executeConstruct(JSObject* constructor, const CallData& c
     return asObject(JSValue::decode(result));
 }
 
+JSValue Interpreter::executeSimpleCall(SimpleCall& simpleCall, JSObject* function, JSValue thisValue, const ArgList& args)
+{
+    VM& vm = this->vm();
+    auto throwScope = DECLARE_THROW_SCOPE(vm);
+
+    if (UNLIKELY(!simpleCall.addressForCall() && !simpleCall.nativeFunction())) {
+        DeferTraps deferTraps(vm); // We can't jettison this code if we're about to run it.
+        prepareForSimpleCall(simpleCall, function);
+        RETURN_IF_EXCEPTION(throwScope, throwScope.exception());
+        ASSERT(simpleCall.addressForCall() || simpleCall.nativeFunction());
+    }
+
+    ASSERT(!vm.isCollectorBusyOnCurrentThread());
+    ASSERT(vm.currentThreadIsHoldingAPILock());
+
+    size_t argsCount = 1 + args.size(); // implicit "this" parameter
+
+    JSGlobalObject* globalObject = simpleCall.globalObject();
+    ProtoCallFrame protoCallFrame;
+    protoCallFrame.init(simpleCall.codeBlock(), globalObject, function, thisValue, argsCount, args.data());
+
+    auto clobberizeValidator = makeScopeExit([&] {
+        vm.didEnterVM = true;
+    });
+
+    VMEntryScope entryScope(vm, globalObject);
+    if (UNLIKELY(!vm.isSafeToRecurseSoft() || args.size() > maxArguments))
+        return throwStackOverflowError(globalObject, scope);
+
+    if (UNLIKELY(vm.disallowVMEntryCount))
+        return checkVMEntryPermission();
+
+    if (UNLIKELY(vm.traps().needHandling(VMTraps::NonDebuggerAsyncEvents))) {
+        if (vm.hasExceptionsAfterHandlingTraps())
+            return scope.exception();
+    }
+
+    // Execute the code:
+    scope.release();
+    if (simpleCall.addressForCall())
+        return JSValue::decode(vmEntryToJavaScript(simpleCall.addressForCall(), &vm, &protoCallFrame));
+    return JSValue::decode(vmEntryToNative(simpleCall.nativeFunction().taggedPtr(), &vm, &protoCallFrame));
+}
+
 CodeBlock* Interpreter::prepareForCachedCall(CachedCall& cachedCall, JSFunction* function)
 {
     VM& vm = this->vm();
@@ -1347,6 +1391,34 @@ CodeBlock* Interpreter::prepareForCachedCall(CachedCall& cachedCall, JSFunction*
     cachedCall.m_addressForCall = newCodeBlock->jitCode()->addressForCall();
     newCodeBlock->linkIncomingCall(nullptr, &cachedCall);
     return newCodeBlock;
+}
+
+void Interpreter::prepareForSimpleCall(SimpleCall& simpleCall, JSObject* function);
+{
+    VM& vm = this->vm();
+    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    throwScope.assertNoException();
+
+    auto callData = JSC::getCallData(function);
+    if (callData.type == CallData::Type::JS) {
+        // Compile the callee:
+        CodeBlock* newCodeBlock;
+        callData.js.functionExecutable->prepareForExecution<FunctionExecutable>(vm, function, callData.js.scope, CodeForCall, newCodeBlock);
+        RETURN_IF_EXCEPTION(throwScope, { });
+
+        ASSERT(newCodeBlock);
+        newCodeBlock->m_shouldAlwaysBeInlined = false;
+
+        simpleCall.m_addressForCall = newCodeBlock->jitCode()->addressForCall();
+        simpleCall.m_codeBlock = newCodeBlock;
+        simpleCall.m_globalObject = callData.js.scope->globalObject();
+        newCodeBlock->linkIncomingCall(nullptr, &simpleCall);
+        return newCodeBlock;
+    }
+
+    ASSERT(callData.type == CallData::Type::Native);
+    simpleCall.m_nativeFunction = callData.native.function;
+    simpleCall.m_globalObject = function->globalObject();
 }
 
 JSValue Interpreter::executeEval(EvalExecutable* eval, JSValue thisValue, JSScope* scope)

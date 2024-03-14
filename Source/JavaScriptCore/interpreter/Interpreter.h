@@ -78,6 +78,7 @@ using JSOrWasmInstruction = std::variant<const JSInstruction*, const WasmInstruc
     class Register;
     class JSObject;
     class JSScope;
+    class SimpleCall;
     class SourceCode;
     class StackFrame;
     enum class HandlerType : uint8_t;
@@ -150,6 +151,7 @@ using JSOrWasmInstruction = std::variant<const JSInstruction*, const WasmInstruc
         JSValue executeCall(JSObject* function, const CallData&, JSValue thisValue, const ArgList&);
         JSObject* executeConstruct(JSObject* function, const CallData&, const ArgList&, JSValue newTarget);
         JSValue executeEval(EvalExecutable*, JSValue thisValue, JSScope*);
+        JS_EXPORT_PRIVATE JSValue executeSimpleCall(SimpleCall&, JSObject* function, JSValue thisValue, const ArgList&);
 
         void getArgumentsData(CallFrame*, JSFunction*&, ptrdiff_t& firstParameterIndex, Register*& argv, int& argc);
 
@@ -161,6 +163,8 @@ using JSOrWasmInstruction = std::variant<const JSInstruction*, const WasmInstruc
         void getStackTrace(JSCell* owner, Vector<StackFrame>& results, size_t framesToSkip = 0, size_t maxStackSize = std::numeric_limits<size_t>::max(), JSCell* caller = nullptr, JSCell* ownerOfCallLinkInfo = nullptr, CallLinkInfo* = nullptr);
 
         static JSValue checkVMEntryPermission();
+
+        void prepareForSimpleCall(SimpleCall&, JSObject*);
 
     private:
         enum ExecutionFlag { Normal, InitializeAndReturn };
