@@ -62,6 +62,7 @@ public:
         DirectCall,
 #endif
         CachedCall,
+        SimpleCall,
     };
 
     enum CallType : uint8_t {

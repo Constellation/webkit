@@ -30,6 +30,7 @@
 #include "CallLinkInfo.h"
 #include "JSCJSValueInlines.h"
 #include "PolymorphicCallStubRoutine.h"
+#include "SimpleCall.h"
 
 namespace JSC {
 
@@ -49,6 +50,9 @@ void CallLinkInfoBase::unlinkOrUpgrade(VM& vm, CodeBlock* oldCodeBlock, CodeBloc
 #endif
     case CallSiteType::CachedCall:
         static_cast<CachedCall*>(this)->unlinkOrUpgradeImpl(vm, oldCodeBlock, newCodeBlock);
+        break;
+    case CallSiteType::SimpleCall:
+        static_cast<SimpleCall*>(this)->unlinkOrUpgradeImpl(vm, oldCodeBlock, newCodeBlock);
         break;
     }
 }

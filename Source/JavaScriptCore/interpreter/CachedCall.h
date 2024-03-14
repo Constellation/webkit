@@ -37,7 +37,7 @@
 
 namespace JSC {
 
-class CachedCall : public CallLinkInfoBase {
+class CachedCall final : public CallLinkInfoBase {
     WTF_MAKE_NONCOPYABLE(CachedCall);
     WTF_FORBID_HEAP_ALLOCATION;
 public:
