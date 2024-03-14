@@ -69,6 +69,7 @@
 #include "Register.h"
 #include "RegisterAtOffsetList.h"
 #include "ScopedArguments.h"
+#include "SimpleCall.h"
 #include "StackFrame.h"
 #include "StackVisitor.h"
 #include "StrictEvalActivation.h"
@@ -1357,18 +1358,18 @@ JSValue Interpreter::executeSimpleCall(SimpleCall& simpleCall, JSObject* functio
 
     VMEntryScope entryScope(vm, globalObject);
     if (UNLIKELY(!vm.isSafeToRecurseSoft() || args.size() > maxArguments))
-        return throwStackOverflowError(globalObject, scope);
+        return throwStackOverflowError(globalObject, throwScope);
 
     if (UNLIKELY(vm.disallowVMEntryCount))
         return checkVMEntryPermission();
 
     if (UNLIKELY(vm.traps().needHandling(VMTraps::NonDebuggerAsyncEvents))) {
         if (vm.hasExceptionsAfterHandlingTraps())
-            return scope.exception();
+            return throwScope.exception();
     }
 
     // Execute the code:
-    scope.release();
+    throwScope.release();
     if (simpleCall.addressForCall())
         return JSValue::decode(vmEntryToJavaScript(simpleCall.addressForCall(), &vm, &protoCallFrame));
     return JSValue::decode(vmEntryToNative(simpleCall.nativeFunction().taggedPtr(), &vm, &protoCallFrame));
@@ -1393,7 +1394,7 @@ CodeBlock* Interpreter::prepareForCachedCall(CachedCall& cachedCall, JSFunction*
     return newCodeBlock;
 }
 
-void Interpreter::prepareForSimpleCall(SimpleCall& simpleCall, JSObject* function);
+void Interpreter::prepareForSimpleCall(SimpleCall& simpleCall, JSObject* function)
 {
     VM& vm = this->vm();
     auto throwScope = DECLARE_THROW_SCOPE(vm);
@@ -1403,8 +1404,8 @@ void Interpreter::prepareForSimpleCall(SimpleCall& simpleCall, JSObject* functio
     if (callData.type == CallData::Type::JS) {
         // Compile the callee:
         CodeBlock* newCodeBlock;
-        callData.js.functionExecutable->prepareForExecution<FunctionExecutable>(vm, function, callData.js.scope, CodeForCall, newCodeBlock);
-        RETURN_IF_EXCEPTION(throwScope, { });
+        callData.js.functionExecutable->prepareForExecution<FunctionExecutable>(vm, jsCast<JSFunction*>(function), callData.js.scope, CodeForCall, newCodeBlock);
+        RETURN_IF_EXCEPTION(throwScope, void());
 
         ASSERT(newCodeBlock);
         newCodeBlock->m_shouldAlwaysBeInlined = false;
@@ -1413,7 +1414,7 @@ void Interpreter::prepareForSimpleCall(SimpleCall& simpleCall, JSObject* functio
         simpleCall.m_codeBlock = newCodeBlock;
         simpleCall.m_globalObject = callData.js.scope->globalObject();
         newCodeBlock->linkIncomingCall(nullptr, &simpleCall);
-        return newCodeBlock;
+        return;
     }
 
     ASSERT(callData.type == CallData::Type::Native);

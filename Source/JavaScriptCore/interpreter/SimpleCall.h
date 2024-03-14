@@ -20,13 +20,14 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #pragma once
 
 #include "CallData.h"
 #include "CallLinkInfoBase.h"
+#include "CatchScope.h"
 #include "JSFunction.h"
 #include "Interpreter.h"
 #include "VMInlines.h"
@@ -79,7 +80,7 @@ public:
         m_globalObject = nullptr;
         m_codeBlock = nullptr;
         m_addressForCall = nullptr;
-        m_nativeFunction = { };
+        m_nativeFunction = nullptr;
     }
 
     void unlinkOrUpgradeImpl(VM&, CodeBlock*, CodeBlock*)

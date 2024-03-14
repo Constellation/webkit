@@ -31,6 +31,7 @@
 #include "CustomElementReactionQueue.h"
 #include "QualifiedName.h"
 #include <JavaScriptCore/JSObject.h>
+#include <JavaScriptCore/SimpleCall.h>
 #include <JavaScriptCore/Weak.h>
 #include <JavaScriptCore/WeakInlines.h>
 #include <wtf/Forward.h>
@@ -131,12 +132,14 @@ private:
 
     RefPtr<Element> tryToConstructCustomElement(Document&, const AtomString&, ParserConstructElementWithEmptyStack);
 
-    template<typename AddArguments>
-    void invokeCallback(CustomElementReactionType, Element&, const AddArguments& addArguments);
-    void invokeCallback(CustomElementReactionType, Element&);
+    template<CustomElementReactionType, typename AddArguments>
+    void invokeCallback(Element&, const AddArguments& addArguments);
+    template<CustomElementReactionType>
+    void invokeCallback(Element&);
 
     QualifiedName m_name;
     std::array<JSC::WriteBarrier<JSC::JSObject>, numberOfCustomElementReactionTypes> m_callbacks { };
+    JSC::SimpleCall m_attributeChangedCall;
     Ref<DOMWrapperWorld> m_isolatedWorld;
     Vector<RefPtr<Element>, 1> m_constructionStack;
     MemoryCompactRobinHoodHashSet<AtomString> m_observedAttributes;
