@@ -1950,6 +1950,7 @@
 		E339700523210E0B00B0AE21 /* JSInternalFieldObjectImplInlines.h in Headers */ = {isa = PBXBuildFile; fileRef = E339700423210E0A00B0AE21 /* JSInternalFieldObjectImplInlines.h */; };
 		E33A94962255323000D42B06 /* RandomizingFuzzerAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = E33A94942255322900D42B06 /* RandomizingFuzzerAgent.h */; };
 		E33A94972255323300D42B06 /* FuzzerAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = E33A94922255322900D42B06 /* FuzzerAgent.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		E33AE3D22BA2D08C00B0F71D /* SimpleCall.h in Headers */ = {isa = PBXBuildFile; fileRef = E33AE3D12BA2D08C00B0F71D /* SimpleCall.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E33BBE0925BFA0410053690F /* WasmStreamingCompiler.h in Headers */ = {isa = PBXBuildFile; fileRef = E33BBE0825BFA03C0053690F /* WasmStreamingCompiler.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E33D203C277F304000A45FBB /* ZycoreDefines.h in Headers */ = {isa = PBXBuildFile; fileRef = E33D1FEB277F303F00A45FBB /* ZycoreDefines.h */; };
 		E33D2049277F304000A45FBB /* ZycoreComparison.h in Headers */ = {isa = PBXBuildFile; fileRef = E33D1FF8277F303F00A45FBB /* ZycoreComparison.h */; };
@@ -5543,6 +5544,7 @@
 		E33A94932255322900D42B06 /* RandomizingFuzzerAgent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RandomizingFuzzerAgent.cpp; sourceTree = "<group>"; };
 		E33A94942255322900D42B06 /* RandomizingFuzzerAgent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RandomizingFuzzerAgent.h; sourceTree = "<group>"; };
 		E33A94952255322A00D42B06 /* FuzzerAgent.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FuzzerAgent.cpp; sourceTree = "<group>"; };
+		E33AE3D12BA2D08C00B0F71D /* SimpleCall.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleCall.h; sourceTree = "<group>"; };
 		E33BBE0725BFA03C0053690F /* WasmStreamingCompiler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WasmStreamingCompiler.cpp; sourceTree = "<group>"; };
 		E33BBE0825BFA03C0053690F /* WasmStreamingCompiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WasmStreamingCompiler.h; sourceTree = "<group>"; };
 		E33D1FE8277F303F00A45FBB /* ZydisGeneratedEnumRegister.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ZydisGeneratedEnumRegister.h; sourceTree = "<group>"; };
@@ -6807,6 +6809,7 @@
 				DC17E8131C9C7FD4008A6AB3 /* ShadowChicken.cpp */,
 				DC17E8141C9C7FD4008A6AB3 /* ShadowChicken.h */,
 				DC17E8151C9C7FD4008A6AB3 /* ShadowChickenInlines.h */,
+				E33AE3D12BA2D08C00B0F71D /* SimpleCall.h */,
 				A7C1EAEC17987AB600299DB2 /* StackVisitor.cpp */,
 				A7C1EAED17987AB600299DB2 /* StackVisitor.h */,
 				658D3A5519638268003C45D6 /* VMEntryRecord.h */,
@@ -11645,6 +11648,7 @@
 				FE2D0B382AE242B000A071A7 /* SideDataRepository.h in Headers */,
 				4BC18E5628FDE6C800ECD68D /* SIMDInfo.h in Headers */,
 				E379B59029834EC5007C4C0E /* SIMDShuffle.h in Headers */,
+				E33AE3D22BA2D08C00B0F71D /* SimpleCall.h in Headers */,
 				0F4D8C781FCA3CFA001D32AC /* SimpleMarkingConstraint.h in Headers */,
 				0F2B670517B6B5AB00A7AE3F /* SimpleTypedArrayController.h in Headers */,
 				14BA78F113AAB88F005B7C2C /* SlotVisitor.h in Headers */,

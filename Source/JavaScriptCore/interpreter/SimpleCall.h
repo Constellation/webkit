@@ -26,14 +26,9 @@
 #pragma once
 
 #include "CallLinkInfoBase.h"
-#include "ExceptionHelpers.h"
 #include "JSFunction.h"
 #include "Interpreter.h"
-#include "ProtoCallFrameInlines.h"
-#include "VMEntryScope.h"
 #include "VMInlines.h"
-#include <wtf/ForbidHeapAllocation.h>
-#include <wtf/Scope.h>
 
 namespace JSC {
 

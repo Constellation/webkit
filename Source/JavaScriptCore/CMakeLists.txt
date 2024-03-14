@@ -875,6 +875,7 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     interpreter/Register.h
     interpreter/RegisterInlines.h
     interpreter/ShadowChicken.h
+    interpreter/SimpleCall.h
     interpreter/StackVisitor.h
     interpreter/VMEntryRecord.h
 
