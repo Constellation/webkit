@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2006-2024 Apple Inc. All rights reserved.
  * Copyright (C) Research In Motion Limited 2011. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,10 +27,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GlyphPage_h
-#define GlyphPage_h
+#pragma once
 
-#include "Font.h"
 #include "Glyph.h"
 #include "TextFlags.h"
 #include <unicode/utypes.h>
@@ -38,18 +36,16 @@
 #include <wtf/CheckedPtr.h>
 #include <wtf/RefCounted.h>
 #include <wtf/Ref.h>
+#include <wtf/WeakPtr.h>
 
 namespace WebCore {
+
+class Font;
 
 // Holds the glyph index and the corresponding Font information for a given
 // character.
 struct GlyphData {
-    GlyphData(Glyph glyph = 0, const Font* font = nullptr, ColorGlyphType colorGlyphType = ColorGlyphType::Outline)
-        : glyph(glyph)
-        , colorGlyphType(colorGlyphType)
-        , font(font)
-    {
-    }
+    GlyphData(Glyph = 0, const Font* = nullptr, ColorGlyphType = ColorGlyphType::Outline);
 
     bool isValid() const { return !!font; }
 
@@ -61,7 +57,7 @@ struct GlyphData {
 // A GlyphPage contains a fixed-size set of GlyphData mappings for a contiguous
 // range of characters in the Unicode code space. GlyphPages are indexed
 // starting from 0 and incrementing for each "size" number of glyphs.
-class GlyphPage : public RefCounted<GlyphPage> {
+class GlyphPage final : public RefCounted<GlyphPage> {
 public:
     static Ref<GlyphPage> create(const Font& font)
     {
@@ -75,13 +71,13 @@ public:
 
     static unsigned count() { return s_count; }
 
-    static const unsigned size = 16;
+    static constexpr unsigned size = 16;
 
-    static unsigned sizeForPageNumber(unsigned) { return 16; }
-    static unsigned indexForCodePoint(char32_t c) { return c % size; }
-    static unsigned pageNumberForCodePoint(char32_t c) { return c / size; }
-    static char32_t startingCodePointInPageNumber(unsigned pageNumber) { return pageNumber * size; }
-    static bool pageNumberIsUsedForArabic(unsigned pageNumber) { return startingCodePointInPageNumber(pageNumber) >= 0x600 && startingCodePointInPageNumber(pageNumber) + sizeForPageNumber(pageNumber) < 0x700; }
+    static constexpr unsigned sizeForPageNumber(unsigned) { return GlyphPage::size; }
+    static constexpr unsigned indexForCodePoint(char32_t c) { return c % size; }
+    static constexpr unsigned pageNumberForCodePoint(char32_t c) { return c / size; }
+    static constexpr char32_t startingCodePointInPageNumber(unsigned pageNumber) { return pageNumber * size; }
+    static constexpr bool pageNumberIsUsedForArabic(unsigned pageNumber) { return startingCodePointInPageNumber(pageNumber) >= 0x600 && startingCodePointInPageNumber(pageNumber) + sizeForPageNumber(pageNumber) < 0x700; }
 
     GlyphData glyphDataForCharacter(char32_t c) const
     {
@@ -129,11 +125,7 @@ public:
     bool fill(UChar* characterBuffer, unsigned bufferLength);
 
 private:
-    explicit GlyphPage(const Font& font)
-        : m_font(font)
-    {
-        ++s_count;
-    }
+    explicit GlyphPage(const Font&);
 
     SingleThreadWeakPtr<const Font> m_font;
     Glyph m_glyphs[size] { };
@@ -143,5 +135,3 @@ private:
 };
 
 } // namespace WebCore
-
-#endif // GlyphPage_h

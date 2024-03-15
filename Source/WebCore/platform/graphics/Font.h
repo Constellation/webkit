@@ -60,7 +60,6 @@ namespace WebCore {
 
 class FontCache;
 class FontDescription;
-class GlyphPage;
 
 struct GlyphData;
 #if ENABLE(MULTI_REPRESENTATION_HEIC)
@@ -261,6 +260,9 @@ private:
     float platformWidthForGlyph(Glyph) const;
     Path platformPathForGlyph(Glyph) const;
 
+    RefPtr<GlyphPage> createAndFillGlyphPage(unsigned pageNumber) const;
+    const GlyphPage* glyphPageSlow(unsigned pageNumber) const;
+
 #if PLATFORM(COCOA)
     class ComplexColorFormatGlyphs {
     public:
@@ -293,13 +295,16 @@ private:
     ComplexColorFormatGlyphs& glyphsWithComplexColorFormat() const;
 #endif
 
+    static constexpr unsigned fastGlyphPageCount = 256 / GlyphPage::size;
+
     FontMetrics m_fontMetrics;
     float m_maxCharWidth { -1 };
     float m_avgCharWidth { -1 };
 
     const FontPlatformData m_platformData;
 
-    mutable HashMap<unsigned, RefPtr<GlyphPage>, IntHash<unsigned>, WTF::UnsignedWithZeroKeyHashTraits<unsigned>> m_glyphPages;
+    mutable std::array<RefPtr<GlyphPage>, fastGlyphPageCount> m_fastGlyphPages { };
+    mutable HashMap<unsigned, RefPtr<GlyphPage>> m_glyphPages;
     mutable GlyphMetricsMap<float> m_glyphToWidthMap;
     mutable std::unique_ptr<GlyphMetricsMap<FloatRect>> m_glyphToBoundsMap;
     // FIXME: Find a more efficient way to represent std::optional<Path>.
@@ -424,6 +429,24 @@ ALWAYS_INLINE float Font::widthForGlyph(Glyph glyph, SyntheticBoldInclusion Synt
 
     m_glyphToWidthMap.setMetricsForGlyph(glyph, width);
     return width + (SyntheticBoldInclusion == SyntheticBoldInclusion::Incorporate ? syntheticBoldOffset() : 0);
+}
+
+ALWAYS_INLINE const GlyphPage* Font::glyphPage(unsigned pageNumber) const
+{
+    if (pageNumber < m_fastGlyphPages.size()) {
+        auto& result = m_fastGlyphPages[pageNumber];
+        if (!result) {
+            if (auto newValue = createAndFillGlyphPage(pageNumber))
+                result = WTFMove(newValue);
+            else
+                result = RefPtr<GlyphPage> { WTF::HashTableDeletedValue };
+        }
+        if (result.isHashTableDeletedValue())
+            return nullptr;
+        return result.get();
+    }
+
+    return glyphPageSlow(pageNumber);
 }
 
 #if !LOG_DISABLED

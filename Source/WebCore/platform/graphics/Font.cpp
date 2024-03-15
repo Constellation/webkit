@@ -176,6 +176,12 @@ void Font::platformGlyphInit()
 Font::~Font()
 {
     SystemFallbackFontCache::forCurrentThread().remove(this);
+    for (auto& page : m_fastGlyphPages) {
+        if (page.isHashTableDeletedValue()) {
+            auto* dummy = page.leakRef();
+            UNUSED_VARIABLE(dummy);
+        }
+    }
 }
 
 RenderingResourceIdentifier Font::renderingResourceIdentifier() const
@@ -318,7 +324,7 @@ static std::optional<size_t> codePointSupportIndex(char32_t codePoint)
 }
 
 #if PLATFORM(WIN)
-static void overrideControlCharacters(Vector<UChar>& buffer, unsigned start, unsigned end)
+static void overrideControlCharacters(UChar* buffer, unsigned start, unsigned end)
 {
     auto overwriteCodePoints = [&](unsigned minimum, unsigned maximum, UChar newCodePoint) {
         unsigned begin = std::max(start, minimum);
@@ -360,20 +366,20 @@ static void overrideControlCharacters(Vector<UChar>& buffer, unsigned start, uns
 }
 #endif
 
-static RefPtr<GlyphPage> createAndFillGlyphPage(unsigned pageNumber, const Font& font)
+RefPtr<GlyphPage> Font::createAndFillGlyphPage(unsigned pageNumber) const
 {
 #if PLATFORM(IOS_FAMILY)
     // FIXME: Times New Roman contains Arabic glyphs, but Core Text doesn't know how to shape them. See <rdar://problem/9823975>.
     // Once we have the fix for <rdar://problem/9823975> then remove this code together with Font::shouldNotBeUsedForArabic()
     // in <rdar://problem/12096835>.
-    if (GlyphPage::pageNumberIsUsedForArabic(pageNumber) && font.shouldNotBeUsedForArabic())
+    if (GlyphPage::pageNumberIsUsedForArabic(pageNumber) && shouldNotBeUsedForArabic())
         return nullptr;
 #endif
 
-    unsigned glyphPageSize = GlyphPage::sizeForPageNumber(pageNumber);
+    constexpr unsigned glyphPageSize = GlyphPage::size;
 
     unsigned start = GlyphPage::startingCodePointInPageNumber(pageNumber);
-    Vector<UChar> buffer(glyphPageSize * 2 + 2);
+    UChar buffer[glyphPageSize * 2 + 2];
     unsigned bufferLength;
     if (U_IS_BMP(start)) {
         bufferLength = glyphPageSize;
@@ -398,20 +404,21 @@ static RefPtr<GlyphPage> createAndFillGlyphPage(unsigned pageNumber, const Font&
     // routine of our glyph map for actually filling in the page with the glyphs.
     // Success is not guaranteed. For example, Times fails to fill page 260, giving glyph data
     // for only 128 out of 256 characters.
-    Ref glyphPage = GlyphPage::create(font);
+    Ref glyphPage = GlyphPage::create(*this);
 
-    bool haveGlyphs = fillGlyphPage(glyphPage, buffer.data(), bufferLength, font);
+    bool haveGlyphs = fillGlyphPage(glyphPage, buffer, bufferLength, *this);
     if (!haveGlyphs)
         return nullptr;
 
     return glyphPage;
 }
 
-const GlyphPage* Font::glyphPage(unsigned pageNumber) const
+const GlyphPage* Font::glyphPageSlow(unsigned pageNumber) const
 {
+    ASSERT(pageNumber != 0); // pageNumber 0 should go to m_fastGlyphPages.
     auto addResult = m_glyphPages.add(pageNumber, nullptr);
     if (addResult.isNewEntry)
-        addResult.iterator->value = createAndFillGlyphPage(pageNumber, *this);
+        addResult.iterator->value = createAndFillGlyphPage(pageNumber);
 
     return addResult.iterator->value.get();
 }

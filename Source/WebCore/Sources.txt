@@ -2290,6 +2290,7 @@ platform/graphics/FontTaggedSettings.cpp
 platform/graphics/FourCC.cpp
 platform/graphics/GeneratedImage.cpp
 platform/graphics/GeometryUtilities.cpp
+platform/graphics/GlyphPage.cpp
 platform/graphics/Gradient.cpp
 platform/graphics/GradientColorStop.cpp
 platform/graphics/GradientColorStops.cpp
