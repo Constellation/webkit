@@ -66,7 +66,7 @@ public:
     using Cache = std::array<Entry, capacity>;
 
     template<typename Func>
-    JSString* make(VM&, SmallStringKey&, const Func&);
+    JSString* make(VM&, SmallStringKey, const Func&);
 
     ALWAYS_INLINE void clear()
     {
