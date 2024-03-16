@@ -38,7 +38,7 @@ public:
 
     class alignas(alignof(uint64_t)) SmallStringKey {
     public:
-        static constexpr unsigned maxStringLengthForCache = 7;
+        static constexpr unsigned maxLength = 7;
         static constexpr uint8_t invalidKey = 0xff;
 
         constexpr SmallStringKey() = default;
@@ -54,7 +54,7 @@ public:
 
     private:
         uint8_t m_length { 0 };
-        LChar m_characters[maxStringLengthForCache] { };
+        LChar m_characters[maxLength] { };
     };
     static_assert(sizeof(SmallStringKey) == sizeof(uint64_t));
 

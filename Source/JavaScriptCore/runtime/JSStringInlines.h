@@ -495,6 +495,13 @@ inline JSString* jsSubstringOfResolved(VM& vm, GCDeferralContext* deferralContex
             WTF::HashTranslatorCharBuffer<LChar> buffer { buf, length };
             return vm.keyAtomStringCache.make(vm, buffer, createFromSubstring);
         }
+    } else {
+        SmallStringCache::SmallStringKey key { StringView(s->valueInternal()).substring(offset, length) };
+        if (key.isValid()) {
+            return vm.smallStringCache.make(vm, key, [&](SmallStringCache::SmallStringKey key) {
+                return JSString::create(vm, deferralContext, StringImpl::create(key.characters(), key.length()));
+            });
+        }
     }
     return JSRopeString::createSubstringOfResolved(vm, deferralContext, s, offset, length);
 }

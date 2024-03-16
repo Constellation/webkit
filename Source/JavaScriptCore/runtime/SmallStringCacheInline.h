@@ -35,7 +35,7 @@ namespace JSC {
 ALWAYS_INLINE SmallStringCache::SmallStringKey::SmallStringKey(StringView view)
 {
     unsigned length = view.length();
-    if (length > maxStringLengthForCache) {
+    if (length > maxLength) {
         m_length = invalidKey;
         return;
     }
