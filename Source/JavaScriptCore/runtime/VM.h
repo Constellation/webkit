@@ -50,6 +50,7 @@
 #include "NativeFunction.h"
 #include "NumericStrings.h"
 #include "SlotVisitorMacros.h"
+#include "SmallStringCache.h"
 #include "SmallStrings.h"
 #include "StringReplaceCache.h"
 #include "StringSplitCache.h"
@@ -588,6 +589,7 @@ public:
     Ref<AtomStringImpl> lastAtomizedIdentifierAtomStringImpl { *static_cast<AtomStringImpl*>(StringImpl::empty()) };
     JSONAtomStringCache jsonAtomStringCache;
     KeyAtomStringCache keyAtomStringCache;
+    SmallStringCache smallStringCache;
     StringSplitCache stringSplitCache;
     Vector<unsigned> stringSplitIndice;
     StringReplaceCache stringReplaceCache;

@@ -28,6 +28,7 @@
 #include "JSGlobalObjectInlines.h"
 #include "JSString.h"
 #include "KeyAtomStringCacheInlines.h"
+#include "SmallStringCacheInline.h"
 
 namespace JSC {
 
@@ -494,6 +495,13 @@ inline JSString* jsSubstringOfResolved(VM& vm, GCDeferralContext* deferralContex
             LChar buf[] = { static_cast<LChar>(first), static_cast<LChar>(second) };
             WTF::HashTranslatorCharBuffer<LChar> buffer { buf, length };
             return vm.keyAtomStringCache.make(vm, buffer, createFromSubstring);
+        }
+    } else {
+        SmallStringCache::SmallStringKey key { StringView(s->valueInternal()).substring(offset, length) };
+        if (key.isValid()) {
+            return vm.smallStringCache.make(vm, key, [&](VM& vm, SmallStringCache::SmallStringKey) {
+                return JSRopeString::createSubstringOfResolved(vm, deferralContext, s, offset, length);
+            });
         }
     }
     return JSRopeString::createSubstringOfResolved(vm, deferralContext, s, offset, length);

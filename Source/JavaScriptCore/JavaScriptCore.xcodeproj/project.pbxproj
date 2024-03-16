@@ -2040,6 +2040,8 @@
 		E3A421431D6F58930007C617 /* PreciseJumpTargetsInlines.h in Headers */ = {isa = PBXBuildFile; fileRef = E3A421421D6F588F0007C617 /* PreciseJumpTargetsInlines.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E3AC277721FDB4940024452C /* RegExpCachedResult.h in Headers */ = {isa = PBXBuildFile; fileRef = 86F75EFC151C062F007C9BA3 /* RegExpCachedResult.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E3B24859291224540029C08A /* BufferMemoryHandle.h in Headers */ = {isa = PBXBuildFile; fileRef = E3B24857291224530029C08A /* BufferMemoryHandle.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		E3B9C2522BA553B700AEF33D /* SmallStringCache.h in Headers */ = {isa = PBXBuildFile; fileRef = E3B9C2502BA553B600AEF33D /* SmallStringCache.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		E3B9C2532BA553B700AEF33D /* SmallStringCacheInline.h in Headers */ = {isa = PBXBuildFile; fileRef = E3B9C2512BA553B600AEF33D /* SmallStringCacheInline.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E3BAEA8B29CEA43900A8E3BB /* MegamorphicCache.h in Headers */ = {isa = PBXBuildFile; fileRef = E3BAEA8929CEA43800A8E3BB /* MegamorphicCache.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E3BD2B7622F275020011765C /* WasmCompilationMode.h in Headers */ = {isa = PBXBuildFile; fileRef = E3BD2B7522F275020011765C /* WasmCompilationMode.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		E3BF1BAE238AAEDB003A1C2B /* IsoHeapCellType.h in Headers */ = {isa = PBXBuildFile; fileRef = E3BF1BAD238AAED1003A1C2B /* IsoHeapCellType.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -5735,6 +5737,8 @@
 		E3A421421D6F588F0007C617 /* PreciseJumpTargetsInlines.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PreciseJumpTargetsInlines.h; sourceTree = "<group>"; };
 		E3B24857291224530029C08A /* BufferMemoryHandle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BufferMemoryHandle.h; sourceTree = "<group>"; };
 		E3B24858291224530029C08A /* BufferMemoryHandle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BufferMemoryHandle.cpp; sourceTree = "<group>"; };
+		E3B9C2502BA553B600AEF33D /* SmallStringCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SmallStringCache.h; sourceTree = "<group>"; };
+		E3B9C2512BA553B600AEF33D /* SmallStringCacheInline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SmallStringCacheInline.h; sourceTree = "<group>"; };
 		E3BAEA8929CEA43800A8E3BB /* MegamorphicCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MegamorphicCache.h; sourceTree = "<group>"; };
 		E3BAEA8A29CEA43800A8E3BB /* MegamorphicCache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MegamorphicCache.cpp; sourceTree = "<group>"; };
 		E3BD2B7522F275020011765C /* WasmCompilationMode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WasmCompilationMode.h; sourceTree = "<group>"; };
@@ -8685,6 +8689,8 @@
 				0F2B66D617B6B5AB00A7AE3F /* SimpleTypedArrayController.cpp */,
 				0F2B66D717B6B5AB00A7AE3F /* SimpleTypedArrayController.h */,
 				FE8C0311264A6910001A44AD /* SlowPathFunction.h */,
+				E3B9C2502BA553B600AEF33D /* SmallStringCache.h */,
+				E3B9C2512BA553B600AEF33D /* SmallStringCacheInline.h */,
 				93303FE80E6A72B500786E6A /* SmallStrings.cpp */,
 				93303FEA0E6A72C000786E6A /* SmallStrings.h */,
 				425BA1337E4344E1B269A671 /* SourceOrigin.h */,
@@ -11652,6 +11658,8 @@
 				FE041553252EC0730091EB5D /* SlotVisitorMacros.h in Headers */,
 				A709F2F017A0AC0400512E98 /* SlowPathCall.h in Headers */,
 				FE8C0312264A6911001A44AD /* SlowPathFunction.h in Headers */,
+				E3B9C2522BA553B700AEF33D /* SmallStringCache.h in Headers */,
+				E3B9C2532BA553B700AEF33D /* SmallStringCacheInline.h in Headers */,
 				933040040E6A749400786E6A /* SmallStrings.h in Headers */,
 				E3F23A821ECF13FE00978D99 /* Snippet.h in Headers */,
 				FE187A0F1C030D6C0038BBCA /* SnippetOperand.h in Headers */,
