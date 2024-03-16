@@ -28,6 +28,7 @@
 #include "JSGlobalObjectInlines.h"
 #include "JSString.h"
 #include "KeyAtomStringCacheInlines.h"
+#include "SmallStringCacheInline.h"
 
 namespace JSC {
 
@@ -498,7 +499,7 @@ inline JSString* jsSubstringOfResolved(VM& vm, GCDeferralContext* deferralContex
     } else {
         SmallStringCache::SmallStringKey key { StringView(s->valueInternal()).substring(offset, length) };
         if (key.isValid()) {
-            return vm.smallStringCache.make(vm, key, [&](SmallStringCache::SmallStringKey key) {
+            return vm.smallStringCache.make(vm, key, [&](VM& vm, SmallStringCache::SmallStringKey key) {
                 return JSString::create(vm, deferralContext, StringImpl::create(key.characters(), key.length()));
             });
         }
