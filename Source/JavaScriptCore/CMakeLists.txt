@@ -1223,6 +1223,8 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     runtime/ShadowRealmObject.h
     runtime/SideDataRepository.h
     runtime/SlowPathFunction.h
+    runtime/SmallStringCache.h
+    runtime/SmallStringCacheInline.h
     runtime/SmallStrings.h
     runtime/SourceOrigin.h
     runtime/SparseArrayValueMap.h
