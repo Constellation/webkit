@@ -912,7 +912,7 @@ void JIT::emit_op_resolve_scope(const JSInstruction* currentInstruction)
         using BaselineJITRegisters::ResolveScope::bytecodeOffsetGPR;
 
         emitGetVirtualRegisterPayload(scope, scopeGPR);
-        addPtr(TrustedImm32(metadataOffset), s_metadataGPR, metadataGPR);
+        addPtr(TrustedImm32(metadataOffset), GPRInfo::metadataTableRegister, metadataGPR);
         move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
 
         MacroAssemblerCodeRef<JITThunkPtrTag> code;
@@ -1133,7 +1133,7 @@ void JIT::emit_op_get_from_scope(const JSInstruction* currentInstruction)
     using BaselineJITRegisters::GetFromScope::bytecodeOffsetGPR;
 
     emitGetVirtualRegisterPayload(scope, scopeGPR);
-    addPtr(TrustedImm32(metadataOffset), s_metadataGPR, metadataGPR);
+    addPtr(TrustedImm32(metadataOffset), GPRInfo::metadataTableRegister, metadataGPR);
     move(TrustedImm32(bytecodeOffset), bytecodeOffsetGPR);
 
     MacroAssemblerCodeRef<JITThunkPtrTag> code;
