@@ -67,9 +67,10 @@ JSRemoteDOMWindowBase::JSRemoteDOMWindowBase(VM& vm, Structure* structure, RefPt
 {
 }
 
-void JSRemoteDOMWindowBase::destroy(JSCell* cell)
+JSC::DestructionResult JSRemoteDOMWindowBase::destroy(JSCell* cell, JSC::DestructionConcurrency)
 {
     static_cast<JSRemoteDOMWindowBase*>(cell)->JSRemoteDOMWindowBase::~JSRemoteDOMWindowBase();
+    return JSC::DestructionResult::Destroyed;
 }
 
 RuntimeFlags JSRemoteDOMWindowBase::javaScriptRuntimeFlags(const JSGlobalObject*)

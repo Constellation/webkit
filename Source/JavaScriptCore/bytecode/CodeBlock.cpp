@@ -1668,9 +1668,10 @@ void CodeBlock::finalizeUnconditionally(VM& vm, CollectionScope)
     m_visitChildrenSkippedDueToOldAge = false;
 }
 
-void CodeBlock::destroy(JSCell* cell)
+DestructionResult CodeBlock::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<CodeBlock*>(cell)->~CodeBlock();
+    return DestructionResult::Destroyed;
 }
 
 void CodeBlock::getICStatusMap(const ConcurrentJSLocker&, ICStatusMap& result)

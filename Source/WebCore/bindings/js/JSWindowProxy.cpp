@@ -76,9 +76,10 @@ JSWindowProxy& JSWindowProxy::create(VM& vm, DOMWindow& window, DOMWrapperWorld&
     return proxy;
 }
 
-void JSWindowProxy::destroy(JSCell* cell)
+JSC::DestructionResult JSWindowProxy::destroy(JSCell* cell, JSC::DestructionConcurrency)
 {
     static_cast<JSWindowProxy*>(cell)->JSWindowProxy::~JSWindowProxy();
+    return JSC::DestructionResult::Destroyed;
 }
 
 void JSWindowProxy::setWindow(VM& vm, JSDOMGlobalObject& window)

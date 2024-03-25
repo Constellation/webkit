@@ -2161,9 +2161,10 @@ public:
         Base::finishCreation(vm);
     }
 
-    static void destroy(JSCell* thisObject)
+    static DestructionResult destroy(JSCell* thisObject, DestructionConcurrency)
     {
         static_cast<JSFileDescriptor*>(thisObject)->~JSFileDescriptor();
+        return DestructionResult::Destroyed;
     }
 
     FILE* descriptor() const { return m_descriptor; }

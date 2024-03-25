@@ -31,18 +31,28 @@
 
 namespace JSC {
 
-ALWAYS_INLINE void JSString::destroy(JSCell* cell)
+ALWAYS_INLINE DestructionResult JSString::destroy(JSCell* cell, DestructionConcurrency concurrency)
 {
     auto* string = static_cast<JSString*>(cell);
+
+    if (UNLIKELY(concurrency == DestructionConcurrency::Concurrent) && !string->valueInternal().impl()->isSafeToConcurrentlyJSString())
+        return DestructionResult::DidNothing;
+
     string->valueInternal().~String();
+    return DestructionResult::Destroyed;
 }
 
-ALWAYS_INLINE void JSRopeString::destroy(JSCell* cell)
+ALWAYS_INLINE DestructionResult JSRopeString::destroy(JSCell* cell, DestructionConcurrency concurrency)
 {
     auto* string = static_cast<JSRopeString*>(cell);
     if (string->isRope())
-        return;
+        return DestructionResult::Destroyed;
+
+    if (UNLIKELY(concurrency == DestructionConcurrency::Concurrent) && !string->valueInternal().impl()->isSafeToConcurrentlyJSString())
+        return DestructionResult::DidNothing;
+
     string->valueInternal().~String();
+    return DestructionResult::Destroyed;
 }
 
 bool JSString::equal(JSGlobalObject* globalObject, JSString* other) const

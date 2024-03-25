@@ -369,6 +369,8 @@ public:
     void ref();
     void deref();
 
+    bool isSafeToConcurrentlyJSString() const;
+
     class StaticStringImpl : private StringImplShape {
         WTF_MAKE_NONCOPYABLE(StaticStringImpl);
     public:
@@ -1132,6 +1134,20 @@ inline void StringImpl::setHash(unsigned hash) const
     ASSERT(hash); // Verify that 0 is a valid sentinel hash value.
 
     m_hashAndFlags |= hash; // Store hash with flags in low bits.
+}
+
+inline bool StringImpl::isSafeToConcurrentlyJSString() const
+{
+    if (isAtom() || isSymbol())
+        return false;
+
+    if (refCount() != 1)
+        return false;
+
+    if (bufferOwnership() != BufferInternal)
+        return false;
+
+    return true;
 }
 
 inline void StringImpl::ref()
