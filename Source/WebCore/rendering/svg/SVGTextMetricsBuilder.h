@@ -35,7 +35,7 @@ class SVGTextMetricsBuilder {
 public:
     SVGTextMetricsBuilder();
     void measureTextRenderer(RenderSVGText&, RenderSVGInlineText* stopAtLeaf);
-    void buildMetricsAndLayoutAttributes(RenderSVGText&, RenderSVGInlineText* stopAtLeaf, SVGCharacterDataMap& allCharactersMap);
+    void buildMetricsAndLayoutAttributes(RenderSVGText&, RenderSVGInlineText* stopAtLeaf, SVGCharacterDataMap& allCharactersMap, bool updateMetricsCache);
 
 private:
     bool advance();
@@ -45,12 +45,13 @@ private:
 
     void initializeMeasurementWithTextRenderer(RenderSVGInlineText&);
     void walkTree(RenderElement&, RenderSVGInlineText* stopAtLeaf, MeasureTextData*);
-    void measureTextRenderer(RenderSVGInlineText&, MeasureTextData*);
+    std::tuple<unsigned, UChar> measureTextRenderer(RenderSVGInlineText&, MeasureTextData*, std::tuple<unsigned, UChar>);
 
     RenderSVGInlineText* m_text;
     TextRun m_run;
     unsigned m_textPosition;
-    bool m_isComplexText;
+    bool m_isComplexText { false };
+    bool m_canUseSimplifiedTextMeasuring { false };
     SVGTextMetrics m_currentMetrics;
     float m_totalWidth;
 

@@ -41,7 +41,7 @@ class SVGTextLayoutAttributesBuilder {
     WTF_MAKE_NONCOPYABLE(SVGTextLayoutAttributesBuilder);
 public:
     SVGTextLayoutAttributesBuilder();
-    bool buildLayoutAttributesForForSubtree(RenderSVGText&);
+    bool buildLayoutAttributesForForSubtree(bool updateMetricsCache, RenderSVGText&);
     void buildLayoutAttributesForTextRenderer(RenderSVGInlineText&);
 
     void rebuildMetricsForSubtree(RenderSVGText&);

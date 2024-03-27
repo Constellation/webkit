@@ -52,10 +52,11 @@ void SVGTextLayoutAttributesBuilder::buildLayoutAttributesForTextRenderer(Render
         buildCharacterDataMap(*textRoot);
     }
 
-    m_metricsBuilder.buildMetricsAndLayoutAttributes(*textRoot, &text, m_characterDataMap);
+    constexpr bool updateMetricsCache = false;
+    m_metricsBuilder.buildMetricsAndLayoutAttributes(*textRoot, &text, m_characterDataMap, updateMetricsCache);
 }
 
-bool SVGTextLayoutAttributesBuilder::buildLayoutAttributesForForSubtree(RenderSVGText& textRoot)
+bool SVGTextLayoutAttributesBuilder::buildLayoutAttributesForForSubtree(bool updateMetricsCache, RenderSVGText& textRoot)
 {
     m_characterDataMap.clear();
 
@@ -69,7 +70,7 @@ bool SVGTextLayoutAttributesBuilder::buildLayoutAttributesForForSubtree(RenderSV
         return false;
 
     buildCharacterDataMap(textRoot);
-    m_metricsBuilder.buildMetricsAndLayoutAttributes(textRoot, nullptr, m_characterDataMap);
+    m_metricsBuilder.buildMetricsAndLayoutAttributes(textRoot, nullptr, m_characterDataMap, updateMetricsCache);
     return true;
 }
 

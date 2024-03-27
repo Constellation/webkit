@@ -100,90 +100,117 @@ void SVGTextMetricsBuilder::initializeMeasurementWithTextRenderer(RenderSVGInlin
 
     const FontCascade& scaledFont = text.scaledFont();
     m_run = SVGTextMetrics::constructTextRun(text);
-    m_isComplexText = scaledFont.codePath(m_run) == FontCascade::CodePath::Complex;
+    m_isComplexText = !text.canUseSimpleFontCodePath();
 
     if (m_isComplexText)
         m_simpleWidthIterator = nullptr;
-    else
+    else {
+        if (auto cachedValue = text.canUseSimplifiedTextMeasuring())
+            m_canUseSimplifiedTextMeasuring = cachedValue.value();
+        else {
+            m_canUseSimplifiedTextMeasuring = Layout::TextUtil::canUseSimplifiedTextMeasuring(m_run.text(), text.style(), &text.firstLineStyle());
+            text.setCanUseSimplifiedTextMeasuring(m_canUseSimplifiedTextMeasuring);
+        }
         m_simpleWidthIterator = makeUnique<WidthIterator>(scaledFont, m_run);
+    }
 }
 
 struct MeasureTextData {
-    MeasureTextData(SVGCharacterDataMap* characterDataMap)
+    MeasureTextData(SVGCharacterDataMap* characterDataMap, bool updateMetricsCache)
         : allCharactersMap(characterDataMap)
-        , lastCharacter(0)
         , processRenderer(false)
-        , valueListPosition(0)
-        , skippedCharacters(0)
+        , updateMetricsCache(updateMetricsCache)
     {
     }
 
     SVGCharacterDataMap* allCharactersMap;
-    UChar lastCharacter;
     bool processRenderer;
-    unsigned valueListPosition;
-    unsigned skippedCharacters;
+    bool updateMetricsCache;
 };
 
-void SVGTextMetricsBuilder::measureTextRenderer(RenderSVGInlineText& text, MeasureTextData* data)
+std::tuple<unsigned, UChar> SVGTextMetricsBuilder::measureTextRenderer(RenderSVGInlineText& text, MeasureTextData* data, std::tuple<unsigned, UChar> state)
 {
+    auto [valueListPosition, lastCharacter] = state;
     SVGTextLayoutAttributes* attributes = text.layoutAttributes();
     Vector<SVGTextMetrics>* textMetricsValues = &attributes->textMetricsValues();
     if (data->processRenderer) {
         if (data->allCharactersMap)
             attributes->clear();
-        else
+        if (data->updateMetricsCache)
             textMetricsValues->clear();
     }
 
     initializeMeasurementWithTextRenderer(text);
-    bool preserveWhiteSpace = text.style().whiteSpaceCollapse() == WhiteSpaceCollapse::Preserve;
-    int surrogatePairCharacters = 0;
 
+    bool preserveWhiteSpace = text.style().whiteSpaceCollapse() == WhiteSpaceCollapse::Preserve;
+    if (m_canUseSimplifiedTextMeasuring && data->processRenderer) {
+        if (data->allCharactersMap && data->allCharactersMap->size() == 1) {
+            attributes->characterDataMap().set(1, data->allCharactersMap->get(1));
+            auto view = m_run.text();
+            unsigned length = view.length();
+            unsigned skippedCharacters = 0;
+            auto& scaledFont = text.scaledFont();
+            for (unsigned i = 0; i < length; ++i) {
+                UChar currentCharacter = view.characterAt(i);
+                if (currentCharacter == space && !preserveWhiteSpace && (!lastCharacter || lastCharacter == space)) {
+                    if (data->processRenderer && data->updateMetricsCache)
+                        textMetricsValues->append(SVGTextMetrics(SVGTextMetrics::SkippedSpaceMetrics));
+                    skippedCharacters += m_currentMetrics.length();
+                    continue;
+                }
+
+                if (data->updateMetricsCache) {
+                    float width = scaledFont.widthForTextUsingSimplifiedMeasuring(view.substring(i, 1), m_run.direction());
+                    textMetricsValues->append(SVGTextMetrics(text, 1, width));
+                }
+
+                lastCharacter = currentCharacter;
+            }
+            m_simpleWidthIterator = nullptr;
+            return std::tuple { valueListPosition + m_textPosition - skippedCharacters, lastCharacter };
+        }
+    }
+
+    int surrogatePairCharacters = 0;
+    unsigned skippedCharacters = 0;
     while (advance()) {
         UChar currentCharacter = m_run[m_textPosition];
-        if (currentCharacter == ' ' && !preserveWhiteSpace && (!data->lastCharacter || data->lastCharacter == ' ')) {
-            if (data->processRenderer)
+        if (currentCharacter == space && !preserveWhiteSpace && (!lastCharacter || lastCharacter == space)) {
+            if (data->processRenderer && data->updateMetricsCache)
                 textMetricsValues->append(SVGTextMetrics(SVGTextMetrics::SkippedSpaceMetrics));
-            if (data->allCharactersMap)
-                data->skippedCharacters += m_currentMetrics.length();
+            skippedCharacters += m_currentMetrics.length();
             continue;
         }
 
         if (data->processRenderer) {
             if (data->allCharactersMap) {
-                const SVGCharacterDataMap::const_iterator it = data->allCharactersMap->find(data->valueListPosition + m_textPosition - data->skippedCharacters - surrogatePairCharacters + 1);
+                const SVGCharacterDataMap::const_iterator it = data->allCharactersMap->find(valueListPosition + m_textPosition - skippedCharacters - surrogatePairCharacters + 1);
                 if (it != data->allCharactersMap->end())
                     attributes->characterDataMap().set(m_textPosition + 1, it->value);
             }
-            textMetricsValues->append(m_currentMetrics);
+            if (data->updateMetricsCache)
+                textMetricsValues->append(m_currentMetrics);
         }
 
         if (data->allCharactersMap && currentCharacterStartsSurrogatePair())
             surrogatePairCharacters++;
 
-        data->lastCharacter = currentCharacter;
+        lastCharacter = currentCharacter;
     }
 
-    if (auto simpleWidthIterator = std::exchange(m_simpleWidthIterator, nullptr)) {
-        GlyphBuffer glyphBuffer;
-        simpleWidthIterator->finalize(glyphBuffer);
-    }
-
-    if (!data->allCharactersMap)
-        return;
-
-    data->valueListPosition += m_textPosition - data->skippedCharacters;
-    data->skippedCharacters = 0;
+    m_simpleWidthIterator = nullptr;
+    return std::tuple { valueListPosition + m_textPosition - skippedCharacters, lastCharacter };
 }
 
 void SVGTextMetricsBuilder::walkTree(RenderElement& start, RenderSVGInlineText* stopAtLeaf, MeasureTextData* data)
 {
+    unsigned valueListPosition = 0;
+    UChar lastCharacter = 0;
     auto* child = start.firstChild();
     while (child) {
         if (auto* text = dynamicDowncast<RenderSVGInlineText>(*child)) {
             data->processRenderer = !stopAtLeaf || stopAtLeaf == text;
-            measureTextRenderer(*text, data);
+            std::tie(valueListPosition, lastCharacter) = measureTextRenderer(*text, data, std::tuple { valueListPosition, lastCharacter });
             if (stopAtLeaf && stopAtLeaf == text)
                 return;
         } else if (auto* renderer = dynamicDowncast<RenderSVGInline>(*child)) {
@@ -199,13 +226,14 @@ void SVGTextMetricsBuilder::walkTree(RenderElement& start, RenderSVGInlineText* 
 
 void SVGTextMetricsBuilder::measureTextRenderer(RenderSVGText& textRoot, RenderSVGInlineText* stopAtLeaf)
 {
-    MeasureTextData data(nullptr);
+    constexpr bool updateMetricsCache = true;
+    MeasureTextData data(nullptr, updateMetricsCache);
     walkTree(textRoot, stopAtLeaf, &data);
 }
 
-void SVGTextMetricsBuilder::buildMetricsAndLayoutAttributes(RenderSVGText& textRoot, RenderSVGInlineText* stopAtLeaf, SVGCharacterDataMap& allCharactersMap)
+void SVGTextMetricsBuilder::buildMetricsAndLayoutAttributes(RenderSVGText& textRoot, RenderSVGInlineText* stopAtLeaf, SVGCharacterDataMap& allCharactersMap, bool updateMetricsCache)
 {
-    MeasureTextData data(&allCharactersMap);
+    MeasureTextData data(&allCharactersMap, updateMetricsCache);
     walkTree(textRoot, stopAtLeaf, &data);
 }
 
