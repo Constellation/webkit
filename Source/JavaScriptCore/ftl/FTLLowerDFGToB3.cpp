@@ -6722,8 +6722,23 @@ IGNORE_CLANG_WARNINGS_END
                 LValue valueToStore;
                 
                 if (isInt(type)) {
-                    LValue intValue = getIntTypedArrayStoreOperand(child3, isClamped(type));
+                    bool isClamped = JSC::isClamped(type);
+                    if (isClamped) {
+                        if (child3->op() == GetByVal) {
+                            switch (child3->arrayMode().type()) {
+                            case Array::Uint8Array:
+                            case Array::Uint8ClampedArray: {
+                                // If the value is coming from Uint8Array / Uint8ClampedArray, the value is always within uint8_t.
+                                isClamped = false;
+                                break;
+                            }
+                            default:
+                                break;
+                            }
+                        }
+                    }
 
+                    LValue intValue = getIntTypedArrayStoreOperand(child3, isClamped);
                     valueToStore = intValue;
                 } else /* !isInt(type) */ {
                     LValue value = lowDouble(child3);
