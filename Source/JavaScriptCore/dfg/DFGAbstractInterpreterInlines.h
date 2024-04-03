@@ -3875,6 +3875,11 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
                             canFold = false;
                             return;
                         }
+
+                        if (isResizableOrGrowableSharedTypedArrayIncludingDataView(structure->classInfoForCells())) {
+                            canFold = false;
+                            return;
+                        }
                     });
 
                     if (canFold) {

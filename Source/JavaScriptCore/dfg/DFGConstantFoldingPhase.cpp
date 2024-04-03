@@ -407,6 +407,11 @@ private:
                                 canFold = false;
                                 return;
                             }
+
+                            if (isResizableOrGrowableSharedTypedArrayIncludingDataView(structure->classInfoForCells())) {
+                                canFold = false;
+                                return;
+                            }
                         });
 
                         if (canFold) {
