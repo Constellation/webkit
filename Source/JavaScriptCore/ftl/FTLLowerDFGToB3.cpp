@@ -20312,7 +20312,7 @@ IGNORE_CLANG_WARNINGS_END
 #if CPU(ARM64)
                 if (edge.useKind() == Int32Use) {
                     PatchpointValue* patchpoint = m_out.patchpoint(Int32);
-                    patchpoint->append(value);
+                    patchpoint->appendSomeRegister(value);
                     patchpoint->numGPScratchRegisters = 1;
                     patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
                         GPRReg resultGPR = params[0].gpr();
