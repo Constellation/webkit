@@ -3795,16 +3795,23 @@ static double clampDoubleToByte(double d)
     return std::nearbyint(d);
 }
 
-static void compileClampIntegerToByte(JITCompiler& jit, GPRReg result)
+static void compileClampIntegerToByte(JITCompiler& jit, GPRReg resultGPR, GPRReg scratch1GPR)
 {
-    MacroAssembler::Jump inBounds = jit.branch32(MacroAssembler::BelowOrEqual, result, JITCompiler::TrustedImm32(0xff));
-    MacroAssembler::Jump tooBig = jit.branch32(MacroAssembler::GreaterThan, result, JITCompiler::TrustedImm32(0xff));
-    jit.xorPtr(result, result);
+#if CPU(ARM64)
+    jit.clearBitsWithMaskRightShift32(resultGPR, resultGPR, CCallHelpers::TrustedImm32(31), resultGPR);
+    jit.move(CCallHelpers::TrustedImm32(0xff), scratch1GPR);
+    jit.moveConditionally32(CCallHelpers::Below, resultGPR, scratch1GPR, resultGPR, scratch1GPR, resultGPR);
+#else
+    UNUSED_PARAM(scratch1GPR);
+    MacroAssembler::Jump inBounds = jit.branch32(MacroAssembler::BelowOrEqual, resultGPR, JITCompiler::TrustedImm32(0xff));
+    MacroAssembler::Jump tooBig = jit.branch32(MacroAssembler::GreaterThan, resultGPR, JITCompiler::TrustedImm32(0xff));
+    jit.xorPtr(resultGPR, resultGPR);
     MacroAssembler::Jump clamped = jit.jump();
     tooBig.link(&jit);
-    jit.move(JITCompiler::TrustedImm32(255), result);
+    jit.move(JITCompiler::TrustedImm32(255), resultGPR);
     clamped.link(&jit);
     inBounds.link(&jit);
+#endif
 }
 
 static void compileClampDoubleToByte(JITCompiler& jit, GPRReg result, FPRReg source, FPRReg scratch)
@@ -4063,12 +4070,17 @@ bool SpeculativeJIT::getIntTypedArrayStoreOperand(
         switch (valueUse.useKind()) {
         case Int32Use: {
             SpeculateInt32Operand valueOp(this, valueUse);
-            GPRTemporary scratch(this);
-            GPRReg scratchReg = scratch.gpr();
-            move(valueOp.gpr(), scratchReg);
-            if (isClamped)
-                compileClampIntegerToByte(*this, scratchReg);
-            value.adopt(scratch);
+            GPRTemporary scratch1(this);
+            GPRReg scratch1GPR = scratch1.gpr();
+            if (isClamped) {
+                GPRTemporary scratch2(this);
+                GPRReg valueGPR = valueOp.gpr();
+                GPRReg scratch2GPR = scratch2.gpr();
+                move(valueGPR, scratch1GPR);
+                compileClampIntegerToByte(*this, scratch1GPR, scratch2GPR);
+            } else
+                move(valueOp.gpr(), scratch1GPR);
+            value.adopt(scratch1);
             break;
         }
             

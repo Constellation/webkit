@@ -1058,6 +1058,7 @@ private:
             compileCheckDetached();
             break;
         case GetArrayLength:
+        case GetUndetachedTypeArrayLength:
             compileGetArrayLength();
             break;
         case GetTypedArrayLengthAsInt52:
@@ -20293,6 +20294,25 @@ IGNORE_CLANG_WARNINGS_END
             }
             
             if (isClamped) {
+#if CPU(ARM64)
+                if (edge.useKind() == Int32Use) {
+                    PatchpointValue* patchpoint = m_out.patchpoint(Int32);
+                    patchpoint->append(value);
+                    patchpoint->numGPScratchRegisters = 1;
+                    patchpoint->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
+                        GPRReg resultGPR = params[0].gpr();
+                        GPRReg inputGPR = params[1].gpr();
+                        GPRReg scratch1GPR = params.gpScratch(0);
+                        jit.clearBitsWithMaskRightShift32(inputGPR, inputGPR, CCallHelpers::TrustedImm32(31), resultGPR);
+                        jit.move(CCallHelpers::TrustedImm32(0xff), scratch1GPR);
+                        jit.moveConditionally32(CCallHelpers::Below, resultGPR, scratch1GPR, resultGPR, scratch1GPR, resultGPR);
+                    });
+                    patchpoint->effects = Effects::none();
+                    valueAsInt32 = patchpoint;
+                    return valueAsInt32;
+                }
+#endif
+
                 LBasicBlock atLeastZero = m_out.newBlock();
                 LBasicBlock continuation = m_out.newBlock();
                             

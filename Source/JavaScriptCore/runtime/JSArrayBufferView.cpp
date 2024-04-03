@@ -263,6 +263,7 @@ void JSArrayBufferView::detach()
     m_length = 0;
     m_byteOffset = 0;
     m_vector.clear();
+    globalObject()->notifyArrayBufferDetaching();
 }
 
 ArrayBuffer* JSArrayBufferView::slowDownAndWasteMemory()
