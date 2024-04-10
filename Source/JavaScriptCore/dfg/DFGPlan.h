@@ -107,6 +107,7 @@ public:
 
 private:
     CompilationPath compileInThreadImpl() override;
+    void finalizeInThread();
     
     bool isStillValidCodeBlock();
     bool reallyAdd(CommonData*);

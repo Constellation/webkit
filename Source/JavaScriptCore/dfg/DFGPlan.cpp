@@ -353,6 +353,8 @@ Plan::CompilationPath Plan::compileInThreadImpl()
             else
                 speculativeJIT.compile();
         }
+
+        finalizeInThread();
         
         return DFGPath;
     }
@@ -495,6 +497,8 @@ Plan::CompilationPath Plan::compileInThreadImpl()
             FTL::fail(state);
             return FTLPath;
         }
+
+        finalizeInThread();
         
         return FTLPath;
 #else
@@ -509,6 +513,11 @@ Plan::CompilationPath Plan::compileInThreadImpl()
     }
 
 #undef RUN_PHASE
+}
+
+void Plan::finalizeInThread()
+{
+    m_watchpoints.countWatchpoints(m_codeBlock, m_identifiers);
 }
 
 bool Plan::isStillValidCodeBlock()

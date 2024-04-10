@@ -151,23 +151,35 @@ bool DesiredWatchpoints::consider(Structure* structure)
     return true;
 }
 
+void DesiredWatchpoints::countWatchpoints(CodeBlock* codeBlock, DesiredIdentifiers& identifiers)
+{
+    WatchpointCollector collector;
+
+    m_sets.reallyAdd(codeBlock, collector);
+    m_inlineSets.reallyAdd(codeBlock, collector);
+    m_symbolTables.reallyAdd(codeBlock, collector);
+    m_functionExecutables.reallyAdd(codeBlock, collector);
+    m_bufferViews.reallyAdd(codeBlock, collector);
+    m_adaptiveStructureSets.reallyAdd(codeBlock, collector);
+    m_globalProperties.reallyAdd(codeBlock, identifiers, collector);
+
+    m_counts = collector.counts();
+}
+
 void DesiredWatchpoints::reallyAdd(CodeBlock* codeBlock, DesiredIdentifiers& identifiers, CommonData* commonData)
 {
     WatchpointCollector collector;
 
-    auto reallyAdd = [&]() {
-        m_sets.reallyAdd(codeBlock, collector);
-        m_inlineSets.reallyAdd(codeBlock, collector);
-        m_symbolTables.reallyAdd(codeBlock, collector);
-        m_functionExecutables.reallyAdd(codeBlock, collector);
-        m_bufferViews.reallyAdd(codeBlock, collector);
-        m_adaptiveStructureSets.reallyAdd(codeBlock, collector);
-        m_globalProperties.reallyAdd(codeBlock, identifiers, collector);
-    };
-    reallyAdd();
-    collector.materialize();
+    collector.materialize(m_counts);
 
-    reallyAdd();
+    m_sets.reallyAdd(codeBlock, collector);
+    m_inlineSets.reallyAdd(codeBlock, collector);
+    m_symbolTables.reallyAdd(codeBlock, collector);
+    m_functionExecutables.reallyAdd(codeBlock, collector);
+    m_bufferViews.reallyAdd(codeBlock, collector);
+    m_adaptiveStructureSets.reallyAdd(codeBlock, collector);
+    m_globalProperties.reallyAdd(codeBlock, identifiers, collector);
+
     collector.finalize(codeBlock, *commonData);
 }
 

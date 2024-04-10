@@ -43,16 +43,25 @@ class Graph;
 struct Prefix;
 
 enum class WatchpointRegistrationMode : uint8_t { Collect, Add };
+struct DesiredWatchpointCounts {
+    unsigned m_watchpointCount { 0 };
+    unsigned m_adaptiveStructureWatchpointCount { 0 };
+    unsigned m_adaptiveInferredPropertyValueWatchpointCount { 0 };
+};
+
 class WatchpointCollector final {
     WTF_MAKE_NONCOPYABLE(WatchpointCollector);
 public:
     WatchpointCollector() = default;
 
-    void materialize()
+    DesiredWatchpointCounts counts() const { return m_counts; }
+
+    void materialize(DesiredWatchpointCounts counts)
     {
-        m_watchpoints = FixedVector<CodeBlockJettisoningWatchpoint>(m_watchpointCount);
-        m_adaptiveStructureWatchpoints = FixedVector<AdaptiveStructureWatchpoint>(m_adaptiveStructureWatchpointCount);
-        m_adaptiveInferredPropertyValueWatchpoints = FixedVector<AdaptiveInferredPropertyValueWatchpoint>(m_adaptiveInferredPropertyValueWatchpointCount);
+        m_counts = counts;
+        m_watchpoints = FixedVector<CodeBlockJettisoningWatchpoint>(counts.m_watchpointCount);
+        m_adaptiveStructureWatchpoints = FixedVector<AdaptiveStructureWatchpoint>(counts.m_adaptiveStructureWatchpointCount);
+        m_adaptiveInferredPropertyValueWatchpoints = FixedVector<AdaptiveInferredPropertyValueWatchpoint>(counts.m_adaptiveInferredPropertyValueWatchpointCount);
         m_mode = WatchpointRegistrationMode::Add;
     }
 
@@ -62,7 +71,7 @@ public:
         if (m_mode == WatchpointRegistrationMode::Add)
             function(m_watchpoints[m_watchpointIndex++]);
         else
-            ++m_watchpointCount;
+            ++m_counts.m_watchpointCount;
     }
 
     template<typename Func>
@@ -71,7 +80,7 @@ public:
         if (m_mode == WatchpointRegistrationMode::Add)
             function(m_adaptiveStructureWatchpoints[m_adaptiveStructureWatchpointsIndex++]);
         else
-            ++m_adaptiveStructureWatchpointCount;
+            ++m_counts.m_adaptiveStructureWatchpointCount;
     }
 
     template<typename Func>
@@ -80,7 +89,7 @@ public:
         if (m_mode == WatchpointRegistrationMode::Add)
             function(m_adaptiveInferredPropertyValueWatchpoints[m_adaptiveInferredPropertyValueWatchpointsIndex++]);
         else
-            ++m_adaptiveInferredPropertyValueWatchpointCount;
+            ++m_counts.m_adaptiveInferredPropertyValueWatchpointCount;
     }
 
     void finalize(CodeBlock*, CommonData&);
@@ -88,9 +97,7 @@ public:
     WatchpointRegistrationMode mode() const { return m_mode; }
 
 private:
-    unsigned m_watchpointCount { 0 };
-    unsigned m_adaptiveStructureWatchpointCount { 0 };
-    unsigned m_adaptiveInferredPropertyValueWatchpointCount { 0 };
+    DesiredWatchpointCounts m_counts;
 
     unsigned m_watchpointIndex { 0 };
     unsigned m_adaptiveStructureWatchpointsIndex { 0 };
@@ -248,6 +255,8 @@ public:
     void addLazily(DesiredGlobalProperty&&);
     
     bool consider(Structure*);
+
+    void countWatchpoints(CodeBlock*, DesiredIdentifiers&);
     
     void reallyAdd(CodeBlock*, DesiredIdentifiers&, CommonData*);
     
@@ -288,6 +297,7 @@ private:
     GenericDesiredWatchpoints<JSArrayBufferView*, ArrayBufferViewWatchpointAdaptor> m_bufferViews;
     GenericDesiredWatchpoints<ObjectPropertyCondition, AdaptiveStructureWatchpointAdaptor> m_adaptiveStructureSets;
     DesiredGlobalProperties m_globalProperties;
+    DesiredWatchpointCounts m_counts;
 };
 
 } } // namespace JSC::DFG
