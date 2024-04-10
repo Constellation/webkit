@@ -108,9 +108,8 @@ public:
 private:
     CompilationPath compileInThreadImpl() override;
     
-    bool isStillValidOnMainThread();
-    bool isStillValid();
-    void reallyAdd(CommonData*);
+    bool isStillValidCodeBlock();
+    bool reallyAdd(CommonData*);
 
     // These can be raw pointers because we visit them during every GC in checkLivenessAndVisitChildren.
     CodeBlock* m_profiledDFGCodeBlock;
