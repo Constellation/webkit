@@ -66,30 +66,30 @@ public:
     }
 
     template<typename Func>
-    void addWatchpoint(const Func& function)
+    bool addWatchpoint(const Func& function)
     {
         if (m_mode == WatchpointRegistrationMode::Add)
-            function(m_watchpoints[m_watchpointIndex++]);
-        else
-            ++m_counts.m_watchpointCount;
+            return function(m_watchpoints[m_watchpointIndex++]);
+        ++m_counts.m_watchpointCount;
+        return true;
     }
 
     template<typename Func>
-    void addAdaptiveStructureWatchpoint(const Func& function)
+    bool addAdaptiveStructureWatchpoint(const Func& function)
     {
         if (m_mode == WatchpointRegistrationMode::Add)
-            function(m_adaptiveStructureWatchpoints[m_adaptiveStructureWatchpointsIndex++]);
-        else
-            ++m_counts.m_adaptiveStructureWatchpointCount;
+            return function(m_adaptiveStructureWatchpoints[m_adaptiveStructureWatchpointsIndex++]);
+        ++m_counts.m_adaptiveStructureWatchpointCount;
+        return true;
     }
 
     template<typename Func>
-    void addAdaptiveInferredPropertyValueWatchpoint(const Func& function)
+    bool addAdaptiveInferredPropertyValueWatchpoint(const Func& function)
     {
         if (m_mode == WatchpointRegistrationMode::Add)
-            function(m_adaptiveInferredPropertyValueWatchpoints[m_adaptiveInferredPropertyValueWatchpointsIndex++]);
-        else
-            ++m_counts.m_adaptiveInferredPropertyValueWatchpointCount;
+            return function(m_adaptiveInferredPropertyValueWatchpoints[m_adaptiveInferredPropertyValueWatchpointsIndex++]);
+        ++m_counts.m_adaptiveInferredPropertyValueWatchpointCount;
+        return true;
     }
 
     void finalize(CodeBlock*, CommonData&);
@@ -111,14 +111,18 @@ private:
 
 template<typename T>
 struct SetPointerAdaptor {
-    static void add(CodeBlock* codeBlock, T set, WatchpointCollector& collector)
+    static bool add(CodeBlock* codeBlock, T set, WatchpointCollector& collector)
     {
-        collector.addWatchpoint([&](CodeBlockJettisoningWatchpoint& watchpoint) {
+        return collector.addWatchpoint([&](CodeBlockJettisoningWatchpoint& watchpoint) {
+            if (hasBeenInvalidated(set))
+                return false;
+
             {
                 ConcurrentJSLocker locker(codeBlock->m_lock);
                 watchpoint.initialize(codeBlock);
             }
             set->add(&watchpoint);
+            return true;
         });
     }
     static bool hasBeenInvalidated(T set)
@@ -132,7 +136,7 @@ struct SetPointerAdaptor {
 };
 
 struct SymbolTableAdaptor {
-    static void add(CodeBlock*, SymbolTable*, WatchpointCollector&);
+    static bool add(CodeBlock*, SymbolTable*, WatchpointCollector&);
     static bool hasBeenInvalidated(SymbolTable* symbolTable)
     {
         return symbolTable->singleton().hasBeenInvalidated();
@@ -144,7 +148,7 @@ struct SymbolTableAdaptor {
 };
 
 struct FunctionExecutableAdaptor {
-    static void add(CodeBlock*, FunctionExecutable*, WatchpointCollector&);
+    static bool add(CodeBlock*, FunctionExecutable*, WatchpointCollector&);
     static bool hasBeenInvalidated(FunctionExecutable* executable)
     {
         return executable->singleton().hasBeenInvalidated();
@@ -156,7 +160,7 @@ struct FunctionExecutableAdaptor {
 };
 
 struct ArrayBufferViewWatchpointAdaptor {
-    static void add(CodeBlock*, JSArrayBufferView*, WatchpointCollector&);
+    static bool add(CodeBlock*, JSArrayBufferView*, WatchpointCollector&);
     static bool hasBeenInvalidated(JSArrayBufferView* view)
     {
         return !view->length();
@@ -168,7 +172,7 @@ struct ArrayBufferViewWatchpointAdaptor {
 };
 
 struct AdaptiveStructureWatchpointAdaptor {
-    static void add(CodeBlock*, const ObjectPropertyCondition&, WatchpointCollector&);
+    static bool add(CodeBlock*, const ObjectPropertyCondition&, WatchpointCollector&);
     static bool hasBeenInvalidated(const ObjectPropertyCondition& key)
     {
         return !key.isWatchable(PropertyCondition::MakeNoChanges);
@@ -196,25 +200,19 @@ public:
         m_sets.add(set);
     }
     
-    void reallyAdd(CodeBlock* codeBlock, WatchpointCollector& collector)
+    bool reallyAdd(CodeBlock* codeBlock, WatchpointCollector& collector)
     {
         if (collector.mode() == WatchpointRegistrationMode::Add)
             RELEASE_ASSERT(!m_reallyAdded);
         
-        for (auto& set : m_sets)
-            Adaptor::add(codeBlock, set, collector);
-        
-        if (collector.mode() == WatchpointRegistrationMode::Add)
-            m_reallyAdded = true;
-    }
-    
-    bool areStillValid() const
-    {
         for (auto& set : m_sets) {
-            if (Adaptor::hasBeenInvalidated(set))
+            if (!Adaptor::add(codeBlock, set, collector))
                 return false;
         }
         
+        if (collector.mode() == WatchpointRegistrationMode::Add)
+            m_reallyAdded = true;
+
         return true;
     }
     
@@ -258,9 +256,8 @@ public:
 
     void countWatchpoints(CodeBlock*, DesiredIdentifiers&);
     
-    void reallyAdd(CodeBlock*, DesiredIdentifiers&, CommonData*);
+    bool reallyAdd(CodeBlock*, DesiredIdentifiers&, CommonData*);
     
-    bool areStillValid() const;
     bool areStillValidOnMainThread(VM&, DesiredIdentifiers&);
     
     bool isWatched(WatchpointSet& set)

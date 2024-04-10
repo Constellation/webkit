@@ -537,8 +537,6 @@ bool Plan::isStillValidCodeBlock()
 
 bool Plan::reallyAdd(CommonData* commonData)
 {
-    if (!m_watchpoints.areStillValid())
-        return false;
     if (!m_watchpoints.areStillValidOnMainThread(*m_vm, m_identifiers))
         return false;
 
@@ -546,7 +544,8 @@ bool Plan::reallyAdd(CommonData* commonData)
     m_identifiers.reallyAdd(*m_vm, commonData);
     m_weakReferences.reallyAdd(*m_vm, commonData);
     m_transitions.reallyAdd(*m_vm, commonData);
-    m_watchpoints.reallyAdd(m_codeBlock, m_identifiers, commonData);
+    if (!m_watchpoints.reallyAdd(m_codeBlock, m_identifiers, commonData))
+        return false;
     {
         ConcurrentJSLocker locker(m_codeBlock->m_lock);
         commonData->recordedStatuses = WTFMove(m_recordedStatuses);
