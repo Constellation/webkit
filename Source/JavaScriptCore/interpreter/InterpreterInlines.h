@@ -123,4 +123,27 @@ ALWAYS_INLINE JSValue Interpreter::executeCachedCall(CachedCall& cachedCall)
     return JSValue::decode(vmEntryToJavaScript(cachedCall.m_addressForCall, &vm, &cachedCall.m_protoCallFrame));
 }
 
+ALWAYS_INLINE JSValue Interpreter::tryCallWithArguments2(CachedCall& cachedCall, JSValue thisValue, JSValue arg0, JSValue arg1)
+{
+    VM& vm = this->vm();
+
+    ASSERT(!vm.isCollectorBusyOnCurrentThread());
+    ASSERT(vm.currentThreadIsHoldingAPILock());
+
+    StackStats::CheckPoint stackCheckPoint;
+
+    auto clobberizeValidator = makeScopeExit([&] {
+        vm.didEnterVM = true;
+    });
+
+    auto* entry = cachedCall.m_addressForCall;
+    if (UNLIKELY(!entry))
+        return { };
+
+    // Execute the code:
+    auto* codeBlock = cachedCall.m_protoCallFrame.codeBlock();
+    auto* callee = cachedCall.m_protoCallFrame.callee();
+    return JSValue::decode(vmEntryToJavaScriptWith2Arguments(entry, &vm, codeBlock, callee, thisValue, arg0, arg1));
+}
+
 } // namespace JSC

@@ -45,10 +45,10 @@ require "risc"
 #  x5  => t5, a5, wa5
 #  x6  => t6, a6, wa6
 #  x7  => t7, a7, wa7
-#  x9  => ws0
-# x10  => ws1
-# x11  => ws2
-# x12  => ws3
+#  x9  => t8, ws0
+# x10  => t9, ws1
+# x11  => t10, ws2
+# x12  => t11, ws3
 # x13  =>                  (scratch)
 # x16  =>                  (scratch)
 # x17  =>                  (scratch)
@@ -170,13 +170,13 @@ class RegisterID
           arm64GPRName('x6', kind)
         when 't7', 'a7', 'wa7'
           arm64GPRName('x7', kind)
-        when 'ws0'
+        when 't8', 'ws0'
           arm64GPRName('x9', kind)
-        when 'ws1'
+        when 't9', 'ws1'
           arm64GPRName('x10', kind)
-        when 'ws2'
+        when 't10', 'ws2'
           arm64GPRName('x11', kind)
-        when 'ws3'
+        when 't11', 'ws3'
           arm64GPRName('x12', kind)
         when 'cfr'
             arm64GPRName('x29', kind)

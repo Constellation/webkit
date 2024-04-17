@@ -37,6 +37,7 @@ typedef int64_t EncodedJSValue;
 
 extern "C" {
     EncodedJSValue vmEntryToJavaScript(void*, VM*, ProtoCallFrame*);
+    EncodedJSValue vmEntryToJavaScriptWith2Arguments(void*, VM*, CodeBlock*, JSObject*, JSValue, JSValue, JSValue);
     EncodedJSValue vmEntryToNative(void*, VM*, ProtoCallFrame*);
     EncodedJSValue vmEntryCustomGetter(CPURegister, CPURegister, CPURegister, CPURegister);
     EncodedJSValue vmEntryCustomSetter(CPURegister, CPURegister, CPURegister, CPURegister, CPURegister);

@@ -171,6 +171,8 @@ using JSOrWasmInstruction = std::variant<const JSInstruction*, const WasmInstruc
         JSValue executeBoundCall(VM&, JSBoundFunction*, const ArgList&);
         JSValue executeCallImpl(VM&, JSObject*, const CallData&, JSValue, const ArgList&);
 
+        JSValue tryCallWithArguments2(CachedCall&, JSValue, JSValue, JSValue);
+
         inline VM& vm();
 #if ENABLE(C_LOOP)
         CLoopStack m_cloopStack;

@@ -129,6 +129,31 @@ public:
         m_protoCallFrame.setCodeBlock(codeBlock);
     }
 
+    JSValue callWithArguments2(JSGlobalObject* globalObject, JSValue thisValue, JSValue arg0, JSValue arg1)
+    {
+        VM& vm = m_vm;
+        auto scope = DECLARE_THROW_SCOPE(vm);
+
+#if CPU(ARM64)
+        JSValue result = m_vm.interpreter.tryCallWithArguments2(*this, thisValue, arg0, arg1);
+        RETURN_IF_EXCEPTION(scope, { });
+        if (result)
+            return result;
+#endif
+
+        clearArguments();
+        setThis(thisValue);
+        appendArgument(arg0);
+        appendArgument(arg1);
+
+        if (UNLIKELY(hasOverflowedArguments())) {
+            throwOutOfMemoryError(globalObject, scope);
+            return { };
+        }
+
+        RELEASE_AND_RETURN(scope, call());
+    }
+
 private:
     VM& m_vm;
     VMEntryScope m_entryScope;
