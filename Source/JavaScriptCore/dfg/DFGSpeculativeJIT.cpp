@@ -2821,6 +2821,9 @@ void SpeculativeJIT::compileContiguousPutByVal(Node* node)
     } else {
         Jump inBounds = branch32(Below, propertyReg, Address(storageReg, Butterfly::offsetOfPublicLength()));
 
+        if (arrayMode.isOutOfBoundsSaneChain())
+            speculationCheck(NegativeIndex, JSValueRegs(), nullptr, branch32(LessThan, propertyReg, TrustedImm32(0)));
+
         slowCase = branch32(AboveOrEqual, propertyReg, Address(storageReg, Butterfly::offsetOfVectorLength()));
 
         if (!arrayMode.isOutOfBounds())
@@ -2894,6 +2897,9 @@ void SpeculativeJIT::compileDoublePutByVal(Node* node)
             branch32(AboveOrEqual, propertyReg, Address(storageReg, Butterfly::offsetOfPublicLength())));
     } else {
         Jump inBounds = branch32(Below, propertyReg, Address(storageReg, Butterfly::offsetOfPublicLength()));
+
+        if (arrayMode.isOutOfBoundsSaneChain())
+            speculationCheck(NegativeIndex, JSValueRegs(), nullptr, branch32(LessThan, propertyReg, TrustedImm32(0)));
 
         slowCase = branch32(AboveOrEqual, propertyReg, Address(storageReg, Butterfly::offsetOfVectorLength()));
 

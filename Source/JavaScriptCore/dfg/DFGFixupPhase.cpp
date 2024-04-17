@@ -4152,12 +4152,12 @@ private:
                 // the check but it doesn't require taking any kind of slow path.
                 if (is64Bit() && arrayMode.speculation() == Array::OutOfBounds && !m_graph.hasExitSite(node->origin.semantic, NegativeIndex))
                     saneChainSpeculation = Array::OutOfBoundsSaneChain;
-                else if (arrayMode.speculation() == Array::InBounds)
+                else if (arrayMode.action() == Array::Read && arrayMode.speculation() == Array::InBounds)
                     saneChainSpeculation = Array::InBoundsSaneChain;
                 break;
 
             case Array::Double:
-                if (!(node->flags() & NodeBytecodeUsesAsOther) && arrayMode.speculation() == Array::InBounds) {
+                if (arrayMode.action() == Array::Read && !(node->flags() & NodeBytecodeUsesAsOther) && arrayMode.speculation() == Array::InBounds) {
                     // Holes look like NaN already, so if the user doesn't care
                     // about the difference between Undefined and NaN then we can
                     // do this.

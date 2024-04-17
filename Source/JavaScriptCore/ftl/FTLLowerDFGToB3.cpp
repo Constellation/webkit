@@ -19698,21 +19698,20 @@ IGNORE_CLANG_WARNINGS_END
             if (!m_node->arrayMode().isOutOfBounds())
                 speculate(OutOfBounds, noValue(), nullptr, isOutOfBounds);
             else {
-                LBasicBlock outOfBoundsCase =
-                    m_out.newBlock();
-                LBasicBlock holeCase =
-                    m_out.newBlock();
-                    
+                LBasicBlock outOfBoundsCase = m_out.newBlock();
+                LBasicBlock holeCase = m_out.newBlock();
+
                 m_out.branch(isOutOfBounds, rarely(outOfBoundsCase), usually(holeCase));
-                    
+
                 LBasicBlock innerLastNext = m_out.appendTo(outOfBoundsCase, holeCase);
-                    
-                vmCall(
-                    Void, slowPathFunction,
-                    weakPointer(globalObject), base, index, value);
-                    
+
+                if (m_node->arrayMode().isOutOfBoundsSaneChain())
+                    speculate(NegativeIndex, noValue(), nullptr, m_out.lessThan(index, m_out.int32Zero));
+
+                vmCall(Void, slowPathFunction, weakPointer(globalObject), base, index, value);
+
                 m_out.jump(continuation);
-                    
+
                 m_out.appendTo(holeCase, innerLastNext);
             }
             
