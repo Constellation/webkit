@@ -430,36 +430,6 @@ macro makeHostFunctionCall(entry, protoCallFrame, temp1, temp2)
     end
 end
 
-# entry, vm, codeBlock, callee, thisValue, arg0, arg1
-global _vmEntryToJavaScriptWith2Arguments
-_vmEntryToJavaScriptWith2Arguments:
-    functionPrologue()
-    pushCalleeSaves()
-
-    const entry = a0 # This must be a0
-    const vm = a1
-    const codeBlock = a2
-    const callee = a3
-    const thisValue = a4
-    const arg0 = a5
-    const arg1 = a6
-
-    vmEntryRecord(cfr, sp)
-
-    storep vm, VMEntryRecord::m_vm[sp]
-    loadpairq VM::topCallFrame[vm], t7, t8
-    storepairq t7, t8, VMEntryRecord::m_prevTopCallFrame[sp]
-    subp sp, 64, sp
-
-    move 3, t7 # argumentCountIncludingThis
-    storepairq a2, a3, CodeBlock + (8 * 0)[sp]
-    storepairq t7, a4, CodeBlock + (8 * 2)[sp]
-    storepairq a5, a6, CodeBlock + (8 * 4)[sp]
-    move sp, t7
-    storepairq t7, cfr, VM::topCallFrame[vm]
-
-    jmp _llint_call_javascript
-
 
 op(llint_handle_uncaught_exception, macro ()
     getVMFromCallFrame(t3, t0)
