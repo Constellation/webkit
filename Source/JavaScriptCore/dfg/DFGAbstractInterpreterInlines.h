@@ -2727,16 +2727,16 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
             break;
         }
         case Array::Int32:
-            if (node->arrayMode().isOutOfBounds())
+            if (node->arrayMode().isEffectfulOutOfBounds())
                 clobberWorld();
             break;
         case Array::Double:
-            if (node->arrayMode().isOutOfBounds())
+            if (node->arrayMode().isEffectfulOutOfBounds())
                 clobberWorld();
             break;
         case Array::Contiguous:
         case Array::ArrayStorage:
-            if (node->arrayMode().isOutOfBounds())
+            if (node->arrayMode().isEffectfulOutOfBounds())
                 clobberWorld();
             break;
         case Array::SlowPutArrayStorage:

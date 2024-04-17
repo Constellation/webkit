@@ -1157,30 +1157,62 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
             return;
             
         case Array::Int32:
-            if (node->arrayMode().isOutOfBounds()) {
+            if (mode.isEffectfulOutOfBounds()) {
                 clobberTop();
                 return;
             }
+
+            if (mode.isOutOfBoundsSaneChain()) {
+                read(JSObject_butterfly);
+                read(Butterfly_publicLength);
+                read(Butterfly_vectorLength);
+                read(IndexedInt32Properties);
+                write(IndexedInt32Properties);
+                write(Butterfly_publicLength);
+                // Potentially this can cause structure transition to different array type (for example, transitioning to ArrayStorage).
+                write(JSCell_structureID);
+                write(JSCell_indexingType);
+                write(JSObject_butterfly);
+                write(Watchpoint_fire);
+                return;
+            }
+
             read(Butterfly_publicLength);
             read(Butterfly_vectorLength);
             read(IndexedInt32Properties);
             write(IndexedInt32Properties);
-            if (node->arrayMode().mayStoreToHole())
+            if (mode.mayStoreToHole())
                 write(Butterfly_publicLength);
             def(HeapLocation(indexedPropertyLoc, IndexedInt32Properties, base, index), LazyNode(value));
             def(HeapLocation(IndexedPropertyInt32OutOfBoundsSaneChainLoc, IndexedInt32Properties, base, index), LazyNode(value));
             return;
             
         case Array::Double:
-            if (node->arrayMode().isOutOfBounds()) {
+            if (mode.isEffectfulOutOfBounds()) {
                 clobberTop();
                 return;
             }
+
+            if (mode.isOutOfBoundsSaneChain()) {
+                read(JSObject_butterfly);
+                read(Butterfly_publicLength);
+                read(Butterfly_vectorLength);
+                read(IndexedDoubleProperties);
+                write(IndexedDoubleProperties);
+                write(Butterfly_publicLength);
+                // Potentially this can cause structure transition to different array type (for example, transitioning to ArrayStorage).
+                write(JSCell_structureID);
+                write(JSCell_indexingType);
+                write(JSObject_butterfly);
+                write(Watchpoint_fire);
+                return;
+            }
+
             read(Butterfly_publicLength);
             read(Butterfly_vectorLength);
             read(IndexedDoubleProperties);
             write(IndexedDoubleProperties);
-            if (node->arrayMode().mayStoreToHole())
+            if (mode.mayStoreToHole())
                 write(Butterfly_publicLength);
             def(HeapLocation(IndexedPropertyDoubleLoc, IndexedDoubleProperties, base, index), LazyNode(value));
             def(HeapLocation(IndexedPropertyDoubleSaneChainLoc, IndexedDoubleProperties, base, index), LazyNode(value));
@@ -1188,38 +1220,56 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
             return;
             
         case Array::Contiguous:
-            if (node->arrayMode().isOutOfBounds()) {
+            if (mode.isEffectfulOutOfBounds()) {
                 clobberTop();
                 return;
             }
+
+            if (mode.isOutOfBoundsSaneChain()) {
+                read(JSObject_butterfly);
+                read(Butterfly_publicLength);
+                read(Butterfly_vectorLength);
+                read(IndexedContiguousProperties);
+                write(IndexedContiguousProperties);
+                write(Butterfly_publicLength);
+                // Potentially this can cause structure transition to different array type (for example, transitioning to ArrayStorage).
+                write(JSCell_structureID);
+                write(JSCell_indexingType);
+                write(JSObject_butterfly);
+                write(Watchpoint_fire);
+                return;
+            }
+
             read(Butterfly_publicLength);
             read(Butterfly_vectorLength);
             read(IndexedContiguousProperties);
             write(IndexedContiguousProperties);
-            if (node->arrayMode().mayStoreToHole())
+            if (mode.mayStoreToHole())
                 write(Butterfly_publicLength);
             def(HeapLocation(indexedPropertyLoc, IndexedContiguousProperties, base, index), LazyNode(value));
             def(HeapLocation(IndexedPropertyJSOutOfBoundsSaneChainLoc, IndexedContiguousProperties, base, index), LazyNode(value));
             return;
             
         case Array::ArrayStorage:
-            if (node->arrayMode().isOutOfBounds()) {
+            if (mode.isOutOfBounds()) {
                 clobberTop();
                 return;
             }
+
             read(Butterfly_publicLength);
             read(Butterfly_vectorLength);
             read(IndexedArrayStorageProperties);
             write(IndexedArrayStorageProperties);
-            if (node->arrayMode().mayStoreToHole())
+            if (mode.mayStoreToHole())
                 write(Butterfly_publicLength);
             return;
 
         case Array::SlowPutArrayStorage:
-            if (node->arrayMode().mayStoreToHole()) {
+            if (mode.mayStoreToHole()) {
                 clobberTop();
                 return;
             }
+
             read(Butterfly_publicLength);
             read(Butterfly_vectorLength);
             read(IndexedArrayStorageProperties);
@@ -1235,7 +1285,7 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         case Array::Uint32Array:
         case Array::Float32Array:
         case Array::Float64Array:
-            if (node->arrayMode().mayBeResizableOrGrowableSharedTypedArray()) {
+            if (mode.mayBeResizableOrGrowableSharedTypedArray()) {
                 read(TypedArrayProperties);
                 read(MiscFields);
                 write(TypedArrayProperties);

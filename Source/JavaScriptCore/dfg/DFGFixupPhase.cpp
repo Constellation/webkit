@@ -1341,7 +1341,18 @@ private:
             }
 
             blessArrayOperation(child1, child2, m_graph.varArgChild(node, 3));
-            
+
+            switch (node->arrayMode().type()) {
+            case Array::Contiguous:
+            case Array::Double:
+            case Array::Int32: {
+                setJSArraySaneChainIfPossible(node);
+                break;
+            }
+            default:
+                break;
+            }
+
             switch (node->arrayMode().modeForPut().type()) {
             case Array::SelectUsingPredictions:
             case Array::SelectUsingArguments:

@@ -559,22 +559,24 @@ bool doesGC(Graph& graph, Node* node)
     case PutByValDirect:
     case PutByVal:
     case PutByValAlias:
-    case PutByValMegamorphic:
-        if (!graph.m_plan.isFTL()) {
-            switch (node->arrayMode().modeForPut().type()) {
-            case Array::Int8Array:
-            case Array::Int16Array:
-            case Array::Int32Array:
-            case Array::Uint8Array:
-            case Array::Uint8ClampedArray:
-            case Array::Uint16Array:
-            case Array::Uint32Array:
-                return true;
-            default:
-                break;
-            }
+    case PutByValMegamorphic: {
+        switch (node->arrayMode().modeForPut().type()) {
+        case Array::Int32:
+        case Array::Double:
+        case Array::Contiguous:
+            return mode.isOutOfBoundsSaneChain();
+        case Array::Int8Array:
+        case Array::Int16Array:
+        case Array::Int32Array:
+        case Array::Uint8Array:
+        case Array::Uint8ClampedArray:
+        case Array::Uint16Array:
+        case Array::Uint32Array:
+            return !graph.m_plan.isFTL();
+        default:
+            return false;
         }
-        return false;
+    }
 
     case EnumeratorPutByVal:
         return true;
