@@ -564,7 +564,7 @@ bool doesGC(Graph& graph, Node* node)
         case Array::Int32:
         case Array::Double:
         case Array::Contiguous:
-            return mode.isOutOfBoundsSaneChain();
+            return node->arrayMode().isOutOfBoundsSaneChain();
         case Array::Int8Array:
         case Array::Int16Array:
         case Array::Int32Array:
