@@ -455,7 +455,7 @@ _vmEntryToJavaScriptWith2Arguments:
     storepairq a2, a3, CodeBlock + (8 * 0)[sp]
     storepairq t7, a4, CodeBlock + (8 * 2)[sp]
     storepairq a5, a6, CodeBlock + (8 * 4)[sp]
-    move sp, t4
+    move sp, t7
     storepairq t7, cfr, VM::topCallFrame[vm]
 
     jmp _llint_call_javascript
