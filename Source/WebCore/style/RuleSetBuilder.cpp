@@ -236,6 +236,12 @@ void RuleSetBuilder::addChildRule(Ref<StyleRuleBase> rule)
 
 void RuleSetBuilder::addRulesFromSheetContents(const StyleSheetContents& sheet)
 {
+    if (!m_addedStyleSheetContents.isEmpty()) {
+        if (m_addedStyleSheetContents.last().ptr() == &sheet)
+            return;
+    }
+    m_addedStyleSheetContents.append(Ref { sheet });
+
     for (auto& rule : sheet.layerRulesBeforeImportRules())
         registerLayers(rule->nameList());
 
