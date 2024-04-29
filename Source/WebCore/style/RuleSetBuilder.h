@@ -40,6 +40,7 @@ public:
 private:
     RuleSetBuilder(const MQ::MediaQueryEvaluator&);
 
+    void addRulesFromTopLevelSheetContents(const StyleSheetContents&);
     void addStyleRule(StyleRuleWithNesting&);
     void addRulesFromSheetContents(const StyleSheetContents&);
     void addChildRules(const Vector<Ref<StyleRuleBase>>&);
@@ -78,7 +79,7 @@ private:
     };
 
     RefPtr<RuleSet> m_ruleSet;
-    Vector<Ref<const StyleSheetContents>, 4> m_addedStyleSheetContents;
+    Vector<Ref<const StyleSheetContents>, 4> m_addedTopLevelStyleSheetContents;
     MediaQueryCollector m_mediaQueryCollector;
     Resolver* m_resolver { nullptr };
     const ShrinkToFit m_shrinkToFit { ShrinkToFit::Enable };

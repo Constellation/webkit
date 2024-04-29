@@ -84,7 +84,7 @@ void RuleSetBuilder::addRulesFromSheet(const StyleSheetContents& sheet, const MQ
 
         RuleSetBuilder dynamicEvaluationScanner(m_mediaQueryCollector.evaluator);
         if (dynamicEvaluationScanner.m_mediaQueryCollector.pushAndEvaluate(sheetQuery))
-            dynamicEvaluationScanner.addRulesFromSheetContents(sheet);
+            dynamicEvaluationScanner.addRulesFromTopLevelSheetContents(sheet);
         dynamicEvaluationScanner.m_mediaQueryCollector.pop(sheetQuery);
 
         return !dynamicEvaluationScanner.requiresStaticMediaQueryEvaluation;
@@ -93,7 +93,7 @@ void RuleSetBuilder::addRulesFromSheet(const StyleSheetContents& sheet, const MQ
     m_mediaQueryCollector.collectDynamic = canUseDynamicMediaQueryEvaluation();
 
     if (m_mediaQueryCollector.pushAndEvaluate(sheetQuery))
-        addRulesFromSheetContents(sheet);
+        addRulesFromTopLevelSheetContents(sheet);
     m_mediaQueryCollector.pop(sheetQuery);
 }
 
@@ -234,14 +234,18 @@ void RuleSetBuilder::addChildRule(Ref<StyleRuleBase> rule)
     }
 }
 
-void RuleSetBuilder::addRulesFromSheetContents(const StyleSheetContents& sheet)
+ALWAYS_INLINE void RuleSetBuilder::addRulesFromTopLevelSheetContents(const StyleSheetContents& sheet)
 {
-    if (!m_addedStyleSheetContents.isEmpty()) {
-        if (m_addedStyleSheetContents.last().ptr() == &sheet)
+    if (!m_addedTopLevelStyleSheetContents.isEmpty()) {
+        if (m_addedTopLevelStyleSheetContents.last().ptr() == &sheet)
             return;
     }
-    m_addedStyleSheetContents.append(Ref { sheet });
+    m_addedTopLevelStyleSheetContents.append(Ref { sheet });
+    addRulesFromSheetContents(sheet);
+}
 
+void RuleSetBuilder::addRulesFromSheetContents(const StyleSheetContents& sheet)
+{
     for (auto& rule : sheet.layerRulesBeforeImportRules())
         registerLayers(rule->nameList());
 
