@@ -78,7 +78,7 @@ private:
     };
 
     RefPtr<RuleSet> m_ruleSet;
-    Vector<Ref<const StyleSheetContents>> m_addedStyleSheetContents;
+    Vector<Ref<const StyleSheetContents>, 4> m_addedStyleSheetContents;
     MediaQueryCollector m_mediaQueryCollector;
     Resolver* m_resolver { nullptr };
     const ShrinkToFit m_shrinkToFit { ShrinkToFit::Enable };
