@@ -4226,7 +4226,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         auto handler = InlineCacheHandler::create(WTFMove(stub), WTFMove(watchpoint));
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
-        poly.m_list = WTFMove(cases);
+        poly.m_list = Vector { stub->cases() };
         poly.m_list.shrinkToFit();
 
         AccessGenerationResult::Kind resultKind;
@@ -4253,7 +4253,10 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         }
     }
 
-    FixedVector<RefPtr<AccessCase>> keys(cases);
+    std::sort(cases.begin(), cases.end(), [](auto& lhs, auto& rhs) {
+        return lhs->structure()->id() < rhs->structure()->id();
+    });
+    FixedVector<RefPtr<AccessCase>> keys(WTFMove(cases));
     if (useHandlerIC() && !statelessType) {
         SharedJITStubSet::Searcher searcher {
             SharedJITStubSet::stubInfoKey(*m_stubInfo),
@@ -4323,7 +4326,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
     m_scratchFPR = scratchFPR.value_or(InvalidFPRReg);
     m_doesCalls = doesCalls;
     m_doesJSCalls = doesJSCalls;
-    if (doesJSCalls || doesCalls)
+    if (doesJSCalls)
         canBeShared = false;
 
     CCallHelpers jit(codeBlock);
