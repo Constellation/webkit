@@ -71,7 +71,7 @@
 namespace JSC {
 
 namespace InlineCacheCompilerInternal {
-static constexpr bool verbose = true;
+static constexpr bool verbose = false;
 }
 
 DEFINE_ALLOCATOR_WITH_HEAP_IDENTIFIER(PolymorphicAccess);
