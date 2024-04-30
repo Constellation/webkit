@@ -138,9 +138,11 @@ void PolymorphicAccessJITStubRoutine::addedToSharedJITStubSet()
     m_identifiers = FixedVector<Identifier>(m_cases.size());
     unsigned index = 0;
     for (auto& accessCase : m_cases) {
-        auto identifier = Identifier::fromUid(m_vm, accessCase->uid());
-        accessCase->updateIdentifier(CacheableIdentifier::createFromSharedStub(identifier.impl()));
-        m_identifiers[index] = WTFMove(identifier);
+        if (auto* uid = accessCase->uid()) {
+            auto identifier = Identifier::fromUid(m_vm, accessCase->uid());
+            accessCase->updateIdentifier(CacheableIdentifier::createFromSharedStub(identifier.impl()));
+            m_identifiers[index] = WTFMove(identifier);
+        }
         ++index;
     }
 }
