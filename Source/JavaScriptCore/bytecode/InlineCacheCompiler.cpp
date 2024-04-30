@@ -4227,7 +4227,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         auto& vector = stub->cases();
-        poly.m_list = Vector { std::span { vector.begin(), vector.end() } };
+        poly.m_list = std::span { vector.begin(), vector.end() };
 
         AccessGenerationResult::Kind resultKind;
         if (generatedMegamorphicCode)
