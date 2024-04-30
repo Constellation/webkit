@@ -140,7 +140,6 @@ void PolymorphicAccessJITStubRoutine::addedToSharedJITStubSet()
     for (auto& accessCase : m_cases) {
         if (auto* uid = accessCase->uid()) {
             auto identifier = Identifier::fromUid(m_vm, accessCase->uid());
-            accessCase->updateIdentifier(CacheableIdentifier::createFromSharedStub(identifier.impl()));
             m_identifiers[index] = WTFMove(identifier);
         }
         ++index;
