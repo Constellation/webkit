@@ -4240,6 +4240,16 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         return AccessGenerationResult(resultKind, WTFMove(handler));
     };
 
+    static uint64_t total = 0;
+    static uint64_t generating = 0;
+    static uint64_t disabled = 0;
+    static uint64_t stateless = 0;
+    static uint64_t stateful = 0;
+
+    ++total;
+    if (!useHandlerIC())
+        ++disabled;
+
     std::optional<SharedJITStubSet::StatelessCacheKey> statelessType;
     if (useHandlerIC()) {
         ASSERT(codeBlock->useDataIC());
@@ -4248,13 +4258,19 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             statelessType = std::tuple { SharedJITStubSet::stubInfoKey(*m_stubInfo), accessCase->m_type };
             if (auto stub = vm().m_sharedJITStubs->getStatelessStub(statelessType.value())) {
                 dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", stub->cases().first()->m_type);
+                // dataLogLn("State stateless:(", ++stateless, "),stateful:(", stateful, "),generate:(", generating, "),disabled:(", disabled, "),total:(", total, ")");
                 return finishCodeGeneration(stub.releaseNonNull());
             }
         }
     }
 
     std::sort(cases.begin(), cases.end(), [](auto& lhs, auto& rhs) {
-        return lhs->structure()->id() < rhs->structure()->id();
+        if (lhs->type() == rhs->type()) {
+            if (lhs->structure()->id() == rhs->structure()->id())
+                return bitwise_cast<uintptr_t>(lhs->uid()) < bitwise_cast<uintptr_t>(rhs->uid());
+            return lhs->structure()->id() < rhs->structure()->id();
+        }
+        return lhs->type() < rhs->type();
     });
     FixedVector<RefPtr<AccessCase>> keys(WTFMove(cases));
     if (useHandlerIC() && !statelessType) {
@@ -4265,6 +4281,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         if (auto stub = vm().m_sharedJITStubs->find(searcher)) {
             if (stub->isStillValid()) {
                 dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
+                // dataLogLn("State stateless:(", stateless, "),stateful:(", ++stateful, "),generate:(", generating, "),disabled:(", disabled, "),total:(", total, ")");
                 return finishCodeGeneration(stub.releaseNonNull());
             } else
                 vm().m_sharedJITStubs->remove(stub.get());
@@ -4295,20 +4312,6 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
 
         doesCalls |= entry->doesCalls(vm(), &cellsToMark);
         doesJSCalls |= JSC::doesJSCalls(entry->type());
-        switch (entry->type()) {
-        case AccessCase::CustomValueGetter:
-        case AccessCase::CustomAccessorGetter:
-        case AccessCase::CustomValueSetter:
-        case AccessCase::CustomAccessorSetter:
-            // Custom getter / setter emits JSGlobalObject pointer, which is tied to the linked CodeBlock.
-            canBeShared = false;
-            break;
-        default:
-            break;
-        }
-
-        if (entry->usesPolyProto())
-            canBeShared = false;
 
         if (!m_stubInfo->hasConstantIdentifier) {
             if (entry->requiresIdentifierNameMatch()) {
@@ -4633,6 +4636,15 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         }
     }
 
+    static uint64_t shareable = 0;
+    if (canBeShared)
+        ++shareable;
+
+    static uint64_t jscalls = 0;
+    if (doesJSCalls)
+        ++jscalls;
+
+    // dataLogLn("State stateless:(", stateless, "),stateful:(", stateful, "),generate:(", ++generating, "),disabled:(", disabled, "),total:(", total, "),sharable:(", shareable, "),jscalls:(", jscalls, ")");
     return finishCodeGeneration(WTFMove(stub));
 }
 

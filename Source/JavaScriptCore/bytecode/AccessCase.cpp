@@ -1402,12 +1402,6 @@ void AccessCase::checkConsistency(StructureStubInfo& stubInfo)
 
 bool AccessCase::canBeShared(const AccessCase& lhs, const AccessCase& rhs)
 {
-    // And we say "false" if either of them have m_polyProtoAccessChain.
-    if (lhs.m_polyProtoAccessChain || rhs.m_polyProtoAccessChain)
-        return false;
-    if (lhs.additionalSet() || rhs.additionalSet())
-        return false;
-
     if (lhs.m_type != rhs.m_type)
         return false;
     if (lhs.m_offset != rhs.m_offset)
@@ -1420,6 +1414,14 @@ bool AccessCase::canBeShared(const AccessCase& lhs, const AccessCase& rhs)
         return false;
     if (lhs.m_conditionSet != rhs.m_conditionSet)
         return false;
+    if (lhs.additionalSet() != rhs.additionalSet())
+        return false;
+    if (lhs.m_polyProtoAccessChain || rhs.m_polyProtoAccessChain) {
+        if (!lhs.m_polyProtoAccessChain || !rhs.m_polyProtoAccessChain)
+            return false;
+        if (*lhs.m_polyProtoAccessChain != *rhs.m_polyProtoAccessChain)
+            return false;
+    }
 
     switch (lhs.m_type) {
     case Load:
@@ -1519,6 +1521,10 @@ bool AccessCase::canBeShared(const AccessCase& lhs, const AccessCase& rhs)
     case IndexedStringInHit:
     case IndexedNoIndexingInMiss:
     case InstanceOfGeneric:
+    case CustomValueGetter:
+    case CustomAccessorGetter:
+    case CustomValueSetter:
+    case CustomAccessorSetter:
         return true;
 
     case Getter:
@@ -1528,14 +1534,6 @@ bool AccessCase::canBeShared(const AccessCase& lhs, const AccessCase& rhs)
     case ProxyObjectStore:
     case IndexedProxyObjectLoad: {
         // Getter / Setter / ProxyObjectHas / ProxyObjectLoad / ProxyObjectStore / IndexedProxyObjectLoad rely on CodeBlock, which makes sharing impossible.
-        return false;
-    }
-
-    case CustomValueGetter:
-    case CustomAccessorGetter:
-    case CustomValueSetter:
-    case CustomAccessorSetter: {
-        // They are embedding JSGlobalObject that are not tied to sharing JITStubRoutine.
         return false;
     }
 
