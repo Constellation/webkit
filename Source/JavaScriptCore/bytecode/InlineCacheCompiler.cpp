@@ -4644,6 +4644,9 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
     if (doesJSCalls)
         ++jscalls;
 
+    UNUSED_VARIABLE(generating);
+    UNUSED_VARIABLE(stateful);
+    UNUSED_VARIABLE(stateless);
     // dataLogLn("State stateless:(", stateless, "),stateful:(", stateful, "),generate:(", ++generating, "),disabled:(", disabled, "),total:(", total, "),sharable:(", shareable, "),jscalls:(", jscalls, ")");
     return finishCodeGeneration(WTFMove(stub));
 }
