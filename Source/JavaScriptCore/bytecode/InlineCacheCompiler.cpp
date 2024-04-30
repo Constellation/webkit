@@ -4264,7 +4264,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
                 dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
                 return finishCodeGeneration(stub.releaseNonNull());
             } else
-                vm().m_sharedJITStubs.remove(stub.get());
+                vm().m_sharedJITStubs->remove(stub.get());
         }
     }
 
