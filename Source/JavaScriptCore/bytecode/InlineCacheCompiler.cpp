@@ -4223,14 +4223,11 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             watchpoint = makeUnique<StructureStubInfoClearingWatchpoint>(codeBlock, m_stubInfo);
             stub->watchpointSet().add(watchpoint.get());
         }
-        auto handler = InlineCacheHandler::create(WTFMove(stub), WTFMove(watchpoint));
-        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         auto& vector = stub->cases();
-        if (vector.isEmpty())
-            poly.m_list.clear();
-        else
-            poly.m_list = std::span { vector.begin(), vector.end() };
+        poly.m_list = std::span { vector.begin(), vector.end() };
+        auto handler = InlineCacheHandler::create(WTFMove(stub), WTFMove(watchpoint));
+        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         AccessGenerationResult::Kind resultKind;
         if (generatedMegamorphicCode)
