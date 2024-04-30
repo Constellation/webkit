@@ -4260,8 +4260,11 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
             keys,
         };
         if (auto stub = vm().m_sharedJITStubs->find(searcher)) {
-            dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
-            return finishCodeGeneration(stub.releaseNonNull());
+            if (stub->isStillValid()) {
+                dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
+                return finishCodeGeneration(stub.releaseNonNull());
+            } else
+                vm().m_sharedJITStubs.remove(stub.get());
         }
     }
 
