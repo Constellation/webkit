@@ -4323,7 +4323,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
     m_scratchFPR = scratchFPR.value_or(InvalidFPRReg);
     m_doesCalls = doesCalls;
     m_doesJSCalls = doesJSCalls;
-    if (doesJSCalls)
+    if (doesJSCalls || doesCalls)
         canBeShared = false;
 
     CCallHelpers jit(codeBlock);
@@ -4785,8 +4785,10 @@ bool InlineCacheHandler::visitWeak(VM& vm) const
 
     for (StructureID weakReference : m_stubRoutine->weakStructures()) {
         Structure* structure = weakReference.decode();
-        if (!vm.heap.isMarked(structure))
+        if (!vm.heap.isMarked(structure)) {
+            m_stubRoutine->invalidate();
             return false;
+        }
     }
 
     return true;
