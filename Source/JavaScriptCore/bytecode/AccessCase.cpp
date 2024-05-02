@@ -1521,11 +1521,16 @@ bool AccessCase::canBeShared(const AccessCase& lhs, const AccessCase& rhs)
     case IndexedStringInHit:
     case IndexedNoIndexingInMiss:
     case InstanceOfGeneric:
+        return true;
+
     case CustomValueGetter:
     case CustomAccessorGetter:
     case CustomValueSetter:
-    case CustomAccessorSetter:
-        return true;
+    case CustomAccessorSetter: {
+        auto& lhsd = lhs.as<GetterSetterAccessCase>();
+        auto& rhsd = rhs.as<GetterSetterAccessCase>();
+        return lhsd.m_customAccessor == rhsd.m_customAccessor;
+    }
 
     case Getter:
     case Setter:
