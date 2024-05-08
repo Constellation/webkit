@@ -8152,7 +8152,7 @@ void ByteCodeParser::parseBlock(unsigned limit)
 
                 Node* next = jsConstant(JSValue());
                 Node* iterator = addToGraph(NewInternalFieldObject, OpInfo(m_graph.registerStructure(globalObject->stringIteratorStructure())));
-                addToGraph(PutInternalField, OpInfo(static_cast<uint32_t>(JSStringIterator::Field::IteratedObject)), iterator, get(bytecode.m_iterable));
+                addToGraph(PutInternalField, OpInfo(static_cast<uint32_t>(JSStringIterator::Field::IteratedString)), iterator, get(bytecode.m_iterable));
                 set(bytecode.m_iterator, iterator);
 
                 // Set m_next to JSValue() so if we exit between here and iterator_next instruction it knows we are in the fast case.
