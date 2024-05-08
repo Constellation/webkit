@@ -35,7 +35,7 @@ enum class IterationMode : uint8_t {
     FastString = 1 << 2,
 };
 
-constexpr uint8_t numberOfIterationModes = 2;
+constexpr uint8_t numberOfIterationModes = 3;
 
 OVERLOAD_BITWISE_OPERATORS_FOR_ENUM_CLASS_WITH_INTERGRALS(IterationMode);
 

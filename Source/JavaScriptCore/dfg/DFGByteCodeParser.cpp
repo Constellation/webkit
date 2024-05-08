@@ -71,6 +71,7 @@
 #include "JSModuleNamespaceObject.h"
 #include "JSPromiseConstructor.h"
 #include "JSSetIterator.h"
+#include "JSStringIterator.h"
 #include "MapConstructor.h"
 #include "NullSetterFunction.h"
 #include "NumberConstructor.h"
@@ -8042,13 +8043,14 @@ void ByteCodeParser::parseBlock(unsigned limit)
             bool generatedCase = false;
 
             JSGlobalObject* globalObject = m_inlineStackTop->m_codeBlock->globalObjectFor(currentCodeOrigin());
-            BasicBlock* genericBlock = nullptr;
+            BasicBlock* nextBlock = nullptr;
             BasicBlock* continuation = allocateUntargetableBlock();
 
             BytecodeIndex startIndex = m_currentIndex;
 
             Node* symbolIterator = get(bytecode.m_symbolIterator);
             auto& arrayIteratorProtocolWatchpointSet = globalObject->arrayIteratorProtocolWatchpointSet();
+            auto& stringIteratorProtocolWatchpointSet = globalObject->stringIteratorProtocolWatchpointSet();
 
             if (seenModes & IterationMode::FastArray && arrayIteratorProtocolWatchpointSet.isStillValid()) {
                 // First set up the watchpoint conditions we need for correctness.
@@ -8061,15 +8063,15 @@ void ByteCodeParser::parseBlock(unsigned limit)
                     addToGraph(CheckIsConstant, OpInfo(frozenSymbolIteratorFunction), symbolIterator);
                     addToGraph(Check, Edge(get(bytecode.m_iterable), ArrayUse));
                 } else {
-                    BasicBlock* fastArrayBlock = allocateUntargetableBlock();
-                    genericBlock = allocateUntargetableBlock();
+                    BasicBlock* fastBlock = allocateUntargetableBlock();
+                    nextBlock = allocateUntargetableBlock();
 
                     Node* isKnownIterFunction = addToGraph(CompareEqPtr, OpInfo(frozenSymbolIteratorFunction), symbolIterator);
                     Node* isArray = addToGraph(IsCellWithType, OpInfo(ArrayType), get(bytecode.m_iterable));
 
                     BranchData* branchData = m_graph.m_branchData.add();
-                    branchData->taken = BranchTarget(fastArrayBlock);
-                    branchData->notTaken = BranchTarget(genericBlock);
+                    branchData->taken = BranchTarget(fastBlock);
+                    branchData->notTaken = BranchTarget(nextBlock);
 
                     Node* andResult = addToGraph(ArithBitAnd, isArray, isKnownIterFunction);
 
@@ -8080,7 +8082,7 @@ void ByteCodeParser::parseBlock(unsigned limit)
                     addToGraph(Branch, OpInfo(branchData), andResult);
                     flushForTerminal();
 
-                    m_currentBlock = fastArrayBlock;
+                    m_currentBlock = fastBlock;
                     clearCaches();
                     keepUsesOfCurrentInstructionAlive(currentInstruction, m_currentIndex.checkpoint());
                 }
@@ -8106,11 +8108,72 @@ void ByteCodeParser::parseBlock(unsigned limit)
 
             m_currentIndex = startIndex;
 
+            if (seenModes & IterationMode::FastString && stringIteratorProtocolWatchpointSet.isStillValid()) {
+                // First set up the watchpoint conditions we need for correctness.
+                m_graph.watchpoints().addLazily(stringIteratorProtocolWatchpointSet);
+
+                ASSERT(numberOfRemainingModes);
+                if (nextBlock) {
+                    m_currentBlock = nextBlock;
+                    clearCaches();
+                    keepUsesOfCurrentInstructionAlive(currentInstruction, m_currentIndex.checkpoint());
+                }
+
+                ASSERT_WITH_MESSAGE(globalObject->stringProtoSymbolIteratorFunctionConcurrently(), "The only way we could have seen FastArray is if we saw this function in the LLInt/Baseline so the iterator function should be allocated.");
+                FrozenValue* frozenSymbolIteratorFunction = m_graph.freeze(globalObject->stringProtoSymbolIteratorFunctionConcurrently());
+                numberOfRemainingModes--;
+                if (!numberOfRemainingModes) {
+                    addToGraph(CheckIsConstant, OpInfo(frozenSymbolIteratorFunction), symbolIterator);
+                    addToGraph(Check, Edge(get(bytecode.m_iterable), StringUse));
+                } else {
+                    BasicBlock* fastBlock = allocateUntargetableBlock();
+                    nextBlock = allocateUntargetableBlock();
+
+                    Node* isKnownIterFunction = addToGraph(CompareEqPtr, OpInfo(frozenSymbolIteratorFunction), symbolIterator);
+                    Node* isString = addToGraph(IsCellWithType, OpInfo(StringType), get(bytecode.m_iterable));
+
+                    BranchData* branchData = m_graph.m_branchData.add();
+                    branchData->taken = BranchTarget(fastBlock);
+                    branchData->notTaken = BranchTarget(nextBlock);
+
+                    Node* andResult = addToGraph(ArithBitAnd, isString, isKnownIterFunction);
+
+                    // We know the ArithBitAnd cannot have effects so it's ok to exit here.
+                    m_exitOK = true;
+                    addToGraph(ExitOK);
+
+                    addToGraph(Branch, OpInfo(branchData), andResult);
+                    flushForTerminal();
+
+                    m_currentBlock = fastBlock;
+                    clearCaches();
+                    keepUsesOfCurrentInstructionAlive(currentInstruction, m_currentIndex.checkpoint());
+                }
+
+                Node* next = jsConstant(JSValue());
+                Node* iterator = addToGraph(NewInternalFieldObject, OpInfo(m_graph.registerStructure(globalObject->stringIteratorStructure())));
+                addToGraph(PutInternalField, OpInfo(static_cast<uint32_t>(JSStringIterator::Field::IteratedObject)), iterator, get(bytecode.m_iterable));
+                set(bytecode.m_iterator, iterator);
+
+                // Set m_next to JSValue() so if we exit between here and iterator_next instruction it knows we are in the fast case.
+                set(bytecode.m_next, next);
+
+                // Do our set locals. We don't want to exit backwards so move our exit to the next bytecode.
+                m_currentIndex = nextOpcodeIndex();
+                m_exitOK = true;
+                processSetLocalQueue();
+
+                addToGraph(Jump, OpInfo(continuation));
+                generatedCase = true;
+            }
+
+            m_currentIndex = startIndex;
+
             if (seenModes & IterationMode::Generic) {
                 ASSERT(numberOfRemainingModes);
-                if (genericBlock) {
+                if (nextBlock) {
                     ASSERT(generatedCase);
-                    m_currentBlock = genericBlock;
+                    m_currentBlock = nextBlock;
                     clearCaches();
                     keepUsesOfCurrentInstructionAlive(currentInstruction, m_currentIndex.checkpoint());
                 } else
