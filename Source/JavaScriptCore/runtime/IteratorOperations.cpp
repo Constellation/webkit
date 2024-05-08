@@ -181,7 +181,7 @@ JSValue iteratorMethod(JSGlobalObject* globalObject, JSObject* object)
     return method;
 }
 
-IterationRecord iteratorForIterable(JSGlobalObject* globalObject, JSObject* object, JSValue iteratorMethod)
+IterationRecord iteratorForIterable(JSGlobalObject* globalObject, JSCell* cell, JSValue iteratorMethod)
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
@@ -193,7 +193,7 @@ IterationRecord iteratorForIterable(JSGlobalObject* globalObject, JSObject* obje
     }
 
     ArgList iteratorMethodArguments;
-    JSValue iterator = call(globalObject, iteratorMethod, iteratorMethodCallData, object, iteratorMethodArguments);
+    JSValue iterator = call(globalObject, iteratorMethod, iteratorMethodCallData, cell, iteratorMethodArguments);
     RETURN_IF_EXCEPTION(scope, { });
 
     if (!iterator.isObject()) {
@@ -238,46 +238,72 @@ IterationRecord iteratorForIterable(JSGlobalObject* globalObject, JSValue iterab
 
 IterationMode getIterationMode(VM&, JSGlobalObject* globalObject, JSValue iterable, JSValue symbolIterator)
 {
-    if (!isJSArray(iterable))
-        return IterationMode::Generic;
+    if (isJSArray(iterable)) {
+        if (!globalObject->arrayIteratorProtocolWatchpointSet().isStillValid())
+            return IterationMode::Generic;
 
-    if (!globalObject->arrayIteratorProtocolWatchpointSet().isStillValid())
-        return IterationMode::Generic;
+        // This is correct because we just checked the watchpoint is still valid.
+        JSFunction* symbolIteratorFunction = jsDynamicCast<JSFunction*>(symbolIterator);
+        if (!symbolIteratorFunction)
+            return IterationMode::Generic;
 
-    // This is correct because we just checked the watchpoint is still valid.
-    JSFunction* symbolIteratorFunction = jsDynamicCast<JSFunction*>(symbolIterator);
-    if (!symbolIteratorFunction)
-        return IterationMode::Generic;
+        // We don't want to allocate the values function just to check if it's the same as our function so we use the concurrent accessor.
+        // FIXME: This only works for arrays from the same global object as ourselves but we should be able to support any pairing.
+        if (globalObject->arrayProtoValuesFunctionConcurrently() != symbolIteratorFunction)
+            return IterationMode::Generic;
 
-    // We don't want to allocate the values function just to check if it's the same as our function so we use the concurrent accessor.
-    // FIXME: This only works for arrays from the same global object as ourselves but we should be able to support any pairing.
-    if (globalObject->arrayProtoValuesFunctionConcurrently() != symbolIteratorFunction)
-        return IterationMode::Generic;
+        return IterationMode::FastArray;
+    }
 
-    return IterationMode::FastArray;
+    if (iterable.isString()) {
+        if (!globalObject->stringIteratorProtocolWatchpointSet().isStillValid())
+            return IterationMode::Generic;
+
+        // This is correct because we just checked the watchpoint is still valid.
+        JSFunction* symbolIteratorFunction = jsDynamicCast<JSFunction*>(symbolIterator);
+        if (!symbolIteratorFunction)
+            return IterationMode::Generic;
+
+        // We don't want to allocate the values function just to check if it's the same as our function so we use the concurrent accessor.
+        // FIXME: This only works for arrays from the same global object as ourselves but we should be able to support any pairing.
+        if (globalObject->arrayProtoValuesFunctionConcurrently() != symbolIteratorFunction)
+            return IterationMode::Generic;
+
+        return IterationMode::FastString;
+    }
+
+    return IterationMode::Generic;
 }
 
 IterationMode getIterationMode(VM&, JSGlobalObject* globalObject, JSValue iterable)
 {
-    if (!isJSArray(iterable))
-        return IterationMode::Generic;
+    if (isJSArray(iterable)) {
+        JSArray* array = jsCast<JSArray*>(iterable);
+        Structure* structure = array->structure();
+        // FIXME: We want to support broader JSArrays as long as array[@@iterator] is not defined.
+        if (!globalObject->isOriginalArrayStructure(structure))
+            return IterationMode::Generic;
 
-    JSArray* array = jsCast<JSArray*>(iterable);
-    Structure* structure = array->structure();
-    // FIXME: We want to support broader JSArrays as long as array[@@iterator] is not defined.
-    if (!globalObject->isOriginalArrayStructure(structure))
-        return IterationMode::Generic;
+        if (!globalObject->arrayIteratorProtocolWatchpointSet().isStillValid())
+            return IterationMode::Generic;
 
-    if (!globalObject->arrayIteratorProtocolWatchpointSet().isStillValid())
-        return IterationMode::Generic;
+        // Now, Array has original Array Structures and arrayIteratorProtocolWatchpointSet is not fired.
+        // This means,
+        // 1. Array.prototype is [[Prototype]].
+        // 2. array[@@iterator] is not overridden.
+        // 3. Array.prototype[@@iterator] is an expected one.
+        // So, we can say this will create an expected ArrayIterator.
+        return IterationMode::FastArray;
+    }
 
-    // Now, Array has original Array Structures and arrayIteratorProtocolWatchpointSet is not fired.
-    // This means,
-    // 1. Array.prototype is [[Prototype]].
-    // 2. array[@@iterator] is not overridden.
-    // 3. Array.prototype[@@iterator] is an expected one.
-    // So, we can say this will create an expected ArrayIterator.
-    return IterationMode::FastArray;
+    if (iterable.isString()) {
+        if (!globalObject->stringIteratorProtocolWatchpointSet().isStillValid())
+            return IterationMode::Generic;
+
+        return IterationMode::FastString;
+    }
+
+    return IterationMode::Generic;
 }
 
 } // namespace JSC

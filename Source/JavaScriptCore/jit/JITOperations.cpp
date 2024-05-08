@@ -60,6 +60,7 @@
 #include "JSInternalPromise.h"
 #include "JSLexicalEnvironment.h"
 #include "JSRemoteFunction.h"
+#include "JSStringIterator.h"
 #include "JSWithScope.h"
 #include "LLIntEntrypoint.h"
 #include "MegamorphicCache.h"
@@ -3171,7 +3172,7 @@ JSC_DEFINE_JIT_OPERATION(operationInstanceOfCustom, size_t, (JSGlobalObject* glo
 
 #if CPU(ARM64) || (CPU(X86_64) && !OS(WINDOWS))
 
-JSC_DEFINE_JIT_OPERATION(operationIteratorNextTryFast, UGPRPair, (JSGlobalObject* globalObject, JSArrayIterator* arrayIterator, JSArray* array, void* metadataPointer))
+JSC_DEFINE_JIT_OPERATION(operationIteratorNextTryFast, UGPRPair, (JSGlobalObject* globalObject, JSObject* iterator, JSCell* iterable, void* metadataPointer))
 {
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
@@ -3179,27 +3180,76 @@ JSC_DEFINE_JIT_OPERATION(operationIteratorNextTryFast, UGPRPair, (JSGlobalObject
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     auto& metadata = *bitwise_cast<OpIteratorNext::Metadata*>(metadataPointer);
-    metadata.m_iterableProfile.observeStructureID(array->structureID());
-    metadata.m_iterationMetadata.seenModes = metadata.m_iterationMetadata.seenModes | IterationMode::FastArray;
+    metadata.m_iterableProfile.observeStructureID(iterable->structureID());
 
-    auto& indexSlot = arrayIterator->internalField(JSArrayIterator::Field::Index);
-    int64_t index = indexSlot.get().asAnyInt();
-    ASSERT(0 <= index && index <= maxSafeInteger());
+    if (auto arrayIterator = jsDynamicCast<JSArrayIterator*>(iterator)) {
+        auto array = jsDynamicCast<JSArray*>(iterable);
+        ASSERT(array && isJSArray(array));
+        metadata.m_iterationMetadata.seenModes = metadata.m_iterationMetadata.seenModes | IterationMode::FastArray;
+        auto& indexSlot = arrayIterator->internalField(JSArrayIterator::Field::Index);
+        int64_t index = indexSlot.get().asAnyInt();
+        ASSERT(0 <= index && index <= maxSafeInteger());
 
-    JSValue value;
-    bool done = index == JSArrayIterator::doneIndex || index >= array->length();
-    if (!done) {
-        // No need for a barrier here because we know this is a primitive.
-        indexSlot.setWithoutWriteBarrier(jsNumber(index + 1));
-        ASSERT(index == static_cast<unsigned>(index));
-        value = array->getIndex(globalObject, static_cast<unsigned>(index));
-        OPERATION_RETURN_IF_EXCEPTION(scope, makeUGPRPair(0, 0));
-    } else {
-        // No need for a barrier here because we know this is a primitive.
-        indexSlot.setWithoutWriteBarrier(jsNumber(-1));
+        JSValue value;
+        bool done = index == JSArrayIterator::doneIndex || index >= array->length();
+        if (!done) {
+            ASSERT(index == static_cast<unsigned>(index));
+            value = array->getIndex(globalObject, static_cast<unsigned>(index));
+            OPERATION_RETURN_IF_EXCEPTION(scope, makeUGPRPair(0, 0));
+            ++index;
+            // No need for a barrier here because we know this is a primitive.
+            indexSlot.setWithoutWriteBarrier(jsNumber(index));
+        } else {
+            // No need for a barrier here because we know this is a primitive.
+            indexSlot.setWithoutWriteBarrier(jsNumber(-1));
+        }
+
+        OPERATION_RETURN(scope, makeUGPRPair(JSValue::encode(jsBoolean(done)), JSValue::encode(value)));
     }
 
-    OPERATION_RETURN(scope, makeUGPRPair(JSValue::encode(jsBoolean(done)), JSValue::encode(value)));
+    if (auto stringIterator = jsDynamicCast<JSStringIterator*>(iterator)) {
+        ASSERT(jsDynamicCast<JSString*>(iterable));
+        JSString* stringCell = asString(iterable);
+
+        metadata.m_iterationMetadata.seenModes = metadata.m_iterationMetadata.seenModes | IterationMode::FastString;
+        auto& indexSlot = stringIterator->internalField(JSStringIterator::Field::Index);
+        int64_t index = indexSlot.get().asAnyInt();
+        ASSERT(0 <= index && index <= maxSafeInteger());
+
+        JSValue value;
+        bool done = index == JSStringIterator::doneIndex || index >= stringCell->length();
+        if (!done) {
+            ASSERT(index == static_cast<unsigned>(index));
+            auto string = stringCell->value(globalObject);
+            OPERATION_RETURN_IF_EXCEPTION(scope, makeUGPRPair(0, 0));
+            auto first = string.characterAt(index);
+            JSValue nextValue;
+            if (first < 0xD800 || first > 0xDBFF || index + 1 == string.length()) {
+                nextValue = jsSingleCharacterString(vm, first);
+                ++index;
+            } else {
+                auto second = string.characterAt(index + 1);
+                if (second < 0xDC00 || second > 0xDFFF) {
+                    nextValue = jsSingleCharacterString(vm, first);
+                    ++index;
+                } else {
+                    UChar buffer[] { first, second };
+                    nextValue = jsNontrivialString(vm, String(std::span { buffer, 2 }));
+                    index += 2;
+                }
+            }
+
+            // No need for a barrier here because we know this is a primitive.
+            indexSlot.setWithoutWriteBarrier(jsNumber(index));
+        } else {
+            // No need for a barrier here because we know this is a primitive.
+            indexSlot.setWithoutWriteBarrier(jsNumber(-1));
+        }
+
+        OPERATION_RETURN(scope, makeUGPRPair(JSValue::encode(jsBoolean(done)), JSValue::encode(value)));
+    }
+
+    RELEASE_ASSERT_NOT_REACHED();
 }
 
 #endif

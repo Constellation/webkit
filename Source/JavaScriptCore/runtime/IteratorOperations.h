@@ -30,6 +30,7 @@
 #include "JSArrayIterator.h"
 #include "JSCJSValue.h"
 #include "JSObjectInlines.h"
+#include "JSStringIterator.h"
 #include "ThrowScope.h"
 
 namespace JSC {
@@ -49,7 +50,7 @@ JS_EXPORT_PRIVATE JSObject* createIteratorResultObject(JSGlobalObject*, JSValue,
 Structure* createIteratorResultObjectStructure(VM&, JSGlobalObject&);
 
 JS_EXPORT_PRIVATE JSValue iteratorMethod(JSGlobalObject*, JSObject*);
-JS_EXPORT_PRIVATE IterationRecord iteratorForIterable(JSGlobalObject*, JSObject*, JSValue iteratorMethod);
+JS_EXPORT_PRIVATE IterationRecord iteratorForIterable(JSGlobalObject*, JSCell*, JSValue iteratorMethod);
 JS_EXPORT_PRIVATE IterationRecord iteratorForIterable(JSGlobalObject*, JSValue iterable);
 
 JS_EXPORT_PRIVATE JSValue iteratorMethod(JSGlobalObject*, JSObject*);
@@ -64,21 +65,61 @@ void forEachInIterable(JSGlobalObject* globalObject, JSValue iterable, const Cal
     auto& vm = getVM(globalObject);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    if (getIterationMode(vm, globalObject, iterable) == IterationMode::FastArray) {
+    switch (getIterationMode(vm, globalObject, iterable)) {
+    case IterationMode::FastArray: {
         auto* array = jsCast<JSArray*>(iterable);
-        for (unsigned index = 0; index < array->length(); ++index) {
+        for (unsigned index = 0; index < array->length();) {
             JSValue nextValue = array->getIndex(globalObject, index);
             RETURN_IF_EXCEPTION(scope, void());
+            ++index;
             callback(vm, globalObject, nextValue);
             if (UNLIKELY(scope.exception())) {
                 scope.release();
                 JSArrayIterator* iterator = JSArrayIterator::create(vm, globalObject->arrayIteratorStructure(), array, IterationKind::Values);
-                iterator->internalField(JSArrayIterator::Field::Index).setWithoutWriteBarrier(jsNumber(index + 1));
+                iterator->internalField(JSArrayIterator::Field::Index).setWithoutWriteBarrier(jsNumber(index));
                 iteratorClose(globalObject, iterator);
                 return;
             }
         }
         return;
+    }
+
+    case IterationMode::FastString: {
+        auto* stringCell = asString(iterable);
+        auto string = stringCell->value(globalObject);
+        RETURN_IF_EXCEPTION(scope, void());
+        for (unsigned index = 0, length = string.length(); index < length;) {
+            auto first = string.characterAt(index);
+            JSValue nextValue;
+            if (first < 0xD800 || first > 0xDBFF || index + 1 == length) {
+                nextValue = jsSingleCharacterString(vm, first);
+                ++index;
+            } else {
+                auto second = string.characterAt(index + 1);
+                if (second < 0xDC00 || second > 0xDFFF) {
+                    nextValue = jsSingleCharacterString(vm, first);
+                    ++index;
+                } else {
+                    UChar buffer[] { first, second };
+                    nextValue = jsNontrivialString(vm, String(std::span { buffer, 2 }));
+                    index += 2;
+                }
+            }
+
+            callback(vm, globalObject, nextValue);
+            if (UNLIKELY(scope.exception())) {
+                scope.release();
+                JSStringIterator* iterator = JSStringIterator::create(vm, globalObject->stringIteratorStructure(), stringCell);
+                iterator->internalField(JSStringIterator::Field::Index).setWithoutWriteBarrier(jsNumber(index));
+                iteratorClose(globalObject, iterator);
+                return;
+            }
+        }
+        return;
+    }
+
+    case IterationMode::Generic:
+        break;
     }
 
     IterationRecord iterationRecord = iteratorForIterable(globalObject, iterable);
@@ -101,26 +142,66 @@ void forEachInIterable(JSGlobalObject* globalObject, JSValue iterable, const Cal
 }
 
 template<typename CallBackType>
-void forEachInIterable(JSGlobalObject& globalObject, JSObject* iterable, JSValue iteratorMethod, const CallBackType& callback)
+void forEachInIterable(JSGlobalObject& globalObject, JSCell* iterable, JSValue iteratorMethod, const CallBackType& callback)
 {
     auto& vm = getVM(&globalObject);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    if (getIterationMode(vm, &globalObject, iterable, iteratorMethod) == IterationMode::FastArray) {
+    switch (getIterationMode(vm, &globalObject, iterable, iteratorMethod)) {
+    case IterationMode::FastArray: {
         auto* array = jsCast<JSArray*>(iterable);
-        for (unsigned index = 0; index < array->length(); ++index) {
+        for (unsigned index = 0; index < array->length();) {
             JSValue nextValue = array->getIndex(&globalObject, index);
             RETURN_IF_EXCEPTION(scope, void());
+            ++index;
             callback(vm, globalObject, nextValue);
             if (UNLIKELY(scope.exception())) {
                 scope.release();
                 JSArrayIterator* iterator = JSArrayIterator::create(vm, globalObject.arrayIteratorStructure(), array, IterationKind::Values);
-                iterator->internalField(JSArrayIterator::Field::Index).setWithoutWriteBarrier(jsNumber(index + 1));
+                iterator->internalField(JSArrayIterator::Field::Index).setWithoutWriteBarrier(jsNumber(index));
                 iteratorClose(&globalObject, iterator);
                 return;
             }
         }
         return;
+    }
+
+    case IterationMode::FastString: {
+        auto* stringCell = asString(iterable);
+        auto string = stringCell->value(&globalObject);
+        RETURN_IF_EXCEPTION(scope, void());
+        for (unsigned index = 0, length = string.length(); index < length;) {
+            auto first = string.characterAt(index);
+            JSValue nextValue;
+            if (first < 0xD800 || first > 0xDBFF || index + 1 == length) {
+                nextValue = jsSingleCharacterString(vm, first);
+                ++index;
+            } else {
+                auto second = string.characterAt(index + 1);
+                if (second < 0xDC00 || second > 0xDFFF) {
+                    nextValue = jsSingleCharacterString(vm, first);
+                    ++index;
+                } else {
+                    UChar buffer[] { first, second };
+                    nextValue = jsNontrivialString(vm, String(std::span { buffer, 2 }));
+                    index += 2;
+                }
+            }
+
+            callback(vm, globalObject, nextValue);
+            if (UNLIKELY(scope.exception())) {
+                scope.release();
+                JSStringIterator* iterator = JSStringIterator::create(vm, globalObject.stringIteratorStructure(), stringCell);
+                iterator->internalField(JSStringIterator::Field::Index).setWithoutWriteBarrier(jsNumber(index));
+                iteratorClose(&globalObject, iterator);
+                return;
+            }
+        }
+        return;
+    }
+
+    case IterationMode::Generic:
+        break;
     }
 
     auto iterationRecord = iteratorForIterable(&globalObject, iterable, iteratorMethod);

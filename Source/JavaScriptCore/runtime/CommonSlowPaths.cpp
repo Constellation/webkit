@@ -789,14 +789,25 @@ ALWAYS_INLINE UGPRPair iteratorOpenTryFastImpl(VM& vm, JSGlobalObject* globalObj
     JSValue symbolIterator = GET_C(bytecode.m_symbolIterator).jsValue();
     auto& iterator = GET(bytecode.m_iterator);
 
-    if (getIterationMode(vm, globalObject, iterable, symbolIterator) == IterationMode::FastArray) {
+    switch (getIterationMode(vm, globalObject, iterable, symbolIterator)) {
+    case IterationMode::FastArray: {
         // We should be good to go.
         metadata.m_iterationMetadata.seenModes = metadata.m_iterationMetadata.seenModes | IterationMode::FastArray;
         GET(bytecode.m_next) = JSValue();
-        auto* iteratedObject = jsCast<JSObject*>(iterable);
-        iterator = JSArrayIterator::create(vm, globalObject->arrayIteratorStructure(), iteratedObject, IterationKind::Values);
+        iterator = JSArrayIterator::create(vm, globalObject->arrayIteratorStructure(), jsCast<JSObject*>(iterable), IterationKind::Values);
         PROFILE_VALUE_IN(iterator.jsValue(), m_iteratorValueProfile);
         return encodeResult(pc, reinterpret_cast<void*>(static_cast<uintptr_t>(IterationMode::FastArray)));
+    }
+    case IterationMode::FastString: {
+        // We should be good to go.
+        metadata.m_iterationMetadata.seenModes = metadata.m_iterationMetadata.seenModes | IterationMode::FastString;
+        GET(bytecode.m_next) = JSValue();
+        iterator = JSStringIterator::create(vm, globalObject->arrayIteratorStructure(), asString(iterable));
+        PROFILE_VALUE_IN(iterator.jsValue(), m_iteratorValueProfile);
+        return encodeResult(pc, reinterpret_cast<void*>(static_cast<uintptr_t>(IterationMode::FastString)));
+    }
+    case IterationMode::Generic:
+        break;
     }
 
     // Return to the bytecode to try in generic mode.
@@ -834,10 +845,10 @@ ALWAYS_INLINE UGPRPair iteratorNextTryFastImpl(VM& vm, JSGlobalObject* globalObj
     ASSERT(!GET(bytecode.m_next).jsValue());
     JSObject* iterator = jsCast<JSObject*>(GET(bytecode.m_iterator).jsValue());;
     JSCell* iterable = GET(bytecode.m_iterable).jsValue().asCell();
+    metadata.m_iterableProfile.observeStructureID(iterable->structureID());
+
     if (auto arrayIterator = jsDynamicCast<JSArrayIterator*>(iterator)) {
         if (auto array = jsDynamicCast<JSArray*>(iterable); array && isJSArray(array)) {
-            metadata.m_iterableProfile.observeStructureID(array->structureID());
-
             metadata.m_iterationMetadata.seenModes = metadata.m_iterationMetadata.seenModes | IterationMode::FastArray;
             auto& indexSlot = arrayIterator->internalField(JSArrayIterator::Field::Index);
             int64_t index = indexSlot.get().asAnyInt();
@@ -847,11 +858,12 @@ ALWAYS_INLINE UGPRPair iteratorNextTryFastImpl(VM& vm, JSGlobalObject* globalObj
             bool done = index == JSArrayIterator::doneIndex || index >= array->length();
             GET(bytecode.m_done) = jsBoolean(done);
             if (!done) {
-                // No need for a barrier here because we know this is a primitive.
-                indexSlot.setWithoutWriteBarrier(jsNumber(index + 1));
                 ASSERT(index == static_cast<unsigned>(index));
                 value = array->getIndex(globalObject, static_cast<unsigned>(index));
                 CHECK_EXCEPTION();
+                ++index;
+                // No need for a barrier here because we know this is a primitive.
+                indexSlot.setWithoutWriteBarrier(jsNumber(index));
                 PROFILE_VALUE_IN(value, m_valueValueProfile);
             } else {
                 // No need for a barrier here because we know this is a primitive.
@@ -861,7 +873,51 @@ ALWAYS_INLINE UGPRPair iteratorNextTryFastImpl(VM& vm, JSGlobalObject* globalObj
             GET(bytecode.m_value) = value;
             return encodeResult(pc, reinterpret_cast<void*>(IterationMode::FastArray));
         }
+    } else if (auto stringIterator = jsDynamicCast<JSStringIterator*>(iterator)) {
+        ASSERT(jsDynamicCast<JSString*>(iterable));
+        JSString* stringCell = asString(iterable);
+
+        metadata.m_iterationMetadata.seenModes = metadata.m_iterationMetadata.seenModes | IterationMode::FastString;
+        auto& indexSlot = stringIterator->internalField(JSStringIterator::Field::Index);
+        int64_t index = indexSlot.get().asAnyInt();
+        ASSERT(0 <= index && index <= maxSafeInteger());
+
+        JSValue value;
+        bool done = index == JSStringIterator::doneIndex || index >= stringCell->length();
+        GET(bytecode.m_done) = jsBoolean(done);
+        if (!done) {
+            ASSERT(index == static_cast<unsigned>(index));
+            auto string = stringCell->value(globalObject);
+            CHECK_EXCEPTION();
+            auto first = string.characterAt(index);
+            JSValue nextValue;
+            if (first < 0xD800 || first > 0xDBFF || index + 1 == string.length()) {
+                nextValue = jsSingleCharacterString(vm, first);
+                ++index;
+            } else {
+                auto second = string.characterAt(index + 1);
+                if (second < 0xDC00 || second > 0xDFFF) {
+                    nextValue = jsSingleCharacterString(vm, first);
+                    ++index;
+                } else {
+                    UChar buffer[] { first, second };
+                    nextValue = jsNontrivialString(vm, String(std::span { buffer, 2 }));
+                    index += 2;
+                }
+            }
+
+            // No need for a barrier here because we know this is a primitive.
+            indexSlot.setWithoutWriteBarrier(jsNumber(index));
+            PROFILE_VALUE_IN(value, m_valueValueProfile);
+        } else {
+            // No need for a barrier here because we know this is a primitive.
+            indexSlot.setWithoutWriteBarrier(jsNumber(-1));
+        }
+
+        GET(bytecode.m_value) = value;
+        return encodeResult(pc, reinterpret_cast<void*>(IterationMode::FastString));
     }
+
     RELEASE_ASSERT_NOT_REACHED();
 }
 

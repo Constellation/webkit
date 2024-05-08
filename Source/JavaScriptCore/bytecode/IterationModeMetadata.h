@@ -32,6 +32,7 @@ namespace JSC {
 enum class IterationMode : uint8_t {
     Generic = 1 << 0,
     FastArray = 1 << 1,
+    FastString = 1 << 2,
 };
 
 constexpr uint8_t numberOfIterationModes = 2;
