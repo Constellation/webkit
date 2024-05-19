@@ -526,16 +526,9 @@ public:
 
     CodeLocationLabel<JSInternalPtrTag> doneLocation() const { return m_doneLocation; }
 
-    void setSlowPathCallDestination(CodePtr<JSEntryPtrTag>);
-
     CodeOrigin codeOrigin() const { return m_codeOrigin; }
 
     void initializeFromDFGUnlinkedCallLinkInfo(VM&, const DFG::UnlinkedCallLinkInfo&, CodeBlock*);
-
-    static ptrdiff_t offsetOfSlowPathCallDestination()
-    {
-        return OBJECT_OFFSETOF(OptimizingCallLinkInfo, m_slowPathCallDestination);
-    }
 
 private:
     std::tuple<MacroAssembler::JumpList, MacroAssembler::Label> emitFastPath(CCallHelpers&) WARN_UNUSED_RETURN;
@@ -544,7 +537,6 @@ private:
     void emitTailCallSlowPath(VM&, CCallHelpers&, MacroAssembler::Label);
 
     CodeOrigin m_codeOrigin;
-    CodePtr<JSEntryPtrTag> m_slowPathCallDestination;
     CodeLocationNearCall<JSInternalPtrTag> m_callLocation NO_UNIQUE_ADDRESS;
     CodeLocationLabel<JSInternalPtrTag> m_doneLocation;
 };
