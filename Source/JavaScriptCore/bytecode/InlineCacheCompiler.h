@@ -316,8 +316,6 @@ public:
     // Fall through on success, add a jump to the failure list on failure.
     void generate(unsigned index, AccessCase&);
 
-    void generateImpl(unsigned index, AccessCase&);
-
     static bool canEmitIntrinsicGetter(StructureStubInfo&, JSFunction*, Structure*);
 
     VM& vm() { return m_vm; }
@@ -340,6 +338,9 @@ private:
     void emitModuleNamespaceLoad(ModuleNamespaceAccessCase&, MacroAssembler::JumpList& fallThrough);
     void emitProxyObjectAccess(unsigned index, ProxyObjectAccessCase&, MacroAssembler::JumpList& fallThrough);
     void emitIntrinsicGetter(IntrinsicGetterAccessCase&);
+
+    void generateWithConditionChecks(unsigned index, AccessCase&);
+    void generateAccessCase(unsigned index, AccessCase&);
 
     VM& m_vm;
     JSGlobalObject* const m_globalObject;

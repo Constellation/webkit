@@ -217,7 +217,7 @@ public:
         return m_structureID.get();
     }
 
-    ObjectPropertyConditionSet conditionSet() const { return m_conditionSet; }
+    const ObjectPropertyConditionSet& conditionSet() const { return m_conditionSet; }
 
     JSObject* tryGetAlternateBase() const;
 
