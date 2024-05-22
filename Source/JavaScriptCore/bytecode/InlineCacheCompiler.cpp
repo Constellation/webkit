@@ -1425,7 +1425,7 @@ void InlineCacheCompiler::generateWithGuard(unsigned index, AccessCase& accessCa
     GPRReg baseGPR = m_stubInfo->m_baseGPR;
     GPRReg scratchGPR = m_scratchGPR;
 
-    if (accessCase.requiresIdentifierNameMatch() && !m_stubInfo->hasConstantIdentifier) {
+    if (accessCase.requiresIdentifierNameMatch() && !hasConstantIdentifier(m_stubInfo->accessType)) {
         RELEASE_ASSERT(accessCase.m_identifier);
         GPRReg propertyGPR = m_stubInfo->propertyGPR();
         // non-rope string check done inside polymorphic access.
@@ -2650,7 +2650,7 @@ void InlineCacheCompiler::generateWithGuard(unsigned index, AccessCase& accessCa
 
 void InlineCacheCompiler::generate(unsigned index, AccessCase& accessCase)
 {
-    RELEASE_ASSERT(m_stubInfo->hasConstantIdentifier);
+    RELEASE_ASSERT(hasConstantIdentifier(m_stubInfo->accessType));
     accessCase.checkConsistency(*m_stubInfo);
     generateWithConditionChecks(index, accessCase);
 }
@@ -3683,7 +3683,7 @@ void InlineCacheCompiler::emitProxyObjectAccess(unsigned index, ProxyObjectAcces
 
     jit.storeCell(baseGPR, calleeFrame.withOffset(virtualRegisterForArgumentIncludingThis(0).offset() * sizeof(Register)));
 
-    if (!m_stubInfo->hasConstantIdentifier) {
+    if (!hasConstantIdentifier(m_stubInfo->accessType)) {
         if (accessCase.m_type != AccessCase::IndexedProxyObjectLoad)
             RELEASE_ASSERT(accessCase.identifier());
         jit.storeValue(m_stubInfo->propertyRegs(), calleeFrame.withOffset(virtualRegisterForArgumentIncludingThis(1).offset() * sizeof(Register)));
@@ -4456,7 +4456,8 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
     bool needsSymbolPropertyCheck = false;
     bool acceptValueProperty = false;
     bool allGuardedByStructureCheck = true;
-    if (!m_stubInfo->hasConstantIdentifier)
+    bool hasConstantIdentifier = JSC::hasConstantIdentifier(m_stubInfo->accessType);
+    if (!hasConstantIdentifier)
         allGuardedByStructureCheck = false;
     FixedVector<Ref<AccessCase>> keys(WTFMove(cases));
     if (!useHandlerIC())
@@ -4472,7 +4473,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
         }
         doesJSCalls |= JSC::doesJSCalls(entry->type());
 
-        if (!m_stubInfo->hasConstantIdentifier) {
+        if (!hasConstantIdentifier) {
             if (entry->requiresIdentifierNameMatch()) {
                 if (entry->uid()->isSymbol())
                     needsSymbolPropertyCheck = true;

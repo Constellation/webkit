@@ -271,23 +271,23 @@ RefPtr<AccessCase> AccessCase::fromStructureStubInfo(
 {
     switch (stubInfo.cacheType()) {
     case CacheType::GetByIdSelf:
-        RELEASE_ASSERT(stubInfo.hasConstantIdentifier);
+        RELEASE_ASSERT(hasConstantIdentifier(stubInfo.accessType));
         return ProxyableAccessCase::create(vm, owner, Load, identifier, stubInfo.byIdSelfOffset, stubInfo.inlineAccessBaseStructure());
 
     case CacheType::PutByIdReplace:
-        RELEASE_ASSERT(stubInfo.hasConstantIdentifier);
+        RELEASE_ASSERT(hasConstantIdentifier(stubInfo.accessType));
         return AccessCase::createReplace(vm, owner, identifier, stubInfo.byIdSelfOffset, stubInfo.inlineAccessBaseStructure(), false);
 
     case CacheType::InByIdSelf:
-        RELEASE_ASSERT(stubInfo.hasConstantIdentifier);
+        RELEASE_ASSERT(hasConstantIdentifier(stubInfo.accessType));
         return AccessCase::create(vm, owner, InHit, identifier, stubInfo.byIdSelfOffset, stubInfo.inlineAccessBaseStructure());
 
     case CacheType::ArrayLength:
-        RELEASE_ASSERT(stubInfo.hasConstantIdentifier);
+        RELEASE_ASSERT(hasConstantIdentifier(stubInfo.accessType));
         return AccessCase::create(vm, owner, AccessCase::ArrayLength, CacheableIdentifier::createFromImmortalIdentifier(vm.propertyNames->length.impl()));
 
     case CacheType::StringLength:
-        RELEASE_ASSERT(stubInfo.hasConstantIdentifier);
+        RELEASE_ASSERT(hasConstantIdentifier(stubInfo.accessType));
         return AccessCase::create(vm, owner, AccessCase::StringLength, CacheableIdentifier::createFromImmortalIdentifier(vm.propertyNames->length.impl()));
 
     default:
@@ -1387,7 +1387,7 @@ void AccessCase::checkConsistency(StructureStubInfo& stubInfo)
 {
     RELEASE_ASSERT(!(requiresInt32PropertyCheck() && requiresIdentifierNameMatch()));
 
-    if (stubInfo.hasConstantIdentifier) {
+    if (hasConstantIdentifier(stubInfo.accessType)) {
         RELEASE_ASSERT(!requiresInt32PropertyCheck());
         RELEASE_ASSERT(requiresIdentifierNameMatch());
     }
