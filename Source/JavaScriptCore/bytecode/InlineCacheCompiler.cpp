@@ -2648,7 +2648,7 @@ void InlineCacheCompiler::generateWithGuard(unsigned index, AccessCase& accessCa
     generateWithConditionChecks(index, accessCase);
 }
 
-void InlineCacheCompiler::generate(unsigned index, AccessCase& accessCase)
+void InlineCacheCompiler::generateWithoutGuard(unsigned index, AccessCase& accessCase)
 {
     RELEASE_ASSERT(hasConstantIdentifier(m_stubInfo->accessType));
     accessCase.checkConsistency(*m_stubInfo);
@@ -2683,11 +2683,11 @@ static void collectConditions(AccessCase& accessCase, Vector<ObjectPropertyCondi
 
 void InlineCacheCompiler::generateWithConditionChecks(unsigned index, AccessCase& accessCase)
 {
-    CCallHelpers& jit = *m_jit;
-    GPRReg scratchGPR = m_scratchGPR;
-
     Vector<ObjectPropertyCondition, 64> checkingConditions;
     collectConditions(accessCase, m_conditions, checkingConditions);
+
+    CCallHelpers& jit = *m_jit;
+    GPRReg scratchGPR = m_scratchGPR;
     for (auto& condition : checkingConditions) {
         // We will emit code that has a weak reference that isn't otherwise listed anywhere.
         Structure* structure = condition.object()->structure();
@@ -4414,7 +4414,57 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
                     return finishCodeGeneration(stub.releaseNonNull());
                 }
             } else {
-                dataLogLn(static_cast<unsigned>(accessCase->m_type), " ", static_cast<unsigned>(m_stubInfo->accessType));
+                if (!accessCase->usesPolyProto()) {
+                    switch (m_stubInfo->accessType) {
+                    case AccessType::GetById: {
+                        switch (accessCase->m_type) {
+                        case AccessCase::Load: {
+                            Vector<ObjectPropertyCondition, 64> watchedConditions;
+                            Vector<ObjectPropertyCondition, 64> checkingConditions;
+                            collectConditions(accessCase.get(), watchedConditions, checkingConditions);
+                            if (checkingConditions.size() == 0) {
+#if 0
+                                Structure* currStructure = accessCase.structure();
+                                if (auto* object = accessCase.tryGetAlternateBase())
+                                    currStructure = object->structure();
+                                if (isValidOffset(accessCase.m_offset))
+                                    currStructure->startWatchingPropertyForReplacements(vm, accessCase.m_offset);
+
+                                // Checking guard.
+                                if (accessCase.viaGlobalProxy()) {
+                                    fallThrough.append(jit.branchIfNotType(baseGPR, GlobalProxyType));
+                                    jit.loadPtr(CCallHelpers::Address(baseGPR, JSGlobalProxy::targetOffset()), scratch1GPR);
+                                    jit.load32(CCallHelpers::Address(scratch1GPR, JSCell::structureIDOffset()), scratch2GPR);
+                                    fallThrough.append(jit.branch32(CCallHelpers::NotEqual, scratch2GPR, CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfStructureID())));
+                                } else {
+                                    jit.load32(CCallHelpers::Address(baseGPR, JSCell::structureIDOffset()), scratch2GPR);
+                                    fallThrough.append(jit.branch32(CCallHelpers::NotEqual, scratch2GPR, CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfStructureID())));
+                                }
+                                jit.loadPtr(CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfHolder()), scratch2GPR);
+                                auto missed = branchTestPtr(Zero, scratch2GPR);
+                                moveConditionally64(Equal, scratch2GPR, TrustedImm32(bitwise_cast<uintptr_t>(JSCell::seenMultipleCalleeObjects())), baseGPR, scratch2GPR, scratch1GPR);
+                                load32(CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfOffset()), scratch2GPR);
+                                loadProperty(scratch1GPR, scratch2GPR, valueRegs);
+                                succeed();
+
+                                missed.link(this);
+                                moveTrustedValue(jsUndefined(), valueRegs);
+                                succeed();
+#endif
+                            } else {
+                                dataLogLn(accessCase->viaGlobalProxy(), " ", watchedConditions.size(), " ", checkingConditions.size());
+                            }
+                            break;
+                        }
+                        default:
+                            break;
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                    }
+                }
             }
         } else {
             std::sort(cases.begin(), cases.end(), [](auto& lhs, auto& rhs) {
@@ -4638,7 +4688,7 @@ AccessGenerationResult InlineCacheCompiler::regenerate(const GCSafeConcurrentJSL
 
         BinarySwitch binarySwitch(m_scratchGPR, caseValues.span(), BinarySwitch::Int32);
         while (binarySwitch.advance(jit))
-            generate(binarySwitch.caseIndex(), keys[binarySwitch.caseIndex()].get());
+            generateWithoutGuard(binarySwitch.caseIndex(), keys[binarySwitch.caseIndex()].get());
         m_failAndRepatch.append(binarySwitch.fallThrough());
     }
 

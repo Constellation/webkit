@@ -314,7 +314,7 @@ public:
     void generateWithGuard(unsigned index, AccessCase&, MacroAssembler::JumpList& fallThrough);
 
     // Fall through on success, add a jump to the failure list on failure.
-    void generate(unsigned index, AccessCase&);
+    void generateWithoutGuard(unsigned index, AccessCase&);
 
     static bool canEmitIntrinsicGetter(StructureStubInfo&, JSFunction*, Structure*);
 
