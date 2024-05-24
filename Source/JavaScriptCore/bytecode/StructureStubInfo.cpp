@@ -187,7 +187,7 @@ AccessGenerationResult StructureStubInfo::addAccessCase(
         clearBufferedStructures();
         
         InlineCacheCompiler compiler(codeBlock->jitType(), vm, globalObject, ecmaMode, *this);
-        result = compiler.regenerate(locker, *m_stub, codeBlock);
+        result = compiler.compile(locker, *m_stub, codeBlock);
         
         if (StructureStubInfoInternal::verbose)
             dataLog("Regeneration result: ", result, "\n");
