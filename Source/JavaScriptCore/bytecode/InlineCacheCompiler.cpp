@@ -4731,7 +4731,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
     return finishCodeGeneration(WTFMove(stub));
 }
 
-template<AccessType accessType>
 static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdLoadHandlerCodeGenerator(VM& vm)
 {
     CCallHelpers jit;
@@ -4758,7 +4757,7 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdLoadHandlerCodeGenerator(VM&
     InlineCacheCompiler::emitDataICEpilogue(jit);
     jit.ret();
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, accessType).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::GetById).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "GetById Load handler"_s, "GetById Load handler");
@@ -4978,9 +4977,12 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
             return finishCodeGeneration(stub.releaseNonNull(), JSC::doesJSCalls(accessCase.m_type));
         }
     } else {
+        if (true) {
         if (!accessCase.usesPolyProto()) {
             switch (m_stubInfo->accessType) {
-            case AccessType::GetById: {
+            case AccessType::GetById:
+            case AccessType::TryGetById:
+            case AccessType::GetByIdDirect: {
                 ++getById;
                 switch (accessCase.m_type) {
                 case AccessCase::Load: {
@@ -4995,7 +4997,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                                 currStructure = object->structure();
                             if (isValidOffset(accessCase.m_offset))
                                 currStructure->startWatchingPropertyForReplacements(vm, accessCase.offset());
-                            auto code = vm.getCTIStub(getByIdLoadHandlerCodeGenerator<AccessType::GetById>).retagged<JITStubRoutinePtrTag>();
+                            auto code = vm.getCTIStub(getByIdLoadHandlerCodeGenerator).retagged<JITStubRoutinePtrTag>();
 
                             FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                             auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
@@ -5094,6 +5096,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
             default:
                 break;
             }
+        }
         }
 
         std::array<Ref<AccessCase>, 1> cases { { Ref { accessCase } } };
