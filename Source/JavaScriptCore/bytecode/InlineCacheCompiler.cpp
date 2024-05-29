@@ -4371,10 +4371,20 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
         return AccessGenerationResult(resultKind, WTFMove(handler));
     };
 
+    std::optional<SharedJITStubSet::StatelessCacheKey> statelessType;
     if (useHandlerIC()) {
         ASSERT(codeBlock->useDataIC());
-        if (cases.size() == 1)
-            return compileOneAccessCaseHandler(poly, codeBlock, cases.first().get(), WTFMove(additionalWatchpointSets));
+        // if (cases.size() == 1)
+        //     return compileOneAccessCaseHandler(poly, codeBlock, cases.first().get(), WTFMove(additionalWatchpointSets));
+
+        if (cases.size() == 1 && isStateless(cases.first()->m_type)) {
+            auto& accessCase = cases.first();
+            statelessType = std::tuple { SharedJITStubSet::stubInfoKey(*m_stubInfo), accessCase->m_type };
+            if (auto stub = vm().m_sharedJITStubs->getStatelessStub(statelessType.value())) {
+                dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", stub->cases().first()->m_type);
+                return finishCodeGeneration(stub.releaseNonNull());
+            }
+        }
 
         std::sort(cases.begin(), cases.end(), [](auto& lhs, auto& rhs) {
             if (lhs->type() == rhs->type()) {
@@ -4385,16 +4395,18 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
             return lhs->type() < rhs->type();
         });
 
-        SharedJITStubSet::Searcher searcher {
-            SharedJITStubSet::stubInfoKey(*m_stubInfo),
-            cases.span(),
-        };
-        if (auto stub = vm().m_sharedJITStubs->find(searcher)) {
-            if (stub->isStillValid()) {
-                dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
-                return finishCodeGeneration(stub.releaseNonNull());
+        if (!statelessType) {
+            SharedJITStubSet::Searcher searcher {
+                SharedJITStubSet::stubInfoKey(*m_stubInfo),
+                cases.span(),
+            };
+            if (auto stub = vm().m_sharedJITStubs->find(searcher)) {
+                if (stub->isStillValid()) {
+                    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
+                    return finishCodeGeneration(stub.releaseNonNull());
+                }
+                vm().m_sharedJITStubs->remove(stub.get());
             }
-            vm().m_sharedJITStubs->remove(stub.get());
         }
     }
 
@@ -4723,9 +4735,14 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
 
     if (useHandlerIC()) {
         ASSERT(codeBlock->useDataIC());
-        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
-        vm().m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(SharedJITStubSet::stubInfoKey(*m_stubInfo), stub.ptr()));
-        stub->addedToSharedJITStubSet();
+        if (statelessType) {
+            dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", m_stubInfo->accessType, " / ", stub->cases().first()->m_type);
+            vm().m_sharedJITStubs->setStatelessStub(statelessType.value(), Ref { stub });
+        } else {
+            dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
+            vm().m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(SharedJITStubSet::stubInfoKey(*m_stubInfo), stub.ptr()));
+            stub->addedToSharedJITStubSet();
+        }
     }
 
     return finishCodeGeneration(WTFMove(stub));
