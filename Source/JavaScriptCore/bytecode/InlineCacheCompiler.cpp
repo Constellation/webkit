@@ -4726,6 +4726,7 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
     return finishCodeGeneration(WTFMove(stub));
 }
 
+template<AccessType accessType>
 static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdLoadHandlerCodeGenerator(VM& vm)
 {
     CCallHelpers jit;
@@ -4751,12 +4752,13 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdLoadHandlerCodeGenerator(VM&
     InlineCacheCompiler::emitDataICEpilogue(jit);
     jit.ret();
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::GetById).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, accessType).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "GetById Load handler"_s, "GetById Load handler");
 }
 
+template<AccessType accessType>
 static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdMissHandlerCodeGenerator(VM& vm)
 {
     CCallHelpers jit;
@@ -4779,7 +4781,7 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdMissHandlerCodeGenerator(VM&
     InlineCacheCompiler::emitDataICEpilogue(jit);
     jit.ret();
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::GetById).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, accessType).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "GetById Miss handler"_s, "GetById Miss handler");
@@ -4850,7 +4852,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                                 currStructure = object->structure();
                             if (isValidOffset(accessCase.m_offset))
                                 currStructure->startWatchingPropertyForReplacements(vm, accessCase.offset());
-                            auto code = vm.getCTIStub(getByIdLoadHandlerCodeGenerator).retagged<JITStubRoutinePtrTag>();
+                            auto code = vm.getCTIStub(getByIdLoadHandlerCodeGenerator<AccessType::GetById>).retagged<JITStubRoutinePtrTag>();
 
                             FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                             auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
@@ -4866,7 +4868,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                     collectConditions(accessCase, watchedConditions, checkingConditions);
                     if (checkingConditions.size() == 0) {
                         ++getByIdCovered;
-                        auto code = vm.getCTIStub(getByIdMissHandlerCodeGenerator).retagged<JITStubRoutinePtrTag>();
+                        auto code = vm.getCTIStub(getByIdMissHandlerCodeGenerator<AccessType::GetById>).retagged<JITStubRoutinePtrTag>();
 
                         FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                         auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
@@ -4875,11 +4877,25 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                     }
                     break;
                 }
+                case AccessCase::Getter:
+                case AccessCase::CustomAccessorGetter:
+                case AccessCase::CustomValueGetter:
+                case AccessCase::GetGetter:
+                case AccessCase::ProxyObjectLoad:
+                case AccessCase::IntrinsicGetter:
+                case AccessCase::ModuleNamespaceLoad:
+                   break;
                 default:
                     break;
                 }
                 break;
             }
+            case AccessType::PutByIdStrict:
+            case AccessType::PutByIdSloppy:
+            case AccessType::PutByIdDirectStrict:
+            case AccessType::PutByIdDirectSloppy:
+               ++getByIdFail0;
+               break;
             default:
                 break;
             }
