@@ -4049,6 +4049,13 @@ static void ensureReferenceAndAddWatchpoint(VM&, PolymorphicAccessJITStubRoutine
     additionalWatchpointSet.add(watchpoint);
 }
 
+static unsigned totalCount = 0;
+static unsigned generated = 0;
+static unsigned multiple = 0;
+static unsigned getById = 0;
+static unsigned getByIdCovered = 0;
+static unsigned getByIdFail0 = 0;
+
 AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLocker&, PolymorphicAccess& poly, CodeBlock* codeBlock)
 {
     SuperSamplerScope superSamplerScope(false);
@@ -4324,6 +4331,9 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
     dataLogLnIf(InlineCacheCompilerInternal::verbose, "Optimized cases: ", listDump(cases));
 
     auto finishCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub) {
+        if (useHandlerIC())
+            ++totalCount;
+        dataLogLn("totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
         std::unique_ptr<StructureStubInfoClearingWatchpoint> watchpoint;
         if (!stub->watchpoints().isEmpty()) {
             watchpoint = makeUnique<StructureStubInfoClearingWatchpoint>(codeBlock, m_stubInfo);
@@ -4431,6 +4441,10 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
 
     CCallHelpers jit(codeBlock);
     m_jit = &jit;
+    if (useHandlerIC()) {
+        ++generated;
+        ++multiple;
+    }
 
     if (useHandlerIC())
         emitDataICPrologue(*m_jit);
@@ -4712,7 +4726,7 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
     return finishCodeGeneration(WTFMove(stub));
 }
 
-static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdHandlerCodeGenerator(VM& vm)
+static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdLoadHandlerCodeGenerator(VM& vm)
 {
     CCallHelpers jit;
 
@@ -4740,7 +4754,35 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdHandlerCodeGenerator(VM& vm)
     fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::GetById).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
-    return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "get_by_id handler"_s, "get_by_id handler");
+    return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "GetById Load handler"_s, "GetById Load handler");
+}
+
+static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdMissHandlerCodeGenerator(VM& vm)
+{
+    CCallHelpers jit;
+
+    using BaselineJITRegisters::GetById::baseJSR;
+    using BaselineJITRegisters::GetById::stubInfoGPR;
+    using BaselineJITRegisters::GetById::scratch1GPR;
+    using BaselineJITRegisters::GetById::scratch2GPR;
+    using BaselineJITRegisters::GetById::resultJSR;
+
+    InlineCacheCompiler::emitDataICPrologue(jit);
+
+    CCallHelpers::JumpList fallThrough;
+
+    // Default structure guard for the instance.
+    jit.load32(CCallHelpers::Address(baseJSR.payloadGPR(), JSCell::structureIDOffset()), scratch1GPR);
+    fallThrough.append(jit.branch32(CCallHelpers::NotEqual, scratch1GPR, CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfStructureID())));
+
+    jit.moveTrustedValue(jsUndefined(), resultJSR);
+    InlineCacheCompiler::emitDataICEpilogue(jit);
+    jit.ret();
+
+    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::GetById).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+
+    LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
+    return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "GetById Miss handler"_s, "GetById Miss handler");
 }
 
 AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(PolymorphicAccess& poly, CodeBlock* codeBlock, AccessCase& accessCase, Vector<WatchpointSet*, 8>&& additionalWatchpointSets)
@@ -4749,7 +4791,23 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
 
     VM& vm = this->vm();
 
+    auto connectWatchpointSets = [&](PolymorphicAccessJITStubRoutine::Watchpoints& watchpoints, WatchpointSet& watchpointSet, Vector<ObjectPropertyCondition, 64>&& watchedConditions, Vector<WatchpointSet*, 8>&& additionalWatchpointSets) {
+        for (auto& condition : watchedConditions)
+            ensureReferenceAndInstallWatchpoint(vm, watchpoints, watchpointSet, condition);
+
+        // NOTE: We currently assume that this is relatively rare. It mainly arises for accesses to
+        // properties on DOM nodes. For sure we cache many DOM node accesses, but even in
+        // Real Pages (TM), we appear to spend most of our time caching accesses to properties on
+        // vanilla objects or exotic objects from within JSC (like Arguments, those are super popular).
+        // Those common kinds of JSC object accesses don't hit this case.
+        for (WatchpointSet* set : additionalWatchpointSets)
+            ensureReferenceAndAddWatchpoint(vm, watchpoints, watchpointSet, *set);
+    };
+
     auto finishCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub, bool doesJSCalls) {
+        if (useHandlerIC())
+            ++totalCount;
+        dataLogLn("totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
         std::unique_ptr<StructureStubInfoClearingWatchpoint> watchpoint;
         if (!stub->watchpoints().isEmpty()) {
             watchpoint = makeUnique<StructureStubInfoClearingWatchpoint>(codeBlock, m_stubInfo);
@@ -4775,38 +4833,44 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
             return finishCodeGeneration(stub.releaseNonNull(), JSC::doesJSCalls(accessCase.m_type));
         }
     } else {
-        if (!accessCase.usesPolyProto() && !accessCase.viaGlobalProxy()) {
+        if (!accessCase.usesPolyProto()) {
             switch (m_stubInfo->accessType) {
             case AccessType::GetById: {
+                ++getById;
                 switch (accessCase.m_type) {
                 case AccessCase::Load: {
+                    if (!accessCase.viaGlobalProxy()) {
+                        Vector<ObjectPropertyCondition, 64> watchedConditions;
+                        Vector<ObjectPropertyCondition, 64> checkingConditions;
+                        collectConditions(accessCase, watchedConditions, checkingConditions);
+                        if (checkingConditions.size() == 0) {
+                            ++getByIdCovered;
+                            Structure* currStructure = accessCase.structure();
+                            if (auto* object = accessCase.tryGetAlternateBase())
+                                currStructure = object->structure();
+                            if (isValidOffset(accessCase.m_offset))
+                                currStructure->startWatchingPropertyForReplacements(vm, accessCase.offset());
+                            auto code = vm.getCTIStub(getByIdLoadHandlerCodeGenerator).retagged<JITStubRoutinePtrTag>();
+
+                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
+                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
+                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                        }
+                    }
+                    break;
+                }
+                case AccessCase::Miss: {
                     Vector<ObjectPropertyCondition, 64> watchedConditions;
                     Vector<ObjectPropertyCondition, 64> checkingConditions;
                     collectConditions(accessCase, watchedConditions, checkingConditions);
                     if (checkingConditions.size() == 0) {
-                        Structure* currStructure = accessCase.structure();
-                        if (auto* object = accessCase.tryGetAlternateBase())
-                            currStructure = object->structure();
-                        if (isValidOffset(accessCase.m_offset))
-                            currStructure->startWatchingPropertyForReplacements(vm, accessCase.offset());
-                        auto code = vm.getCTIStub(getByIdHandlerCodeGenerator).retagged<JITStubRoutinePtrTag>();
+                        ++getByIdCovered;
+                        auto code = vm.getCTIStub(getByIdMissHandlerCodeGenerator).retagged<JITStubRoutinePtrTag>();
 
                         FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                         auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
-
-                        {
-                            auto& watchpoints = stub->watchpoints();
-                            for (auto& condition : watchedConditions)
-                                ensureReferenceAndInstallWatchpoint(vm, watchpoints, stub->watchpointSet(), condition);
-
-                            // NOTE: We currently assume that this is relatively rare. It mainly arises for accesses to
-                            // properties on DOM nodes. For sure we cache many DOM node accesses, but even in
-                            // Real Pages (TM), we appear to spend most of our time caching accesses to properties on
-                            // vanilla objects or exotic objects from within JSC (like Arguments, those are super popular).
-                            // Those common kinds of JSC object accesses don't hit this case.
-                            for (WatchpointSet* set : additionalWatchpointSets)
-                                ensureReferenceAndAddWatchpoint(vm, watchpoints, stub->watchpointSet(), *set);
-                        }
+                        connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
                         return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
                     }
                     break;
@@ -4854,6 +4918,8 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
 
     CCallHelpers jit(codeBlock);
     m_jit = &jit;
+    if (useHandlerIC())
+        ++generated;
 
     emitDataICPrologue(*m_jit);
 
@@ -4943,20 +5009,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
 
     FixedVector<StructureID> weakStructures(WTFMove(m_weakStructures));
     auto stub = createICJITStubRoutine(code, WTFMove(keys), WTFMove(weakStructures), vm, nullptr, doesCalls, cellsToMark, WTFMove(m_callLinkInfos), nullptr, { });
-
-    {
-        auto& watchpoints = stub->watchpoints();
-        for (auto& condition : m_conditions)
-            ensureReferenceAndInstallWatchpoint(vm, watchpoints, stub->watchpointSet(), condition);
-
-        // NOTE: We currently assume that this is relatively rare. It mainly arises for accesses to
-        // properties on DOM nodes. For sure we cache many DOM node accesses, but even in
-        // Real Pages (TM), we appear to spend most of our time caching accesses to properties on
-        // vanilla objects or exotic objects from within JSC (like Arguments, those are super popular).
-        // Those common kinds of JSC object accesses don't hit this case.
-        for (WatchpointSet* set : additionalWatchpointSets)
-            ensureReferenceAndAddWatchpoint(vm, watchpoints, stub->watchpointSet(), *set);
-    }
+    connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(m_conditions), WTFMove(additionalWatchpointSets));
 
     if (statelessType) {
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", m_stubInfo->accessType, " / ", stub->cases().first()->m_type);
