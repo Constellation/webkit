@@ -4476,7 +4476,7 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         AccessGenerationResult::Kind resultKind;
-        if (cases.size() == 1 && isMegamorphic(cases.front()->m_type))
+        if (poly.m_list.size() == 1 && isMegamorphic(poly.m_list.first()->m_type))
             resultKind = AccessGenerationResult::GeneratedMegamorphicCode;
         else if (poly.m_list.size() >= Options::maxAccessVariantListSize())
             resultKind = AccessGenerationResult::GeneratedFinalCode;
@@ -5102,7 +5102,8 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
         auto handler = InlineCacheHandler::create(codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), doesJSCalls ? 1 : 0);
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
-        if (cases.size() == 1 && isMegamorphic(cases.front()->m_type))
+        AccessGenerationResult::Kind resultKind;
+        if (poly.m_list.size() == 1 && isMegamorphic(poly.m_list.first()->m_type))
             resultKind = AccessGenerationResult::GeneratedMegamorphicCode;
         else
             resultKind = AccessGenerationResult::GeneratedNewCode;
