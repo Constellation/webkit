@@ -1391,6 +1391,9 @@ Ref<InlineCacheHandler> InlineCacheHandler::create(CodeBlock* codeBlock, Structu
             if (auto* holder = accessCase.tryGetAlternateBase())
                 result->m_holder = holder;
             break;
+        case AccessCase::Transition:
+            result->m_newStructureID = accessCase.newStructureID();
+            break;
         default:
             break;
         }
@@ -4787,6 +4790,69 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdMissHandlerCodeGenerator(VM&
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "GetById Miss handler"_s, "GetById Miss handler");
 }
 
+template<AccessType accessType>
+static MacroAssemblerCodeRef<JITThunkPtrTag> putByIdReplaceHandlerCodeGenerator(VM& vm)
+{
+    CCallHelpers jit;
+
+    using BaselineJITRegisters::PutById::baseJSR;
+    using BaselineJITRegisters::PutById::valueJSR;
+    using BaselineJITRegisters::PutById::stubInfoGPR;
+    using BaselineJITRegisters::PutById::scratch1GPR;
+    using BaselineJITRegisters::PutById::scratch2GPR;
+
+    InlineCacheCompiler::emitDataICPrologue(jit);
+
+    CCallHelpers::JumpList fallThrough;
+
+    // Default structure guard for the instance.
+    jit.load32(CCallHelpers::Address(baseJSR.payloadGPR(), JSCell::structureIDOffset()), scratch1GPR);
+    fallThrough.append(jit.branch32(CCallHelpers::NotEqual, scratch1GPR, CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfStructureID())));
+
+    jit.load32(CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfOffset()), scratch1GPR);
+    jit.storeProperty(valueJSR, baseJSR.payloadGPR(), scratch1GPR, scratch2GPR);
+    InlineCacheCompiler::emitDataICEpilogue(jit);
+    jit.ret();
+
+    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, accessType).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+
+    LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
+    return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "PutById Replace handler"_s, "PutById Replace handler");
+}
+
+template<AccessType accessType, bool allocating>
+static MacroAssemblerCodeRef<JITThunkPtrTag> putByIdTransitionHandlerCodeGenerator(VM& vm)
+{
+    CCallHelpers jit;
+
+    using BaselineJITRegisters::PutById::baseJSR;
+    using BaselineJITRegisters::PutById::valueJSR;
+    using BaselineJITRegisters::PutById::stubInfoGPR;
+    using BaselineJITRegisters::PutById::scratch1GPR;
+    using BaselineJITRegisters::PutById::scratch2GPR;
+    using BaselineJITRegisters::PutById::scratch3GPR;
+
+    InlineCacheCompiler::emitDataICPrologue(jit);
+
+    CCallHelpers::JumpList fallThrough;
+
+    // Default structure guard for the instance.
+    jit.load32(CCallHelpers::Address(baseJSR.payloadGPR(), JSCell::structureIDOffset()), scratch1GPR);
+    fallThrough.append(jit.branch32(CCallHelpers::NotEqual, scratch1GPR, CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfStructureID())));
+
+    jit.load32(CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfOffset()), scratch1GPR);
+    jit.storeProperty(valueJSR, baseJSR.payloadGPR(), scratch1GPR, scratch2GPR);
+    jit.transfer32(CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfNewStructureID()), CCallHelpers::Address(baseJSR.payloadGPR(), JSCell::structureIDOffset()));
+
+    InlineCacheCompiler::emitDataICEpilogue(jit);
+    jit.ret();
+
+    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, accessType).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+
+    LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
+    return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "PutById Transition handler"_s, "PutById Transition handler");
+}
+
 AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(PolymorphicAccess& poly, CodeBlock* codeBlock, AccessCase& accessCase, Vector<WatchpointSet*, 8>&& additionalWatchpointSets)
 {
     ASSERT(useHandlerIC());
@@ -4890,12 +4956,183 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                 }
                 break;
             }
-            case AccessType::PutByIdStrict:
-            case AccessType::PutByIdSloppy:
-            case AccessType::PutByIdDirectStrict:
-            case AccessType::PutByIdDirectSloppy:
-               ++getByIdFail0;
-               break;
+
+            case AccessType::PutByIdDirectStrict: {
+                switch (accessCase.m_type) {
+                case AccessCase::Replace: {
+                    if (!accessCase.viaGlobalProxy()) {
+                        Vector<ObjectPropertyCondition, 64> watchedConditions;
+                        Vector<ObjectPropertyCondition, 64> checkingConditions;
+                        collectConditions(accessCase, watchedConditions, checkingConditions);
+                        if (checkingConditions.size() == 0) {
+                            ++getByIdCovered;
+                            auto code = vm.getCTIStub(putByIdReplaceHandlerCodeGenerator<AccessType::PutByIdDirectStrict>).retagged<JITStubRoutinePtrTag>();
+
+                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
+                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
+                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                        }
+                    }
+                    break;
+                }
+                case AccessCase::Transition: {
+                    bool allocating = accessCase.newStructure()->outOfLineCapacity() != accessCase.structure()->outOfLineCapacity();
+                    ASSERT(!accessCase.viaGlobalProxy());
+                    if (!allocating) {
+                        Vector<ObjectPropertyCondition, 64> watchedConditions;
+                        Vector<ObjectPropertyCondition, 64> checkingConditions;
+                        collectConditions(accessCase, watchedConditions, checkingConditions);
+                        if (checkingConditions.size() == 0) {
+                            ++getByIdCovered;
+                            auto code = vm.getCTIStub(putByIdTransitionHandlerCodeGenerator<AccessType::PutByIdDirectStrict, false>).retagged<JITStubRoutinePtrTag>();
+
+                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
+                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
+                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
+                }
+                break;
+            }
+
+            case AccessType::PutByIdStrict: {
+                switch (accessCase.m_type) {
+                case AccessCase::Replace: {
+                    if (!accessCase.viaGlobalProxy()) {
+                        Vector<ObjectPropertyCondition, 64> watchedConditions;
+                        Vector<ObjectPropertyCondition, 64> checkingConditions;
+                        collectConditions(accessCase, watchedConditions, checkingConditions);
+                        if (checkingConditions.size() == 0) {
+                            ++getByIdCovered;
+                            auto code = vm.getCTIStub(putByIdReplaceHandlerCodeGenerator<AccessType::PutByIdStrict>).retagged<JITStubRoutinePtrTag>();
+
+                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
+                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
+                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                        }
+                    }
+                    break;
+                }
+                case AccessCase::Transition: {
+                    bool allocating = accessCase.newStructure()->outOfLineCapacity() != accessCase.structure()->outOfLineCapacity();
+                    ASSERT(!accessCase.viaGlobalProxy());
+                    if (!allocating) {
+                        Vector<ObjectPropertyCondition, 64> watchedConditions;
+                        Vector<ObjectPropertyCondition, 64> checkingConditions;
+                        collectConditions(accessCase, watchedConditions, checkingConditions);
+                        if (checkingConditions.size() == 0) {
+                            ++getByIdCovered;
+                            auto code = vm.getCTIStub(putByIdTransitionHandlerCodeGenerator<AccessType::PutByIdStrict, false>).retagged<JITStubRoutinePtrTag>();
+
+                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
+                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
+                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
+                }
+                break;
+            }
+
+            case AccessType::PutByIdSloppy: {
+                switch (accessCase.m_type) {
+                case AccessCase::Replace: {
+                    if (!accessCase.viaGlobalProxy()) {
+                        Vector<ObjectPropertyCondition, 64> watchedConditions;
+                        Vector<ObjectPropertyCondition, 64> checkingConditions;
+                        collectConditions(accessCase, watchedConditions, checkingConditions);
+                        if (checkingConditions.size() == 0) {
+                            ++getByIdCovered;
+                            auto code = vm.getCTIStub(putByIdReplaceHandlerCodeGenerator<AccessType::PutByIdSloppy>).retagged<JITStubRoutinePtrTag>();
+
+                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
+                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
+                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                        }
+                    }
+                    break;
+                }
+                case AccessCase::Transition: {
+                    bool allocating = accessCase.newStructure()->outOfLineCapacity() != accessCase.structure()->outOfLineCapacity();
+                    ASSERT(!accessCase.viaGlobalProxy());
+                    if (!allocating) {
+                        Vector<ObjectPropertyCondition, 64> watchedConditions;
+                        Vector<ObjectPropertyCondition, 64> checkingConditions;
+                        collectConditions(accessCase, watchedConditions, checkingConditions);
+                        if (checkingConditions.size() == 0) {
+                            ++getByIdCovered;
+                            auto code = vm.getCTIStub(putByIdTransitionHandlerCodeGenerator<AccessType::PutByIdSloppy, false>).retagged<JITStubRoutinePtrTag>();
+
+                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
+                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
+                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
+                }
+                break;
+            }
+
+            case AccessType::PutByIdDirectSloppy: {
+                switch (accessCase.m_type) {
+                case AccessCase::Replace: {
+                    if (!accessCase.viaGlobalProxy()) {
+                        Vector<ObjectPropertyCondition, 64> watchedConditions;
+                        Vector<ObjectPropertyCondition, 64> checkingConditions;
+                        collectConditions(accessCase, watchedConditions, checkingConditions);
+                        if (checkingConditions.size() == 0) {
+                            ++getByIdCovered;
+                            auto code = vm.getCTIStub(putByIdReplaceHandlerCodeGenerator<AccessType::PutByIdDirectSloppy>).retagged<JITStubRoutinePtrTag>();
+
+                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
+                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
+                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                        }
+                    }
+                    break;
+                }
+                case AccessCase::Transition: {
+                    bool allocating = accessCase.newStructure()->outOfLineCapacity() != accessCase.structure()->outOfLineCapacity();
+                    ASSERT(!accessCase.viaGlobalProxy());
+                    if (!allocating) {
+                        Vector<ObjectPropertyCondition, 64> watchedConditions;
+                        Vector<ObjectPropertyCondition, 64> checkingConditions;
+                        collectConditions(accessCase, watchedConditions, checkingConditions);
+                        if (checkingConditions.size() == 0) {
+                            ++getByIdCovered;
+                            auto code = vm.getCTIStub(putByIdTransitionHandlerCodeGenerator<AccessType::PutByIdDirectSloppy, false>).retagged<JITStubRoutinePtrTag>();
+
+                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
+                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
+                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
+                }
+                break;
+            }
+
             default:
                 break;
             }

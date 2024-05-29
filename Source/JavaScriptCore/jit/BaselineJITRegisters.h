@@ -201,8 +201,11 @@ namespace PutById {
     static constexpr GPRReg globalObjectGPR { preferredArgumentGPR<SlowOperation, 2>() };
     static constexpr GPRReg stubInfoGPR { preferredArgumentGPR<SlowOperation, 3>() };
     static constexpr GPRReg scratch1GPR { globalObjectGPR };
+    static constexpr GPRReg scratch2GPR { GPRInfo::argumentGPR4 };
+    static constexpr GPRReg scratch3GPR { GPRInfo::argumentGPR5 };
     static_assert(noOverlap(baseJSR, valueJSR, stubInfoGPR, scratch1GPR), "Required for DataIC");
     static_assert(noOverlap(baseJSR, valueJSR, globalObjectGPR, stubInfoGPR), "Required for call to slow operation");
+    static_assert(noOverlap(baseJSR, valueJSR, stubInfoGPR, scratch1GPR, scratch2GPR, scratch3GPR), "Required for DataIC");
 }
 
 namespace PutByVal {
