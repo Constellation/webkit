@@ -197,6 +197,8 @@ public:
     static constexpr ptrdiff_t offsetOfUid() { return OBJECT_OFFSETOF(InlineCacheHandler, m_uid); }
     static constexpr ptrdiff_t offsetOfStructureID() { return OBJECT_OFFSETOF(InlineCacheHandler, m_structureID); }
     static constexpr ptrdiff_t offsetOfNewStructureID() { return OBJECT_OFFSETOF(InlineCacheHandler, m_newStructureID); }
+    static constexpr ptrdiff_t offsetOfNewSize() { return OBJECT_OFFSETOF(InlineCacheHandler, m_newSize); }
+    static constexpr ptrdiff_t offsetOfOldSize() { return OBJECT_OFFSETOF(InlineCacheHandler, m_oldSize); }
     static constexpr ptrdiff_t offsetOfOffset() { return OBJECT_OFFSETOF(InlineCacheHandler, m_offset); }
     static constexpr ptrdiff_t offsetOfHolder() { return OBJECT_OFFSETOF(InlineCacheHandler, m_holder); }
     static constexpr ptrdiff_t offsetOfCallLinkInfos() { return Base::offsetOfData(); }
@@ -216,6 +218,8 @@ private:
     JSCell* m_holder { nullptr };
     StructureID m_structureID { };
     StructureID m_newStructureID { };
+    unsigned m_newSize { 0 };
+    unsigned m_oldSize { 0 };
     PropertyOffset m_offset { invalidOffset };
     RefPtr<PolymorphicAccessJITStubRoutine> m_stubRoutine;
     std::unique_ptr<StructureStubInfoClearingWatchpoint> m_watchpoint;
