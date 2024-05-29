@@ -1503,11 +1503,11 @@ Ref<InlineCacheHandler> InlineCacheHandler::create(CodeBlock* codeBlock, Structu
     for (auto& callLinkInfo : result->span())
         callLinkInfo.initialize(vm, codeBlock, CallLinkInfo::CallType::Call, stubInfo.codeOrigin);
 
-    result->m_uid = stubInfo.identifier().uid();
     if (cases.size() == 1) {
         auto& accessCase = cases.front().get();
         result->m_structureID = accessCase.structureID();
         result->m_offset = accessCase.offset();
+        result->m_uid = stubInfo.identifier().uid();
         switch (accessCase.m_type) {
         case AccessCase::Load:
             if (auto* holder = accessCase.tryGetAlternateBase())
@@ -4236,8 +4236,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
         ++srcIndex;
     }
 
-    bool generatedMegamorphicCode = false;
-
     // If the resulting set of cases is so big that we would stop caching and this is InstanceOf,
     // then we want to generate the generic InstanceOf and then stop.
     if (cases.size() >= Options::maxAccessVariantListSize() || m_stubInfo->canBeMegamorphic) {
@@ -4246,7 +4244,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
             cases.shrink(0);
             additionalWatchpointSets.clear();
             cases.append(AccessCase::create(vm(), codeBlock, AccessCase::InstanceOfMegamorphic, nullptr));
-            generatedMegamorphicCode = true;
             break;
         }
         case AccessType::GetById:
@@ -4280,7 +4277,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::LoadMegamorphic, useHandlerIC() ? nullptr : identifier));
-                generatedMegamorphicCode = true;
             }
             break;
         }
@@ -4310,7 +4306,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::IndexedMegamorphicLoad, nullptr));
-                generatedMegamorphicCode = true;
             }
             break;
         }
@@ -4349,7 +4344,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::StoreMegamorphic, useHandlerIC() ? nullptr : identifier));
-                generatedMegamorphicCode = true;
             }
             break;
         }
@@ -4383,7 +4377,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::IndexedMegamorphicStore, nullptr));
-                generatedMegamorphicCode = true;
             }
             break;
         }
@@ -4417,7 +4410,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::InMegamorphic, useHandlerIC() ? nullptr : identifier));
-                generatedMegamorphicCode = true;
             }
             break;
         }
@@ -4446,7 +4438,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::IndexedMegamorphicIn, nullptr));
-                generatedMegamorphicCode = true;
             }
             break;
         }
@@ -4467,23 +4458,25 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
             stub->watchpointSet().add(watchpoint.get());
         }
 
+        auto cases = stub->cases().span();
+
         poly.m_list.shrink(0);
-        poly.m_list.append(stub->cases().span());
+        poly.m_list.append(cases);
 
         unsigned callLinkInfoCount = 0;
         if (useHandlerIC()) {
             bool doesJSCalls = false;
-            for (auto& accessCase : stub->cases().span())
+            for (auto& accessCase : cases)
                 doesJSCalls |= JSC::doesJSCalls(accessCase->type());
             if (doesJSCalls)
-                callLinkInfoCount = stub->cases().span().size();
+                callLinkInfoCount = cases.size();
         }
 
         auto handler = InlineCacheHandler::create(codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), callLinkInfoCount);
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         AccessGenerationResult::Kind resultKind;
-        if (generatedMegamorphicCode)
+        if (cases.size() == 1 && isMegamorphic(cases.front()->m_type))
             resultKind = AccessGenerationResult::GeneratedMegamorphicCode;
         else if (poly.m_list.size() >= Options::maxAccessVariantListSize())
             resultKind = AccessGenerationResult::GeneratedFinalCode;
@@ -4496,8 +4489,8 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
     std::optional<SharedJITStubSet::StatelessCacheKey> statelessType;
     if (useHandlerIC()) {
         ASSERT(codeBlock->useDataIC());
-        // if (cases.size() == 1)
-        //     return compileOneAccessCaseHandler(poly, codeBlock, cases.first().get(), WTFMove(additionalWatchpointSets));
+        if (cases.size() == 1)
+            return compileOneAccessCaseHandler(poly, codeBlock, cases.first().get(), WTFMove(additionalWatchpointSets));
 
         if (cases.size() == 1 && isStateless(cases.first()->m_type)) {
             auto& accessCase = cases.first();
@@ -5101,13 +5094,20 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
             stub->watchpointSet().add(watchpoint.get());
         }
 
+        auto cases = stub->cases().span();
+
         poly.m_list.shrink(0);
-        poly.m_list.append(stub->cases().span());
+        poly.m_list.append(cases);
 
         auto handler = InlineCacheHandler::create(codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), doesJSCalls ? 1 : 0);
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
-        return AccessGenerationResult(AccessGenerationResult::GeneratedNewCode, WTFMove(handler));
+        if (cases.size() == 1 && isMegamorphic(cases.front()->m_type))
+            resultKind = AccessGenerationResult::GeneratedMegamorphicCode;
+        else
+            resultKind = AccessGenerationResult::GeneratedNewCode;
+
+        return AccessGenerationResult(resultKind, WTFMove(handler));
     };
 
     // At this point we're convinced that 'cases' contains cases that we want to JIT now and we won't change that set anymore.
