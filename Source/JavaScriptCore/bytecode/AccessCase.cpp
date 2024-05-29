@@ -85,7 +85,7 @@ Ref<AccessCase> AccessCase::create(VM& vm, JSCell* owner, AccessType type, Cache
     case ProxyObjectLoad:
     case ProxyObjectStore:
     case Replace:
-    case InstanceOfGeneric:
+    case InstanceOfMegamorphic:
     case IndexedProxyObjectLoad:
     case IndexedMegamorphicLoad:
     case IndexedMegamorphicStore:
@@ -337,7 +337,7 @@ bool AccessCase::guardedByStructureCheckSkippingConstantIdentifierCheck() const
     case ProxyObjectStore:
     case InstanceOfHit:
     case InstanceOfMiss:
-    case InstanceOfGeneric:
+    case InstanceOfMegamorphic:
     case IndexedProxyObjectLoad:
     case IndexedMegamorphicLoad:
     case IndexedMegamorphicStore:
@@ -478,7 +478,7 @@ bool AccessCase::requiresIdentifierNameMatch() const
         return true;
     case InstanceOfHit:
     case InstanceOfMiss:
-    case InstanceOfGeneric:
+    case InstanceOfMegamorphic:
     case IndexedProxyObjectLoad:
     case IndexedMegamorphicLoad:
     case IndexedMegamorphicStore:
@@ -595,7 +595,7 @@ bool AccessCase::requiresInt32PropertyCheck() const
     case ProxyObjectStore:
     case InstanceOfHit:
     case InstanceOfMiss:
-    case InstanceOfGeneric:
+    case InstanceOfMegamorphic:
     case CheckPrivateBrand:
     case SetPrivateBrand:
     case IndexedProxyObjectLoad:
@@ -751,7 +751,7 @@ void AccessCase::forEachDependentCell(VM&, const Functor& functor) const
     case StringLength:
     case DirectArgumentsLength:
     case ScopedArgumentsLength:
-    case InstanceOfGeneric:
+    case InstanceOfMegamorphic:
     case IndexedMegamorphicLoad:
     case IndexedMegamorphicStore:
     case IndexedMegamorphicIn:
@@ -877,7 +877,7 @@ bool AccessCase::doesCalls(VM&) const
     case ModuleNamespaceLoad:
     case InstanceOfHit:
     case InstanceOfMiss:
-    case InstanceOfGeneric:
+    case InstanceOfMegamorphic:
     case IndexedMegamorphicLoad:
     case IndexedMegamorphicIn:
     case IndexedInt32Load:
@@ -1116,9 +1116,9 @@ bool AccessCase::canReplace(const AccessCase& other) const
         return structure() == other.structure();
     }
 
-    case InstanceOfGeneric:
+    case InstanceOfMegamorphic:
         switch (other.type()) {
-        case InstanceOfGeneric:
+        case InstanceOfMegamorphic:
         case InstanceOfHit:
         case InstanceOfMiss:
             return true;
@@ -1341,7 +1341,7 @@ inline void AccessCase::runWithDowncast(const Func& func)
     case IndexedResizableTypedArrayFloat64InHit:
     case IndexedStringInHit:
     case IndexedNoIndexingInMiss:
-    case InstanceOfGeneric:
+    case InstanceOfMegamorphic:
         func(static_cast<AccessCase*>(this));
         break;
 
@@ -1517,7 +1517,7 @@ bool AccessCase::canBeShared(const AccessCase& lhs, const AccessCase& rhs)
     case IndexedResizableTypedArrayFloat64InHit:
     case IndexedStringInHit:
     case IndexedNoIndexingInMiss:
-    case InstanceOfGeneric:
+    case InstanceOfMegamorphic:
         return true;
 
     case CustomValueGetter:

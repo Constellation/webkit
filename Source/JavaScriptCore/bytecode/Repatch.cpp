@@ -1600,7 +1600,7 @@ static InlineCacheAction tryCacheInstanceOf(
         }
         
         if (!newCase)
-            newCase = AccessCase::create(vm, codeBlock, AccessCase::InstanceOfGeneric, nullptr);
+            newCase = AccessCase::create(vm, codeBlock, AccessCase::InstanceOfMegamorphic, nullptr);
         
         LOG_IC((vm, ICEvent::InstanceOfAddAccessCase, structure->classInfoForCells(), Identifier()));
         

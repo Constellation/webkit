@@ -86,7 +86,7 @@ DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(AccessCase);
     macro(ProxyObjectStore) \
     macro(InstanceOfHit) \
     macro(InstanceOfMiss) \
-    macro(InstanceOfGeneric) \
+    macro(InstanceOfMegamorphic) \
     macro(CheckPrivateBrand) \
     macro(SetPrivateBrand) \
     macro(IndexedProxyObjectLoad) \
