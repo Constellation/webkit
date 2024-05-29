@@ -4338,7 +4338,7 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
     auto finishCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub) {
         if (useHandlerIC())
             ++totalCount;
-        dataLogLn(InlineCacheCompilerInternal::verbose, "totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
+        dataLogLnIf(InlineCacheCompilerInternal::verbose, "totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
         std::unique_ptr<StructureStubInfoClearingWatchpoint> watchpoint;
         if (!stub->watchpoints().isEmpty()) {
             watchpoint = makeUnique<StructureStubInfoClearingWatchpoint>(codeBlock, m_stubInfo);
@@ -4955,7 +4955,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
     auto finishCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub, bool doesJSCalls) {
         if (useHandlerIC())
             ++totalCount;
-        dataLogLn(InlineCacheCompilerInternal::verbose, "totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
+        dataLogLnIf(InlineCacheCompilerInternal::verbose, "totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
         std::unique_ptr<StructureStubInfoClearingWatchpoint> watchpoint;
         if (!stub->watchpoints().isEmpty()) {
             watchpoint = makeUnique<StructureStubInfoClearingWatchpoint>(codeBlock, m_stubInfo);
