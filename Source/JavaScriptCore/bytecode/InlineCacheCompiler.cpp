@@ -5143,18 +5143,13 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
     m_allocator = &allocator;
     m_scratchGPR = allocator.allocateScratchGPR();
 
-    std::optional<FPRReg> scratchFPR;
-    bool doesCalls = false;
+    if (needsScratchFPR(accessCase.m_type))
+        m_scratchFPR = allocator.allocateScratchFPR();
+
     Vector<JSCell*> cellsToMark;
-
-    if (!scratchFPR && needsScratchFPR(accessCase.m_type))
-        scratchFPR = allocator.allocateScratchFPR();
-
-    if (accessCase.doesCalls(vm)) {
-        doesCalls = true;
+    bool doesCalls = accessCase.doesCalls(vm);
+    if (doesCalls)
         accessCase.collectDependentCells(vm, cellsToMark);
-    }
-    m_scratchFPR = scratchFPR.value_or(InvalidFPRReg);
 
     CCallHelpers jit(codeBlock);
     m_jit = &jit;
