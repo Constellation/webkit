@@ -4338,7 +4338,7 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
     auto finishCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub) {
         if (useHandlerIC())
             ++totalCount;
-        dataLogLn("totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
+        dataLogLn(InlineCacheCompilerInternal::verbose, "totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
         std::unique_ptr<StructureStubInfoClearingWatchpoint> watchpoint;
         if (!stub->watchpoints().isEmpty()) {
             watchpoint = makeUnique<StructureStubInfoClearingWatchpoint>(codeBlock, m_stubInfo);
@@ -4952,7 +4952,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
     auto finishCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub, bool doesJSCalls) {
         if (useHandlerIC())
             ++totalCount;
-        dataLogLn("totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
+        dataLogLn(InlineCacheCompilerInternal::verbose, "totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
         std::unique_ptr<StructureStubInfoClearingWatchpoint> watchpoint;
         if (!stub->watchpoints().isEmpty()) {
             watchpoint = makeUnique<StructureStubInfoClearingWatchpoint>(codeBlock, m_stubInfo);
@@ -5064,8 +5064,6 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                     bool allocatingInline = allocating && !accessCase.structure()->couldHaveIndexingHeader();
                     ASSERT(!accessCase.viaGlobalProxy());
                     if (!allocating || allocatingInline) {
-                        UNUSED_PARAM(allocatingInline);
-                        UNUSED_PARAM(allocatingInline);
                         Vector<ObjectPropertyCondition, 64> watchedConditions;
                         Vector<ObjectPropertyCondition, 64> checkingConditions;
                         collectConditions(accessCase, watchedConditions, checkingConditions);
