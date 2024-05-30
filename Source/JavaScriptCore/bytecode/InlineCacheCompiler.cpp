@@ -5090,6 +5090,32 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
             ensureReferenceAndAddWatchpoint(vm, watchpoints, watchpointSet, *set);
     };
 
+    auto finishPreCompiledCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub, bool doesJSCalls) {
+        if (useHandlerIC())
+            ++totalCount;
+        dataLogLnIf(InlineCacheCompilerInternal::verbose, "totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
+        std::unique_ptr<StructureStubInfoClearingWatchpoint> watchpoint;
+        if (!stub->watchpoints().isEmpty()) {
+            watchpoint = makeUnique<StructureStubInfoClearingWatchpoint>(codeBlock, m_stubInfo);
+            stub->watchpointSet().add(watchpoint.get());
+        }
+
+        poly.m_list.shrink(0);
+        poly.m_list.append(Ref { accessCase });
+
+        auto handler = InlineCacheHandler::create(codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), doesJSCalls ? 1 : 0);
+        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
+
+        AccessGenerationResult::Kind resultKind;
+        RELEASE_ASSERT(cases.size() == 1);
+        if (isMegamorphic(cases.front()->m_type))
+            resultKind = AccessGenerationResult::GeneratedMegamorphicCode;
+        else
+            resultKind = AccessGenerationResult::GeneratedNewCode;
+
+        return AccessGenerationResult(resultKind, WTFMove(handler));
+    };
+
     auto finishCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub, bool doesJSCalls) {
         if (useHandlerIC())
             ++totalCount;
@@ -5156,9 +5182,9 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                                 code = vm.getCTIStub(getByIdLoadHandlerCodeGenerator<false>).retagged<JITStubRoutinePtrTag>();
 
                             FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
-                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
-                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                            return finishPreCompiledCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
                         }
                     }
                     break;
@@ -5173,9 +5199,9 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                             auto code = vm.getCTIStub(getByIdMissHandlerCodeGenerator<AccessType::GetById>).retagged<JITStubRoutinePtrTag>();
 
                             FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
-                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
-                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                            return finishPreCompiledCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
                         }
                     }
                     break;
@@ -5209,9 +5235,9 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                             auto code = vm.getCTIStub(putByIdReplaceHandlerCodeGenerator).retagged<JITStubRoutinePtrTag>();
 
                             FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
-                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
-                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                            return finishPreCompiledCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
                         }
                     }
                     break;
@@ -5236,9 +5262,9 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                                 code = vm.getCTIStub(putByIdTransitionHandlerCodeGenerator<true, true>).retagged<JITStubRoutinePtrTag>();
 
                             FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
-                            auto stub = createICJITStubRoutine(code, WTFMove(keys), { }, vm, nullptr, false, { }, { }, nullptr, { });
+                            auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
-                            return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                            return finishPreCompiledCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
                         }
                     }
                     break;

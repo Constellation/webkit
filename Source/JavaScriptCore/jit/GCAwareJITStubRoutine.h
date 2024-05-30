@@ -232,6 +232,8 @@ Ref<PolymorphicAccessJITStubRoutine> createICJITStubRoutine(
     const Vector<JSCell*>&, Vector<std::unique_ptr<OptimizingCallLinkInfo>, 16>&& callLinkInfos,
     CodeBlock* codeBlockForExceptionHandlers, DisposableCallSiteIndex exceptionHandlingCallSiteIndex);
 
+Ref<PolymorphicAccessJITStubRoutine> createPreCompiledICJITStubRoutine(const MacroAssemblerCodeRef<JITStubRoutinePtrTag>& code, VM& vm);
+
 } // namespace JSC
 
 #endif // ENABLE(JIT)
