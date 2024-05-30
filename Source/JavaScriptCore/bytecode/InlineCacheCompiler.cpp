@@ -4513,20 +4513,10 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
         return AccessGenerationResult(resultKind, WTFMove(handler));
     };
 
-    std::optional<SharedJITStubSet::StatelessCacheKey> statelessType;
     if (useHandlerIC()) {
         ASSERT(codeBlock->useDataIC());
         if (cases.size() == 1)
             return compileOneAccessCaseHandler(poly, codeBlock, cases.first().get(), WTFMove(additionalWatchpointSets));
-
-        if (cases.size() == 1 && isStateless(cases.first()->m_type)) {
-            auto& accessCase = cases.first();
-            statelessType = std::tuple { SharedJITStubSet::stubInfoKey(*m_stubInfo), accessCase->m_type };
-            if (auto stub = vm().m_sharedJITStubs->getStatelessStub(statelessType.value())) {
-                dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", stub->cases().first()->m_type);
-                return finishCodeGeneration(stub.releaseNonNull());
-            }
-        }
 
         std::sort(cases.begin(), cases.end(), [](auto& lhs, auto& rhs) {
             if (lhs->type() == rhs->type()) {
@@ -4537,18 +4527,16 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
             return lhs->type() < rhs->type();
         });
 
-        if (!statelessType) {
-            SharedJITStubSet::Searcher searcher {
-                SharedJITStubSet::stubInfoKey(*m_stubInfo),
-                cases.span(),
-            };
-            if (auto stub = vm().m_sharedJITStubs->find(searcher)) {
-                if (stub->isStillValid()) {
-                    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
-                    return finishCodeGeneration(stub.releaseNonNull());
-                }
-                vm().m_sharedJITStubs->remove(stub.get());
+        SharedJITStubSet::Searcher searcher {
+            SharedJITStubSet::stubInfoKey(*m_stubInfo),
+            cases.span(),
+        };
+        if (auto stub = vm().m_sharedJITStubs->find(searcher)) {
+            if (stub->isStillValid()) {
+                dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
+                return finishCodeGeneration(stub.releaseNonNull());
             }
+            vm().m_sharedJITStubs->remove(stub.get());
         }
     }
 
@@ -4877,14 +4865,9 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
 
     if (useHandlerIC()) {
         ASSERT(codeBlock->useDataIC());
-        if (statelessType) {
-            dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", m_stubInfo->accessType, " / ", stub->cases().first()->m_type);
-            vm().m_sharedJITStubs->setStatelessStub(statelessType.value(), Ref { stub });
-        } else {
-            dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
-            vm().m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(SharedJITStubSet::stubInfoKey(*m_stubInfo), stub.ptr()));
-            stub->addedToSharedJITStubSet();
-        }
+        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
+        vm().m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(SharedJITStubSet::stubInfoKey(*m_stubInfo), stub.ptr()));
+        stub->addedToSharedJITStubSet();
     }
 
     return finishCodeGeneration(WTFMove(stub));
@@ -5201,7 +5184,6 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                             else
                                 code = vm.getCTIStub(getByIdLoadHandlerCodeGenerator<false>).retagged<JITStubRoutinePtrTag>();
 
-                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                             auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
                             return finishPreCompiledCodeGeneration(WTFMove(stub));
@@ -5218,7 +5200,6 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                             ++getByIdCovered;
                             auto code = vm.getCTIStub(getByIdMissHandlerCodeGenerator<AccessType::GetById>).retagged<JITStubRoutinePtrTag>();
 
-                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                             auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
                             return finishPreCompiledCodeGeneration(WTFMove(stub));
@@ -5254,7 +5235,6 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                             ++getByIdCovered;
                             auto code = vm.getCTIStub(putByIdReplaceHandlerCodeGenerator).retagged<JITStubRoutinePtrTag>();
 
-                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                             auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
                             return finishPreCompiledCodeGeneration(WTFMove(stub));
@@ -5281,7 +5261,6 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                             else
                                 code = vm.getCTIStub(putByIdTransitionHandlerCodeGenerator<true, true>).retagged<JITStubRoutinePtrTag>();
 
-                            FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                             auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
                             return finishPreCompiledCodeGeneration(WTFMove(stub));
@@ -5413,23 +5392,27 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
     }
 
     ASSERT(m_success.empty());
+
     FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
     dataLogLnIf(InlineCacheCompilerInternal::verbose, FullCodeOrigin(codeBlock, m_stubInfo->codeOrigin), ": Generating polymorphic access stub for ", listDump(keys));
 
     MacroAssemblerCodeRef<JITStubRoutinePtrTag> code = FINALIZE_CODE_FOR(codeBlock, linkBuffer, JITStubRoutinePtrTag, categoryName(m_stubInfo->accessType), "%s", toCString("Access stub for ", *codeBlock, " ", m_stubInfo->codeOrigin, "with start: ", m_stubInfo->startLocation, ": ", listDump(keys)).data());
 
+    if (statelessType) {
+        auto stub = createPreCompiledICJITStubRoutine(code, vm);
+        connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(m_conditions), WTFMove(additionalWatchpointSets));
+        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", m_stubInfo->accessType, " / ", stub->cases().first()->m_type);
+        vm.m_sharedJITStubs->setStatelessStub(statelessType.value(), Ref { stub });
+        return finishPreCompiledCodeGeneration(WTFMove(stub));
+    }
+
     FixedVector<StructureID> weakStructures(WTFMove(m_weakStructures));
     auto stub = createICJITStubRoutine(code, WTFMove(keys), WTFMove(weakStructures), vm, nullptr, doesCalls, cellsToMark, WTFMove(m_callLinkInfos), nullptr, { });
     connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(m_conditions), WTFMove(additionalWatchpointSets));
 
-    if (statelessType) {
-        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", m_stubInfo->accessType, " / ", stub->cases().first()->m_type);
-        vm.m_sharedJITStubs->setStatelessStub(statelessType.value(), Ref { stub });
-    } else {
-        dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
-        vm.m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(SharedJITStubSet::stubInfoKey(*m_stubInfo), stub.ptr()));
-        stub->addedToSharedJITStubSet();
-    }
+    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Installing ", m_stubInfo->accessType, " / ", listDump(stub->cases()));
+    vm.m_sharedJITStubs->add(SharedJITStubSet::Hash::Key(SharedJITStubSet::stubInfoKey(*m_stubInfo), stub.ptr()));
+    stub->addedToSharedJITStubSet();
 
     return finishCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
 }
