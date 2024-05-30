@@ -5154,7 +5154,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
         statelessType = std::tuple { SharedJITStubSet::stubInfoKey(*m_stubInfo), accessCase.m_type };
         if (auto stub = vm.m_sharedJITStubs->getStatelessStub(statelessType.value())) {
             dataLogLnIf(InlineCacheCompilerInternal::verbose, "Using ", m_stubInfo->accessType, " / ", accessCase.m_type);
-            return finishCodeGeneration(stub.releaseNonNull(), JSC::doesJSCalls(accessCase.m_type));
+            return finishPreCompiledCodeGeneration(stub.releaseNonNull(), JSC::doesJSCalls(accessCase.m_type));
         }
     } else {
         if (true) {
