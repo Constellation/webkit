@@ -1527,6 +1527,34 @@ Ref<InlineCacheHandler> InlineCacheHandler::create(CodeBlock* codeBlock, Structu
     return result;
 }
 
+Ref<InlineCacheHandler> InlineCacheHandler::createPreCompiled(CodeBlock* codeBlock, StructureStubInfo& stubInfo, Ref<PolymorphicAccessJITStubRoutine>&& stubRoutine, std::unique_ptr<StructureStubInfoClearingWatchpoint>&& watchpoint, AccessCase& accessCase)
+{
+    unsigned callLinkInfoCount = JSC::doesJSCalls(accessCase.m_type) ? 1 : 0;
+    auto result = adoptRef(*new (NotNull, fastMalloc(Base::allocationSize(callLinkInfoCount))) InlineCacheHandler(WTFMove(stubRoutine), WTFMove(watchpoint), callLinkInfoCount));
+    VM& vm = codeBlock->vm();
+    for (auto& callLinkInfo : result->span())
+        callLinkInfo.initialize(vm, codeBlock, CallLinkInfo::CallType::Call, stubInfo.codeOrigin);
+
+    result->m_structureID = accessCase.structureID();
+    result->m_offset = accessCase.offset();
+    result->m_uid = stubInfo.identifier().uid();
+    switch (accessCase.m_type) {
+    case AccessCase::Load:
+        if (auto* holder = accessCase.tryGetAlternateBase())
+            result->m_holder = holder;
+        break;
+    case AccessCase::Transition:
+        result->m_newStructureID = accessCase.newStructureID();
+        result->m_newSize = accessCase.newStructure()->outOfLineCapacity() * sizeof(JSValue);
+        result->m_oldSize = accessCase.structure()->outOfLineCapacity() * sizeof(JSValue);
+        break;
+    default:
+        break;
+    }
+
+    return result;
+}
+
 Ref<InlineCacheHandler> InlineCacheHandler::createNonHandlerSlowPath(CodePtr<JITStubRoutinePtrTag> slowPath)
 {
     auto result = adoptRef(*new (NotNull, fastMalloc(Base::allocationSize(0))) InlineCacheHandler);
@@ -4245,7 +4273,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
             cases.shrink(0);
             additionalWatchpointSets.clear();
             cases.append(AccessCase::create(vm(), codeBlock, AccessCase::InstanceOfMegamorphic, nullptr));
-            RELEASE_ASSERT(cases.size() == 1);
             break;
         }
         case AccessType::GetById:
@@ -4279,7 +4306,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::LoadMegamorphic, useHandlerIC() ? nullptr : identifier));
-                RELEASE_ASSERT(cases.size() == 1);
             }
             break;
         }
@@ -4309,7 +4335,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::IndexedMegamorphicLoad, nullptr));
-                RELEASE_ASSERT(cases.size() == 1);
             }
             break;
         }
@@ -4348,7 +4373,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::StoreMegamorphic, useHandlerIC() ? nullptr : identifier));
-                RELEASE_ASSERT(cases.size() == 1);
             }
             break;
         }
@@ -4382,7 +4406,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::IndexedMegamorphicStore, nullptr));
-                RELEASE_ASSERT(cases.size() == 1);
             }
             break;
         }
@@ -4416,7 +4439,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::InMegamorphic, useHandlerIC() ? nullptr : identifier));
-                RELEASE_ASSERT(cases.size() == 1);
             }
             break;
         }
@@ -4445,7 +4467,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 cases.shrink(0);
                 additionalWatchpointSets.clear();
                 cases.append(AccessCase::create(vm(), codeBlock, AccessCase::IndexedMegamorphicIn, nullptr));
-                RELEASE_ASSERT(cases.size() == 1);
             }
             break;
         }
@@ -5090,10 +5111,11 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
             ensureReferenceAndAddWatchpoint(vm, watchpoints, watchpointSet, *set);
     };
 
-    auto finishPreCompiledCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub, bool doesJSCalls) {
+    auto finishPreCompiledCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub) {
         if (useHandlerIC())
             ++totalCount;
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "totalCount:(", totalCount, "),generated:(", generated, "),multiple:(", multiple, "),getById:(", getById, "),getByIdCovered:(", getByIdCovered, "),getByIdFail0:(", getByIdFail0, ")");
+
         std::unique_ptr<StructureStubInfoClearingWatchpoint> watchpoint;
         if (!stub->watchpoints().isEmpty()) {
             watchpoint = makeUnique<StructureStubInfoClearingWatchpoint>(codeBlock, m_stubInfo);
@@ -5103,12 +5125,11 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
         poly.m_list.shrink(0);
         poly.m_list.append(Ref { accessCase });
 
-        auto handler = InlineCacheHandler::create(codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), doesJSCalls ? 1 : 0);
+        auto handler = InlineCacheHandler::createPreCompiled(codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), accessCase);
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         AccessGenerationResult::Kind resultKind;
-        RELEASE_ASSERT(cases.size() == 1);
-        if (isMegamorphic(cases.front()->m_type))
+        if (isMegamorphic(accessCase.m_type))
             resultKind = AccessGenerationResult::GeneratedMegamorphicCode;
         else
             resultKind = AccessGenerationResult::GeneratedNewCode;
@@ -5135,7 +5156,6 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         AccessGenerationResult::Kind resultKind;
-        RELEASE_ASSERT(cases.size() == 1);
         if (isMegamorphic(cases.front()->m_type))
             resultKind = AccessGenerationResult::GeneratedMegamorphicCode;
         else
@@ -5184,7 +5204,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                             FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                             auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
-                            return finishPreCompiledCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                            return finishPreCompiledCodeGeneration(WTFMove(stub));
                         }
                     }
                     break;
@@ -5201,7 +5221,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                             FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                             auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
-                            return finishPreCompiledCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                            return finishPreCompiledCodeGeneration(WTFMove(stub));
                         }
                     }
                     break;
@@ -5237,7 +5257,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                             FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                             auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
-                            return finishPreCompiledCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                            return finishPreCompiledCodeGeneration(WTFMove(stub));
                         }
                     }
                     break;
@@ -5264,7 +5284,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
                             FixedVector<Ref<AccessCase>> keys = FixedVector<Ref<AccessCase>>::createWithSizeFromGenerator(1, [&](unsigned) { return std::optional { Ref { accessCase } }; });
                             auto stub = createPreCompiledICJITStubRoutine(code, vm);
                             connectWatchpointSets(stub->watchpoints(), stub->watchpointSet(), WTFMove(watchedConditions), WTFMove(additionalWatchpointSets));
-                            return finishPreCompiledCodeGeneration(WTFMove(stub), JSC::doesJSCalls(accessCase.m_type));
+                            return finishPreCompiledCodeGeneration(WTFMove(stub));
                         }
                     }
                     break;

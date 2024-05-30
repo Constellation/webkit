@@ -168,6 +168,7 @@ public:
     static constexpr ptrdiff_t offsetOfNext() { return OBJECT_OFFSETOF(InlineCacheHandler, m_next); }
 
     static Ref<InlineCacheHandler> create(CodeBlock*, StructureStubInfo&, Ref<PolymorphicAccessJITStubRoutine>&&, std::unique_ptr<StructureStubInfoClearingWatchpoint>&&, unsigned callLinkInfoCount);
+    static Ref<InlineCacheHandler> createPreCompiled(CodeBlock*, StructureStubInfo&, Ref<PolymorphicAccessJITStubRoutine>&&, std::unique_ptr<StructureStubInfoClearingWatchpoint>&&, AccessCase&);
 
     CodePtr<JITStubRoutinePtrTag> callTarget() const { return m_callTarget; }
     CodePtr<JITStubRoutinePtrTag> jumpTarget() const { return m_jumpTarget; }
