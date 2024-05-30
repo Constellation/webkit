@@ -4454,9 +4454,6 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
         }
     }
 
-    dataLogLnIf(true, "Optimized cases: ", cases.size(), " ", listDump(cases));
-    dataLogLnIf(true, "GO");
-
     auto finishCodeGeneration = [&](Ref<PolymorphicAccessJITStubRoutine>&& stub) {
         if (useHandlerIC())
             ++totalCount;
