@@ -693,6 +693,7 @@ static bool isMegamorphic(AccessCase::AccessType type)
     case AccessCase::IndexedMegamorphicStore:
     case AccessCase::IndexedMegamorphicIn:
     case AccessCase::InstanceOfMegamorphic:
+        return true;
 
     case AccessCase::Getter:
     case AccessCase::Setter:
