@@ -238,7 +238,7 @@ public:
         return m_inlineAccessBaseStructureID.get();
     }
 
-    CallLinkInfo* callLinkInfoAt(const ConcurrentJSLocker&, unsigned index);
+    CallLinkInfo* callLinkInfoAt(const ConcurrentJSLocker&, unsigned index, const AccessCase&);
 
 private:
     ALWAYS_INLINE bool considerRepatchingCacheImpl(VM& vm, CodeBlock* codeBlock, Structure* structure, CacheableIdentifier impl)
@@ -353,7 +353,7 @@ private:
     }
 
     void replaceHandler(CodeBlock*, Ref<InlineCacheHandler>&&);
-    void prependHandler(CodeBlock*, Ref<InlineCacheHandler>&&);
+    void prependHandler(CodeBlock*, Ref<InlineCacheHandler>&&, Ref<AccessCase>&&);
     void rewireStubAsJumpInAccess(CodeBlock*, InlineCacheHandler&);
 
 public:

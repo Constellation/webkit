@@ -209,9 +209,13 @@ AccessGenerationResult StructureStubInfo::addAccessCase(const GCSafeConcurrentJS
         // gather enough cases.
         bufferingCountdown = Options::repatchBufferingCountdown();
         return result;
-    })(accessCase.releaseNonNull());
-    if (result.generatedSomeCode())
-        rewireStubAsJumpInAccess(codeBlock, *result.handler());
+    })(Ref { *accessCase });
+    if (result.generatedSomeCode()) {
+        if (useHandlerIC && hasConstantIdentifier(accessType))
+            prependHandler(codeBlock, Ref { handler }, accessCase.releaseNonNull());
+        else
+            rewireStubAsJumpInAccess(codeBlock, *result.handler());
+    }
 
     vm.writeBarrier(codeBlock);
     return result;
@@ -416,31 +420,19 @@ void StructureStubInfo::propagateTransitions(Visitor& visitor)
 template void StructureStubInfo::propagateTransitions(AbstractSlotVisitor&);
 template void StructureStubInfo::propagateTransitions(SlotVisitor&);
 
-CallLinkInfo* StructureStubInfo::callLinkInfoAt(const ConcurrentJSLocker& locker, unsigned index)
+CallLinkInfo* StructureStubInfo::callLinkInfoAt(const ConcurrentJSLocker& locker, unsigned index, const AccessCase& accessCase)
 {
     if (!m_handler)
         return nullptr;
 
     if (!(useDataIC && hasConstantIdentifier(accessType)))
-        return m_handler->callLinkInfoAt(locker, 0);
+        return m_handler->callLinkInfoAt(locker, index);
 
-    unsigned total = 0;
-    {
-        auto* cursor = m_handler.get();
-        while (cursor) {
-            ++total;
-            cursor = cursor->next();
-        }
-    }
-
-    unsigned remaining = total - index;
-    {
-        auto* cursor = m_handler.get();
-        while (cursor) {
-            if (!--remaining)
-                return cursor->callLinkInfoAt(locker, 0);
-            cursor = cursor->next();
-        }
+    auto* cursor = m_handler.get();
+    while (cursor) {
+        if (cursor->accessCase() == &accessCase)
+            return cursor->callLinkInfoAt(locker, 0);
+        cursor = cursor->next();
     }
     return nullptr;
 }
@@ -815,9 +807,10 @@ void StructureStubInfo::replaceHandler(CodeBlock* codeBlock, Ref<InlineCacheHand
     m_codePtr = m_handler->callTarget();
 }
 
-void StructureStubInfo::prependHandler(CodeBlock* codeBlock, Ref<InlineCacheHandler>&& handler)
+void StructureStubInfo::prependHandler(CodeBlock* codeBlock, Ref<InlineCacheHandler>&& handler, Ref<AccessCase>&& accessCase)
 {
     handler->setNext(WTFMove(m_handler));
+    handler->setAccessCase(WTFMove(accessCase));
     m_handler = WTFMove(handler);
     m_handler->addOwner(codeBlock);
     m_codePtr = m_handler->callTarget();
@@ -825,12 +818,6 @@ void StructureStubInfo::prependHandler(CodeBlock* codeBlock, Ref<InlineCacheHand
 
 void StructureStubInfo::rewireStubAsJumpInAccess(CodeBlock* codeBlock, InlineCacheHandler& handler)
 {
-    bool useHandlerIC = Options::useHandlerIC() && JITCode::isBaselineCode(codeBlock->jitType());
-    if (useHandlerIC && hasConstantIdentifier(accessType)) {
-        prependHandler(codeBlock, Ref { handler });
-        return;
-    }
-
     replaceHandler(codeBlock, Ref { handler });
     if (!useDataIC)
         CCallHelpers::replaceWithJump(startLocation.retagged<JSInternalPtrTag>(), CodeLocationLabel { handler.callTarget() });

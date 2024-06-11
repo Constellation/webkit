@@ -190,12 +190,17 @@ public:
 
     PolymorphicAccessJITStubRoutine* stubRoutine() { return m_stubRoutine.get(); }
 
+    InlineCacheHandler* next() const { return m_next.get(); }
     void setNext(RefPtr<InlineCacheHandler>&& next)
     {
         m_next = WTFMove(next);
     }
 
-    InlineCacheHandler* next() const { return m_next.get(); }
+    AccessCase* accessCase() const { return m_accessCase.get(); }
+    void setAccessCase(RefPtr<AccessCase>&& accessCase)
+    {
+        m_accessCase = WTFMove(accessCase);
+    }
 
     static constexpr ptrdiff_t offsetOfCallTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_callTarget); }
     static constexpr ptrdiff_t offsetOfJumpTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_jumpTarget); }
@@ -238,6 +243,7 @@ private:
         } s1;
     } u;
     RefPtr<PolymorphicAccessJITStubRoutine> m_stubRoutine;
+    RefPtr<AccessCase> m_accessCase;
     std::unique_ptr<StructureStubInfoClearingWatchpoint> m_watchpoint;
     RefPtr<InlineCacheHandler> m_next;
 };
