@@ -107,24 +107,25 @@ void StructureStubInfo::aboutToDie()
         m_handler->aboutToDie();
 }
 
-AccessGenerationResult StructureStubInfo::addAccessCase(
-    const GCSafeConcurrentJSLocker& locker, JSGlobalObject* globalObject, CodeBlock* codeBlock, ECMAMode ecmaMode, CacheableIdentifier ident, RefPtr<AccessCase> accessCase)
+AccessGenerationResult StructureStubInfo::addAccessCase(const GCSafeConcurrentJSLocker& locker, JSGlobalObject* globalObject, CodeBlock* codeBlock, ECMAMode ecmaMode, CacheableIdentifier ident, RefPtr<AccessCase> accessCase)
 {
     checkConsistency();
 
     VM& vm = codeBlock->vm();
     ASSERT(vm.heap.isDeferred());
-    AccessGenerationResult result = ([&] () -> AccessGenerationResult {
+
+    if (!accessCase)
+        return AccessGenerationResult::GaveUp;
+
+    bool useHandlerIC = Options::useHandlerIC() && JITCode::isBaselineCode(codeBlock->jitType());
+
+    AccessGenerationResult result = ([&](Ref<AccessCase>&& accessCase) -> AccessGenerationResult {
         dataLogLnIf(StructureStubInfoInternal::verbose, "Adding access case: ", accessCase);
 
-        if (!accessCase)
-            return AccessGenerationResult::GaveUp;
-        
         AccessGenerationResult result;
-        
-        if (m_cacheType == CacheType::Stub) {
-            result = m_stub->addCase(locker, vm, codeBlock, *this, accessCase.releaseNonNull());
 
+        if (m_cacheType == CacheType::Stub) {
+            result = m_stub->addCases(locker, vm, codeBlock, *this, nullptr, accessCase);
             dataLogLnIf(StructureStubInfoInternal::verbose, "Had stub, result: ", result);
 
             if (result.shouldResetStubAndFireWatchpoints())
@@ -136,15 +137,7 @@ AccessGenerationResult StructureStubInfo::addAccessCase(
             }
         } else {
             std::unique_ptr<PolymorphicAccess> access = makeUnique<PolymorphicAccess>();
-
-            PolymorphicAccess::ListType accessCases;
-
-            if (auto previousCase = AccessCase::fromStructureStubInfo(vm, codeBlock, ident, *this))
-                accessCases.append(previousCase.releaseNonNull());
-
-            accessCases.append(accessCase.releaseNonNull());
-
-            result = access->addCases(locker, vm, codeBlock, *this, WTFMove(accessCases));
+            result = access->addCases(locker, vm, codeBlock, *this, AccessCase::fromStructureStubInfo(vm, codeBlock, ident, *this), accessCase);
 
             dataLogLnIf(StructureStubInfoInternal::verbose, "Created stub, result: ", result);
 
@@ -155,14 +148,14 @@ AccessGenerationResult StructureStubInfo::addAccessCase(
                 clearBufferedStructures();
                 return result;
             }
-            
+
             setCacheType(locker, CacheType::Stub);
             m_stub = WTFMove(access);
         }
-        
+
         ASSERT(m_cacheType == CacheType::Stub);
         RELEASE_ASSERT(!result.generatedSomeCode());
-        
+
         // If we didn't buffer any cases then bail. If this made no changes then we'll just try again
         // subject to cool-down.
         if (!result.buffered()) {
@@ -170,17 +163,22 @@ AccessGenerationResult StructureStubInfo::addAccessCase(
             clearBufferedStructures();
             return result;
         }
-        
+
+        if (useHandlerIC && hasConstantIdentifier(accessType)) {
+            InlineCacheCompiler compiler(codeBlock->jitType(), vm, globalObject, ecmaMode, *this);
+            return compiler.compileHandler(locker, *m_stub, codeBlock, WTFMove(accessCase));
+        }
+
         // The buffering countdown tells us if we should be repatching now.
         if (bufferingCountdown) {
             dataLogLnIf(StructureStubInfoInternal::verbose, "Countdown is too high: ", bufferingCountdown, ".");
             return result;
         }
-        
+
         // Forget the buffered structures so that all future attempts to cache get fully handled by the
         // PolymorphicAccess.
         clearBufferedStructures();
-        
+
         InlineCacheCompiler compiler(codeBlock->jitType(), vm, globalObject, ecmaMode, *this);
         result = compiler.compile(locker, *m_stub, codeBlock);
 
@@ -207,7 +205,7 @@ AccessGenerationResult StructureStubInfo::addAccessCase(
         // gather enough cases.
         bufferingCountdown = Options::repatchBufferingCountdown();
         return result;
-    })();
+    })(accessCase.releaseNonNull());
     if (result.generatedSomeCode())
         rewireStubAsJumpInAccess(codeBlock, *result.handler());
 

@@ -5554,6 +5554,146 @@ MacroAssemblerCodeRef<JITThunkPtrTag> putByIdSloppySetterHandler(VM& vm)
     return putByIdSetterHandlerImpl<isStrict>(vm);
 }
 
+AccessGenerationResult InlineCacheCompiler::compileHandler(const GCSafeConcurrentJSLocker&, PolymorphicAccess& poly, CodeBlock* codeBlock, Ref<AccessCase>&& accessCase)
+{
+    SuperSamplerScope superSamplerScope(false);
+
+    dataLogLnIf(InlineCacheCompilerInternal::verbose, "Regenerate with m_list: ", listDump(poly.m_list));
+
+    Vector<WatchpointSet*, 8> additionalWatchpointSets;
+
+    if (!accessCase->couldStillSucceed())
+        return AccessGenerationResult::MadeNoChanges;
+
+    auto sets = collectAdditionalWatchpoints(vm(), accessCase);
+    for (auto* set : sets) {
+        if (!set->isStillValid())
+            return AccessGenerationResult::MadeNoChanges;
+    }
+
+    for (auto& alreadyListedCase : poly.m_list) {
+        if (alreadyListedCase.ptr() != accessCase.ptr()) {
+            if (alreadyListedCase->canReplace(accessCase.get()))
+                return AccessGenerationResult::MadeNoChanges;
+        }
+    }
+
+    additionalWatchpointSets.appendVector(sets);
+
+    if (poly.m_list.size() >= Options::maxAccessVariantListSize() || m_stubInfo->canBeMegamorphic) {
+        switch (m_stubInfo->accessType) {
+        case AccessType::GetById:
+        case AccessType::GetByIdWithThis: {
+            auto identifier = poly.m_list.last()->m_identifier;
+            bool allAreSimpleLoadOrMiss = true;
+            for (auto& accessCase : poly.m_list) {
+                if (accessCase->type() != AccessCase::Load && accessCase->type() != AccessCase::Miss) {
+                    allAreSimpleLoadOrMiss = false;
+                    break;
+                }
+                if (accessCase->usesPolyProto()) {
+                    allAreSimpleLoadOrMiss = false;
+                    break;
+                }
+                if (accessCase->viaGlobalProxy()) {
+                    allAreSimpleLoadOrMiss = false;
+                    break;
+                }
+            }
+
+            // Currently, we do not apply megamorphic cache for "length" property since Array#length and String#length are too common.
+            if (!canUseMegamorphicGetById(vm(), identifier.uid()))
+                allAreSimpleLoadOrMiss = false;
+
+#if USE(JSVALUE32_64)
+            allAreSimpleLoadOrMiss = false;
+#endif
+
+            if (allAreSimpleLoadOrMiss) {
+                additionalWatchpointSets.clear();
+                accessCase = AccessCase::create(vm(), codeBlock, AccessCase::LoadMegamorphic, nullptr);
+            }
+            break;
+        }
+        case AccessType::PutByIdStrict:
+        case AccessType::PutByIdSloppy: {
+            auto identifier = poly.m_list.last()->m_identifier;
+            bool allAreSimpleReplaceOrTransition = true;
+            for (auto& accessCase : poly.m_list) {
+                if (accessCase->type() != AccessCase::Replace && accessCase->type() != AccessCase::Transition) {
+                    allAreSimpleReplaceOrTransition = false;
+                    break;
+                }
+                if (accessCase->usesPolyProto()) {
+                    allAreSimpleReplaceOrTransition = false;
+                    break;
+                }
+                if (accessCase->viaGlobalProxy()) {
+                    allAreSimpleReplaceOrTransition = false;
+                    break;
+                }
+                if (!canUseMegamorphicPutFastPath(accessCase->structure())) {
+                    allAreSimpleReplaceOrTransition = false;
+                    break;
+                }
+            }
+
+            // Currently, we do not apply megamorphic cache for "length" property since Array#length and String#length are too common.
+            if (!canUseMegamorphicPutById(vm(), identifier.uid()))
+                allAreSimpleReplaceOrTransition = false;
+
+#if USE(JSVALUE32_64)
+            allAreSimpleReplaceOrTransition = false;
+#endif
+
+            if (allAreSimpleReplaceOrTransition) {
+                additionalWatchpointSets.clear();
+                accessCase = AccessCase::create(vm(), codeBlock, AccessCase::StoreMegamorphic, nullptr);
+            }
+            break;
+        }
+        case AccessType::InById: {
+            auto identifier = poly.m_list.last()->m_identifier;
+            bool allAreSimpleHitOrMiss = true;
+            for (auto& accessCase : poly.m_list) {
+                if (accessCase->type() != AccessCase::InHit && accessCase->type() != AccessCase::InMiss) {
+                    allAreSimpleHitOrMiss = false;
+                    break;
+                }
+                if (accessCase->usesPolyProto()) {
+                    allAreSimpleHitOrMiss = false;
+                    break;
+                }
+                if (accessCase->viaGlobalProxy()) {
+                    allAreSimpleHitOrMiss = false;
+                    break;
+                }
+            }
+
+            // Currently, we do not apply megamorphic cache for "length" property since Array#length and String#length are too common.
+            if (!canUseMegamorphicInById(vm(), identifier.uid()))
+                allAreSimpleHitOrMiss = false;
+
+#if USE(JSVALUE32_64)
+            allAreSimpleHitOrMiss = false;
+#endif
+
+            if (allAreSimpleHitOrMiss) {
+                additionalWatchpointSets.clear();
+                accessCase = AccessCase::create(vm(), codeBlock, AccessCase::InMegamorphic, nullptr);
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    ASSERT(m_stubInfo->useDataIC);
+    return compileOneAccessCaseHandler(poly, codeBlock, accessCase.get(), WTFMove(additionalWatchpointSets));
+}
+
+
 AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(PolymorphicAccess& poly, CodeBlock* codeBlock, AccessCase& accessCase, Vector<WatchpointSet*, 8>&& additionalWatchpointSets)
 {
     ASSERT(useHandlerIC());
@@ -6025,7 +6165,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> putByIdSloppySetterHandler(VM&) { return {
 PolymorphicAccess::PolymorphicAccess() = default;
 PolymorphicAccess::~PolymorphicAccess() = default;
 
-AccessGenerationResult PolymorphicAccess::addCases(const GCSafeConcurrentJSLocker&, VM& vm, CodeBlock*, StructureStubInfo& stubInfo, RefPtr<AccessCase>&& previousCase, Ref<AccessCase>&& accessCase)
+AccessGenerationResult PolymorphicAccess::addCases(const GCSafeConcurrentJSLocker&, VM& vm, CodeBlock*, StructureStubInfo& stubInfo, RefPtr<AccessCase>&& previousCase, Ref<AccessCase> accessCase)
 {
     SuperSamplerScope superSamplerScope(false);
 
@@ -6042,27 +6182,17 @@ AccessGenerationResult PolymorphicAccess::addCases(const GCSafeConcurrentJSLocke
 
     // First ensure that the casesToAdd doesn't contain duplicates.
 
-    if (previousCase && previousCase->canReplace(accessCase.get()))
-
-    {
-        ListType willBeAdded;
-        for (unsigned i = 0; i < casesToAdd.size(); ++i) {
-            auto myCase = WTFMove(casesToAdd[i]);
-            // Add it only if it is not replaced by the subsequent cases in the list.
-            bool found = false;
-            for (unsigned j = i + 1; j < casesToAdd.size(); ++j) {
-                if (casesToAdd[j]->canReplace(myCase.get())) {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (found)
-                continue;
-            willBeAdded.append(WTFMove(myCase));
+    ListType casesToAdd;
+    if (previousCase) {
+        auto previous = previousCase.releaseNonNull();
+        if (previous->canReplace(accessCase.get()))
+            casesToAdd.append(WTFMove(previous));
+        else {
+            casesToAdd.append(WTFMove(previous));
+            casesToAdd.append(WTFMove(accessCase));
         }
-        casesToAdd = WTFMove(willBeAdded);
-    }
+    } else
+        casesToAdd.append(WTFMove(accessCase));
 
     dataLogLnIf(InlineCacheCompilerInternal::verbose, "casesToAdd: ", listDump(casesToAdd));
 
