@@ -103,8 +103,12 @@ void StructureStubInfo::aboutToDie()
 {
     if (m_cacheType != CacheType::Stub)
         return;
-    if (m_handler)
-        m_handler->aboutToDie();
+
+    auto* cursor = m_handler.get();
+    while (cursor) {
+        cursor->aboutToDie();
+        cursor = cursor->next();
+    }
 }
 
 AccessGenerationResult StructureStubInfo::addAccessCase(const GCSafeConcurrentJSLocker& locker, JSGlobalObject* globalObject, CodeBlock* codeBlock, ECMAMode ecmaMode, CacheableIdentifier ident, RefPtr<AccessCase> accessCase)
@@ -383,8 +387,13 @@ void StructureStubInfo::visitWeakReferences(const ConcurrentJSLockerBase& locker
     if (m_cacheType == CacheType::Stub) {
         if (m_stub)
             isValid &= m_stub->visitWeak(vm);
-        if (m_handler)
-            isValid &= m_handler->visitWeak(vm);
+        if (m_handler) {
+            RefPtr cursor = m_handler.get();
+            while (cursor) {
+                isValid &= cursor->visitWeak(vm);
+                cursor = cursor->next();
+            }
+        }
     }
 
     if (isValid)
@@ -411,7 +420,25 @@ CallLinkInfo* StructureStubInfo::callLinkInfoAt(const ConcurrentJSLocker& locker
 {
     if (!m_handler)
         return nullptr;
-    return m_handler->callLinkInfoAt(locker, index);
+
+    if (!(useDataIC && hasConstantIdentifier(accessType)))
+        return m_handler->callLinkInfoAt(locker, 0);
+
+    unsigned total = 0;
+    auto* cursor = m_handler.get();
+    while (cursor) {
+        ++total;
+        cursor = cursor->next();
+    }
+
+    unsigned remaining = total - index;
+    auto* cursor = m_handler.get();
+    while (cursor) {
+        if (!--remaining)
+            return cursor->callLinkInfoAt(locker, 0);
+        cursor = cursor->next();
+    }
+    return nullptr;
 }
 
 StubInfoSummary StructureStubInfo::summary(VM& vm) const
@@ -464,9 +491,14 @@ bool StructureStubInfo::containsPC(void* pc) const
 {
     if (m_cacheType != CacheType::Stub)
         return false;
-    if (!m_handler)
-        return false;
-    return m_handler->containsPC(pc);
+
+    auto* cursor = m_handler.get();
+    while (cursor) {
+        if (cursor->containsPC(pc))
+            return true;
+        cursor = cursor->next();
+    }
+    return false;
 }
 
 ALWAYS_INLINE void StructureStubInfo::setCacheType(const ConcurrentJSLockerBase&, CacheType newCacheType)
@@ -779,8 +811,22 @@ void StructureStubInfo::replaceHandler(CodeBlock* codeBlock, Ref<InlineCacheHand
     m_codePtr = m_handler->callTarget();
 }
 
+void StructureStubInfo::prependHandler(CodeBlock* codeBlock, Ref<InlineCacheHandler>&& handler)
+{
+    handler->setNext(WTFMove(m_handler));
+    m_handler = WTFMove(handler);
+    m_handler->addOwner(codeBlock);
+    m_codePtr = m_handler->callTarget();
+}
+
 void StructureStubInfo::rewireStubAsJumpInAccess(CodeBlock* codeBlock, InlineCacheHandler& handler)
 {
+    bool useHandlerIC = Options::useHandlerIC() && JITCode::isBaselineCode(codeBlock->jitType());
+    if (useHandlerIC && hasConstantIdentifier(accessType)) {
+        prependHandler(codeBlock, Ref { handler });
+        return;
+    }
+
     replaceHandler(codeBlock, Ref { handler });
     if (!useDataIC)
         CCallHelpers::replaceWithJump(startLocation.retagged<JSInternalPtrTag>(), CodeLocationLabel { handler.callTarget() });
@@ -792,6 +838,17 @@ void StructureStubInfo::resetStubAsJumpInAccess(CodeBlock* codeBlock)
         m_inlineAccessBaseStructureID.clear(); // Clear out the inline access code.
 
     if (JITCode::isBaselineCode(codeBlock->jitType()) && Options::useHandlerIC()) {
+        if (useHandlerIC && hasConstantIdentifier(accessType)) {
+            auto* cursor = m_handler.get();
+            while (cursor) {
+                cursor->removeOwner(codeBlock);
+                cursor = cursor->next().get();
+            }
+            m_handler = InlineCacheCompiler::generateSlowPathHandler(codeBlock->vm(), accessType);
+            m_codePtr = m_handler->callTarget();
+            return;
+        }
+
         auto handler = InlineCacheCompiler::generateSlowPathHandler(codeBlock->vm(), accessType);
         rewireStubAsJumpInAccess(codeBlock, handler.get());
         return;

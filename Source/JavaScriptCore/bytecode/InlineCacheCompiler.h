@@ -160,10 +160,6 @@ class InlineCacheHandler final : public RefCounted<InlineCacheHandler>, public T
 public:
     using Base = TrailingArray<InlineCacheHandler, DataOnlyCallLinkInfo>;
 
-    static constexpr ptrdiff_t offsetOfCallTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_callTarget); }
-    static constexpr ptrdiff_t offsetOfJumpTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_jumpTarget); }
-    static constexpr ptrdiff_t offsetOfNext() { return OBJECT_OFFSETOF(InlineCacheHandler, m_next); }
-
     static Ref<InlineCacheHandler> create(Ref<InlineCacheHandler>&&, CodeBlock*, StructureStubInfo&, Ref<PolymorphicAccessJITStubRoutine>&&, std::unique_ptr<StructureStubInfoClearingWatchpoint>&&, unsigned callLinkInfoCount);
     static Ref<InlineCacheHandler> createPreCompiled(Ref<InlineCacheHandler>&&, CodeBlock*, StructureStubInfo&, Ref<PolymorphicAccessJITStubRoutine>&&, std::unique_ptr<StructureStubInfoClearingWatchpoint>&&, AccessCase&);
 
@@ -194,6 +190,16 @@ public:
 
     PolymorphicAccessJITStubRoutine* stubRoutine() { return m_stubRoutine.get(); }
 
+    void setNext(RefPtr<InlineCacheHandler>&& next)
+    {
+        m_next = WTFMove(next);
+    }
+
+    InlineCacheHandler* next() const { return m_next.get(); }
+
+    static constexpr ptrdiff_t offsetOfCallTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_callTarget); }
+    static constexpr ptrdiff_t offsetOfJumpTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_jumpTarget); }
+    static constexpr ptrdiff_t offsetOfNext() { return OBJECT_OFFSETOF(InlineCacheHandler, m_next); }
     static constexpr ptrdiff_t offsetOfUid() { return OBJECT_OFFSETOF(InlineCacheHandler, m_uid); }
     static constexpr ptrdiff_t offsetOfStructureID() { return OBJECT_OFFSETOF(InlineCacheHandler, m_structureID); }
     static constexpr ptrdiff_t offsetOfOffset() { return OBJECT_OFFSETOF(InlineCacheHandler, m_offset); }

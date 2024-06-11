@@ -353,6 +353,7 @@ private:
     }
 
     void replaceHandler(CodeBlock*, Ref<InlineCacheHandler>&&);
+    void prependHandler(CodeBlock*, Ref<InlineCacheHandler>&&);
     void rewireStubAsJumpInAccess(CodeBlock*, InlineCacheHandler&);
 
 public:

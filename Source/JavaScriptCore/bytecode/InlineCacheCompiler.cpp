@@ -5756,7 +5756,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(CodeBloc
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         AccessGenerationResult::Kind resultKind;
-        if (isMegamorphic(cases.front()->m_type))
+        if (isMegamorphic(accessCase->m_type))
             resultKind = AccessGenerationResult::GeneratedMegamorphicCode;
         else
             resultKind = AccessGenerationResult::GeneratedNewCode;
