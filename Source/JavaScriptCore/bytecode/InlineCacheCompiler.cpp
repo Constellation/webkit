@@ -4522,8 +4522,21 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
 #if CPU(ADDRESS64)
     if (useHandlerIC()) {
         ASSERT(m_stubInfo->useDataIC);
-        if (cases.size() == 1)
-            return compileOneAccessCaseHandler(poly, codeBlock, cases.first().get(), WTFMove(additionalWatchpointSets));
+        if (cases.size() == 1) {
+            auto accessCase = WTFMove(cases[0]);
+            auto result = compileOneAccessCaseHandler(codeBlock, accessCase.get(), WTFMove(additionalWatchpointSets));
+            if (result.generatedSomeCode()) {
+                poly.m_list.shrink(0);
+                if (auto* stub = result.handler()->stubRoutine()) {
+                    auto cases = stub->cases().span();
+                    if (cases.empty())
+                        poly.m_list.append(WTFMove(accessCase));
+                    else
+                        poly.m_list.append(cases);
+                }
+            }
+            return result;
+        }
 
         std::sort(cases.begin(), cases.end(), [](auto& lhs, auto& rhs) {
             if (lhs->type() == rhs->type()) {
@@ -5690,11 +5703,11 @@ AccessGenerationResult InlineCacheCompiler::compileHandler(const GCSafeConcurren
     }
 
     ASSERT(m_stubInfo->useDataIC);
-    return compileOneAccessCaseHandler(poly, codeBlock, accessCase.get(), WTFMove(additionalWatchpointSets));
+    return compileOneAccessCaseHandler(codeBlock, accessCase.get(), WTFMove(additionalWatchpointSets));
 }
 
 
-AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(PolymorphicAccess& poly, CodeBlock* codeBlock, AccessCase& accessCase, Vector<WatchpointSet*, 8>&& additionalWatchpointSets)
+AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(CodeBlock* codeBlock, AccessCase& accessCase, Vector<WatchpointSet*, 8>&& additionalWatchpointSets)
 {
     ASSERT(useHandlerIC());
 
@@ -5720,9 +5733,6 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
             stub->watchpointSet().add(watchpoint.get());
         }
 
-        poly.m_list.shrink(0);
-        poly.m_list.append(Ref { accessCase });
-
         auto handler = InlineCacheHandler::createPreCompiled(InlineCacheCompiler::generateSlowPathHandler(vm, m_stubInfo->accessType), codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), accessCase);
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
@@ -5741,11 +5751,6 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
             watchpoint = makeUnique<StructureStubInfoClearingWatchpoint>(codeBlock, m_stubInfo);
             stub->watchpointSet().add(watchpoint.get());
         }
-
-        auto cases = stub->cases().span();
-
-        poly.m_list.shrink(0);
-        poly.m_list.append(cases);
 
         auto handler = InlineCacheHandler::create(InlineCacheCompiler::generateSlowPathHandler(vm, m_stubInfo->accessType), codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), doesJSCalls ? 1 : 0);
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());

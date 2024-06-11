@@ -192,6 +192,8 @@ public:
     void addOwner(CodeBlock*);
     void removeOwner(CodeBlock*);
 
+    PolymorphicAccessJITStubRoutine* stubRoutine() { return m_stubRoutine.get(); }
+
     static constexpr ptrdiff_t offsetOfUid() { return OBJECT_OFFSETOF(InlineCacheHandler, m_uid); }
     static constexpr ptrdiff_t offsetOfStructureID() { return OBJECT_OFFSETOF(InlineCacheHandler, m_structureID); }
     static constexpr ptrdiff_t offsetOfOffset() { return OBJECT_OFFSETOF(InlineCacheHandler, m_offset); }
@@ -356,7 +358,7 @@ private:
     CallSiteIndex callSiteIndexForExceptionHandlingOrOriginal();
     const ScalarRegisterSet& liveRegistersToPreserveAtExceptionHandlingCallSite();
 
-    AccessGenerationResult compileOneAccessCaseHandler(PolymorphicAccess&, CodeBlock*, AccessCase&, Vector<WatchpointSet*, 8>&&);
+    AccessGenerationResult compileOneAccessCaseHandler(CodeBlock*, AccessCase&, Vector<WatchpointSet*, 8>&&);
 
     void emitDOMJITGetter(GetterSetterAccessCase&, const DOMJIT::GetterSetter*, GPRReg baseForGetGPR);
     void emitModuleNamespaceLoad(ModuleNamespaceAccessCase&, MacroAssembler::JumpList& fallThrough);
