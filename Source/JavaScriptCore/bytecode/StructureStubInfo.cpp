@@ -425,18 +425,22 @@ CallLinkInfo* StructureStubInfo::callLinkInfoAt(const ConcurrentJSLocker& locker
         return m_handler->callLinkInfoAt(locker, 0);
 
     unsigned total = 0;
-    auto* cursor = m_handler.get();
-    while (cursor) {
-        ++total;
-        cursor = cursor->next();
+    {
+        auto* cursor = m_handler.get();
+        while (cursor) {
+            ++total;
+            cursor = cursor->next();
+        }
     }
 
     unsigned remaining = total - index;
-    auto* cursor = m_handler.get();
-    while (cursor) {
-        if (!--remaining)
-            return cursor->callLinkInfoAt(locker, 0);
-        cursor = cursor->next();
+    {
+        auto* cursor = m_handler.get();
+        while (cursor) {
+            if (!--remaining)
+                return cursor->callLinkInfoAt(locker, 0);
+            cursor = cursor->next();
+        }
     }
     return nullptr;
 }
@@ -838,11 +842,11 @@ void StructureStubInfo::resetStubAsJumpInAccess(CodeBlock* codeBlock)
         m_inlineAccessBaseStructureID.clear(); // Clear out the inline access code.
 
     if (JITCode::isBaselineCode(codeBlock->jitType()) && Options::useHandlerIC()) {
-        if (useHandlerIC && hasConstantIdentifier(accessType)) {
+        if (hasConstantIdentifier(accessType)) {
             auto* cursor = m_handler.get();
             while (cursor) {
                 cursor->removeOwner(codeBlock);
-                cursor = cursor->next().get();
+                cursor = cursor->next();
             }
             m_handler = InlineCacheCompiler::generateSlowPathHandler(codeBlock->vm(), accessType);
             m_codePtr = m_handler->callTarget();
