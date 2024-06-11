@@ -212,7 +212,7 @@ AccessGenerationResult StructureStubInfo::addAccessCase(const GCSafeConcurrentJS
     })(Ref { *accessCase });
     if (result.generatedSomeCode()) {
         if (useHandlerIC && hasConstantIdentifier(accessType))
-            prependHandler(codeBlock, Ref { handler }, accessCase.releaseNonNull());
+            prependHandler(codeBlock, Ref { *result.handler() }, accessCase.releaseNonNull());
         else
             rewireStubAsJumpInAccess(codeBlock, *result.handler());
     }
