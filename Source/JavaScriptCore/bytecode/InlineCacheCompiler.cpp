@@ -1079,6 +1079,12 @@ void InlineCacheCompiler::emitDataICEpilogue(CCallHelpers& jit)
     jit.emitFunctionEpilogueWithEmptyFrame();
 }
 
+void InlineCacheCompiler::emitDataICJumpNextHandler(CCallHelpers& jit)
+{
+    jit.loadPtr(CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfNext()), GPRInfo::handlerGPR);
+    jit.farJump(CCallHelpers::Address(GPRInfo::handlerGPR, InlineCacheHandler::offsetOfJumpTarget()), JITStubRoutinePtrTag);
+}
+
 static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdSlowPathCodeGenerator(VM& vm)
 {
     CCallHelpers jit;
@@ -1487,18 +1493,19 @@ MacroAssemblerCodeRef<JITThunkPtrTag> InlineCacheCompiler::generateSlowPathCode(
     return { };
 }
 
-InlineCacheHandler::InlineCacheHandler(Ref<PolymorphicAccessJITStubRoutine>&& stubRoutine, std::unique_ptr<StructureStubInfoClearingWatchpoint>&& watchpoint, unsigned callLinkInfoCount)
+InlineCacheHandler::InlineCacheHandler(Ref<InlineCacheHandler>&& previous, Ref<PolymorphicAccessJITStubRoutine>&& stubRoutine, std::unique_ptr<StructureStubInfoClearingWatchpoint>&& watchpoint, unsigned callLinkInfoCount)
     : Base(callLinkInfoCount)
     , m_callTarget(stubRoutine->code().code().template retagged<JITStubRoutinePtrTag>())
     , m_jumpTarget(CodePtr<NoPtrTag> { m_callTarget.retagged<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC }.template retagged<JITStubRoutinePtrTag>())
     , m_stubRoutine(WTFMove(stubRoutine))
     , m_watchpoint(WTFMove(watchpoint))
+    , m_next(WTFMove(previous))
 {
 }
 
-Ref<InlineCacheHandler> InlineCacheHandler::create(CodeBlock* codeBlock, StructureStubInfo& stubInfo, Ref<PolymorphicAccessJITStubRoutine>&& stubRoutine, std::unique_ptr<StructureStubInfoClearingWatchpoint>&& watchpoint, unsigned callLinkInfoCount)
+Ref<InlineCacheHandler> InlineCacheHandler::create(Ref<InlineCacheHandler>&& previous, CodeBlock* codeBlock, StructureStubInfo& stubInfo, Ref<PolymorphicAccessJITStubRoutine>&& stubRoutine, std::unique_ptr<StructureStubInfoClearingWatchpoint>&& watchpoint, unsigned callLinkInfoCount)
 {
-    auto result = adoptRef(*new (NotNull, fastMalloc(Base::allocationSize(callLinkInfoCount))) InlineCacheHandler(WTFMove(stubRoutine), WTFMove(watchpoint), callLinkInfoCount));
+    auto result = adoptRef(*new (NotNull, fastMalloc(Base::allocationSize(callLinkInfoCount))) InlineCacheHandler(WTFMove(previous), WTFMove(stubRoutine), WTFMove(watchpoint), callLinkInfoCount));
     VM& vm = codeBlock->vm();
     for (auto& callLinkInfo : result->span())
         callLinkInfo.initialize(vm, codeBlock, CallLinkInfo::CallType::Call, stubInfo.codeOrigin);
@@ -1506,10 +1513,10 @@ Ref<InlineCacheHandler> InlineCacheHandler::create(CodeBlock* codeBlock, Structu
     return result;
 }
 
-Ref<InlineCacheHandler> InlineCacheHandler::createPreCompiled(CodeBlock* codeBlock, StructureStubInfo& stubInfo, Ref<PolymorphicAccessJITStubRoutine>&& stubRoutine, std::unique_ptr<StructureStubInfoClearingWatchpoint>&& watchpoint, AccessCase& accessCase)
+Ref<InlineCacheHandler> InlineCacheHandler::createPreCompiled(Ref<InlineCacheHandler>&& previous, CodeBlock* codeBlock, StructureStubInfo& stubInfo, Ref<PolymorphicAccessJITStubRoutine>&& stubRoutine, std::unique_ptr<StructureStubInfoClearingWatchpoint>&& watchpoint, AccessCase& accessCase)
 {
     unsigned callLinkInfoCount = JSC::doesJSCalls(accessCase.m_type) ? 1 : 0;
-    auto result = adoptRef(*new (NotNull, fastMalloc(Base::allocationSize(callLinkInfoCount))) InlineCacheHandler(WTFMove(stubRoutine), WTFMove(watchpoint), callLinkInfoCount));
+    auto result = adoptRef(*new (NotNull, fastMalloc(Base::allocationSize(callLinkInfoCount))) InlineCacheHandler(WTFMove(previous), WTFMove(stubRoutine), WTFMove(watchpoint), callLinkInfoCount));
     VM& vm = codeBlock->vm();
     for (auto& callLinkInfo : result->span())
         callLinkInfo.initialize(vm, codeBlock, CallLinkInfo::CallType::Call, stubInfo.codeOrigin);
@@ -4498,7 +4505,7 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
                 callLinkInfoCount = cases.size();
         }
 
-        auto handler = InlineCacheHandler::create(codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), callLinkInfoCount);
+        auto handler = InlineCacheHandler::create(InlineCacheCompiler::generateSlowPathHandler(vm(), m_stubInfo->accessType), codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), callLinkInfoCount);
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         AccessGenerationResult::Kind resultKind;
@@ -4813,13 +4820,12 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
 
     CodeLocationLabel<JSInternalPtrTag> successLabel = m_stubInfo->doneLocation;
     if (m_stubInfo->useDataIC) {
+        JIT_COMMENT(jit, "failure far jump");
+        failure.link(&jit);
         if (useHandlerIC())
-            failure.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (generateSlowPathCode(vm(), m_stubInfo->accessType).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
-        else {
-            failure.link(&jit);
-            JIT_COMMENT(jit, "failure far jump");
+            emitDataICJumpNextHandler(jit);
+        else
             jit.farJump(CCallHelpers::Address(m_stubInfo->m_stubInfoGPR, StructureStubInfo::offsetOfSlowPathStartLocation()), JITStubRoutinePtrTag);
-        }
     } else {
         m_success.linkThunk(successLabel, &jit);
         failure.linkThunk(m_stubInfo->slowPathStartLocation, &jit);
@@ -4876,7 +4882,7 @@ AccessGenerationResult InlineCacheCompiler::compile(const GCSafeConcurrentJSLock
 
 // FIXME: We may need to implement it in offline asm eventually to share it with non JIT environment.
 template<bool ownProperty>
-static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdLoadHandlerCodeGeneratorImpl(VM& vm)
+static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdLoadHandlerCodeGeneratorImpl(VM&)
 {
     CCallHelpers jit;
 
@@ -4905,7 +4911,8 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdLoadHandlerCodeGeneratorImpl
     InlineCacheCompiler::emitDataICEpilogue(jit);
     jit.ret();
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::GetById).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.link(&jit);
+    InlineCacheCompiler::emitDataICJumpNextHandler(jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "GetById Load handler"_s, "GetById Load handler");
@@ -4924,7 +4931,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> getByIdLoadPrototypePropertyHandlerCodeGen
 }
 
 // FIXME: We may need to implement it in offline asm eventually to share it with non JIT environment.
-MacroAssemblerCodeRef<JITThunkPtrTag> getByIdMissHandlerCodeGenerator(VM& vm)
+MacroAssemblerCodeRef<JITThunkPtrTag> getByIdMissHandlerCodeGenerator(VM&)
 {
     CCallHelpers jit;
 
@@ -4947,7 +4954,8 @@ MacroAssemblerCodeRef<JITThunkPtrTag> getByIdMissHandlerCodeGenerator(VM& vm)
     InlineCacheCompiler::emitDataICEpilogue(jit);
     jit.ret();
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::GetById).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.link(&jit);
+    InlineCacheCompiler::emitDataICJumpNextHandler(jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "GetById Miss handler"_s, "GetById Miss handler");
@@ -5012,7 +5020,8 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> getByIdCustomHandlerImpl(VM& vm)
     InlineCacheCompiler::emitDataICEpilogue(jit);
     jit.ret();
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::GetById).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.link(&jit);
+    InlineCacheCompiler::emitDataICJumpNextHandler(jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "GetById Custom handler"_s, "GetById Custom handler");
@@ -5030,7 +5039,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> getByIdCustomValueHandler(VM& vm)
     return getByIdCustomHandlerImpl<isAccessor>(vm);
 }
 
-MacroAssemblerCodeRef<JITThunkPtrTag> getByIdGetterHandler(VM& vm)
+MacroAssemblerCodeRef<JITThunkPtrTag> getByIdGetterHandler(VM&)
 {
     CCallHelpers jit;
 
@@ -5116,13 +5125,14 @@ MacroAssemblerCodeRef<JITThunkPtrTag> getByIdGetterHandler(VM& vm)
     InlineCacheCompiler::emitDataICEpilogue(jit);
     jit.ret();
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::GetById).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.link(&jit);
+    InlineCacheCompiler::emitDataICJumpNextHandler(jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "GetById Getter handler"_s, "GetById Getter handler");
 }
 
-MacroAssemblerCodeRef<JITThunkPtrTag> getByIdProxyObjectLoadHandler(VM& vm)
+MacroAssemblerCodeRef<JITThunkPtrTag> getByIdProxyObjectLoadHandler(VM&)
 {
     CCallHelpers jit;
 
@@ -5192,14 +5202,15 @@ MacroAssemblerCodeRef<JITThunkPtrTag> getByIdProxyObjectLoadHandler(VM& vm)
     InlineCacheCompiler::emitDataICEpilogue(jit);
     jit.ret();
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::GetById).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.link(&jit);
+    InlineCacheCompiler::emitDataICJumpNextHandler(jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "GetById ProxyObjectLoad handler"_s, "GetById ProxyObjectLoad handler");
 }
 
 // FIXME: We may need to implement it in offline asm eventually to share it with non JIT environment.
-MacroAssemblerCodeRef<JITThunkPtrTag> putByIdReplaceHandlerCodeGenerator(VM& vm)
+MacroAssemblerCodeRef<JITThunkPtrTag> putByIdReplaceHandlerCodeGenerator(VM&)
 {
     CCallHelpers jit;
 
@@ -5223,7 +5234,8 @@ MacroAssemblerCodeRef<JITThunkPtrTag> putByIdReplaceHandlerCodeGenerator(VM& vm)
     InlineCacheCompiler::emitDataICEpilogue(jit);
     jit.ret();
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::PutByIdStrict).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.link(&jit);
+    InlineCacheCompiler::emitDataICJumpNextHandler(jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "PutById Replace handler"_s, "PutById Replace handler");
@@ -5330,7 +5342,8 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> putByIdTransitionHandlerCodeGenerat
         fallThrough.append(jit.jump());
     }
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::PutByIdStrict).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.link(&jit);
+    InlineCacheCompiler::emitDataICJumpNextHandler(jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "PutById Transition handler"_s, "PutById Transition handler");
@@ -5416,7 +5429,8 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> putByIdCustomHandlerImpl(VM& vm)
     InlineCacheCompiler::emitDataICEpilogue(jit);
     jit.ret();
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::PutByIdStrict).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.link(&jit);
+    InlineCacheCompiler::emitDataICJumpNextHandler(jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "PutById Custom handler"_s, "PutById Custom handler");
@@ -5435,7 +5449,7 @@ MacroAssemblerCodeRef<JITThunkPtrTag> putByIdCustomValueHandler(VM& vm)
 }
 
 template<bool isStrict>
-static MacroAssemblerCodeRef<JITThunkPtrTag> putByIdSetterHandlerImpl(VM& vm)
+static MacroAssemblerCodeRef<JITThunkPtrTag> putByIdSetterHandlerImpl(VM&)
 {
     CCallHelpers jit;
 
@@ -5521,7 +5535,8 @@ static MacroAssemblerCodeRef<JITThunkPtrTag> putByIdSetterHandlerImpl(VM& vm)
     InlineCacheCompiler::emitDataICEpilogue(jit);
     jit.ret();
 
-    fallThrough.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (InlineCacheCompiler::generateSlowPathCode(vm, AccessType::PutByIdStrict).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    fallThrough.link(&jit);
+    InlineCacheCompiler::emitDataICJumpNextHandler(jit);
 
     LinkBuffer patchBuffer(jit, GLOBAL_THUNK_ID, LinkBuffer::Profile::InlineCache);
     return FINALIZE_THUNK(patchBuffer, JITThunkPtrTag, "PutById Setter handler"_s, "PutById Setter handler");
@@ -5568,7 +5583,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
         poly.m_list.shrink(0);
         poly.m_list.append(Ref { accessCase });
 
-        auto handler = InlineCacheHandler::createPreCompiled(codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), accessCase);
+        auto handler = InlineCacheHandler::createPreCompiled(InlineCacheCompiler::generateSlowPathHandler(vm, m_stubInfo->accessType), codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), accessCase);
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         AccessGenerationResult::Kind resultKind;
@@ -5592,7 +5607,7 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
         poly.m_list.shrink(0);
         poly.m_list.append(cases);
 
-        auto handler = InlineCacheHandler::create(codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), doesJSCalls ? 1 : 0);
+        auto handler = InlineCacheHandler::create(InlineCacheCompiler::generateSlowPathHandler(vm, m_stubInfo->accessType), codeBlock, *m_stubInfo, WTFMove(stub), WTFMove(watchpoint), doesJSCalls ? 1 : 0);
         dataLogLnIf(InlineCacheCompilerInternal::verbose, "Returning: ", handler->callTarget());
 
         AccessGenerationResult::Kind resultKind;
@@ -5951,7 +5966,8 @@ AccessGenerationResult InlineCacheCompiler::compileOneAccessCaseHandler(Polymorp
         failure = m_failAndRepatch;
     failure.append(jit.jump());
 
-    failure.linkThunk(CodeLocationLabel(CodePtr<NoPtrTag> { (generateSlowPathCode(vm, m_stubInfo->accessType).retaggedCode<NoPtrTag>().dataLocation<uint8_t*>() + prologueSizeInBytesDataIC) }), &jit);
+    failure.link(&jit);
+    InlineCacheCompiler::emitDataICJumpNextHandler(jit);
 
     LinkBuffer linkBuffer(jit, codeBlock, LinkBuffer::Profile::InlineCache, JITCompilationCanFail);
     if (linkBuffer.didFailToAllocate()) {
@@ -6009,11 +6025,11 @@ MacroAssemblerCodeRef<JITThunkPtrTag> putByIdSloppySetterHandler(VM&) { return {
 PolymorphicAccess::PolymorphicAccess() = default;
 PolymorphicAccess::~PolymorphicAccess() = default;
 
-AccessGenerationResult PolymorphicAccess::addCases(const GCSafeConcurrentJSLocker&, VM& vm, CodeBlock*, StructureStubInfo& stubInfo, ListType&& originalCasesToAdd)
+AccessGenerationResult PolymorphicAccess::addCases(const GCSafeConcurrentJSLocker&, VM& vm, CodeBlock*, StructureStubInfo& stubInfo, RefPtr<AccessCase>&& previousCase, Ref<AccessCase>&& accessCase)
 {
     SuperSamplerScope superSamplerScope(false);
 
-    // This method will add the originalCasesToAdd to the list one at a time while preserving the
+    // This method will add the casesToAdd to the list one at a time while preserving the
     // invariants:
     // - If a newly added case canReplace() any existing case, then the existing case is removed before
     //   the new case is added. Removal doesn't change order of the list. Any number of existing cases
@@ -6024,24 +6040,28 @@ AccessGenerationResult PolymorphicAccess::addCases(const GCSafeConcurrentJSLocke
     //   and the previous stub are kept intact and the new cases are destroyed. It's OK to attempt to
     //   add more things after failure.
 
-    // First ensure that the originalCasesToAdd doesn't contain duplicates.
-    ListType casesToAdd;
-    for (unsigned i = 0; i < originalCasesToAdd.size(); ++i) {
-        Ref<AccessCase> myCase = WTFMove(originalCasesToAdd[i]);
+    // First ensure that the casesToAdd doesn't contain duplicates.
 
-        // Add it only if it is not replaced by the subsequent cases in the list.
-        bool found = false;
-        for (unsigned j = i + 1; j < originalCasesToAdd.size(); ++j) {
-            if (originalCasesToAdd[j]->canReplace(myCase.get())) {
-                found = true;
-                break;
+    if (previousCase && previousCase->canReplace(accessCase.get()))
+
+    {
+        ListType willBeAdded;
+        for (unsigned i = 0; i < casesToAdd.size(); ++i) {
+            auto myCase = WTFMove(casesToAdd[i]);
+            // Add it only if it is not replaced by the subsequent cases in the list.
+            bool found = false;
+            for (unsigned j = i + 1; j < casesToAdd.size(); ++j) {
+                if (casesToAdd[j]->canReplace(myCase.get())) {
+                    found = true;
+                    break;
+                }
             }
+
+            if (found)
+                continue;
+            willBeAdded.append(WTFMove(myCase));
         }
-
-        if (found)
-            continue;
-
-        casesToAdd.append(WTFMove(myCase));
+        casesToAdd = WTFMove(willBeAdded);
     }
 
     dataLogLnIf(InlineCacheCompilerInternal::verbose, "casesToAdd: ", listDump(casesToAdd));
@@ -6098,14 +6118,6 @@ AccessGenerationResult PolymorphicAccess::addCases(const GCSafeConcurrentJSLocke
     dataLogLnIf(InlineCacheCompilerInternal::verbose, "After addCases: m_list: ", listDump(m_list));
 
     return AccessGenerationResult::Buffered;
-}
-
-AccessGenerationResult PolymorphicAccess::addCase(
-    const GCSafeConcurrentJSLocker& locker, VM& vm, CodeBlock* codeBlock, StructureStubInfo& stubInfo, Ref<AccessCase> newAccess)
-{
-    ListType newAccesses;
-    newAccesses.append(WTFMove(newAccess));
-    return addCases(locker, vm, codeBlock, stubInfo, WTFMove(newAccesses));
 }
 
 bool PolymorphicAccess::visitWeak(VM& vm)

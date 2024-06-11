@@ -127,10 +127,7 @@ public:
 
     // When this fails (returns GaveUp), this will leave the old stub intact but you should not try
     // to call this method again for that PolymorphicAccess instance.
-    AccessGenerationResult addCases(const GCSafeConcurrentJSLocker&, VM&, CodeBlock*, StructureStubInfo&, ListType&&);
-
-    AccessGenerationResult addCase(
-        const GCSafeConcurrentJSLocker&, VM&, CodeBlock*, StructureStubInfo&, Ref<AccessCase>);
+    AccessGenerationResult addCases(const GCSafeConcurrentJSLocker&, VM&, CodeBlock*, StructureStubInfo&, RefPtr<AccessCase>&& previousCase, Ref<AccessCase>&&);
 
     bool isEmpty() const { return m_list.isEmpty(); }
     unsigned size() const { return m_list.size(); }
@@ -167,8 +164,8 @@ public:
     static constexpr ptrdiff_t offsetOfJumpTarget() { return OBJECT_OFFSETOF(InlineCacheHandler, m_jumpTarget); }
     static constexpr ptrdiff_t offsetOfNext() { return OBJECT_OFFSETOF(InlineCacheHandler, m_next); }
 
-    static Ref<InlineCacheHandler> create(CodeBlock*, StructureStubInfo&, Ref<PolymorphicAccessJITStubRoutine>&&, std::unique_ptr<StructureStubInfoClearingWatchpoint>&&, unsigned callLinkInfoCount);
-    static Ref<InlineCacheHandler> createPreCompiled(CodeBlock*, StructureStubInfo&, Ref<PolymorphicAccessJITStubRoutine>&&, std::unique_ptr<StructureStubInfoClearingWatchpoint>&&, AccessCase&);
+    static Ref<InlineCacheHandler> create(Ref<InlineCacheHandler>&&, CodeBlock*, StructureStubInfo&, Ref<PolymorphicAccessJITStubRoutine>&&, std::unique_ptr<StructureStubInfoClearingWatchpoint>&&, unsigned callLinkInfoCount);
+    static Ref<InlineCacheHandler> createPreCompiled(Ref<InlineCacheHandler>&&, CodeBlock*, StructureStubInfo&, Ref<PolymorphicAccessJITStubRoutine>&&, std::unique_ptr<StructureStubInfoClearingWatchpoint>&&, AccessCase&);
 
     CodePtr<JITStubRoutinePtrTag> callTarget() const { return m_callTarget; }
     CodePtr<JITStubRoutinePtrTag> jumpTarget() const { return m_jumpTarget; }
@@ -211,7 +208,7 @@ private:
         : Base(0)
     { }
 
-    InlineCacheHandler(Ref<PolymorphicAccessJITStubRoutine>&&, std::unique_ptr<StructureStubInfoClearingWatchpoint>&&, unsigned callLinkInfoCount);
+    InlineCacheHandler(Ref<InlineCacheHandler>&&, Ref<PolymorphicAccessJITStubRoutine>&&, std::unique_ptr<StructureStubInfoClearingWatchpoint>&&, unsigned callLinkInfoCount);
 
     static Ref<InlineCacheHandler> createSlowPath(VM&, AccessType);
 
@@ -350,6 +347,7 @@ public:
 
     static void emitDataICPrologue(CCallHelpers&);
     static void emitDataICEpilogue(CCallHelpers&);
+    static void emitDataICJumpNextHandler(CCallHelpers&);
 
     bool useHandlerIC() const;
 
