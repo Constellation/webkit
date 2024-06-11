@@ -209,10 +209,10 @@ AccessGenerationResult StructureStubInfo::addAccessCase(const GCSafeConcurrentJS
         // gather enough cases.
         bufferingCountdown = Options::repatchBufferingCountdown();
         return result;
-    })(Ref { *accessCase });
+    })(accessCase.releaseNonNull());
     if (result.generatedSomeCode()) {
         if (useHandlerIC && hasConstantIdentifier(accessType))
-            prependHandler(codeBlock, Ref { *result.handler() }, accessCase.releaseNonNull());
+            prependHandler(codeBlock, Ref { *result.handler() });
         else
             rewireStubAsJumpInAccess(codeBlock, *result.handler());
     }
@@ -807,10 +807,9 @@ void StructureStubInfo::replaceHandler(CodeBlock* codeBlock, Ref<InlineCacheHand
     m_codePtr = m_handler->callTarget();
 }
 
-void StructureStubInfo::prependHandler(CodeBlock* codeBlock, Ref<InlineCacheHandler>&& handler, Ref<AccessCase>&& accessCase)
+void StructureStubInfo::prependHandler(CodeBlock* codeBlock, Ref<InlineCacheHandler>&& handler)
 {
     handler->setNext(WTFMove(m_handler));
-    handler->setAccessCase(WTFMove(accessCase));
     m_handler = WTFMove(handler);
     m_handler->addOwner(codeBlock);
     m_codePtr = m_handler->callTarget();
