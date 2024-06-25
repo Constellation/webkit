@@ -204,7 +204,7 @@ void SpeculativeJIT::cachedGetById(
     CallSiteIndex callSite = recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
     auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
     JITGetByIdGenerator gen(
-        codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
+        vm(), codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
         JSValueRegs(baseTagGPROrNone, basePayloadGPR), JSValueRegs(resultTagGPR, resultPayloadGPR), InvalidGPRReg, type);
     
     gen.generateFastPath(*this);
@@ -242,7 +242,7 @@ void SpeculativeJIT::cachedGetByIdWithThis(Node* node,
     CallSiteIndex callSite = recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
     auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
     JITGetByIdWithThisGenerator gen(
-        codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
+        vm(), codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
         JSValueRegs(resultTagGPR, resultPayloadGPR), JSValueRegs(baseTagGPROrNone, basePayloadGPR), JSValueRegs(thisTagGPR, thisPayloadGPR), InvalidGPRReg);
     
     gen.generateFastPath(*this);

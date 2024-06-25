@@ -172,7 +172,7 @@ void SpeculativeJIT::cachedGetById(Node* node, CodeOrigin codeOrigin, GPRReg bas
     JSValueRegs resultRegs { resultGPR };
     auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
     JITGetByIdGenerator gen(
-        codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
+        vm(), codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
         baseRegs, resultRegs, stubInfoGPR, type);
     
     JumpList slowCases;
@@ -220,7 +220,7 @@ void SpeculativeJIT::cachedGetByIdWithThis(Node* node, CodeOrigin codeOrigin, GP
     JSValueRegs thisRegs { thisGPR };
     auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
     JITGetByIdWithThisGenerator gen(
-        codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
+        vm(), codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
         resultRegs, baseRegs, thisRegs, stubInfoGPR);
     
     JumpList slowCases;

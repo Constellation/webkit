@@ -398,6 +398,8 @@ public:
     }
 #endif
 
+    bool isLengthAccess(VM&) const;
+
     CodeOrigin codeOrigin { };
     PropertyOffset byIdSelfOffset;
     WriteBarrierStructureID m_inlineAccessBaseStructureID;

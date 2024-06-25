@@ -174,18 +174,18 @@ ALWAYS_INLINE static bool linkCodeInline(const char* name, CCallHelpers& jit, St
     return false;
 }
 
-bool InlineAccess::generateSelfPropertyAccess(StructureStubInfo& stubInfo, Structure* structure, PropertyOffset offset)
+bool InlineAccess::generateSelfPropertyAccess(VM& vm, StructureStubInfo& stubInfo, Structure* structure, PropertyOffset offset)
 {
     if (!hasConstantIdentifier(stubInfo.accessType))
         return false;
 
     if (stubInfo.useDataIC) {
         // These dynamic slots get filled in by StructureStubInfo. Nothing else to do.
-        return true;
+        return !stubInfo.isLengthAccess(vm);
     }
 
     CCallHelpers jit;
-    
+
     GPRReg base = stubInfo.m_baseGPR;
     JSValueRegs value = stubInfo.valueRegs();
 

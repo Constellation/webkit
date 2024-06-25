@@ -536,7 +536,7 @@ void JIT::emit_op_try_get_by_id(const JSInstruction* currentInstruction)
     emitJumpSlowCaseIfNotJSCell(baseJSR, baseVReg);
 
     JITGetByIdGenerator gen(
-        nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
+        vm(), nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident), baseJSR, resultJSR, stubInfoGPR, AccessType::TryGetById);
 
     gen.generateBaselineDataICFastPath(*this);
@@ -576,7 +576,7 @@ void JIT::emit_op_get_by_id_direct(const JSInstruction* currentInstruction)
     emitJumpSlowCaseIfNotJSCell(baseJSR, baseVReg);
 
     JITGetByIdGenerator gen(
-        nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
+        vm(), nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident), baseJSR, resultJSR, stubInfoGPR, AccessType::GetByIdDirect);
 
     gen.generateBaselineDataICFastPath(*this);
@@ -616,7 +616,7 @@ void JIT::emit_op_get_by_id(const JSInstruction* currentInstruction)
     emitJumpSlowCaseIfNotJSCell(baseJSR, baseVReg);
 
     JITGetByIdGenerator gen(
-        nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
+        vm(), nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident), baseJSR, resultJSR, stubInfoGPR, AccessType::GetById);
 
     gen.generateBaselineDataICFastPath(*this);
@@ -652,7 +652,7 @@ void JIT::emit_op_get_length(const JSInstruction* currentInstruction)
         emitArrayProfilingSiteWithCell(bytecode, baseJSR.payloadGPR(), scratch1GPR);
 
     JITGetByIdGenerator gen(
-        nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
+        vm(), nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromImmortalIdentifier(ident->impl()), baseJSR, resultJSR, stubInfoGPR, AccessType::GetById);
 
     gen.generateBaselineDataICFastPath(*this);
@@ -706,7 +706,7 @@ void JIT::emit_op_get_by_id_with_this(const JSInstruction* currentInstruction)
     emitJumpSlowCaseIfNotJSCell(thisJSR, thisVReg);
 
     JITGetByIdWithThisGenerator gen(
-        nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
+        vm(), nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(m_bytecodeIndex), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromIdentifierOwnedByCodeBlock(m_unlinkedCodeBlock, *ident), resultJSR, baseJSR, thisJSR, stubInfoGPR);
 
     gen.generateBaselineDataICFastPath(*this);

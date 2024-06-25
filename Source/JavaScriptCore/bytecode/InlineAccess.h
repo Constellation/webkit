@@ -91,7 +91,7 @@ public:
         return std::max(size, sizeForPropertyAccess());
     }
 
-    static bool generateSelfPropertyAccess(StructureStubInfo&, Structure*, PropertyOffset);
+    static bool generateSelfPropertyAccess(VM& vm, StructureStubInfo&, Structure*, PropertyOffset);
     static bool canGenerateSelfPropertyReplace(StructureStubInfo&, PropertyOffset);
     static bool generateSelfPropertyReplace(StructureStubInfo&, Structure*, PropertyOffset);
     static bool isCacheableArrayLength(StructureStubInfo&, JSArray*);

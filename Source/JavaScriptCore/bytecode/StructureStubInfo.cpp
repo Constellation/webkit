@@ -843,6 +843,11 @@ void StructureStubInfo::resetStubAsJumpInAccess(CodeBlock* codeBlock)
     rewireStubAsJumpInAccess(codeBlock, handler.get());
 }
 
+bool StructureStubInfo::isLengthAccess(VM& vm) const
+{
+    return hasConstantIdentifier(accessType) && m_identifier.uid() == vm.propertyNames->length.impl();
+}
+
 #if ASSERT_ENABLED
 void StructureStubInfo::checkConsistency()
 {

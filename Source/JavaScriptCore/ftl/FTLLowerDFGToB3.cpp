@@ -17223,7 +17223,7 @@ IGNORE_CLANG_WARNINGS_END
 
                 auto* stubInfo = state->addStructureStubInfo();
                 auto generator = Box<JITGetByIdGenerator>::create(
-                    jit.codeBlock(), stubInfo, JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
+                    state->vm(), jit.codeBlock(), stubInfo, JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
                     params.unavailableRegisters(), identifier, JSValueRegs(params[1].gpr()),
                     JSValueRegs(params[0].gpr()), stubInfoGPR, type);
 
@@ -17313,7 +17313,7 @@ IGNORE_CLANG_WARNINGS_END
 
                 auto* stubInfo = state->addStructureStubInfo();
                 auto generator = Box<JITGetByIdWithThisGenerator>::create(
-                    jit.codeBlock(), stubInfo, JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
+                    state->vm(), jit.codeBlock(), stubInfo, JITType::FTLJIT, semanticNodeOrigin, callSiteIndex,
                     params.unavailableRegisters(), identifier, JSValueRegs(params[0].gpr()),
                     JSValueRegs(params[1].gpr()), JSValueRegs(params[2].gpr()), stubInfoGPR);
 

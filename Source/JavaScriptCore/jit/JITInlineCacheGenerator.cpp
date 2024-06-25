@@ -123,10 +123,10 @@ void JITByIdGenerator::generateFastCommon(CCallHelpers& jit, size_t inlineICSize
 }
 
 JITGetByIdGenerator::JITGetByIdGenerator(
-    CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSetBuilder& usedRegisters,
+    VM& vm, CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSetBuilder& usedRegisters,
     CacheableIdentifier propertyName, JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, AccessType accessType)
     : JITByIdGenerator(codeBlock, stubInfo, jitType, codeOrigin, accessType, base, value)
-    , m_isLengthAccess(codeBlock && propertyName.uid() == codeBlock->vm().propertyNames->length.impl())
+    , m_isLengthAccess(propertyName.uid() == vm.propertyNames->length.impl())
 {
     RELEASE_ASSERT(base.payloadGPR() != value.tagGPR());
     std::visit([&](auto* stubInfo) {
@@ -134,13 +134,27 @@ JITGetByIdGenerator::JITGetByIdGenerator(
     }, stubInfo);
 }
 
-static void generateGetByIdInlineAccessBaselineDataIC(CCallHelpers& jit, GPRReg stubInfoGPR, JSValueRegs baseJSR, GPRReg scratch1GPR, JSValueRegs resultJSR)
+static void generateGetByIdInlineAccessBaselineDataIC(CCallHelpers& jit, bool isLengthAccess, GPRReg stubInfoGPR, JSValueRegs baseJSR, GPRReg scratch1GPR, JSValueRegs resultJSR)
 {
-    jit.load32(CCallHelpers::Address(baseJSR.payloadGPR(), JSCell::structureIDOffset()), scratch1GPR);
-    auto doNotInlineAccess = jit.branch32(CCallHelpers::NotEqual, scratch1GPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfInlineAccessBaseStructureID()));
-    jit.load32(CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfByIdSelfOffset()), scratch1GPR);
-    jit.loadProperty(baseJSR.payloadGPR(), scratch1GPR, resultJSR);
-    auto done = jit.jump();
+    CCallHelpers::JumpList doNotInlineAccess;
+    CCallHelpers::JumpList done;
+    if (isLengthAccess) {
+        jit.load8(CCallHelpers::Address(baseJSR.payloadGPR(), JSCell::indexingTypeAndMiscOffset()), scratch1GPR);
+        doNotInlineAccess.append(jit.branchTest32(CCallHelpers::Zero, scratch1GPR, CCallHelpers::TrustedImm32(IsArray)));
+        doNotInlineAccess.append(jit.branchTest32(CCallHelpers::Zero, scratch1GPR, CCallHelpers::TrustedImm32(IndexingShapeMask)));
+        jit.loadPtr(CCallHelpers::Address(baseJSR.payloadGPR(), JSObject::butterflyOffset()), scratch1GPR);
+        jit.load32(CCallHelpers::Address(scratch1GPR, ArrayStorage::lengthOffset()), scratch1GPR);
+        doNotInlineAccess.append(jit.branch32(CCallHelpers::LessThan, scratch1GPR, CCallHelpers::TrustedImm32(0)));
+        jit.boxInt32(scratch1GPR, resultJSR);
+        done.append(jit.jump());
+    } else {
+        jit.load32(CCallHelpers::Address(baseJSR.payloadGPR(), JSCell::structureIDOffset()), scratch1GPR);
+        doNotInlineAccess.append(jit.branch32(CCallHelpers::NotEqual, scratch1GPR, CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfInlineAccessBaseStructureID())));
+        jit.load32(CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfByIdSelfOffset()), scratch1GPR);
+        jit.loadProperty(baseJSR.payloadGPR(), scratch1GPR, resultJSR);
+        done.append(jit.jump());
+    }
+
     doNotInlineAccess.link(&jit);
     if (Options::useHandlerIC()) {
         jit.loadPtr(CCallHelpers::Address(stubInfoGPR, StructureStubInfo::offsetOfHandler()), GPRInfo::handlerGPR);
@@ -168,7 +182,7 @@ void JITGetByIdGenerator::generateBaselineDataICFastPath(JIT& jit)
     using BaselineJITRegisters::GetById::stubInfoGPR;
     using BaselineJITRegisters::GetById::scratch1GPR;
 
-    generateGetByIdInlineAccessBaselineDataIC(jit, stubInfoGPR, baseJSR, scratch1GPR, resultJSR);
+    generateGetByIdInlineAccessBaselineDataIC(jit, m_isLengthAccess, stubInfoGPR, baseJSR, scratch1GPR, resultJSR);
 
     m_done = jit.label();
 }
@@ -194,9 +208,10 @@ void JITGetByIdGenerator::generateDFGDataICFastPath(DFG::JITCompiler& jit, Struc
 #endif
 
 JITGetByIdWithThisGenerator::JITGetByIdWithThisGenerator(
-    CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSetBuilder& usedRegisters,
+    VM& vm, CodeBlock* codeBlock, CompileTimeStructureStubInfo stubInfo, JITType jitType, CodeOrigin codeOrigin, CallSiteIndex callSite, const RegisterSetBuilder& usedRegisters,
     CacheableIdentifier propertyName, JSValueRegs value, JSValueRegs base, JSValueRegs thisRegs, GPRReg stubInfoGPR)
     : JITByIdGenerator(codeBlock, stubInfo, jitType, codeOrigin, AccessType::GetByIdWithThis, base, value)
+    , m_isLengthAccess(propertyName.uid() == vm.propertyNames->length.impl())
 {
     RELEASE_ASSERT(thisRegs.payloadGPR() != thisRegs.tagGPR());
     std::visit([&](auto* stubInfo) {
@@ -220,7 +235,7 @@ void JITGetByIdWithThisGenerator::generateBaselineDataICFastPath(JIT& jit)
     using BaselineJITRegisters::GetByIdWithThis::stubInfoGPR;
     using BaselineJITRegisters::GetByIdWithThis::scratch1GPR;
 
-    generateGetByIdInlineAccessBaselineDataIC(jit, stubInfoGPR, baseJSR, scratch1GPR, resultJSR);
+    generateGetByIdInlineAccessBaselineDataIC(jit, m_isLengthAccess, stubInfoGPR, baseJSR, scratch1GPR, resultJSR);
 
     m_done = jit.label();
 }

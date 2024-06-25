@@ -529,7 +529,7 @@ static InlineCacheAction tryCacheGetBy(JSGlobalObject* globalObject, CodeBlock* 
                 && !slot.watchpointSet()
                 && !structure->needImpurePropertyWatchpoint()
                 && !loadTargetFromProxy) {
-                bool generatedCodeInline = InlineAccess::generateSelfPropertyAccess(stubInfo, structure, slot.cachedOffset());
+                bool generatedCodeInline = InlineAccess::generateSelfPropertyAccess(vm, stubInfo, structure, slot.cachedOffset());
                 if (generatedCodeInline) {
                     LOG_IC((vm, ICEvent::GetBySelfPatch, structure->classInfoForCells(), Identifier::fromUid(vm, propertyName.uid()), slot.slotBase() == baseValue));
                     structure->startWatchingPropertyForReplacements(vm, slot.cachedOffset());

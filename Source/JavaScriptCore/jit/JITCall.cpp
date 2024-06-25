@@ -377,7 +377,7 @@ void JIT::emit_op_iterator_open(const JSInstruction* instruction)
     const Identifier* ident = &vm().propertyNames->next;
 
     JITGetByIdGenerator gen(
-        nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(BytecodeIndex(m_bytecodeIndex.offset())), RegisterSetBuilder::stubUnavailableRegisters(),
+        vm(), nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(BytecodeIndex(m_bytecodeIndex.offset())), RegisterSetBuilder::stubUnavailableRegisters(),
         CacheableIdentifier::createFromImmortalIdentifier(ident->impl()), baseJSR, resultJSR, stubInfoGPR, AccessType::GetById);
 
     gen.generateBaselineDataICFastPath(*this);
@@ -470,7 +470,7 @@ void JIT::emit_op_iterator_next(const JSInstruction* instruction)
         loadStructureStubInfo(stubInfoIndex, stubInfoGPR);
 
         JITGetByIdGenerator gen(
-            nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(BytecodeIndex(m_bytecodeIndex.offset())), RegisterSetBuilder::stubUnavailableRegisters(),
+            vm(), nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(BytecodeIndex(m_bytecodeIndex.offset())), RegisterSetBuilder::stubUnavailableRegisters(),
             CacheableIdentifier::createFromImmortalIdentifier(vm().propertyNames->done.impl()), baseJSR, resultJSR, stubInfoGPR, AccessType::GetById);
 
         gen.generateBaselineDataICFastPath(*this);
@@ -499,7 +499,7 @@ void JIT::emit_op_iterator_next(const JSInstruction* instruction)
         loadStructureStubInfo(stubInfoIndex, stubInfoGPR);
 
         JITGetByIdGenerator gen(
-            nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(BytecodeIndex(m_bytecodeIndex.offset())), RegisterSetBuilder::stubUnavailableRegisters(),
+            vm(), nullptr, stubInfo, JITType::BaselineJIT, CodeOrigin(m_bytecodeIndex), CallSiteIndex(BytecodeIndex(m_bytecodeIndex.offset())), RegisterSetBuilder::stubUnavailableRegisters(),
             CacheableIdentifier::createFromImmortalIdentifier(vm().propertyNames->value.impl()), baseJSR, resultJSR, stubInfoGPR, AccessType::GetById);
 
         gen.generateBaselineDataICFastPath(*this);

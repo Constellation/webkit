@@ -174,7 +174,7 @@ public:
     JITGetByIdGenerator() = default;
 
     JITGetByIdGenerator(
-        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier,
+        VM&, CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier,
         JSValueRegs base, JSValueRegs value, GPRReg stubInfoGPR, AccessType);
     
     void generateFastPath(CCallHelpers&);
@@ -192,7 +192,7 @@ public:
     }
 
 private:
-    bool m_isLengthAccess;
+    bool m_isLengthAccess { false };
 };
 
 class JITGetByIdWithThisGenerator final : public JITByIdGenerator {
@@ -200,7 +200,7 @@ public:
     JITGetByIdWithThisGenerator() = default;
 
     JITGetByIdWithThisGenerator(
-        CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier,
+        VM& vm, CodeBlock*, CompileTimeStructureStubInfo, JITType, CodeOrigin, CallSiteIndex, const RegisterSetBuilder& usedRegisters, CacheableIdentifier,
         JSValueRegs value, JSValueRegs base, JSValueRegs thisRegs, GPRReg stubInfoGPR);
 
     void generateFastPath(CCallHelpers&);
@@ -223,6 +223,9 @@ public:
         } else
             UNUSED_PARAM(thisRegs);
     }
+
+private:
+    bool m_isLengthAccess { false };
 };
 
 class JITPutByIdGenerator final : public JITByIdGenerator {
