@@ -587,6 +587,7 @@ std::tuple<CompileTimeStructureStubInfo, StructureStubInfoIndex> JITCompiler::ad
         return std::tuple { stubInfo, StructureStubInfoIndex { index } };
     }
     StructureStubInfo* stubInfo = jitCode()->common.m_stubInfos.add();
+    // stubInfo->useDataIC = Options::useHandlerIC();
     return std::tuple { stubInfo, StructureStubInfoIndex(0) };
 }
 

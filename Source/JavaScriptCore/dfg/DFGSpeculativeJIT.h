@@ -724,7 +724,6 @@ public:
     void compileDeleteByVal(Node*);
     void compilePushWithScope(Node*);
     void compileGetById(Node*, AccessType);
-    void compileGetByIdFlush(Node*, AccessType);
     void compileGetByIdMegamorphic(Node*);
     void compileGetByIdWithThisMegamorphic(Node*);
     void compileInById(Node*);
