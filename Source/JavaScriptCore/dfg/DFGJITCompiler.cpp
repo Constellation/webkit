@@ -262,18 +262,20 @@ void JITCompiler::link(LinkBuffer& linkBuffer)
     for (unsigned i = 0; i < m_calls.size(); ++i)
         linkBuffer.link(m_calls[i].m_call, m_calls[i].m_function);
 
-    finalizeInlineCaches(m_getByIds, linkBuffer);
-    finalizeInlineCaches(m_getByIdsWithThis, linkBuffer);
-    finalizeInlineCaches(m_getByVals, linkBuffer);
-    finalizeInlineCaches(m_getByValsWithThis, linkBuffer);
-    finalizeInlineCaches(m_putByIds, linkBuffer);
-    finalizeInlineCaches(m_putByVals, linkBuffer);
-    finalizeInlineCaches(m_delByIds, linkBuffer);
-    finalizeInlineCaches(m_delByVals, linkBuffer);
-    finalizeInlineCaches(m_inByIds, linkBuffer);
-    finalizeInlineCaches(m_inByVals, linkBuffer);
-    finalizeInlineCaches(m_instanceOfs, linkBuffer);
-    finalizeInlineCaches(m_privateBrandAccesses, linkBuffer);
+    if (!Options::useHandlerIC()) {
+        finalizeInlineCaches(m_getByIds, linkBuffer);
+        finalizeInlineCaches(m_getByIdsWithThis, linkBuffer);
+        finalizeInlineCaches(m_getByVals, linkBuffer);
+        finalizeInlineCaches(m_getByValsWithThis, linkBuffer);
+        finalizeInlineCaches(m_putByIds, linkBuffer);
+        finalizeInlineCaches(m_putByVals, linkBuffer);
+        finalizeInlineCaches(m_delByIds, linkBuffer);
+        finalizeInlineCaches(m_delByVals, linkBuffer);
+        finalizeInlineCaches(m_inByIds, linkBuffer);
+        finalizeInlineCaches(m_inByVals, linkBuffer);
+        finalizeInlineCaches(m_instanceOfs, linkBuffer);
+        finalizeInlineCaches(m_privateBrandAccesses, linkBuffer);
+    }
 
     if (m_graph.m_plan.isUnlinked()) {
         m_jitCode->m_unlinkedStubInfos = FixedVector<UnlinkedStructureStubInfo>(m_unlinkedStubInfos.size());
