@@ -189,7 +189,7 @@ void SpeculativeJIT::cachedGetById(Node* node, CodeOrigin codeOrigin, GPRReg bas
     slowCases.append(slowPathTarget);
 
     std::unique_ptr<SlowPathGenerator> slowPath;
-    if (m_graph.m_plan.isUnlinked() || true) {
+    if (m_graph.m_plan.isUnlinked() || Options::useHandlerIC()) {
         gen.generateDFGDataICFastPath(*this, stubInfoConstant, BaselineJITRegisters::GetById::baseJSR, resultRegs, BaselineJITRegisters::GetById::stubInfoGPR, BaselineJITRegisters::GetById::scratch1GPR);
         ASSERT(!gen.stubInfo());
         slowPath = slowPathICCall(
@@ -247,7 +247,7 @@ void SpeculativeJIT::cachedGetByIdWithThis(Node* node, CodeOrigin codeOrigin, GP
     slowCases.append(slowPathTarget);
 
     std::unique_ptr<SlowPathGenerator> slowPath;
-    if (m_graph.m_plan.isUnlinked() || true) {
+    if (m_graph.m_plan.isUnlinked() || Options::useHandlerIC()) {
         gen.generateDFGDataICFastPath(*this, stubInfoConstant, BaselineJITRegisters::GetByIdWithThis::baseJSR, resultRegs, BaselineJITRegisters::GetByIdWithThis::stubInfoGPR, BaselineJITRegisters::GetByIdWithThis::scratch1GPR);
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, BaselineJITRegisters::GetByIdWithThis::stubInfoGPR, Address(BaselineJITRegisters::GetByIdWithThis::stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByIdWithThisOptimize,
@@ -2803,7 +2803,7 @@ void SpeculativeJIT::compileGetByVal(Node* node, const ScopedLambda<std::tuple<J
         }, stubInfo);
 
         std::unique_ptr<SlowPathGenerator> slowPath;
-        if (m_graph.m_plan.isUnlinked() || true) {
+        if (m_graph.m_plan.isUnlinked() || Options::useHandlerIC()) {
             gen.generateDFGDataICFastPath(*this, stubInfoConstant, BaselineJITRegisters::GetByVal::stubInfoGPR);
             slowPath = slowPathICCall(
                 slowCases, this, stubInfoConstant, BaselineJITRegisters::GetByVal::stubInfoGPR, Address(BaselineJITRegisters::GetByVal::stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValOptimize,
@@ -5888,7 +5888,7 @@ void SpeculativeJIT::compile(Node* node)
             }, stubInfo);
 
             std::unique_ptr<SlowPathGenerator> slowPath;
-            if (m_graph.m_plan.isUnlinked() || true) {
+            if (m_graph.m_plan.isUnlinked() || Options::useHandlerIC()) {
                 gen.generateDFGDataICFastPath(*this, stubInfoConstant, BaselineJITRegisters::InByVal::stubInfoGPR);
                 ASSERT(!gen.stubInfo());
                 slowPath = slowPathICCall(
@@ -6911,7 +6911,7 @@ void SpeculativeJIT::compileGetByValWithThis(Node* node)
     }, stubInfo);
 
     std::unique_ptr<SlowPathGenerator> slowPath;
-    if (m_graph.m_plan.isUnlinked() || true) {
+    if (m_graph.m_plan.isUnlinked() || Options::useHandlerIC()) {
         gen.generateDFGDataICFastPath(*this, stubInfoConstant, BaselineJITRegisters::GetByValWithThis::stubInfoGPR);
         slowPath = slowPathICCall(
             slowCases, this, stubInfoConstant, BaselineJITRegisters::GetByValWithThis::stubInfoGPR, Address(BaselineJITRegisters::GetByValWithThis::stubInfoGPR, StructureStubInfo::offsetOfSlowOperation()), operationGetByValWithThisOptimize,
@@ -7250,7 +7250,7 @@ void SpeculativeJIT::compileEnumeratorPutByVal(Node* node)
 
             std::unique_ptr<SlowPathGenerator> slowPath;
             auto operation = ecmaMode.isStrict() ? operationPutByValStrictOptimize : operationPutByValSloppyOptimize;
-            if (m_graph.m_plan.isUnlinked() || true) {
+            if (m_graph.m_plan.isUnlinked() || Options::useHandlerIC()) {
                 gen.generateDFGDataICFastPath(*this, stubInfoConstant, BaselineJITRegisters::PutByVal::stubInfoGPR);
                 ASSERT(!gen.stubInfo());
                 slowPath = slowPathICCall(
