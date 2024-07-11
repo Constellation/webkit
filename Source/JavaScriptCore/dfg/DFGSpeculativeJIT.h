@@ -1516,16 +1516,15 @@ public:
     void compilePutByValMegamorphic(Node*);
 
     // We use a scopedLambda to placate register allocation validation.
-    enum class CanUseFlush : bool { No, Yes };
-    void compileGetByVal(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
+    void compileGetByVal(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat>(DataFormat preferredFormat, bool needsFlush)>& prefix);
 
     void compileGetCharCodeAt(Node*);
-    void compileGetByValOnString(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
+    void compileGetByValOnString(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat>(DataFormat preferredFormat, bool needsFlush)>& prefix);
     void compileFromCharCode(Node*); 
     void compileGetByValMegamorphic(Node*);
 
-    void compileGetByValOnDirectArguments(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
-    void compileGetByValOnScopedArguments(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
+    void compileGetByValOnDirectArguments(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat>(DataFormat preferredFormat, bool needsFlush)>& prefix);
+    void compileGetByValOnScopedArguments(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat>(DataFormat preferredFormat, bool needsFlush)>& prefix);
 
     void compileGetPrivateName(Node*);
     void compileGetPrivateNameById(Node*);
@@ -1607,12 +1606,12 @@ public:
 #if USE(LARGE_TYPED_ARRAYS)
     void compileGetTypedArrayByteOffsetAsInt52(Node*);
 #endif
-    void compileGetByValOnIntTypedArray(Node*, TypedArrayType, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
+    void compileGetByValOnIntTypedArray(Node*, TypedArrayType, const ScopedLambda<std::tuple<JSValueRegs, DataFormat>(DataFormat preferredFormat, bool needsFlush)>& prefix);
     void compilePutByValForIntTypedArray(Node*, TypedArrayType);
-    void compileGetByValOnFloatTypedArray(Node*, TypedArrayType, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
+    void compileGetByValOnFloatTypedArray(Node*, TypedArrayType, const ScopedLambda<std::tuple<JSValueRegs, DataFormat>(DataFormat preferredFormat, bool needsFlush)>& prefix);
     void compilePutByValForFloatTypedArray(Node*, TypedArrayType);
-    void compileGetByValForObjectWithString(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
-    void compileGetByValForObjectWithSymbol(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat, CanUseFlush>(DataFormat preferredFormat)>& prefix);
+    void compileGetByValForObjectWithString(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat>(DataFormat preferredFormat, bool needsFlush)>& prefix);
+    void compileGetByValForObjectWithSymbol(Node*, const ScopedLambda<std::tuple<JSValueRegs, DataFormat>(DataFormat preferredFormat, bool needsFlush)>& prefix);
     void compilePutByValForCellWithString(Node*);
     void compilePutByValForCellWithSymbol(Node*);
     void compileGetByValWithThis(Node*);
