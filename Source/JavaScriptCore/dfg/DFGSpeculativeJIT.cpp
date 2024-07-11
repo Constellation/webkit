@@ -1289,42 +1289,22 @@ void SpeculativeJIT::compileGetById(Node* node, AccessType accessType)
 {
     switch (node->child1().useKind()) {
     case CellUse: {
-        std::optional<GPRTemporary> stubInfo;
-        std::optional<GPRTemporary> scratch;
         SpeculateCellOperand base(this, node->child1());
 
-        GPRReg stubInfoGPR = InvalidGPRReg;
-        GPRReg scratchGPR = InvalidGPRReg;
-        if (m_graph.m_plan.isUnlinked()) {
-            stubInfo.emplace(this);
-            scratch.emplace(this);
-            stubInfoGPR = stubInfo->gpr();
-            scratchGPR = scratch->gpr();
-        }
         JSValueRegs baseRegs = JSValueRegs::payloadOnly(base.gpr());
 
         flushRegisters();
         JSValueRegsFlushedCallResult result(this);
         JSValueRegs resultRegs = result.regs();
-        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, stubInfoGPR, scratchGPR, node->cacheableIdentifier(), Jump(), DontSpill, accessType);
+        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), Jump(), DontSpill, accessType);
 
         jsValueResult(resultRegs, node, DataFormatJS);
         break;
     }
 
     case UntypedUse: {
-        std::optional<GPRTemporary> stubInfo;
-        std::optional<GPRTemporary> scratch;
         JSValueOperand base(this, node->child1());
 
-        GPRReg stubInfoGPR = InvalidGPRReg;
-        GPRReg scratchGPR = InvalidGPRReg;
-        if (m_graph.m_plan.isUnlinked()) {
-            stubInfo.emplace(this);
-            scratch.emplace(this);
-            stubInfoGPR = stubInfo->gpr();
-            scratchGPR = scratch->gpr();
-        }
         JSValueRegs baseRegs = base.jsValueRegs();
 
         flushRegisters();
@@ -1333,7 +1313,7 @@ void SpeculativeJIT::compileGetById(Node* node, AccessType accessType)
 
         Jump notCell = branchIfNotCell(baseRegs);
 
-        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, stubInfoGPR, scratchGPR, node->cacheableIdentifier(), notCell, DontSpill, accessType);
+        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), notCell, DontSpill, accessType);
 
         jsValueResult(resultRegs, node, DataFormatJS);
         break;
@@ -4475,43 +4455,23 @@ void SpeculativeJIT::compileGetPrivateNameById(Node* node)
 {
     switch (m_graph.child(node, 0).useKind()) {
     case CellUse: {
-        std::optional<GPRTemporary> stubInfo;
-        std::optional<GPRTemporary> scratch;
         SpeculateCellOperand base(this, m_graph.child(node, 0));
 
-        GPRReg stubInfoGPR = InvalidGPRReg;
-        GPRReg scratchGPR = InvalidGPRReg;
-        if (m_graph.m_plan.isUnlinked()) {
-            stubInfo.emplace(this);
-            scratch.emplace(this);
-            stubInfoGPR = stubInfo->gpr();
-            scratchGPR = scratch->gpr();
-        }
         JSValueRegs baseRegs = JSValueRegs::payloadOnly(base.gpr());
 
         flushRegisters();
         JSValueRegsFlushedCallResult result(this);
         JSValueRegs resultRegs = result.regs();
 
-        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, stubInfoGPR, scratchGPR, node->cacheableIdentifier(), Jump(), NeedToSpill, AccessType::GetPrivateNameById);
+        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), Jump(), NeedToSpill, AccessType::GetPrivateNameById);
 
         jsValueResult(resultRegs, node, DataFormatJS);
         break;
     }
 
     case UntypedUse: {
-        std::optional<GPRTemporary> stubInfo;
-        std::optional<GPRTemporary> scratch;
         JSValueOperand base(this, m_graph.child(node, 0));
 
-        GPRReg stubInfoGPR = InvalidGPRReg;
-        GPRReg scratchGPR = InvalidGPRReg;
-        if (m_graph.m_plan.isUnlinked()) {
-            stubInfo.emplace(this);
-            scratch.emplace(this);
-            stubInfoGPR = stubInfo->gpr();
-            scratchGPR = scratch->gpr();
-        }
         JSValueRegs baseRegs = base.jsValueRegs();
 
         flushRegisters();
@@ -4520,7 +4480,7 @@ void SpeculativeJIT::compileGetPrivateNameById(Node* node)
 
         Jump notCell = branchIfNotCell(baseRegs);
 
-        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, stubInfoGPR, scratchGPR, node->cacheableIdentifier(), notCell, NeedToSpill, AccessType::GetPrivateNameById);
+        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), notCell, NeedToSpill, AccessType::GetPrivateNameById);
         jsValueResult(resultRegs, node, DataFormatJS);
         break;
     }
@@ -4663,20 +4623,10 @@ void SpeculativeJIT::compilePutPrivateName(Node* node)
 
 void SpeculativeJIT::compilePutPrivateNameById(Node* node)
 {
-    std::optional<GPRTemporary> stubInfo;
-    std::optional<GPRTemporary> scratch2;
     SpeculateCellOperand base(this, node->child1());
     JSValueOperand value(this, node->child2());
     GPRTemporary scratch(this);
 
-    GPRReg stubInfoGPR = InvalidGPRReg;
-    GPRReg scratch2GPR = InvalidGPRReg;
-    if (m_graph.m_plan.isUnlinked()) {
-        stubInfo.emplace(this);
-        scratch2.emplace(this);
-        stubInfoGPR = stubInfo->gpr();
-        scratch2GPR = scratch2->gpr();
-    }
     JSValueRegs valueRegs = value.jsValueRegs();
     GPRReg baseGPR = base.gpr();
     GPRReg scratchGPR = scratch.gpr();
@@ -4685,7 +4635,7 @@ void SpeculativeJIT::compilePutPrivateNameById(Node* node)
 
     // We emit property check during DFG generation, so we don't need
     // to check it here.
-    cachedPutById(node, node->origin.semantic, baseGPR, valueRegs, stubInfoGPR, scratchGPR, scratch2GPR, node->cacheableIdentifier(), node->privateFieldPutKind().isDefine() ? AccessType::DefinePrivateNameById : AccessType::SetPrivateNameById);
+    cachedPutById(node, node->origin.semantic, baseGPR, valueRegs, scratchGPR, node->cacheableIdentifier(), node->privateFieldPutKind().isDefine() ? AccessType::DefinePrivateNameById : AccessType::SetPrivateNameById);
 
     noResult(node);
 }
@@ -14702,81 +14652,51 @@ void SpeculativeJIT::compileEnumeratorHasOwnProperty(Node* node)
 
 void SpeculativeJIT::compilePutByIdFlush(Node* node)
 {
-    std::optional<GPRTemporary> stubInfo;
-    std::optional<GPRTemporary> scratch2;
     SpeculateCellOperand base(this, node->child1());
     JSValueOperand value(this, node->child2());
     GPRTemporary scratch(this);
 
-    GPRReg stubInfoGPR = InvalidGPRReg;
-    GPRReg scratch2GPR = InvalidGPRReg;
-    if (m_graph.m_plan.isUnlinked()) {
-        stubInfo.emplace(this);
-        scratch2.emplace(this);
-        stubInfoGPR = stubInfo->gpr();
-        scratch2GPR = scratch2->gpr();
-    }
     GPRReg baseGPR = base.gpr();
     JSValueRegs valueRegs = value.jsValueRegs();
     GPRReg scratchGPR = scratch.gpr();
 
     flushRegisters();
 
-    cachedPutById(node, node->origin.semantic, baseGPR, valueRegs, stubInfoGPR, scratchGPR, scratch2GPR, node->cacheableIdentifier(), node->ecmaMode().isStrict() ? AccessType::PutByIdStrict : AccessType::PutByIdSloppy, Jump(), DontSpill);
+    cachedPutById(node, node->origin.semantic, baseGPR, valueRegs, scratchGPR, node->cacheableIdentifier(), node->ecmaMode().isStrict() ? AccessType::PutByIdStrict : AccessType::PutByIdSloppy, Jump(), DontSpill);
 
     noResult(node);
 }
 
 void SpeculativeJIT::compilePutById(Node* node)
 {
-    std::optional<GPRTemporary> stubInfo;
-    std::optional<GPRTemporary> scratch2;
     SpeculateCellOperand base(this, node->child1());
     JSValueOperand value(this, node->child2());
     GPRTemporary scratch(this);
 
-    GPRReg stubInfoGPR = InvalidGPRReg;
-    GPRReg scratch2GPR = InvalidGPRReg;
-    if (m_graph.m_plan.isUnlinked()) {
-        stubInfo.emplace(this);
-        scratch2.emplace(this);
-        stubInfoGPR = stubInfo->gpr();
-        scratch2GPR = scratch2->gpr();
-    }
     GPRReg baseGPR = base.gpr();
     JSValueRegs valueRegs = value.jsValueRegs();
     GPRReg scratchGPR = scratch.gpr();
 
     flushRegisters();
 
-    cachedPutById(node, node->origin.semantic, baseGPR, valueRegs, stubInfoGPR, scratchGPR, scratch2GPR, node->cacheableIdentifier(), node->ecmaMode().isStrict() ? AccessType::PutByIdStrict : AccessType::PutByIdSloppy);
+    cachedPutById(node, node->origin.semantic, baseGPR, valueRegs, scratchGPR, node->cacheableIdentifier(), node->ecmaMode().isStrict() ? AccessType::PutByIdStrict : AccessType::PutByIdSloppy);
 
     noResult(node);
 }
 
 void SpeculativeJIT::compilePutByIdDirect(Node* node)
 {
-    std::optional<GPRTemporary> stubInfo;
-    std::optional<GPRTemporary> scratch2;
     SpeculateCellOperand base(this, node->child1());
     JSValueOperand value(this, node->child2());
     GPRTemporary scratch(this);
 
-    GPRReg stubInfoGPR = InvalidGPRReg;
-    GPRReg scratch2GPR = InvalidGPRReg;
-    if (m_graph.m_plan.isUnlinked()) {
-        stubInfo.emplace(this);
-        scratch2.emplace(this);
-        stubInfoGPR = stubInfo->gpr();
-        scratch2GPR = scratch2->gpr();
-    }
     GPRReg baseGPR = base.gpr();
     JSValueRegs valueRegs = value.jsValueRegs();
     GPRReg scratchGPR = scratch.gpr();
 
     flushRegisters();
 
-    cachedPutById(node, node->origin.semantic, baseGPR, valueRegs, stubInfoGPR, scratchGPR, scratch2GPR, node->cacheableIdentifier(), node->ecmaMode().isStrict() ? AccessType::PutByIdDirectStrict : AccessType::PutByIdDirectSloppy);
+    cachedPutById(node, node->origin.semantic, baseGPR, valueRegs, scratchGPR, node->cacheableIdentifier(), node->ecmaMode().isStrict() ? AccessType::PutByIdDirectStrict : AccessType::PutByIdDirectSloppy);
 
     noResult(node);
 }
@@ -16582,7 +16502,7 @@ void SpeculativeJIT::compileProfileType(Node* node)
     noResult(node);
 }
 
-void SpeculativeJIT::cachedPutById(Node* node, CodeOrigin codeOrigin, GPRReg baseGPR, JSValueRegs valueRegs, GPRReg stubInfoGPR, GPRReg scratchGPR, GPRReg scratch2GPR, CacheableIdentifier identifier, AccessType accessType, Jump slowPathTarget, SpillRegistersMode spillMode)
+void SpeculativeJIT::cachedPutById(Node* node, CodeOrigin codeOrigin, GPRReg baseGPR, JSValueRegs valueRegs, GPRReg scratchGPR, CacheableIdentifier identifier, AccessType accessType, Jump slowPathTarget, SpillRegistersMode spillMode)
 {
     UNUSED_PARAM(node);
     RegisterSetBuilder usedRegisters = this->usedRegisters();
@@ -16590,12 +16510,8 @@ void SpeculativeJIT::cachedPutById(Node* node, CodeOrigin codeOrigin, GPRReg bas
         // We've already flushed registers to the stack, we don't need to spill these.
         usedRegisters.remove(baseGPR);
         usedRegisters.remove(valueRegs);
-        if (stubInfoGPR != InvalidGPRReg)
-            usedRegisters.remove(stubInfoGPR);
         if (scratchGPR != InvalidGPRReg)
             usedRegisters.remove(scratchGPR);
-        if (scratch2GPR != InvalidGPRReg)
-            usedRegisters.remove(scratch2GPR);
     }
     CallSiteIndex callSite = recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
     auto [ stubInfo, stubInfoConstant ] = addStructureStubInfo();
