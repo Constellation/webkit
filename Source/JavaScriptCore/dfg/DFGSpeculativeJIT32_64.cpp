@@ -232,7 +232,7 @@ void SpeculativeJIT::cachedGetById(
 
 void SpeculativeJIT::cachedGetByIdWithThis(Node* node,
     CodeOrigin codeOrigin, GPRReg baseTagGPROrNone, GPRReg basePayloadGPR, GPRReg thisTagGPR, GPRReg thisPayloadGPR, GPRReg resultTagGPR, GPRReg resultPayloadGPR,
-    CacheableIdentifier identifier, const JumpList& slowPathTarget)
+    CacheableIdentifier identifier, bool needsBaseAndThisCellCheck)
 {
     UNUSED_PARAM(node);
     RegisterSetBuilder usedRegisters = this->usedRegisters();
@@ -246,8 +246,10 @@ void SpeculativeJIT::cachedGetByIdWithThis(Node* node,
     gen.generateFastPath(*this);
     
     JumpList slowCases;
-    if (!slowPathTarget.empty())
-        slowCases.append(slowPathTarget);
+    if (needsBaseAndThisCellCheck) {
+        slowCases.append(branchIfNotCell(JSValueRegs(baseTagGPROrNone, basePayloadGPR)));
+        slowCases.append(branchIfNotCell(JSValueRegs(thisTagGPR, thisPayloadGPR)));
+    }
     slowCases.append(gen.slowPathJump());
 
     std::unique_ptr<SlowPathGenerator> slowPath;
@@ -3368,9 +3370,9 @@ void SpeculativeJIT::compile(Node* node)
             GPRReg thisGPR = thisValue.gpr();
             GPRReg resultTagGPR = resultTag.gpr();
             GPRReg resultPayloadGPR = resultPayload.gpr();
-            
-            cachedGetByIdWithThis(node, node->origin.semantic, InvalidGPRReg, baseGPR, InvalidGPRReg, thisGPR, resultTagGPR, resultPayloadGPR, node->cacheableIdentifier());
-            
+
+            cachedGetByIdWithThis(node, node->origin.semantic, InvalidGPRReg, baseGPR, InvalidGPRReg, thisGPR, resultTagGPR, resultPayloadGPR, node->cacheableIdentifier(), false);
+
             jsValueResult(resultTagGPR, resultPayloadGPR, node);
         } else {
             JSValueOperand base(this, node->child1());
@@ -3384,13 +3386,9 @@ void SpeculativeJIT::compile(Node* node)
             GPRReg thisPayloadGPR = thisValue.payloadGPR();
             GPRReg resultTagGPR = resultTag.gpr();
             GPRReg resultPayloadGPR = resultPayload.gpr();
-            
-            JumpList notCellList;
-            notCellList.append(branchIfNotCell(base.jsValueRegs()));
-            notCellList.append(branchIfNotCell(thisValue.jsValueRegs()));
-            
-            cachedGetByIdWithThis(node, node->origin.semantic, baseTagGPR, basePayloadGPR, thisTagGPR, thisPayloadGPR, resultTagGPR, resultPayloadGPR, node->cacheableIdentifier(), notCellList);
-            
+
+            cachedGetByIdWithThis(node, node->origin.semantic, baseTagGPR, basePayloadGPR, thisTagGPR, thisPayloadGPR, resultTagGPR, resultPayloadGPR, node->cacheableIdentifier(), tru);
+
             jsValueResult(resultTagGPR, resultPayloadGPR, node);
         }
         
