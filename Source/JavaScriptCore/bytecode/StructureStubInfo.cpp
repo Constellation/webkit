@@ -789,7 +789,7 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(CodeBlock* co
     if (unlinkedStubInfo.canBeMegamorphic)
         bufferingCountdown = 1;
 
-    usedRegisters = unlinkedStubInfo.usedRegisters;
+    usedRegisters = RegisterSetBuilder::stubUnavailableRegisters().buildScalarRegisterSet();
 
     m_baseGPR = unlinkedStubInfo.m_baseGPR;
     m_extraGPR = unlinkedStubInfo.m_extraGPR;
