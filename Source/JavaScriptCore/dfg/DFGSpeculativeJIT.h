@@ -1722,7 +1722,6 @@ public:
     void compileEnumeratorHasOwnProperty(Node*);
     void compileEnumeratorPutByVal(Node*);
 
-    void compilePutByIdFlush(Node*);
     void compilePutById(Node*);
     void compilePutByIdDirect(Node*);
     void compilePutByIdWithThis(Node*);

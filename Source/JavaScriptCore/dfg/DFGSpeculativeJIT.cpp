@@ -14632,23 +14632,6 @@ void SpeculativeJIT::compileEnumeratorHasOwnProperty(Node* node)
     compileEnumeratorHasProperty(node, operationEnumeratorHasOwnProperty);
 }
 
-void SpeculativeJIT::compilePutByIdFlush(Node* node)
-{
-    SpeculateCellOperand base(this, node->child1());
-    JSValueOperand value(this, node->child2());
-    GPRTemporary scratch(this);
-
-    GPRReg baseGPR = base.gpr();
-    JSValueRegs valueRegs = value.jsValueRegs();
-    GPRReg scratchGPR = scratch.gpr();
-
-    flushRegisters();
-
-    cachedPutById(node, node->origin.semantic, baseGPR, valueRegs, scratchGPR, node->cacheableIdentifier(), node->ecmaMode().isStrict() ? AccessType::PutByIdStrict : AccessType::PutByIdSloppy, DontSpill);
-
-    noResult(node);
-}
-
 void SpeculativeJIT::compilePutById(Node* node)
 {
     SpeculateCellOperand base(this, node->child1());

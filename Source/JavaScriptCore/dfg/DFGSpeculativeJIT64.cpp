@@ -4956,12 +4956,8 @@ void SpeculativeJIT::compile(Node* node)
         break;
     }
 
+    case PutById:
     case PutByIdFlush: {
-        compilePutByIdFlush(node);
-        break;
-    }
-        
-    case PutById: {
         compilePutById(node);
         break;
     }
