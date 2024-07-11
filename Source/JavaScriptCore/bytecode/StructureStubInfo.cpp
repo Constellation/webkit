@@ -772,8 +772,12 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(CodeBlock* co
         m_globalObject = baselineCodeBlockForInlineCallFrame(codeOrigin.inlineCallFrame())->globalObject();
     else
         m_globalObject = codeBlock->globalObject();
-    replaceHandler(codeBlock, InlineCacheHandler::createNonHandlerSlowPath(unlinkedStubInfo.slowPathStartLocation));
-    slowPathStartLocation = unlinkedStubInfo.slowPathStartLocation;
+    if (Options::useHandlerIC())
+        replaceHandler(codeBlock, InlineCacheCompiler::generateSlowPathHandler(codeBlock->vm(), accessType));
+    else {
+        replaceHandler(codeBlock, InlineCacheHandler::createNonHandlerSlowPath(unlinkedStubInfo.slowPathStartLocation));
+        slowPathStartLocation = unlinkedStubInfo.slowPathStartLocation;
+    }
 
     propertyIsInt32 = unlinkedStubInfo.propertyIsInt32;
     propertyIsSymbol = unlinkedStubInfo.propertyIsSymbol;

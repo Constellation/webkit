@@ -277,7 +277,7 @@ void JITCompiler::link(LinkBuffer& linkBuffer)
         finalizeInlineCaches(m_privateBrandAccesses, linkBuffer);
     }
 
-    if (m_graph.m_plan.isUnlinked()) {
+    if (m_graph.m_plan.isUnlinked() || Options::useHandlerIC()) {
         m_jitCode->m_unlinkedStubInfos = FixedVector<UnlinkedStructureStubInfo>(m_unlinkedStubInfos.size());
         if (m_jitCode->m_unlinkedStubInfos.size())
             std::move(m_unlinkedStubInfos.begin(), m_unlinkedStubInfos.end(), m_jitCode->m_unlinkedStubInfos.begin());
@@ -583,13 +583,12 @@ LinkerIR::Constant JITCompiler::addToConstantPool(LinkerIR::Type type, void* pay
 
 std::tuple<CompileTimeStructureStubInfo, StructureStubInfoIndex> JITCompiler::addStructureStubInfo()
 {
-    if (m_graph.m_plan.isUnlinked()) {
+    if (m_graph.m_plan.isUnlinked() || Options::useHandlerIC()) {
         unsigned index = m_unlinkedStubInfos.size();
         DFG::UnlinkedStructureStubInfo* stubInfo = &m_unlinkedStubInfos.alloc();
         return std::tuple { stubInfo, StructureStubInfoIndex { index } };
     }
     StructureStubInfo* stubInfo = jitCode()->common.m_stubInfos.add();
-    stubInfo->useDataIC = Options::useHandlerIC();
     return std::tuple { stubInfo, StructureStubInfoIndex(0) };
 }
 
