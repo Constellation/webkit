@@ -143,6 +143,7 @@ public:
 
     void initializeFromUnlinkedStructureStubInfo(VM&, CodeBlock*, const BaselineUnlinkedStructureStubInfo&);
     void initializeFromDFGUnlinkedStructureStubInfo(CodeBlock*, const DFG::UnlinkedStructureStubInfo&);
+    void initializePredefinedRegisters();
 
     DECLARE_VISIT_AGGREGATE;
 

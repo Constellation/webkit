@@ -569,32 +569,8 @@ static CodePtr<OperationPtrTag> slowOperationFromUnlinkedStructureStubInfo(const
     return { };
 }
 
-void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(VM& vm, CodeBlock* codeBlock, const BaselineUnlinkedStructureStubInfo& unlinkedStubInfo)
+void StructureStubInfo::initializePredefinedRegisters()
 {
-    ASSERT(!isCompilationThread());
-    accessType = unlinkedStubInfo.accessType;
-    doneLocation = unlinkedStubInfo.doneLocation;
-    m_identifier = unlinkedStubInfo.m_identifier;
-    m_globalObject = codeBlock->globalObject();
-    callSiteIndex = CallSiteIndex(BytecodeIndex(unlinkedStubInfo.bytecodeIndex.offset()));
-    codeOrigin = CodeOrigin(unlinkedStubInfo.bytecodeIndex);
-    if (Options::useHandlerIC())
-        replaceHandler(codeBlock, InlineCacheCompiler::generateSlowPathHandler(vm, accessType));
-    else {
-        replaceHandler(codeBlock, InlineCacheHandler::createNonHandlerSlowPath(unlinkedStubInfo.slowPathStartLocation));
-        slowPathStartLocation = unlinkedStubInfo.slowPathStartLocation;
-    }
-    propertyIsInt32 = unlinkedStubInfo.propertyIsInt32;
-    canBeMegamorphic = unlinkedStubInfo.canBeMegamorphic;
-    useDataIC = true;
-
-    if (unlinkedStubInfo.canBeMegamorphic)
-        bufferingCountdown = 1;
-
-    usedRegisters = RegisterSetBuilder::stubUnavailableRegisters().buildScalarRegisterSet();
-
-    m_slowOperation = slowOperationFromUnlinkedStructureStubInfo(unlinkedStubInfo);
-
     switch (accessType) {
     case AccessType::DeleteByValStrict:
     case AccessType::DeleteByValSloppy:
@@ -759,6 +735,34 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(VM& vm, CodeBloc
     }
 }
 
+void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(VM& vm, CodeBlock* codeBlock, const BaselineUnlinkedStructureStubInfo& unlinkedStubInfo)
+{
+    ASSERT(!isCompilationThread());
+    accessType = unlinkedStubInfo.accessType;
+    doneLocation = unlinkedStubInfo.doneLocation;
+    m_identifier = unlinkedStubInfo.m_identifier;
+    m_globalObject = codeBlock->globalObject();
+    callSiteIndex = CallSiteIndex(BytecodeIndex(unlinkedStubInfo.bytecodeIndex.offset()));
+    codeOrigin = CodeOrigin(unlinkedStubInfo.bytecodeIndex);
+    if (Options::useHandlerIC())
+        replaceHandler(codeBlock, InlineCacheCompiler::generateSlowPathHandler(vm, accessType));
+    else {
+        replaceHandler(codeBlock, InlineCacheHandler::createNonHandlerSlowPath(unlinkedStubInfo.slowPathStartLocation));
+        slowPathStartLocation = unlinkedStubInfo.slowPathStartLocation;
+    }
+    propertyIsInt32 = unlinkedStubInfo.propertyIsInt32;
+    canBeMegamorphic = unlinkedStubInfo.canBeMegamorphic;
+    useDataIC = true;
+
+    if (unlinkedStubInfo.canBeMegamorphic)
+        bufferingCountdown = 1;
+
+    usedRegisters = RegisterSetBuilder::stubUnavailableRegisters().buildScalarRegisterSet();
+
+    m_slowOperation = slowOperationFromUnlinkedStructureStubInfo(unlinkedStubInfo);
+    initializePredefinedRegisters();
+}
+
 #if ENABLE(DFG_JIT)
 void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(CodeBlock* codeBlock, const DFG::UnlinkedStructureStubInfo& unlinkedStubInfo)
 {
@@ -772,8 +776,12 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(CodeBlock* co
         m_globalObject = baselineCodeBlockForInlineCallFrame(codeOrigin.inlineCallFrame())->globalObject();
     else
         m_globalObject = codeBlock->globalObject();
-    replaceHandler(codeBlock, InlineCacheHandler::createNonHandlerSlowPath(unlinkedStubInfo.slowPathStartLocation));
-    slowPathStartLocation = unlinkedStubInfo.slowPathStartLocation;
+    if (Options::useHandlerIC())
+        replaceHandler(codeBlock, InlineCacheCompiler::generateSlowPathHandler(codeBlock->vm(), accessType));
+    else {
+        replaceHandler(codeBlock, InlineCacheHandler::createNonHandlerSlowPath(unlinkedStubInfo.slowPathStartLocation));
+        slowPathStartLocation = unlinkedStubInfo.slowPathStartLocation;
+    }
 
     propertyIsInt32 = unlinkedStubInfo.propertyIsInt32;
     propertyIsSymbol = unlinkedStubInfo.propertyIsSymbol;
@@ -785,15 +793,10 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(CodeBlock* co
     if (unlinkedStubInfo.canBeMegamorphic)
         bufferingCountdown = 1;
 
-    usedRegisters = unlinkedStubInfo.usedRegisters;
-
-    m_baseGPR = unlinkedStubInfo.m_baseGPR;
-    m_extraGPR = unlinkedStubInfo.m_extraGPR;
-    m_extra2GPR = unlinkedStubInfo.m_extra2GPR;
-    m_valueGPR = unlinkedStubInfo.m_valueGPR;
-    m_stubInfoGPR = unlinkedStubInfo.m_stubInfoGPR;
+    usedRegisters = RegisterSetBuilder::stubUnavailableRegisters().buildScalarRegisterSet();
 
     m_slowOperation = slowOperationFromUnlinkedStructureStubInfo(unlinkedStubInfo);
+    initializePredefinedRegisters();
 }
 #endif
 
