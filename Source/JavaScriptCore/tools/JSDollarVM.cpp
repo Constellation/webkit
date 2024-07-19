@@ -2260,6 +2260,7 @@ static JSC_DECLARE_HOST_FUNCTION(functionAssertFrameAligned);
 static JSC_DECLARE_HOST_FUNCTION(functionCallFromCPPAsFirstEntry);
 static JSC_DECLARE_HOST_FUNCTION(functionCallFromCPP);
 static JSC_DECLARE_HOST_FUNCTION(functionCachedCallFromCPP);
+static JSC_DECLARE_HOST_FUNCTION(functionDumpCharacterPropertyDataSource);
 
 const ClassInfo JSDollarVM::s_info = { "DollarVM"_s, &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(JSDollarVM) };
 
@@ -4176,6 +4177,17 @@ JSC_DEFINE_HOST_FUNCTION(functionCachedCallFromCPP, (JSGlobalObject* globalObjec
         cachedCall.call();
         RETURN_IF_EXCEPTION(scope, { });
     }
+
+    return JSValue::encode(jsUndefined());
+}
+
+JSC_DEFINE_HOST_FUNCTION(functionDumpCharacterPropertyDataSource, (JSGlobalObject* globalObject, CallFrame*))
+{
+    DollarVMAssertScope assertScope;
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    dumpCharacterPropertyDataSource();
 
     return JSValue::encode(jsUndefined());
 }
