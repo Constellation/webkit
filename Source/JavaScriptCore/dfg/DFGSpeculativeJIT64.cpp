@@ -152,7 +152,7 @@ GPRReg SpeculativeJIT::fillJSValue(Edge edge)
     }
 }
 
-void SpeculativeJIT::cachedGetById(Node* node, CodeOrigin codeOrigin, JSValueRegs baseRegs, JSValueRegs resultRegs, CacheableIdentifier identifier, bool needsBaseCellCheck, AccessType type)
+void SpeculativeJIT::cachedGetById(Node* node, CodeOrigin codeOrigin, JSValueRegs baseRegs, JSValueRegs resultRegs, CacheableIdentifier identifier, bool needsBaseCellCheck, AccessType type, CacheType cacheType)
 {
     UNUSED_PARAM(node);
     CallSiteIndex callSite = recordCallSiteAndGenerateExceptionHandlingOSRExitIfNeeded(codeOrigin, m_stream.size());
@@ -168,7 +168,7 @@ void SpeculativeJIT::cachedGetById(Node* node, CodeOrigin codeOrigin, JSValueReg
         });
     JITGetByIdGenerator gen(
         codeBlock(), stubInfo, JITType::DFGJIT, codeOrigin, callSite, usedRegisters, identifier,
-        BaselineJITRegisters::GetById::baseJSR, resultRegs, BaselineJITRegisters::GetById::stubInfoGPR, type);
+        BaselineJITRegisters::GetById::baseJSR, resultRegs, BaselineJITRegisters::GetById::stubInfoGPR, type, cacheType);
     JumpList slowCases;
     if (needsBaseCellCheck)
         slowCases.append(branchIfNotCell(BaselineJITRegisters::GetById::baseJSR));
@@ -6807,6 +6807,11 @@ void SpeculativeJIT::compileGetByValWithThis(Node* node)
 void SpeculativeJIT::compileGetById(Node* node, AccessType accessType)
 {
     ASSERT(accessType == AccessType::GetById || accessType == AccessType::GetByIdDirect || accessType == AccessType::TryGetById);
+    CacheType cacheType = CacheType::GetByIdSelf;
+    if (accessType == AccessType::GetById || accessType == AccessType::GetByIdDirect) {
+        if (node->cacheableIdentifier() == vm().propertyNames->length)
+            cacheType = CacheType::ArrayLength;
+    }
 
     switch (node->child1().useKind()) {
     case CellUse: {
@@ -6819,7 +6824,7 @@ void SpeculativeJIT::compileGetById(Node* node, AccessType accessType)
         JSValueRegs resultRegs = result.regs();
 
         constexpr bool needsBaseCellCheck = false;
-        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), needsBaseCellCheck, accessType);
+        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), needsBaseCellCheck, accessType, cacheType);
         jsValueResult(resultRegs, node, DataFormatJS);
         break;
     }
@@ -6834,7 +6839,7 @@ void SpeculativeJIT::compileGetById(Node* node, AccessType accessType)
         JSValueRegs resultRegs = result.regs();
 
         constexpr bool needsBaseCellCheck = true;
-        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), needsBaseCellCheck, accessType);
+        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), needsBaseCellCheck, accessType, cacheType);
         jsValueResult(resultRegs, node, DataFormatJS);
         break;
     }
@@ -7392,7 +7397,7 @@ void SpeculativeJIT::compileGetPrivateNameById(Node* node)
         JSValueRegs resultRegs = result.regs();
 
         constexpr bool needsBaseCellCheck = false;
-        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), needsBaseCellCheck, AccessType::GetPrivateNameById);
+        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), needsBaseCellCheck, AccessType::GetPrivateNameById, CacheType::GetByIdSelf);
         jsValueResult(resultRegs, node, DataFormatJS);
         break;
     }
@@ -7407,7 +7412,7 @@ void SpeculativeJIT::compileGetPrivateNameById(Node* node)
         JSValueRegs resultRegs = result.regs();
 
         constexpr bool needsBaseCellCheck = true;
-        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), needsBaseCellCheck, AccessType::GetPrivateNameById);
+        cachedGetById(node, node->origin.semantic, baseRegs, resultRegs, node->cacheableIdentifier(), needsBaseCellCheck, AccessType::GetPrivateNameById, CacheType::GetByIdSelf);
         jsValueResult(resultRegs, node, DataFormatJS);
         break;
     }

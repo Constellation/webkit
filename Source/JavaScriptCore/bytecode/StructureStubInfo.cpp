@@ -83,25 +83,12 @@ void StructureStubInfo::initInByIdSelf(const ConcurrentJSLockerBase& locker, Cod
 
 void StructureStubInfo::deref()
 {
-    switch (m_cacheType) {
-    case CacheType::Stub:
-        m_stub.reset();
-        return;
-    case CacheType::Unset:
-    case CacheType::GetByIdSelf:
-    case CacheType::PutByIdReplace:
-    case CacheType::InByIdSelf:
-    case CacheType::ArrayLength:
-    case CacheType::StringLength:
-        return;
-    }
-
-    RELEASE_ASSERT_NOT_REACHED();
+    m_stub.reset();
 }
 
 void StructureStubInfo::aboutToDie()
 {
-    if (m_cacheType != CacheType::Stub)
+    if (!m_handler)
         return;
 
     auto* cursor = m_handler.get();
@@ -126,7 +113,7 @@ AccessGenerationResult StructureStubInfo::addAccessCase(const GCSafeConcurrentJS
 
         AccessGenerationResult result;
 
-        if (m_cacheType == CacheType::Stub) {
+        if (m_stub) {
             result = m_stub->addCases(locker, vm, codeBlock, *this, nullptr, accessCase);
             dataLogLnIf(StructureStubInfoInternal::verbose, "Had stub, result: ", result);
 
@@ -345,21 +332,9 @@ void StructureStubInfo::visitAggregateImpl(Visitor& visitor)
             });
     } else
         m_identifier.visitAggregate(visitor);
-    switch (m_cacheType) {
-    case CacheType::Unset:
-    case CacheType::ArrayLength:
-    case CacheType::StringLength:
-    case CacheType::PutByIdReplace:
-    case CacheType::InByIdSelf:
-    case CacheType::GetByIdSelf:
-        return;
-    case CacheType::Stub:
+
+    if (m_stub)
         m_stub->visitAggregate(visitor);
-        return;
-    }
-    
-    RELEASE_ASSERT_NOT_REACHED();
-    return;
 }
 
 DEFINE_VISIT_AGGREGATE(StructureStubInfo);
@@ -386,15 +361,13 @@ void StructureStubInfo::visitWeakReferences(const ConcurrentJSLockerBase& locker
     bool isValid = true;
     if (Structure* structure = inlineAccessBaseStructure())
         isValid &= vm.heap.isMarked(structure);
-    if (m_cacheType == CacheType::Stub) {
-        if (m_stub)
-            isValid &= m_stub->visitWeak(vm);
-        if (m_handler) {
-            RefPtr cursor = m_handler.get();
-            while (cursor) {
-                isValid &= cursor->visitWeak(vm);
-                cursor = cursor->next();
-            }
+    if (m_stub)
+        isValid &= m_stub->visitWeak(vm);
+    if (m_handler) {
+        RefPtr cursor = m_handler.get();
+        while (cursor) {
+            isValid &= cursor->visitWeak(vm);
+            cursor = cursor->next();
         }
     }
 
@@ -411,7 +384,7 @@ void StructureStubInfo::propagateTransitions(Visitor& visitor)
     if (Structure* structure = inlineAccessBaseStructure())
         structure->markIfCheap(visitor);
 
-    if (m_cacheType == CacheType::Stub)
+    if (m_stub)
         m_stub->propagateTransitions(visitor);
 }
 
@@ -439,8 +412,7 @@ StubInfoSummary StructureStubInfo::summary(VM& vm) const
 {
     StubInfoSummary takesSlowPath = StubInfoSummary::TakesSlowPath;
     StubInfoSummary simple = StubInfoSummary::Simple;
-    if (m_cacheType == CacheType::Stub) {
-        PolymorphicAccess* list = m_stub.get();
+    if (auto* list = m_stub.get()) {
         for (unsigned i = 0; i < list->size(); ++i) {
             const AccessCase& access = list->at(i);
             if (access.doesCalls(vm)) {
@@ -483,7 +455,7 @@ StubInfoSummary StructureStubInfo::summary(VM& vm, const StructureStubInfo* stub
 
 bool StructureStubInfo::containsPC(void* pc) const
 {
-    if (m_cacheType != CacheType::Stub)
+    if (!m_handler)
         return false;
 
     auto* cursor = m_handler.get();
@@ -739,6 +711,14 @@ void StructureStubInfo::initializeFromUnlinkedStructureStubInfo(VM& vm, CodeBloc
 {
     ASSERT(!isCompilationThread());
     accessType = unlinkedStubInfo.accessType;
+    preconfiguredCacheType = unlinkedStubInfo.preconfiguredCacheType;
+    switch (preconfiguredCacheType) {
+    case CacheType::ArrayLength:
+        m_cacheType = CacheType::ArrayLength;
+        break;
+    default:
+        break;
+    }
     doneLocation = unlinkedStubInfo.doneLocation;
     m_identifier = unlinkedStubInfo.m_identifier;
     m_globalObject = codeBlock->globalObject();
@@ -768,6 +748,14 @@ void StructureStubInfo::initializeFromDFGUnlinkedStructureStubInfo(CodeBlock* co
 {
     ASSERT(!isCompilationThread());
     accessType = unlinkedStubInfo.accessType;
+    preconfiguredCacheType = unlinkedStubInfo.preconfiguredCacheType;
+    switch (preconfiguredCacheType) {
+    case CacheType::ArrayLength:
+        m_cacheType = CacheType::ArrayLength;
+        break;
+    default:
+        break;
+    }
     doneLocation = unlinkedStubInfo.doneLocation;
     m_identifier = unlinkedStubInfo.m_identifier;
     callSiteIndex = unlinkedStubInfo.callSiteIndex;

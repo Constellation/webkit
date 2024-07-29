@@ -710,7 +710,7 @@ public:
     void compileCheckDetached(Node*);
 
 #if USE(JSVALUE64)
-    void cachedGetById(Node*, CodeOrigin, JSValueRegs base, JSValueRegs result, CacheableIdentifier, bool needsBaseCellCheck, AccessType);
+    void cachedGetById(Node*, CodeOrigin, JSValueRegs base, JSValueRegs result, CacheableIdentifier, bool needsBaseCellCheck, AccessType, CacheType);
     void cachedPutById(Node*, CodeOrigin, GPRReg baseGPR, JSValueRegs valueRegs, CacheableIdentifier, AccessType);
     void cachedGetByIdWithThis(Node*, CodeOrigin, JSValueRegs baseRegs, JSValueRegs thisRegs, JSValueRegs resultRegs, CacheableIdentifier, bool needsBaseAndThisCellCheck);
 #elif USE(JSVALUE32_64)
