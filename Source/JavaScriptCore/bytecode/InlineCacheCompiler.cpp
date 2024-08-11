@@ -2763,6 +2763,7 @@ void InlineCacheCompiler::generateWithGuard(unsigned index, AccessCase& accessCa
         } else
             m_failAndRepatch.append(slowCases);
 #endif
+        return;
     }
 
     case AccessCase::CheckPrivateBrand: {

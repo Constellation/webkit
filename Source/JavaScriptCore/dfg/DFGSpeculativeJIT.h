@@ -751,6 +751,7 @@ public:
 
     void compileInstanceOf(Node*);
     void compileInstanceOfCustom(Node*);
+    void compileInstanceOfGeneric(Node*);
     void compileInstanceOfMegamorphic(Node*);
     void compileOverridesHasInstance(Node*);
 
