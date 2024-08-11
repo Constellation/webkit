@@ -1533,6 +1533,12 @@ void repatchInBySlowPathCall(CodeBlock* codeBlock, StructureStubInfo& stubInfo, 
     repatchSlowPathCall(codeBlock, stubInfo, appropriateInByGaveUpFunction(kind));
 }
 
+void repatchInstanceOfSlowPathCall(CodeBlock* codeBlock, StructureStubInfo& stubInfo)
+{
+    resetInstanceOf(codeBlock, stubInfo);
+    repatchSlowPathCall(codeBlock, stubInfo, operationInstanceOfGaveUp);
+}
+
 static InlineCacheAction tryCacheInBy(
     JSGlobalObject* globalObject, CodeBlock* codeBlock, JSObject* base, CacheableIdentifier propertyName,
     bool wasFound, const PropertySlot& slot, StructureStubInfo& stubInfo, InByKind kind)
