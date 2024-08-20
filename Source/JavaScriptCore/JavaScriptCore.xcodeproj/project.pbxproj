@@ -1350,7 +1350,6 @@
 		84323E8025D5EC6A00F97776 /* JSCustomGetterFunction.h in Headers */ = {isa = PBXBuildFile; fileRef = 84323E7C25D5EC6900F97776 /* JSCustomGetterFunction.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		860161E30F3A83C100F84710 /* AbstractMacroAssembler.h in Headers */ = {isa = PBXBuildFile; fileRef = 860161DF0F3A83C100F84710 /* AbstractMacroAssembler.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		860161E50F3A83C100F84710 /* MacroAssemblerX86_64.h in Headers */ = {isa = PBXBuildFile; fileRef = 860161E10F3A83C100F84710 /* MacroAssemblerX86_64.h */; settings = {ATTRIBUTES = (Private, ); }; };
-		860161E60F3A83C100F84710 /* MacroAssemblerX86Common.h in Headers */ = {isa = PBXBuildFile; fileRef = 860161E20F3A83C100F84710 /* MacroAssemblerX86Common.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		8602960226FB552D0078EB62 /* ShadowRealmConstructor.h in Headers */ = {isa = PBXBuildFile; fileRef = 860295FC26FB552C0078EB62 /* ShadowRealmConstructor.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		8602960426FB552D0078EB62 /* ShadowRealmObject.h in Headers */ = {isa = PBXBuildFile; fileRef = 860295FE26FB552D0078EB62 /* ShadowRealmObject.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		8602960526FB552D0078EB62 /* ShadowRealmPrototype.h in Headers */ = {isa = PBXBuildFile; fileRef = 860295FF26FB552D0078EB62 /* ShadowRealmPrototype.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -4580,7 +4579,6 @@
 		84925A9C22B30CC800D1DFFF /* RegExpStringIteratorPrototype.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = RegExpStringIteratorPrototype.js; sourceTree = "<group>"; };
 		860161DF0F3A83C100F84710 /* AbstractMacroAssembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AbstractMacroAssembler.h; sourceTree = "<group>"; };
 		860161E10F3A83C100F84710 /* MacroAssemblerX86_64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacroAssemblerX86_64.h; sourceTree = "<group>"; };
-		860161E20F3A83C100F84710 /* MacroAssemblerX86Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacroAssemblerX86Common.h; sourceTree = "<group>"; };
 		860295FA26FB552C0078EB62 /* ShadowRealmPrototype.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ShadowRealmPrototype.cpp; sourceTree = "<group>"; };
 		860295FB26FB552C0078EB62 /* ShadowRealmObject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ShadowRealmObject.cpp; sourceTree = "<group>"; };
 		860295FC26FB552C0078EB62 /* ShadowRealmConstructor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ShadowRealmConstructor.h; sourceTree = "<group>"; };
@@ -9371,7 +9369,6 @@
 				FEC60FEC2AE9722C003B7B31 /* MacroAssemblerRISCV64.h */,
 				860161E10F3A83C100F84710 /* MacroAssemblerX86_64.h */,
 				A7A4AE0717973B26005612B1 /* MacroAssemblerX86_64.cpp */,
-				860161E20F3A83C100F84710 /* MacroAssemblerX86Common.h */,
 				65860177185A8F5E00030EEE /* MaxFrameExtentForSlowPathCall.h */,
 				FE37C5292A9C3EA9003EE733 /* OSCheck.h */,
 				E38DAB522A95D23A0050B7A8 /* PerfLog.cpp */,
@@ -11423,7 +11420,6 @@
 				E32AB2441DCD75F400D7533A /* MacroAssemblerHelpers.h in Headers */,
 				FE68C6371B90DE040042BCB3 /* MacroAssemblerPrinter.h in Headers */,
 				860161E50F3A83C100F84710 /* MacroAssemblerX86_64.h in Headers */,
-				860161E60F3A83C100F84710 /* MacroAssemblerX86Common.h in Headers */,
 				A5EF13F91F073204000F0442 /* make-js-file-arrays.py in Headers */,
 				A700873A17CBE85300C3E643 /* MapConstructor.h in Headers */,
 				276B38842A71D12B00252F4E /* MapConstructorInlines.h in Headers */,
