@@ -2417,14 +2417,6 @@ public:
         return branchDouble(DoubleEqualOrUnordered, reg, scratch);
     }
 
-    void move32ToFloat(RegisterID src, FPRegisterID dst)
-    {
-        if (supportsAVX())
-            m_assembler.vmovd_rr(src, dst);
-        else
-            m_assembler.movd_rr(src, dst);
-    }
-
     void moveFloatTo32(FPRegisterID src, RegisterID dst)
     {
         if (supportsAVX())
@@ -4640,7 +4632,7 @@ private:
         cmov(static_cast<X86Assembler::Condition>(cond & ~DoubleConditionBits), src, dest);
     }
 
-
+public:
     void add32(TrustedImm32 imm, AbsoluteAddress address)
     {
         move(TrustedImmPtr(address.m_ptr), scratchRegister());
