@@ -132,6 +132,10 @@ size_t proportionalHeapSize(size_t heapSize, size_t ramSize)
     if (VM::isInMiniMode())
         return Options::miniVMHeapGrowthFactor() * heapSize;
 
+    double x = static_cast<double>(std::min(heapSize, ramSize)) / ramSize;
+    double ratio = Options::heapGrowthMaxIncrease() * std::exp(-(Options::heapGrowthSteepnessFactor() * x)) + 1;
+    return ratio * heapSize;
+#if 0
 #if USE(BMALLOC_MEMORY_FOOTPRINT_API)
     size_t memoryFootprint = bmalloc::api::memoryFootprint();
     if (memoryFootprint < ramSize * Options::smallHeapRAMFraction())
@@ -145,6 +149,7 @@ size_t proportionalHeapSize(size_t heapSize, size_t ramSize)
         return Options::mediumHeapGrowthFactor() * heapSize;
 #endif
     return Options::largeHeapGrowthFactor() * heapSize;
+#endif
 }
 
 void recordType(TypeCountSet& set, JSCell* cell)
