@@ -5677,6 +5677,16 @@ public:
         }
     }
 
+    void add(FPRegisterID left, FPRegisterID right, FPRegisterID dest)
+    {
+        m_assembler.add(dest, left, right);
+    }
+
+    void sub(FPRegisterID left, FPRegisterID right, FPRegisterID dest)
+    {
+        m_assembler.sub(dest, left, right);
+    }
+
     void vectorAdd(SIMDInfo simdInfo, FPRegisterID left, FPRegisterID right, FPRegisterID dest)
     {
         if (scalarTypeIsFloatingPoint(simdInfo.lane))
