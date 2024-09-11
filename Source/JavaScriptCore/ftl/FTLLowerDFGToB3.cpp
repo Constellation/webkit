@@ -2115,6 +2115,19 @@ private:
         return m_out.select(m_out.doubleEqual(value, value), value, m_out.constDouble(PNaN));
     }
 
+    LValue boxDoubleAsDouble(LValue value)
+    {
+        PatchpointValue* result = patchpoint(Double);
+        result->append(value, ValueRep::SomeRegister);
+        result->append(m_out.doubleEncodeOffsetAsDouble, ValueRep::SomeRegister);
+        result->setGenerator(
+            [](CCallHelpers& jit, const StackmapGenerationParams& params) {
+                jit.add(params[1].fpr(), params[2].fpr(), params[0].fpr());
+            });
+        result->effects = Effects::none();
+        return m_out.select(m_out.doubleEqual(value, value), result, m_out.constDouble(JSValue::EncodedPNaN));
+    }
+
     void compileValueRep()
     {
         switch (m_node->child1().useKind()) {
@@ -16227,7 +16240,8 @@ IGNORE_CLANG_WARNINGS_END
             for (const PropertyTableEntry& entry : structure->getPropertiesConcurrently()) {
                 for (unsigned i = data.m_properties.size(); i--;) {
                     PromotedLocationDescriptor descriptor = data.m_properties[i];
-                    if (descriptor.kind() != NamedPropertyPLoc)
+                    auto kind = descriptor.kind();
+                    if (kind != NamedPropertyPLoc && kind != NamedPropertyDoublePLoc)
                         continue;
                     if (m_graph.identifiers()[descriptor.info()] != entry.key())
                         continue;
@@ -16238,7 +16252,10 @@ IGNORE_CLANG_WARNINGS_END
                         base = object;
                     } else
                         base = butterfly;
-                    storeProperty(values[i], base, descriptor.info(), entry.offset());
+                    if (kind == NamedPropertyPLoc)
+                        storeProperty(values[i], base, descriptor.info(), entry.offset());
+                    else
+                        storeDoubleProperty(values[i], base, descriptor.info(), entry.offset());
                     break;
                 }
             }
@@ -17059,10 +17076,14 @@ IGNORE_CLANG_WARNINGS_END
         return m_out.load64(addressOfProperty(storage, identifierNumber, offset));
     }
 
-    void storeProperty(
-        LValue value, LValue storage, unsigned identifierNumber, PropertyOffset offset)
+    void storeProperty(LValue value, LValue storage, unsigned identifierNumber, PropertyOffset offset)
     {
         m_out.store64(value, addressOfProperty(storage, identifierNumber, offset));
+    }
+
+    void storeDoubleProperty(LValue value, LValue storage, unsigned identifierNumber, PropertyOffset offset)
+    {
+        m_out.storeDouble(boxDoubleAsDouble(purifyNaN(value)), addressOfProperty(storage, identifierNumber, offset));
     }
 
     TypedPointer addressOfProperty(

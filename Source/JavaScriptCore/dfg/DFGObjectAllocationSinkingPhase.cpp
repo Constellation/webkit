@@ -1051,7 +1051,10 @@ private:
             target = m_heap.onlyLocalAllocation(node->child2().node());
             if (target && target->isObjectAllocation()) {
                 unsigned identifierNumber = node->storageAccessData().identifierNumber;
-                exactRead = PromotedLocationDescriptor(NamedPropertyPLoc, identifierNumber);
+                if (node->hasDoubleResult())
+                    exactRead = PromotedLocationDescriptor(NamedPropertyDoublePLoc, identifierNumber);
+                else
+                    exactRead = PromotedLocationDescriptor(NamedPropertyPLoc, identifierNumber);
             } else {
                 m_heap.escape(node->child1().node());
                 m_heap.escape(node->child2().node());
@@ -1124,9 +1127,10 @@ private:
             target = m_heap.onlyLocalAllocation(node->child2().node());
             if (target && target->isObjectAllocation()) {
                 unsigned identifierNumber = node->storageAccessData().identifierNumber;
-                writes.add(
-                    PromotedLocationDescriptor(NamedPropertyPLoc, identifierNumber),
-                    LazyNode(node->child3().node()));
+                if (node->child3().useKind() == DoubleRepUse)
+                    writes.add(PromotedLocationDescriptor(NamedPropertyDoublePLoc, identifierNumber), LazyNode(node->child3().node()));
+                else
+                    writes.add(PromotedLocationDescriptor(NamedPropertyPLoc, identifierNumber), LazyNode(node->child3().node()));
             } else {
                 m_heap.escape(node->child1().node());
                 m_heap.escape(node->child2().node());
@@ -1826,7 +1830,7 @@ private:
                 // Some named properties can be added conditionally,
                 // and that would necessitate bottoms
                 for (PromotedHeapLocation location : m_locationsForAllocation.get(node)) {
-                    if (location.kind() != NamedPropertyPLoc)
+                    if (location.kind() != NamedPropertyPLoc && location.kind() != NamedPropertyDoublePLoc)
                         continue;
 
                     SSACalculator::Variable* variable = m_locationToVariable.get(location);
@@ -1993,7 +1997,7 @@ private:
                 bool canExit = true;
                 bool nextCanExit = node->origin.exitOK;
                 for (PromotedHeapLocation location : m_locationsForAllocation.get(node)) {
-                    if (location.kind() != NamedPropertyPLoc)
+                    if (location.kind() != NamedPropertyPLoc && location.kind() != NamedPropertyDoublePLoc)
                         continue;
 
                     m_localMapping.set(location, m_bottom);
@@ -2310,6 +2314,17 @@ private:
                     break;
                 }
 
+                case NamedPropertyDoublePLoc: {
+                    ASSERT(location.base() == allocation.identifier());
+                    data.m_properties.append(location.descriptor());
+                    Node* value = resolve(block, location);
+                    if (m_sinkCandidates.contains(value))
+                        m_graph.m_varArgChildren.append(m_bottom);
+                    else
+                        m_graph.m_varArgChildren.append(value);
+                    break;
+                }
+
                 default:
                     DFG_CRASH(m_graph, node, "Bad location kind");
                 }
@@ -2469,7 +2484,8 @@ private:
         }
 
         switch (location.kind()) {
-        case NamedPropertyPLoc: {
+        case NamedPropertyPLoc:
+        case NamedPropertyDoublePLoc: {
             Allocation& allocation = m_heap.getAllocation(location.base());
 
             unsigned identifierNumber = location.info();

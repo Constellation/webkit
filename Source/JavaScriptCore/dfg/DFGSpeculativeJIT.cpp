@@ -13048,17 +13048,29 @@ void SpeculativeJIT::compileMaterializeNewObject(Node* node)
             break;
         }
 
-        case NamedPropertyPLoc: {
+        case NamedPropertyPLoc:
+        case NamedPropertyDoublePLoc: {
             StringImpl* uid = m_graph.identifiers()[descriptor.info()];
             for (const PropertyTableEntry& entry : structure->getPropertiesConcurrently()) {
                 if (uid != entry.key())
                     continue;
 
-                JSValueOperand value(this, edge);
                 GPRReg baseGPR = isInlineOffset(entry.offset()) ? resultGPR : storageGPR;
-                storeValue(
-                    value.jsValueRegs(),
-                    Address(baseGPR, offsetRelativeToBase(entry.offset())));
+                if (descriptor.kind() == NamedPropertyPLoc) {
+                    JSValueOperand value(this, edge);
+                    storeValue(value.jsValueRegs(), Address(baseGPR, offsetRelativeToBase(entry.offset())));
+                } else {
+                    SpeculateDoubleOperand value(this, edge);
+                    FPRTemporary scratch(this);
+
+                    FPRReg valueFPR = value.fpr();
+                    FPRReg scratchFPR = scratch.fpr();
+
+                    // FIXME
+                    loadDouble(TrustedImmPtr(&doubleOffset), scratchFPR);
+                    add(scratchFPR, valueFPR, scratchFPR);
+                    storeDouble(scratchFPR, Address(baseGPR, offsetRelativeToBase(entry.offset())));
+                }
             }
             break;
         }
@@ -13825,6 +13837,7 @@ void SpeculativeJIT::compilePutByOffset(Node* node)
 
         StorageAccessData& storageAccessData = node->storageAccessData();
 
+        // FIXME
         loadDouble(TrustedImmPtr(&doubleOffset), scratchFPR);
         add(scratchFPR, valueFPR, scratchFPR);
         storeDouble(scratchFPR, Address(storageGPR, offsetRelativeToBase(storageAccessData.offset)));

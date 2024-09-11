@@ -59,6 +59,7 @@ enum PromotedLocationKind {
     FunctionExecutablePLoc,
     IndexedPropertyPLoc,
     NamedPropertyPLoc,
+    NamedPropertyDoublePLoc,
     PublicLengthPLoc,
     StructurePLoc,
     VectorLengthPLoc,
@@ -110,6 +111,7 @@ public:
     {
         switch (kind()) {
         case NamedPropertyPLoc:
+        case NamedPropertyDoublePLoc:
         case ClosureVarPLoc:
         case RegExpObjectLastIndexPLoc:
         case InternalFieldObjectPLoc:

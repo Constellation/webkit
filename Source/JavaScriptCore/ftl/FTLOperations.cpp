@@ -84,12 +84,16 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationPopulateObjectInOSR, void, (JSGlobalO
         for (const PropertyTableEntry& entry : structure->getPropertiesConcurrently()) {
             for (unsigned i = materialization->properties().size(); i--;) {
                 const ExitPropertyValue& property = materialization->properties()[i];
-                if (property.location().kind() != NamedPropertyPLoc)
+                auto kind = property.location().kind();
+                if (kind != NamedPropertyPLoc && kind != NamedPropertyDoublePLoc)
                     continue;
                 if (codeBlock->identifier(property.location().info()).impl() != entry.key())
                     continue;
 
-                object->putDirectOffset(vm, entry.offset(), JSValue::decode(values[i]));
+                if (kind == NamedPropertyPLoc)
+                    object->putDirectOffset(vm, entry.offset(), JSValue::decode(values[i]));
+                else
+                    object->putDirectOffset(vm, entry.offset(), jsDoubleNumber(bitwise_cast<double>(values[i])));
             }
         }
         break;

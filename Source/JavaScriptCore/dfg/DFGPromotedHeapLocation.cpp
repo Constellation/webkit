@@ -75,6 +75,10 @@ void printInternal(PrintStream& out, PromotedLocationKind kind)
         out.print("NamedPropertyPLoc");
         return;
 
+    case NamedPropertyDoublePLoc:
+        out.print("NamedPropertyDoublePLoc");
+        return;
+
     case IndexedPropertyPLoc:
         out.print("IndexedPropertyPLoc");
         return;
