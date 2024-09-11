@@ -2267,8 +2267,12 @@ private:
                 fixEdge<KnownCellUse>(node->child1());
             fixEdge<KnownCellUse>(node->child2());
             // If the result is definitely double, we will load it as double, and propagate double information for the user of this node.
-            if (node->shouldSpeculateDouble() && !node->shouldSpeculateInt32() && !node->shouldSpeculateInt52())
-                node->setResult(NodeResultDouble);
+            if (is64Bit()) {
+                if (!m_graph.hasExitSite(node->origin.semantic, BadType)) {
+                    if (node->shouldSpeculateDoubleReal() && !node->shouldSpeculateInt32() && !node->shouldSpeculateInt52())
+                        node->setResult(NodeResultDouble);
+                }
+            }
             break;
         }
         case GetGetterSetterByOffset: {

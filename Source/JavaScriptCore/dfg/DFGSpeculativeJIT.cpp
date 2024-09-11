@@ -13779,13 +13779,18 @@ void SpeculativeJIT::compileGetByOffset(Node* node)
     if (node->hasDoubleResult()) {
         StorageOperand storage(this, node->child1());
         FPRTemporary result(this);
+        FPRTemporary scratch(this);
 
         GPRReg storageGPR = storage.gpr();
         FPRReg resultFPR = result.fpr();
+        FPRReg scratchFPR = scratch.fpr();
 
         StorageAccessData& storageAccessData = node->storageAccessData();
-
+        static const int64_t doubleOffset = JSValue::DoubleEncodeOffset;
         loadDouble(Address(storageGPR, offsetRelativeToBase(storageAccessData.offset)), resultFPR);
+        loadDouble(TrustedImmPtr(&doubleOffset), scratchFPR);
+        sub(resultFPR, scratchFPR, resultFPR);
+        speculationCheck(BadType, JSValueRegs(), node, branchIfNaN(resultFPR));
         doubleResult(resultFPR, node);
         return;
     }
