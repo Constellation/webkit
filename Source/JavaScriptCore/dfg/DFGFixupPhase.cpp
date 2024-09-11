@@ -2293,8 +2293,8 @@ private:
             fixEdge<KnownCellUse>(node->child2());
             if (is64Bit()) {
                 if (!m_graph.hasExitSite(node->origin.semantic, BadType)) {
-                    if (node->child3()->shouldSpeculateDoubleReal()) {
-                        fixEdge<DoubleRepRealUse>(node->child3());
+                    if (node->child3()->shouldSpeculateDouble()) {
+                        fixDoubleOrBooleanEdge(node->child3());
                         break;
                     }
                 }

@@ -13811,7 +13811,7 @@ void SpeculativeJIT::compileGetByOffset(Node* node)
 
 void SpeculativeJIT::compilePutByOffset(Node* node)
 {
-    if (node->child3().useKind() == DoubleRepRealUse) {
+    if (node->child3().useKind() == DoubleRepUse) {
         StorageOperand storage(this, node->child1());
         SpeculateDoubleOperand value(this, node->child3());
         FPRTemporary scratch(this);
