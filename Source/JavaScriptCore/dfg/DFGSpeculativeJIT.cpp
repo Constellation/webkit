@@ -13776,6 +13776,20 @@ void SpeculativeJIT::compilePutByIdWithThis(Node* node)
 
 void SpeculativeJIT::compileGetByOffset(Node* node)
 {
+    if (node->hasDoubleResult()) {
+        StorageOperand storage(this, node->child1());
+        FPRTemporary result(this);
+
+        GPRReg storageGPR = storage.gpr();
+        FPRReg resultFPR = result.fpr();
+
+        StorageAccessData& storageAccessData = node->storageAccessData();
+
+        loadDouble(Address(storageGPR, offsetRelativeToBase(storageAccessData.offset)), resultFPR);
+        doubleResult(resultFPR, node);
+        return;
+    }
+
     StorageOperand storage(this, node->child1());
     JSValueRegsTemporary result(this, Reuse, storage);
 

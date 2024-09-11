@@ -2858,7 +2858,7 @@ public:
         }
 
         signExtend32ToPtr(TrustedImm32(address.offset), getCachedMemoryTempRegisterIDAndInvalidate());
-        m_assembler.add<128>(memoryTempRegister, memoryTempRegister, address.index, indexExtendType(address), address.scale);
+        m_assembler.add<64>(memoryTempRegister, memoryTempRegister, address.index, indexExtendType(address), address.scale);
         m_assembler.ldr<128>(dest, address.base, memoryTempRegister);
     }
     
