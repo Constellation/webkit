@@ -2262,7 +2262,15 @@ private:
             break;
         }
             
-        case GetByOffset:
+        case GetByOffset: {
+            if (!node->child1()->hasStorageResult())
+                fixEdge<KnownCellUse>(node->child1());
+            fixEdge<KnownCellUse>(node->child2());
+            // If the result is definitely double, we will load it as double, and propagate double information for the user of this node.
+            if (node->shouldSpeculateDouble() && !node->shouldSpeculateInt32() && !node->shouldSpeculateInt52())
+                node->setResult(NodeResultDouble);
+            break;
+        }
         case GetGetterSetterByOffset: {
             if (!node->child1()->hasStorageResult())
                 fixEdge<KnownCellUse>(node->child1());

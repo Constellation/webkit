@@ -859,6 +859,8 @@ private:
                 }
 
                 case GetByOffset: {
+                    if (node->hasDoubleResult())
+                        break;
                     Node* candidate = node->child2().node();
                     if (!isEliminatedAllocation(candidate))
                         break;

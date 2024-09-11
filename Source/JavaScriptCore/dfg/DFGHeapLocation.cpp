@@ -185,6 +185,10 @@ void printInternal(PrintStream& out, LocationKind kind)
     case NamedPropertyLoc:
         out.print("NamedPropertyLoc");
         return;
+
+    case NamedPropertyDoubleLoc:
+        out.print("NamedPropertyDoubleLoc");
+        return;
         
     case TypedArrayByteOffsetLoc:
         out.print("TypedArrayByteOffsetLoc");

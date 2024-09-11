@@ -4443,6 +4443,16 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         if (value.isClear())
             m_state.setIsValid(false);
 
+        if (node->hasDoubleResult()) {
+            if (JSValue constant = value.m_value) {
+                if (!constant.isNumber())
+                    m_state.setIsValid(false);
+                setConstant(node, jsDoubleNumber(constant.asNumber()));
+                m_state.setShouldTryConstantFolding(true);
+                break;
+            }
+        }
+
         setForNode(node, value);
         if (value.m_value)
             m_state.setShouldTryConstantFolding(true);

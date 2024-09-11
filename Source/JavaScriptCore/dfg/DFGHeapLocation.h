@@ -64,6 +64,7 @@ enum LocationKind {
     TypeOfIsObjectLoc,
     TypeOfIsFunctionLoc,
     NamedPropertyLoc,
+    NamedPropertyDoubleLoc,
     RegExpObjectLastIndexLoc,
     SetterLoc,
     StructureLoc,

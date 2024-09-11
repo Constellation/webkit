@@ -1511,10 +1511,11 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         // HeapLocation collisions for *byteOffset nodes after LICM phase. Note
         // that the constructor with an extra state should be used only after LICM
         // since it might affect performance.
+        auto location = node->hasDoubleResult() ? NamedPropertyDoubleLoc : NamedPropertyLoc;
         if (graph.m_planStage >= PlanStage::LICMAndLater)
-            def(HeapLocation(NamedPropertyLoc, heap, node->child2(), &node->storageAccessData()), LazyNode(node));
+            def(HeapLocation(location, heap, node->child2(), &node->storageAccessData()), LazyNode(node));
         else
-            def(HeapLocation(NamedPropertyLoc, heap, node->child2()), LazyNode(node));
+            def(HeapLocation(location, heap, node->child2()), LazyNode(node));
         return;
     }
 
