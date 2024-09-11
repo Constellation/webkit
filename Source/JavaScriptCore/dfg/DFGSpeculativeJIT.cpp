@@ -13774,6 +13774,8 @@ void SpeculativeJIT::compilePutByIdWithThis(Node* node)
     noResult(node);
 }
 
+static const int64_t doubleOffset = JSValue::DoubleEncodeOffset;
+
 void SpeculativeJIT::compileGetByOffset(Node* node)
 {
     if (node->hasDoubleResult()) {
@@ -13786,7 +13788,6 @@ void SpeculativeJIT::compileGetByOffset(Node* node)
         FPRReg scratchFPR = scratch.fpr();
 
         StorageAccessData& storageAccessData = node->storageAccessData();
-        static const int64_t doubleOffset = JSValue::DoubleEncodeOffset;
         loadDouble(Address(storageGPR, offsetRelativeToBase(storageAccessData.offset)), resultFPR);
         loadDouble(TrustedImmPtr(&doubleOffset), scratchFPR);
         sub(resultFPR, scratchFPR, resultFPR);
@@ -13810,6 +13811,27 @@ void SpeculativeJIT::compileGetByOffset(Node* node)
 
 void SpeculativeJIT::compilePutByOffset(Node* node)
 {
+    if (node->child3().useKind() == DoubleRepUse) {
+        StorageOperand storage(this, node->child1());
+        SpeculateDoubleOperand value(this, node->child3());
+        FPRTemporary scratch(this);
+
+        GPRReg storageGPR = storage.gpr();
+        FPRReg valueFPR = value.fpr();
+        FPRReg scratchFPR = scratch.fpr();
+
+        speculate(node, node->child2());
+        speculate(node, node->child3());
+
+        StorageAccessData& storageAccessData = node->storageAccessData();
+
+        loadDouble(TrustedImmPtr(&doubleOffset), scratchFPR);
+        add(scratchFPR, valueFPR, scratchFPR);
+        storeDouble(scratchFPR, Address(storageGPR, offsetRelativeToBase(storageAccessData.offset)));
+        noResult(node);
+        return;
+    }
+
     StorageOperand storage(this, node->child1());
     JSValueOperand value(this, node->child3());
 
