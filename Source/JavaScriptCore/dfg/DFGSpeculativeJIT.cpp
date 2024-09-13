@@ -13786,8 +13786,6 @@ void SpeculativeJIT::compilePutByIdWithThis(Node* node)
     noResult(node);
 }
 
-static const int64_t doubleOffset = JSValue::DoubleEncodeOffset;
-
 void SpeculativeJIT::compileGetByOffset(Node* node)
 {
     if (node->hasDoubleResult()) {
