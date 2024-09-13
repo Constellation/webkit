@@ -2117,7 +2117,7 @@ private:
 
     LValue boxDoubleAsDouble(LValue value)
     {
-        PatchpointValue* result = patchpoint(Double);
+        PatchpointValue* result = m_out.patchpoint(Double);
         result->append(value, ValueRep::SomeRegister);
         result->append(m_out.doubleEncodeOffsetAsDouble, ValueRep::SomeRegister);
         result->setGenerator(

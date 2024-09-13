@@ -13067,7 +13067,7 @@ void SpeculativeJIT::compileMaterializeNewObject(Node* node)
                     FPRReg scratchFPR = scratch.fpr();
 
                     // FIXME
-                    loadDouble(TrustedImmPtr(&doubleOffset), scratchFPR);
+                    move64ToDouble(TrustedImm64(JSValue::DoubleEncodeOffset), scratchFPR);
                     add(scratchFPR, valueFPR, scratchFPR);
                     storeDouble(scratchFPR, Address(baseGPR, offsetRelativeToBase(entry.offset())));
                 }
@@ -13801,7 +13801,7 @@ void SpeculativeJIT::compileGetByOffset(Node* node)
 
         StorageAccessData& storageAccessData = node->storageAccessData();
         loadDouble(Address(storageGPR, offsetRelativeToBase(storageAccessData.offset)), resultFPR);
-        loadDouble(TrustedImmPtr(&doubleOffset), scratchFPR);
+        move64ToDouble(TrustedImm64(JSValue::DoubleEncodeOffset), scratchFPR);
         sub(resultFPR, scratchFPR, resultFPR);
         speculationCheck(BadType, JSValueRegs(), node, branchIfNaN(resultFPR));
         doubleResult(resultFPR, node);
@@ -13838,7 +13838,7 @@ void SpeculativeJIT::compilePutByOffset(Node* node)
         StorageAccessData& storageAccessData = node->storageAccessData();
 
         // FIXME
-        loadDouble(TrustedImmPtr(&doubleOffset), scratchFPR);
+        move64ToDouble(TrustedImm64(JSValue::DoubleEncodeOffset), scratchFPR);
         add(scratchFPR, valueFPR, scratchFPR);
         storeDouble(scratchFPR, Address(storageGPR, offsetRelativeToBase(storageAccessData.offset)));
         noResult(node);
