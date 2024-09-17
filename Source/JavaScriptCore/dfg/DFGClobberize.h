@@ -1657,11 +1657,12 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         def(HeapLocation(ClosureVariableLoc, AbstractHeap(ScopeProperties, node->scopeOffset().offset()), node->child1()), LazyNode(node));
         return;
         
-    case PutClosureVar:
+    case PutClosureVar: {
         auto location = node->child2().useKind() == DoubleRepUse ? ClosureVariableDoubleLoc : ClosureVariableLoc;
         write(AbstractHeap(ScopeProperties, node->scopeOffset().offset()));
         def(HeapLocation(location, AbstractHeap(ScopeProperties, node->scopeOffset().offset()), node->child1()), LazyNode(node->child2().node()));
         return;
+    }
 
     case GetInternalField: {
         AbstractHeap heap(JSInternalFields, node->internalFieldIndex());
