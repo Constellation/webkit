@@ -10421,10 +10421,13 @@ IGNORE_CLANG_WARNINGS_END
     void compilePutByOffset()
     {
         StorageAccessData& data = m_node->storageAccessData();
+        LValue storage = lowStorage(m_node->child1());
+        if (m_node->child3().useKind() == DoubleRepUse) {
+            m_out.storeDouble(boxDoubleAsDouble(lowDouble(m_node->child3())), addressOfProperty(storage, data.identifierNumber, data.offset));
+            return;
+        }
 
-        storeProperty(
-            lowJSValue(m_node->child3()),
-            lowStorage(m_node->child1()), data.identifierNumber, data.offset);
+        storeProperty(lowJSValue(m_node->child3()), storage, data.identifierNumber, data.offset);
     }
 
     void compileMultiPutByOffset()
