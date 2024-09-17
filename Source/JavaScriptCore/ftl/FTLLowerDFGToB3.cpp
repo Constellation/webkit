@@ -2128,6 +2128,19 @@ private:
         return m_out.select(m_out.doubleNotEqualOrUnordered(value, value), m_out.constDouble(JSValue::EncodedPNaN), result);
     }
 
+    LValue unboxDoubleAsDouble(LValue value)
+    {
+        PatchpointValue* result = m_out.patchpoint(Double);
+        result->append(value, ValueRep::SomeRegister);
+        result->append(m_out.doubleEncodeOffsetAsDouble, ValueRep::SomeRegister);
+        result->setGenerator(
+            [](CCallHelpers& jit, const StackmapGenerationParams& params) {
+                jit.sub64(params[1].fpr(), params[2].fpr(), params[0].fpr());
+            });
+        result->effects = Effects::none();
+        return result;
+    }
+
     void compileValueRep()
     {
         switch (m_node->child1().useKind()) {
@@ -10313,18 +10326,10 @@ IGNORE_CLANG_WARNINGS_END
         LValue base = lowCell(m_node->child2());
         LValue storage = lowStorage(m_node->child1());
         if (m_node->hasDoubleResult()) {
-            LValue value = m_out.loadDouble(addressOfProperty(storage, data.identifierNumber, data.offset));
-            PatchpointValue* result = m_out.patchpoint(Double);
-            result->append(value, ValueRep::SomeRegister);
-            result->append(m_out.doubleEncodeOffsetAsDouble, ValueRep::SomeRegister);
-            result->setGenerator(
-                [](CCallHelpers& jit, const StackmapGenerationParams& params) {
-                    jit.sub64(params[1].fpr(), params[2].fpr(), params[0].fpr());
-                });
-            result->effects = Effects::none();
-            speculate(BadType, noValue(), nullptr, m_out.doubleNotEqualOrUnordered(result, result));
+            LValue value = loadDoubleProperty(storage, data.identifierNumber, data.offset);
+            speculate(BadType, noValue(), nullptr, m_out.doubleNotEqualOrUnordered(value, value));
             ensureStillAliveHere(base);
-            setDouble(result);
+            setDouble(value);
             return;
         }
 
@@ -10423,7 +10428,7 @@ IGNORE_CLANG_WARNINGS_END
         StorageAccessData& data = m_node->storageAccessData();
         LValue storage = lowStorage(m_node->child1());
         if (m_node->child3().useKind() == DoubleRepUse) {
-            m_out.storeDouble(boxDoubleAsDouble(lowDouble(m_node->child3())), addressOfProperty(storage, data.identifierNumber, data.offset));
+            storeDoubleProperty(lowDouble(m_node->child3()), storage, data.identifierNumber, data.offset);
             return;
         }
 
@@ -17093,6 +17098,11 @@ IGNORE_CLANG_WARNINGS_END
     LValue loadProperty(LValue storage, unsigned identifierNumber, PropertyOffset offset)
     {
         return m_out.load64(addressOfProperty(storage, identifierNumber, offset));
+    }
+
+    LValue loadDoubleProperty(LValue storage, unsigned identifierNumber, PropertyOffset offset)
+    {
+        return unboxDoubleAsDouble(m_out.loadDouble(addressOfProperty(storage, identifierNumber, offset)));
     }
 
     void storeProperty(LValue value, LValue storage, unsigned identifierNumber, PropertyOffset offset)
