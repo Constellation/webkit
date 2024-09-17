@@ -12590,11 +12590,14 @@ void SpeculativeJIT::compilePutClosureVar(Node* node)
         FPRReg valueFPR = value.fpr();
         FPRReg scratchFPR = scratch.fpr();
 
-        // FIXME
-        move64ToDouble(TrustedImm64(JSValue::DoubleEncodeOffset), scratchFPR);
-        add64(scratchFPR, valueFPR, scratchFPR);
-        storeDouble(scratchFPR, Address(baseGPR, JSLexicalEnvironment::offsetOfVariable(node->scopeOffset())));
-        noResult(node);
+        if (m_state.forNode(node->child2()).isType(SpecBytecodeDouble)) {
+            move64ToDouble(TrustedImm64(JSValue::DoubleEncodeOffset), scratchFPR);
+            add64(scratchFPR, valueFPR, scratchFPR);
+            storeDouble(scratchFPR, Address(baseGPR, JSLexicalEnvironment::offsetOfVariable(node->scopeOffset())));
+            noResult(node);
+        } else {
+            RELEASE_ASSERT_NOT_REACHED();
+        }
         return;
     }
 

@@ -10429,7 +10429,10 @@ IGNORE_CLANG_WARNINGS_END
         StorageAccessData& data = m_node->storageAccessData();
         LValue storage = lowStorage(m_node->child1());
         if (m_node->child3().useKind() == DoubleRepUse) {
-            storeDoubleProperty(boxDoubleAsDouble(lowDouble(m_node->child3())), storage, data.identifierNumber, data.offset);
+            LValue value = lowDouble(m_node->child3());
+            if (abstractValue(m_node->child3()).couldBeType(SpecDoubleImpureNaN))
+                value = purifyNaN(value);
+            storeDoubleProperty(boxDoubleAsDouble(value), storage, data.identifierNumber, data.offset);
             return;
         }
 
@@ -10753,7 +10756,10 @@ IGNORE_CLANG_WARNINGS_END
     void compilePutClosureVar()
     {
         if (m_node->child2().useKind() == DoubleRepUse) {
-            m_out.storeDouble(boxDoubleAsDouble(lowDouble(m_node->child2())), lowCell(m_node->child1()), m_heaps.JSLexicalEnvironment_variables[m_node->scopeOffset().offset()]);
+            LValue value = lowDouble(m_node->child2());
+            if (abstractValue(m_node->child2()).couldBeType(SpecDoubleImpureNaN))
+                value = purifyNaN(value);
+            m_out.storeDouble(boxDoubleAsDouble(value), lowCell(m_node->child1()), m_heaps.JSLexicalEnvironment_variables[m_node->scopeOffset().offset()]);
             return;
         }
 
