@@ -2125,7 +2125,7 @@ private:
                 jit.add64(params[1].fpr(), params[2].fpr(), params[0].fpr());
             });
         result->effects = Effects::none();
-        return m_out.select(m_out.doubleNotEqualOrUnordered(value, value), m_out.constDouble(JSValue::EncodedPNaN), result);
+        return result;
     }
 
     LValue unboxDoubleAsDouble(LValue value)
@@ -10326,8 +10326,9 @@ IGNORE_CLANG_WARNINGS_END
         LValue base = lowCell(m_node->child2());
         LValue storage = lowStorage(m_node->child1());
         if (m_node->hasDoubleResult()) {
-            LValue value = loadDoubleProperty(storage, data.identifierNumber, data.offset);
-            speculate(BadType, noValue(), nullptr, m_out.doubleNotEqualOrUnordered(value, value));
+            LValue raw = loadDoubleProperty(storage, data.identifierNumber, data.offset);
+            LValue value = unboxDoubleAsDouble(raw);
+            speculate(BadType, noValue(), nullptr, m_out.doubleNotEqualOrUnordered(raw, raw));
             ensureStillAliveHere(base);
             setDouble(value);
             return;
@@ -10428,7 +10429,7 @@ IGNORE_CLANG_WARNINGS_END
         StorageAccessData& data = m_node->storageAccessData();
         LValue storage = lowStorage(m_node->child1());
         if (m_node->child3().useKind() == DoubleRepUse) {
-            storeDoubleProperty(lowDouble(m_node->child3()), storage, data.identifierNumber, data.offset);
+            storeDoubleProperty(boxDoubleAsDouble(lowDouble(m_node->child3())), storage, data.identifierNumber, data.offset);
             return;
         }
 
@@ -17102,7 +17103,7 @@ IGNORE_CLANG_WARNINGS_END
 
     LValue loadDoubleProperty(LValue storage, unsigned identifierNumber, PropertyOffset offset)
     {
-        return unboxDoubleAsDouble(m_out.loadDouble(addressOfProperty(storage, identifierNumber, offset)));
+        return m_out.loadDouble(addressOfProperty(storage, identifierNumber, offset));
     }
 
     void storeProperty(LValue value, LValue storage, unsigned identifierNumber, PropertyOffset offset)
@@ -17112,7 +17113,7 @@ IGNORE_CLANG_WARNINGS_END
 
     void storeDoubleProperty(LValue value, LValue storage, unsigned identifierNumber, PropertyOffset offset)
     {
-        m_out.storeDouble(boxDoubleAsDouble(purifyNaN(value)), addressOfProperty(storage, identifierNumber, offset));
+        m_out.storeDouble(value, addressOfProperty(storage, identifierNumber, offset));
     }
 
     TypedPointer addressOfProperty(
