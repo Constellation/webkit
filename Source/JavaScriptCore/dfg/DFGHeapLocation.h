@@ -43,6 +43,7 @@ enum LocationKind {
     CheckTypeInfoFlagsLoc,
     OverridesHasInstanceLoc,
     ClosureVariableLoc,
+    ClosureVariableDoubleLoc,
     DirectArgumentsLoc,
     GetterLoc,
     GlobalVariableLoc,

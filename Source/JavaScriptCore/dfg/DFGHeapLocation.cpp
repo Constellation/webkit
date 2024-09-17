@@ -126,6 +126,10 @@ void printInternal(PrintStream& out, LocationKind kind)
         out.print("ClosureVariableLoc");
         return;
         
+    case ClosureVariableDoubleLoc:
+        out.print("ClosureVariableDoubleLoc");
+        return;
+
     case DirectArgumentsLoc:
         out.print("DirectArgumentsLoc");
         return;
