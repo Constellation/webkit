@@ -2291,14 +2291,6 @@ private:
             if (!node->child1()->hasStorageResult())
                 fixEdge<KnownCellUse>(node->child1());
             fixEdge<KnownCellUse>(node->child2());
-            if (is64Bit()) {
-                if (!m_graph.hasExitSite(node->origin.semantic, BadType)) {
-                    if (node->child3()->shouldSpeculateDouble()) {
-                        fixDoubleOrBooleanEdge(node->child3());
-                        break;
-                    }
-                }
-            }
             speculateForBarrier(node->child3());
             break;
         }

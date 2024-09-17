@@ -10752,6 +10752,11 @@ IGNORE_CLANG_WARNINGS_END
 
     void compilePutClosureVar()
     {
+        if (m_node->child2().useKind() == DoubleRepUse) {
+            m_out.storeDouble(boxDoubleAsDouble(lowDouble(m_node->child2())), lowCell(m_node->child1()), m_heaps.JSLexicalEnvironment_variables[m_node->scopeOffset().offset()]);
+            return;
+        }
+
         m_out.store64(
             lowJSValue(m_node->child2()),
             lowCell(m_node->child1()),

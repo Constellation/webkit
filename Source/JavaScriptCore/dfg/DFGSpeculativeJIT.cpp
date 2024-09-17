@@ -12581,6 +12581,23 @@ void SpeculativeJIT::compileGetClosureVar(Node* node)
 
 void SpeculativeJIT::compilePutClosureVar(Node* node)
 {
+    if (node->child2().useKind() == DoubleRepUse) {
+        SpeculateCellOperand base(this, node->child1());
+        SpeculateDoubleOperand value(this, node->child2());
+        FPRTemporary scratch(this);
+
+        GPRReg baseGPR = base.gpr();
+        FPRReg valueFPR = value.fpr();
+        FPRReg scratchFPR = scratch.fpr();
+
+        // FIXME
+        move64ToDouble(TrustedImm64(JSValue::DoubleEncodeOffset), scratchFPR);
+        add64(scratchFPR, valueFPR, scratchFPR);
+        storeDouble(scratchFPR, Address(baseGPR, JSLexicalEnvironment::offsetOfVariable(node->scopeOffset())));
+        noResult(node);
+        return;
+    }
+
     SpeculateCellOperand base(this, node->child1());
     JSValueOperand value(this, node->child2());
 

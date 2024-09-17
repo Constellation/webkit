@@ -37,7 +37,7 @@
 namespace JSC { namespace DFG {
 
 class ValueRepReductionPhase : public Phase {
-    static constexpr bool verbose = false;
+static constexpr bool verbose = false;
     
 public:
     ValueRepReductionPhase(Graph& graph)
@@ -129,7 +129,7 @@ private:
             };
 
             // Escape rules are as follows:
-            // - Any non-well-known use is an escape. Currently, we allow DoubleRep, Hints, Upsilons (described below).
+            // - Any non-well-known use is an escape. Currently, we allow DoubleRep, Hints, Upsilons, PutByOffset (described below).
             // - Any Upsilon that forwards the candidate into an escaped phi escapes the candidate.
             // - A Phi remains a candidate as long as all values flowing into it can be made a double.
             //   Currently, this means these are valid things we support to forward into the Phi:
@@ -190,6 +190,8 @@ private:
 
                     case PutHint:
                     case MovHint:
+                    case PutByOffset:
+                    case PutClosureVar:
                         break;
 
                     case Upsilon: {
@@ -276,6 +278,14 @@ private:
 
                 case MovHint:
                     user->child1() = Edge(resultNode, DoubleRepUse);
+                    break;
+
+                case PutByOffset:
+                    user->child3() = Edge(resultNode, DoubleRepUse);
+                    break;
+
+                case PutClosureVar:
+                    user->child2() = Edge(resultNode, DoubleRepUse);
                     break;
 
                 case Upsilon: {
