@@ -2122,10 +2122,10 @@ private:
         result->append(m_out.doubleEncodeOffsetAsDouble, ValueRep::SomeRegister);
         result->setGenerator(
             [](CCallHelpers& jit, const StackmapGenerationParams& params) {
-                jit.add(params[1].fpr(), params[2].fpr(), params[0].fpr());
+                jit.add64(params[1].fpr(), params[2].fpr(), params[0].fpr());
             });
         result->effects = Effects::none();
-        return m_out.select(m_out.doubleEqual(value, value), result, m_out.constDouble(JSValue::EncodedPNaN));
+        return m_out.select(m_out.doubleNotEqualOrUnordered(value, value), m_out.constDouble(JSValue::EncodedPNaN), result);
     }
 
     void compileValueRep()
@@ -10310,9 +10310,25 @@ IGNORE_CLANG_WARNINGS_END
     void compileGetByOffset()
     {
         StorageAccessData& data = m_node->storageAccessData();
-
         LValue base = lowCell(m_node->child2());
-        LValue value = loadProperty(lowStorage(m_node->child1()), data.identifierNumber, data.offset);
+        LValue storage = lowStorage(m_node->child1());
+        if (m_node->hasDoubleResult()) {
+            LValue value = m_out.loadDouble(addressOfProperty(storage, data.identifierNumber, data.offset));
+            PatchpointValue* result = m_out.patchpoint(Double);
+            result->append(value, ValueRep::SomeRegister);
+            result->append(m_out.doubleEncodeOffsetAsDouble, ValueRep::SomeRegister);
+            result->setGenerator(
+                [](CCallHelpers& jit, const StackmapGenerationParams& params) {
+                    jit.sub64(params[1].fpr(), params[2].fpr(), params[0].fpr());
+                });
+            result->effects = Effects::none();
+            speculate(BadType, noValue(), nullptr, m_out.doubleNotEqualOrUnordered(result, result));
+            ensureStillAliveHere(base);
+            setDouble(result);
+            return;
+        }
+
+        LValue value = loadProperty(storage, data.identifierNumber, data.offset);
         // We have to keep base alive since that keeps content of storage alive.
         ensureStillAliveHere(base);
         setJSValue(value);
