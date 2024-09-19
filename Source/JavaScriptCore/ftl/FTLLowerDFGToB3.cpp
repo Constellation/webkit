@@ -1993,9 +1993,7 @@ private:
             LBasicBlock continuation = m_out.newBlock();
 
             ValueFromBlock fastResult = m_out.anchor(doubleValue);
-            m_out.branch(
-                m_out.doubleEqual(doubleValue, doubleValue),
-                usually(continuation), rarely(intCase));
+            m_out.branch(m_out.doubleEqual(doubleValue, doubleValue), usually(continuation), rarely(intCase));
 
             LBasicBlock lastNext = m_out.appendTo(intCase, continuation);
 
