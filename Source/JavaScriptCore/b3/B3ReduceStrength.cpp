@@ -2317,9 +2317,92 @@ private:
                 replaceWithNewValue(constant);
                 break;
             }
+
             if (comparison.opcode != m_value->opcode()) {
                 replaceWithNew<Value>(comparison.opcode, m_value->origin(), comparison.operands[0], comparison.operands[1]);
                 break;
+            }
+
+            // Turn this: Compare(SShr(value, n), const)
+            // Into this: Compare(value, (const << n))
+            //     where const does not overflow.
+            if (m_value->child(0)->opcode() == SShr
+                && m_value->child(1)->hasInt32()
+                && m_value->child(0)->child(1)->hasInt32()) {
+                switch (m_value->opcode()) {
+                case LessThan:
+                case GreaterThan:
+                case LessEqual:
+                case GreaterEqual: {
+                    break;
+
+                }
+                case Above:
+                case Below:
+                case AboveEqual:
+                case BelowEqual: {
+                    uint32_t shiftAmount = static_cast<uint32_t>(m_value->child(0)->child(1)->asInt32());
+                    uint32_t constant = static_cast<uint32_t>(m_value->child(1)->asInt32());
+
+                    auto opcode = m_value->opcode();
+                    if (opcode == AboveEqual) {
+                        // Convert AboveEqual => Above
+                        // x >= constant => x > (constant - 1)
+                        if (!constant)
+                            break;
+                        constant -= 1;
+                        opcode = Above;
+                    } else if (opcode == BelowEqual) {
+                        // Convert BelowEqual => Below
+                        // x <= constant => x < (constant + 1)
+                        if (constant == UINT32_MAX)
+                            break;
+                        constant += 1;
+                        opcode = Below;
+                    }
+
+                    if (!constant)
+                        break;
+
+                    unsigned bit = getMSBSet(constant);
+                    unsigned remaining = 31 - bit;
+                    if (shiftAmount >= remaining)
+                        break;
+
+                    if (opcode == Above) {
+                        // (value >> n) > const
+                        // => value > (const << n)
+                        //
+                        // 0b1111 >> 2 > 0b11 => false
+                        // 0b1111 > 0b1111 => false
+                        //
+                        // 0b1100 >> 2 > 0b11 => false
+                        // 0b1100 > 0b1111 => false
+                        //
+                        uint32_t shiftedConstant = constant << shiftAmount;
+                        shiftedConstant |= ((1U << shiftAmount) - 1);
+                        replaceWithNew<Value>(Above, m_value->origin(), m_value->child(0)->child(0), m_insertionSet.insertValue(m_index, m_proc.addIntConstant(m_value, shiftedConstant)));
+                        return;
+                    }
+
+                    ASSERT(opcode == Below);
+                    // (value >> n) < const
+                    // => value < (const << n)
+                    //
+                    // 0b1111 >> 2 < 0b11 => false
+                    // 0b1111 < 0b1111 => false
+                    //
+                    // 0b1100 >> 2 < 0b11 => false
+                    // 0b1100 < 0b1100 => false
+                    //
+                    uint32_t shiftedConstant = constant << shiftAmount;
+                    replaceWithNew<Value>(Below, m_value->origin(), m_value->child(0)->child(0), m_insertionSet.insertValue(m_index, m_proc.addIntConstant(m_value, shiftedConstant)));
+                    return;
+                }
+                default:
+                    RELEASE_ASSERT_NOT_REACHED();
+                    break;
+                }
             }
             break;
         }
