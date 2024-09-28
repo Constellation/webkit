@@ -377,6 +377,7 @@ inline JSString* replaceUsingStringSearch(VM& vm, JSGlobalObject* globalObject, 
     RELEASE_AND_RETURN(scope, jsSpliceSubstringsWithSeparators(globalObject, jsString, string, sourceRanges.data(), sourceRanges.size(), replacements.data(), replacements.size()));
 }
 
+template<bool mayHaveSubstitution>
 inline JSString* tryReplaceOneCharUsingString(JSGlobalObject* globalObject, JSString* string, JSString* search, JSString* replacement)
 {
     VM& vm = globalObject->vm();
@@ -392,8 +393,11 @@ inline JSString* tryReplaceOneCharUsingString(JSGlobalObject* globalObject, JSSt
 
     auto replaceString = replacement->value(globalObject);
     RETURN_IF_EXCEPTION(scope, nullptr);
-    if (replaceString->find('$') != notFound)
-        return nullptr;
+
+    if constexpr (mayHaveSubstitution) {
+        if (replaceString->find('$') != notFound)
+            return nullptr;
+    }
 
     JSString* result = string->tryReplaceOneChar(globalObject, searchString[0], replacement);
     RELEASE_AND_RETURN(scope, result ? result : nullptr);

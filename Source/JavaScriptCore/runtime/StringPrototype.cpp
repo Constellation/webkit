@@ -882,7 +882,7 @@ ALWAYS_INLINE JSString* replace(VM& vm, JSGlobalObject* globalObject, JSValue th
         RELEASE_AND_RETURN(scope, replaceUsingRegExpSearch(vm, globalObject, string, searchValue, replaceValue));
 
     if (searchJSString && replaceJSString) {
-        if (JSString* result = tryReplaceOneCharUsingString(globalObject, string, searchJSString, replaceJSString))
+        if (JSString* result = tryReplaceOneCharUsingString<true>(globalObject, string, searchJSString, replaceJSString))
             return result;
         RETURN_IF_EXCEPTION(scope, nullptr);
     }
@@ -929,7 +929,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncReplaceUsingStringSearch, (JSGlobalObjec
     JSString* searchJSString = asString(callFrame->uncheckedArgument(0));
     JSValue replaceValue = callFrame->uncheckedArgument(1);
     if (replaceValue.isString()) {
-        if (JSString* result = tryReplaceOneCharUsingString(globalObject, string, searchJSString, asString(replaceValue)))
+        if (JSString* result = tryReplaceOneCharUsingString<true>(globalObject, string, searchJSString, asString(replaceValue)))
             RELEASE_AND_RETURN(scope, JSValue::encode(result));
         RETURN_IF_EXCEPTION(scope, { });
     }

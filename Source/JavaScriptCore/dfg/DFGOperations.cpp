@@ -2787,7 +2787,7 @@ JSC_DEFINE_JIT_OPERATION(operationStringReplaceStringString, JSString*, (JSGloba
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    if (JSString* result = tryReplaceOneCharUsingString(globalObject, stringCell, searchCell, replacementCell))
+    if (JSString* result = tryReplaceOneCharUsingString<true>(globalObject, stringCell, searchCell, replacementCell))
         OPERATION_RETURN(scope, result);
     OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
 
@@ -2810,7 +2810,7 @@ JSC_DEFINE_JIT_OPERATION(operationStringReplaceStringStringWithoutSubstitution, 
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    if (JSString* result = tryReplaceOneCharUsingString(globalObject, stringCell, searchCell, replacementCell))
+    if (JSString* result = tryReplaceOneCharUsingString<false>(globalObject, stringCell, searchCell, replacementCell))
         OPERATION_RETURN(scope, result);
     OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
 
@@ -2833,7 +2833,7 @@ JSC_DEFINE_JIT_OPERATION(operationStringReplaceStringEmptyString, JSString*, (JS
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    if (JSString* result = tryReplaceOneCharUsingString(globalObject, stringCell, searchCell, jsEmptyString(vm)))
+    if (JSString* result = tryReplaceOneCharUsingString<true>(globalObject, stringCell, searchCell, jsEmptyString(vm)))
         OPERATION_RETURN(scope, result);
     OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
 
@@ -2866,10 +2866,6 @@ JSC_DEFINE_JIT_OPERATION(operationStringReplaceStringStringWithTable8, JSString*
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    if (JSString* result = tryReplaceOneCharUsingString(globalObject, stringCell, searchCell, replacementCell))
-        OPERATION_RETURN(scope, result);
-    OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
-
     auto string = stringCell->value(globalObject);
     OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
 
@@ -2889,10 +2885,6 @@ JSC_DEFINE_JIT_OPERATION(operationStringReplaceStringStringWithoutSubstitutionWi
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    if (JSString* result = tryReplaceOneCharUsingString(globalObject, stringCell, searchCell, replacementCell))
-        OPERATION_RETURN(scope, result);
-    OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
-
     auto string = stringCell->value(globalObject);
     OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
 
@@ -2911,10 +2903,6 @@ JSC_DEFINE_JIT_OPERATION(operationStringReplaceStringEmptyStringWithTable8, JSSt
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
     auto scope = DECLARE_THROW_SCOPE(vm);
-
-    if (JSString* result = tryReplaceOneCharUsingString(globalObject, stringCell, searchCell, jsEmptyString(vm)))
-        OPERATION_RETURN(scope, result);
-    OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
 
     auto string = stringCell->value(globalObject);
     OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
@@ -2947,7 +2935,7 @@ JSC_DEFINE_JIT_OPERATION(operationStringReplaceStringGeneric, JSString*, (JSGlob
 
     JSValue replaceValue = JSValue::decode(encodedReplaceValue);
     if (replaceValue.isString()) {
-        if (JSString* result = tryReplaceOneCharUsingString(globalObject, stringCell, searchCell, asString(replaceValue)))
+        if (JSString* result = tryReplaceOneCharUsingString<true>(globalObject, stringCell, searchCell, asString(replaceValue)))
             OPERATION_RETURN(scope, result);
         OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
     }
