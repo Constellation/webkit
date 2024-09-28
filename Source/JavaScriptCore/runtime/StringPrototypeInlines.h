@@ -399,8 +399,7 @@ inline JSString* tryReplaceOneCharUsingString(JSGlobalObject* globalObject, JSSt
             return nullptr;
     }
 
-    JSString* result = string->tryReplaceOneChar(globalObject, searchString[0], replacement);
-    RELEASE_AND_RETURN(scope, result ? result : nullptr);
+    RELEASE_AND_RETURN(scope, string->tryReplaceOneChar(globalObject, searchString[0], replacement));
 }
 
 } // namespace JSC
