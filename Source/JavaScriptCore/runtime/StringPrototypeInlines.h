@@ -383,7 +383,7 @@ inline JSString* tryReplaceOneCharUsingString(JSGlobalObject* globalObject, JSSt
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    if (!string->isNonSubstringRope() || string->length() > 0xFF)
+    if (!string->isNonSubstringRope() || string->length() <= 0xFF)
         return nullptr;
 
     auto searchString = search->value(globalObject);

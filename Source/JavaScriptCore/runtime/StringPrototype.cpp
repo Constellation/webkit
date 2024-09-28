@@ -798,8 +798,7 @@ JSC_DEFINE_JIT_OPERATION(operationStringProtoFuncReplaceRegExpString, JSCell*, (
     CallData callData;
     auto replacementString = replaceString->value(globalObject);
     OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
-    OPERATION_RETURN(scope, replaceUsingRegExpSearch(
-        vm, globalObject, thisValue, searchValue, callData, replacementString, replaceString));
+    OPERATION_RETURN(scope, replaceUsingRegExpSearch(vm, globalObject, thisValue, searchValue, callData, replacementString, replaceString));
 }
 
 static ALWAYS_INLINE JSString* replaceUsingRegExpSearch(VM& vm, JSGlobalObject* globalObject, JSString* string, JSValue searchValue, JSValue replaceValue)
