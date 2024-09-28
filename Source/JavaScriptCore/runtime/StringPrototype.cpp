@@ -879,14 +879,8 @@ ALWAYS_INLINE JSString* replace(VM& vm, JSGlobalObject* globalObject, JSValue th
     JSString* searchJSString = searchValue.isString() ? asString(searchValue) : nullptr;
     JSString* replaceJSString = replaceValue.isString() ? asString(replaceValue) : nullptr;
 
-    if (searchValue.inherits<RegExpObject>()) {
-        if (replaceJSString) {
-            if (JSString* result = tryReplaceOneCharUsingRegExp(globalObject, string, jsCast<RegExpObject*>(searchValue)->regExp(), replaceJSString))
-                return result;
-            RETURN_IF_EXCEPTION(scope, nullptr);
-        }
+    if (searchValue.inherits<RegExpObject>())
         RELEASE_AND_RETURN(scope, replaceUsingRegExpSearch(vm, globalObject, string, searchValue, replaceValue));
-    }
 
     if (searchJSString && replaceJSString) {
         if (JSString* result = tryReplaceOneCharUsingString(globalObject, string, searchJSString, replaceJSString))
