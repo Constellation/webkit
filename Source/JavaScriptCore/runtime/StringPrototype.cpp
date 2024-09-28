@@ -875,7 +875,6 @@ ALWAYS_INLINE JSString* replace(VM& vm, JSGlobalObject* globalObject, JSValue th
     JSString* string = thisValue.toString(globalObject);
     RETURN_IF_EXCEPTION(scope, nullptr);
 
-    if (searchValue.inherits<RegExpObject>())
     JSString* searchJSString = searchValue.isString() ? asString(searchValue) : nullptr;
     JSString* replaceJSString = replaceValue.isString() ? asString(replaceValue) : nullptr;
 
