@@ -377,4 +377,26 @@ inline JSString* replaceUsingStringSearch(VM& vm, JSGlobalObject* globalObject, 
     RELEASE_AND_RETURN(scope, jsSpliceSubstringsWithSeparators(globalObject, jsString, string, sourceRanges.data(), sourceRanges.size(), replacements.data(), replacements.size()));
 }
 
+inline JSString* tryReplaceOneCharUsingString(JSGlobalObject* globalObject, JSString* string, JSString* search, JSString* replacement)
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    if (!string->isNonSubstringRope() || string->length() > 0xFF)
+        return nullptr;
+
+    auto searchString = search->value(globalObject);
+    RETURN_IF_EXCEPTION(scope, nullptr);
+    if (search->length() != 1)
+        return nullptr;
+
+    auto replaceString = replacement->value(globalObject);
+    RETURN_IF_EXCEPTION(scope, nullptr);
+    if (replaceString->find('$') != notFound)
+        return nullptr;
+
+    JSString* result = string->tryReplaceOneChar(globalObject, searchString[0], replacement);
+    RELEASE_AND_RETURN(scope, result ? result : nullptr);
+}
+
 } // namespace JSC
