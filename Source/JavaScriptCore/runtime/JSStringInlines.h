@@ -94,23 +94,25 @@ JSString* JSString::tryReplaceOneCharImpl(JSGlobalObject* globalObject, UChar se
         if (found)
             RELEASE_AND_RETURN(scope, jsString(globalObject, newFiber0, oldFiber1, oldFiber2));
 
-        if (oldFiber1) {
-            JSString* newFiber1 = oldFiber1->tryReplaceOneCharImpl(globalObject, search, replacement, stackLimit, found);
-            RETURN_IF_EXCEPTION(scope, nullptr);
-            if (UNLIKELY(!newFiber1))
-                return nullptr;
-            if (found)
-                RELEASE_AND_RETURN(scope, jsString(globalObject, oldFiber0, newFiber1, oldFiber2));
-        }
+        if (!oldFiber1)
+            return this;
 
-        if (oldFiber2) {
-            JSString* newFiber2 = oldFiber2->tryReplaceOneCharImpl(globalObject, search, replacement, stackLimit, found);
-            RETURN_IF_EXCEPTION(scope, nullptr);
-            if (UNLIKELY(!newFiber2))
-                return nullptr;
-            if (found)
-                RELEASE_AND_RETURN(scope, jsString(globalObject, oldFiber0, oldFiber1, newFiber2));
-        }
+        JSString* newFiber1 = oldFiber1->tryReplaceOneCharImpl(globalObject, search, replacement, stackLimit, found);
+        RETURN_IF_EXCEPTION(scope, nullptr);
+        if (UNLIKELY(!newFiber1))
+            return nullptr;
+        if (found)
+            RELEASE_AND_RETURN(scope, jsString(globalObject, oldFiber0, newFiber1, oldFiber2));
+
+        if (!oldFiber2)
+            return this;
+
+        JSString* newFiber2 = oldFiber2->tryReplaceOneCharImpl(globalObject, search, replacement, stackLimit, found);
+        RETURN_IF_EXCEPTION(scope, nullptr);
+        if (UNLIKELY(!newFiber2))
+            return nullptr;
+        if (found)
+            RELEASE_AND_RETURN(scope, jsString(globalObject, oldFiber0, oldFiber1, newFiber2));
 
         return this;
     }
@@ -129,10 +131,11 @@ JSString* JSString::tryReplaceOneCharImpl(JSGlobalObject* globalObject, UChar se
         return replacement;
 
     // Case 2: The matched character is the last character in the string.
-    JSString* left = jsSubstring(globalObject, this, 0, index);
-    RETURN_IF_EXCEPTION(scope, nullptr);
-    if (index == length - 1)
+    if (index == length - 1) {
+        JSString* left = jsSubstring(globalObject, this, 0, index);
+        RETURN_IF_EXCEPTION(scope, nullptr);
         RELEASE_AND_RETURN(scope, jsString(globalObject, left, replacement));
+    }
 
     // Case 3: The matched character is the first character in the string.
     size_t rightStart = index + 1;
@@ -140,6 +143,9 @@ JSString* JSString::tryReplaceOneCharImpl(JSGlobalObject* globalObject, UChar se
     RETURN_IF_EXCEPTION(scope, nullptr);
     if (!index)
         RELEASE_AND_RETURN(scope, jsString(globalObject, replacement, right));
+
+    JSString* left = jsSubstring(globalObject, this, 0, index);
+    RETURN_IF_EXCEPTION(scope, nullptr);
 
     // Case 4: The matched character is in the middle of the string.
     RELEASE_AND_RETURN(scope, jsString(globalObject, left, replacement, right));
