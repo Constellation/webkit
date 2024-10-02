@@ -2496,6 +2496,8 @@ protected:
 
     bool isUpToDate(Decoder& decoder) const
     {
+        if (!computeJSCBytecodeCacheVersion())
+            return false;
         if (m_cacheVersion != computeJSCBytecodeCacheVersion())
             return false;
         if (m_bootSessionUUID.decode(decoder) != bootSessionUUIDString())

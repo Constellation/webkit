@@ -141,6 +141,7 @@ set(WTF_PUBLIC_HEADERS
     Language.h
     LazyRef.h
     LazyUniqueRef.h
+    LibraryHash.h
     LikelyDenseUnsignedIntegerSet.h
     ListDump.h
     ListHashSet.h
@@ -530,6 +531,7 @@ set(WTF_SOURCES
     Int128.cpp
     JSONValues.cpp
     Language.cpp
+    LibraryHash.cpp
     LikelyDenseUnsignedIntegerSet.cpp
     Lock.cpp
     LockedPrintStream.cpp
