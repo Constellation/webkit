@@ -27,6 +27,7 @@
 #include "Structure.h"
 #include "Yarr.h"
 #include <wtf/Forward.h>
+#include <wtf/text/StringSearch.h>
 #include <wtf/text/WTFString.h>
 
 #if ENABLE(YARR_JIT)
@@ -72,7 +73,7 @@ public:
     JSObject* errorToThrow(JSGlobalObject* globalObject) { return Yarr::errorToThrow(globalObject, m_constructionErrorCode); }
     void reset()
     {
-        m_state = NotCompiled;
+        m_state = RegExpState::NotCompiled;
         m_constructionErrorCode = Yarr::ErrorCode::NoError;
     }
 
@@ -134,7 +135,17 @@ public:
 
     bool hasCode()
     {
-        return m_state == JITCode || m_state == ByteCode;
+        switch (m_state) {
+        case RegExpState::AtomCharacterCode:
+        case RegExpState::AtomTableCode:
+        case RegExpState::JITCode:
+        case RegExpState::ByteCode:
+            return true;
+        case RegExpState::NotCompiled:
+        case RegExpState::ParseError:
+            return false;
+        }
+        return false;
     }
 
     bool hasCodeFor(Yarr::CharSize);
@@ -161,7 +172,7 @@ public:
 #if ENABLE(YARR_JIT)
     Yarr::YarrCodeBlock* getRegExpJITCodeBlock()
     {
-        if (m_state != JITCode)
+        if (m_state != RegExpState::JITCode)
             return nullptr;
 
         return m_regExpJITCode.get();
@@ -175,8 +186,10 @@ private:
 
     static RegExp* createWithoutCaching(VM&, const String&, OptionSet<Yarr::Flags>);
 
-    enum RegExpState : uint8_t {
+    enum class RegExpState : uint8_t {
         ParseError,
+        AtomCharacterCode,
+        AtomTableCode,
         JITCode,
         ByteCode,
         NotCompiled
@@ -215,14 +228,16 @@ private:
     };
 
     String m_patternString;
-    RegExpState m_state { NotCompiled };
+    RegExpState m_state { RegExpState::NotCompiled };
     OptionSet<Yarr::Flags> m_flags;
     Yarr::ErrorCode m_constructionErrorCode { Yarr::ErrorCode::NoError };
     unsigned m_numSubpatterns { 0 };
+    std::unique_ptr<BoyerMooreHorspoolTable<uint8_t>> m_regExpTable;
     std::unique_ptr<Yarr::BytecodePattern> m_regExpBytecode;
 #if ENABLE(YARR_JIT)
     std::unique_ptr<Yarr::YarrCodeBlock> m_regExpJITCode;
 #endif
+    String m_atom;
     std::unique_ptr<RareData> m_rareData;
 #if ENABLE(REGEXP_TRACING)
     double m_rtMatchOnlyTotalSubjectStringLen { 0.0 };
