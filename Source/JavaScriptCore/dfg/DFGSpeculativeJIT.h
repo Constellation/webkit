@@ -1440,6 +1440,7 @@ public:
         unsigned alreadyCheckedLength, bool checkedExactLength);
     void emitSwitchStringOnString(Node*, SwitchData*, GPRReg string);
     void emitSwitchString(Node*, SwitchData*);
+    void emitSwitchTypeOf(Node*, SwitchData*);
     void emitSwitch(Node*);
     
     void compileToStringOrCallStringConstructorOrStringValueOf(Node*);

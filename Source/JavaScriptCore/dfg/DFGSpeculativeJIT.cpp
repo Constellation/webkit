@@ -12416,6 +12416,12 @@ void SpeculativeJIT::emitSwitchString(Node* node, SwitchData* data)
     }
 }
 
+void SpeculativeJIT::emitSwitchTypeOf(Node* node, SwitchData* data)
+{
+    UNUSED_PARAM(node);
+    UNUSED_PARAM(data);
+}
+
 void SpeculativeJIT::emitSwitch(Node* node)
 {
     SwitchData* data = node->switchData();
@@ -12430,6 +12436,10 @@ void SpeculativeJIT::emitSwitch(Node* node)
     }
     case SwitchString: {
         emitSwitchString(node, data);
+        return;
+    }
+    case SwitchTypeOf: {
+        emitSwitchTypeOf(node, data);
         return;
     }
     case SwitchCell: {

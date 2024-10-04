@@ -634,6 +634,8 @@ bool doesGC(Graph& graph, Node* node)
                 return false;
             ASSERT(node->child1().useKind() == StringUse || node->child1().useKind() == UntypedUse);
             return true;
+        case SwitchTypeOf:
+            return false;
         }
         RELEASE_ASSERT_NOT_REACHED();
 

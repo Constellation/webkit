@@ -1734,6 +1734,8 @@ private:
                 else if (node->child1()->shouldSpeculateString())
                     fixEdge<StringUse>(node->child1());
                 break;
+            case SwitchTypeOf:
+                break;
             case SwitchCell:
                 if (node->child1()->shouldSpeculateCell())
                     fixEdge<CellUse>(node->child1());

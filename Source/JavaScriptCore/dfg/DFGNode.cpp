@@ -444,25 +444,6 @@ namespace WTF {
 using namespace JSC;
 using namespace JSC::DFG;
 
-void printInternal(PrintStream& out, SwitchKind kind)
-{
-    switch (kind) {
-    case SwitchImm:
-        out.print("SwitchImm");
-        return;
-    case SwitchChar:
-        out.print("SwitchChar");
-        return;
-    case SwitchString:
-        out.print("SwitchString");
-        return;
-    case SwitchCell:
-        out.print("SwitchCell");
-        return;
-    }
-    RELEASE_ASSERT_NOT_REACHED();
-}
-
 void printInternal(PrintStream& out, Node* node)
 {
     if (!node) {

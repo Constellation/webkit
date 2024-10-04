@@ -13398,7 +13398,12 @@ IGNORE_CLANG_WARNINGS_END
 
             buildSwitch(m_node->switchData(), pointerType(), cell);
             return;
-        } }
+        }
+
+        case SwitchTypeOf: {
+            break;
+        }
+        }
 
         DFG_CRASH(m_graph, m_node, "Bad switch kind");
     }
