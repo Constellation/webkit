@@ -238,18 +238,11 @@ struct SwitchData {
     // Initializes most fields to obviously invalid values. Anyone
     // constructing this should make sure to initialize everything they
     // care about manually.
-    SwitchData()
-        : switchTableIndex(UINT_MAX)
-        , kind(static_cast<SwitchKind>(-1))
-        , didUseJumpTable(false)
-    {
-    }
-    
     Vector<SwitchCase> cases;
     BranchTarget fallThrough;
-    size_t switchTableIndex;
-    SwitchKind kind;
-    bool didUseJumpTable;
+    size_t switchTableIndex { UINT_MAX };
+    SwitchKind kind { static_cast<SwitchKind>(-1) };
+    bool didUseJumpTable { false };
 };
 
 struct EntrySwitchData {
@@ -3861,7 +3854,6 @@ CString nodeValuePairListDump(const T& nodeValuePairList, DumpContext* context =
 
 namespace WTF {
 
-void printInternal(PrintStream&, JSC::DFG::SwitchKind);
 void printInternal(PrintStream&, JSC::DFG::Node*);
 
 inline JSC::DFG::Node* inContext(JSC::DFG::Node* node, JSC::DumpContext*) { return node; }
