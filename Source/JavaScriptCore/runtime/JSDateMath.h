@@ -43,9 +43,7 @@
 
 #pragma once
 
-#include "DateInstanceCache.h"
 #include <wtf/DateMath.h>
-#include <wtf/GregorianDateTime.h>
 #include <wtf/SaturatedArithmetic.h>
 #include <wtf/TZoneMalloc.h>
 
@@ -54,6 +52,9 @@ namespace JSC {
 class JSGlobalObject;
 class OpaqueICUTimeZone;
 class VM;
+namespace ISO8601 {
+class PlainGregorianDateTime;
+}
 
 static constexpr double minECMAScriptTime = -8.64E15;
 
@@ -108,10 +109,9 @@ public:
 
     String defaultTimeZone();
     String timeZoneDisplayName(bool isDST);
-    Ref<DateInstanceData> cachedDateInstanceData(double millisecondsFromEpoch);
 
-    void msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, GregorianDateTime&);
-    double gregorianDateTimeToMS(const GregorianDateTime&, double milliseconds, WTF::TimeType);
+    ISO8601::PlainGregorianDateTime msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType);
+    double gregorianDateTimeToMS(int32_t year, int32_t month, int32_t monthDay, int32_t hour, int32_t minute, int32_t second, double milliseconds, WTF::TimeType);
     double localTimeToMS(double milliseconds, WTF::TimeType);
     JS_EXPORT_PRIVATE double parseDate(JSGlobalObject*, VM&, const WTF::String&);
 
@@ -192,7 +192,6 @@ private:
     std::optional<YearMonthDayCache> m_yearMonthDayCache;
     String m_cachedDateString;
     double m_cachedDateStringValue;
-    DateInstanceCache m_dateInstanceCache;
     uint64_t m_cachedTimezoneID { 0 };
     String m_timeZoneStandardDisplayNameCache;
     String m_timeZoneDSTDisplayNameCache;

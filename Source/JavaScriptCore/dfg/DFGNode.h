@@ -1853,7 +1853,23 @@ public:
         ASSERT(hasIntrinsic());
         return m_opInfo.as<Intrinsic>();
     }
-    
+
+    bool hasUTC()
+    {
+        switch (op()) {
+        case DateGetStorage:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    bool isUTC()
+    {
+        ASSERT(hasUTC());
+        return m_opInfo.as<bool>();
+    }
+
     unsigned numSuccessors()
     {
         switch (op()) {
@@ -2053,6 +2069,7 @@ public:
         case ToThis:
         case DataViewGetInt:
         case DataViewGetFloat:
+        case DateGetTime:
         case DateGetInt32OrNaN:
         case NewArrayWithSpecies:
             return true;

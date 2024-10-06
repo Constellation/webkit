@@ -251,6 +251,118 @@ private:
 };
 static_assert(sizeof(PlainDate) == sizeof(int32_t));
 
+class PlainGregorianDateTime {
+    WTF_MAKE_TZONE_ALLOCATED(PlainDate);
+public:
+    constexpr PlainGregorianDateTime() = default;
+
+    // This is for ECMAScript Date. It does not keep milliseconds and smaller units.
+    //
+    //     int21_t  year              21  [-271821, 275760]
+    //     uint4_t  month              4  [1, 12]
+    //     uint5_t  monthDay           5  [1, 31]
+    //     uint3_t  weekDay            3  [0, 6]
+    //     uint5_t  hour               5  [0, 23]
+    //     uint6_t  minute             6  [0, 59]
+    //     uint6_t  second             6  [0, 59]
+    //     int13_t  utcOffsetInMinute 13  [-1440, 1440]
+    //     uint1_t  isDST              1  [0, 1]
+    //
+    //                                64 in Total
+    // Definining manually in this way because these values should be accessible from JIT.
+
+    static constexpr unsigned yearWidth =              21;
+    static constexpr unsigned monthWidth =              4;
+    static constexpr unsigned monthDayWidth =           5;
+    static constexpr unsigned weekDayWidth =            3;
+    static constexpr unsigned hourWidth =               5;
+    static constexpr unsigned minuteWidth =             6;
+    static constexpr unsigned secondWidth =             6;
+    static constexpr unsigned utcOffsetInMinuteWidth = 13;
+    static constexpr unsigned isDSTWidth =              1;
+
+    static constexpr unsigned yearMask = (1U << yearWidth) - 1;
+    static constexpr unsigned monthMask = (1U << monthWidth) - 1;
+    static constexpr unsigned monthDayMask = (1U << monthDayWidth) - 1;
+    static constexpr unsigned weekDayMask = (1U << weekDayWidth) - 1;
+    static constexpr unsigned hourMask = (1U << hourWidth) - 1;
+    static constexpr unsigned minuteMask = (1U << minuteWidth) - 1;
+    static constexpr unsigned secondMask = (1U << secondWidth) - 1;
+    static constexpr unsigned utcOffsetInMinuteMask = (1U << utcOffsetInMinuteWidth) - 1;
+    static constexpr unsigned isDSTMask = (1U << isDSTWidth) - 1;
+
+    static constexpr unsigned yearOffset =              64 - yearWidth;
+    static constexpr unsigned monthOffset =             64 - yearWidth - monthWidth;
+    static constexpr unsigned monthDayOffset =          64 - yearWidth - monthWidth - monthDayWidth;
+    static constexpr unsigned weekDayOffset =           64 - yearWidth - monthWidth - monthDayWidth - weekDayWidth;
+    static constexpr unsigned hourOffset =              64 - yearWidth - monthWidth - monthDayWidth - weekDayWidth - hourWidth;
+    static constexpr unsigned minuteOffset =            64 - yearWidth - monthWidth - monthDayWidth - weekDayWidth - hourWidth - minuteWidth;
+    static constexpr unsigned secondOffset =            64 - yearWidth - monthWidth - monthDayWidth - weekDayWidth - hourWidth - minuteWidth - secondWidth;
+    static constexpr unsigned utcOffsetInMinuteOffset = 64 - yearWidth - monthWidth - monthDayWidth - weekDayWidth - hourWidth - minuteWidth - secondWidth - utcOffsetInMinuteWidth;
+    static constexpr unsigned isDSTOffset =             64 - yearWidth - monthWidth - monthDayWidth - weekDayWidth - hourWidth - minuteWidth - secondWidth - utcOffsetInMinuteWidth - isDSTWidth;
+    static_assert(isDSTOffset == 0);
+
+    int32_t year() const
+    {
+        // Be careful, this is signed. Year is the top-most bits, so let's do sign-extension here.
+        return static_cast<int32_t>(bitwise_cast<int64_t>(m_payload) >> yearOffset);
+    }
+
+    uint8_t month() const
+    {
+        return static_cast<uint8_t>((m_payload >> monthOffset) & monthMask);
+    }
+
+    uint8_t monthDay() const
+    {
+        return static_cast<uint8_t>((m_payload >> monthDayOffset) & monthDayMask);
+    }
+
+    uint8_t weekDay() const
+    {
+        return static_cast<uint8_t>((m_payload >> weekDayOffset) & weekDayMask);
+    }
+
+    uint8_t hour() const
+    {
+        return static_cast<uint8_t>((m_payload >> hourOffset) & hourMask);
+    }
+
+    uint8_t minute() const
+    {
+        return static_cast<uint8_t>((m_payload >> minuteOffset) & minuteMask);
+    }
+
+    uint8_t second() const
+    {
+        return static_cast<uint8_t>((m_payload >> secondOffset) & secondMask);
+    }
+
+    int32_t utcOffsetInMinute() const
+    {
+        // Be careful, this is signed. First shift it the top bits to make it sign-extended later.
+        int64_t value = bitwise_cast<int64_t>(m_payload << (64 - utcOffsetInMinuteWidth - utcOffsetInMinuteOffset));
+        return static_cast<int32_t>(value >> (64 - utcOffsetInMinuteWidth));
+    }
+
+    bool isDST() const
+    {
+        return !!((m_payload >> isDSTOffset) & isDSTMask);
+    }
+
+    static PlainGregorianDateTime tryCreate(double ms, LocalTimeOffset);
+
+    explicit operator bool() const { return !!m_payload; }
+
+    PlainGregorianDateTime(int32_t year, uint8_t month, uint8_t monthDay, uint8_t weekDay, uint8_t hour, uint8_t minute, uint8_t second, int32_t utcOffsetInMinute, bool isDST);
+
+    uint64_t payload() const { return m_payload; }
+
+private:
+    uint64_t m_payload { 0 }; // Because month etc. starts with 1, 0 cannot be shown as a valid PlainGregorianDateTime.
+};
+static_assert(sizeof(PlainGregorianDateTime) == sizeof(int64_t));
+
 using TimeZone = std::variant<TimeZoneID, int64_t>;
 
 // https://tc39.es/proposal-temporal/#sec-temporal-parsetemporaltimezonestring

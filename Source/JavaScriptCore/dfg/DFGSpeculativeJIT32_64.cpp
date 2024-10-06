@@ -4381,6 +4381,7 @@ void SpeculativeJIT::compile(Node* node)
     case DateGetInt32OrNaN:
     case DateGetTime:
     case DateSetTime:
+    case DateGetStorage:
     case StringCodePointAt:
     case CallWasm:
     case FunctionBind:

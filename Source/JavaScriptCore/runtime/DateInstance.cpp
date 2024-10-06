@@ -41,36 +41,22 @@ void DateInstance::finishCreation(VM& vm, double time)
     m_internalNumber = timeClip(time);
 }
 
-const GregorianDateTime* DateInstance::calculateGregorianDateTime(DateCache& cache) const
+ISO8601::PlainGregorianDateTime DateInstance::calculateGregorianDateTime(DateCache& cache) const
 {
     double milli = internalNumber();
     if (std::isnan(milli))
-        return nullptr;
-
-    if (!m_data)
-        m_data = cache.cachedDateInstanceData(milli);
-
-    if (m_data->m_gregorianDateTimeCachedForMS != milli) {
-        cache.msToGregorianDateTime(milli, WTF::LocalTime, m_data->m_cachedGregorianDateTime);
-        m_data->m_gregorianDateTimeCachedForMS = milli;
-    }
-    return &m_data->m_cachedGregorianDateTime;
+        return { };
+    m_cachedGregorianDateTime = cache.msToGregorianDateTime(milli, WTF::LocalTime);
+    return m_cachedGregorianDateTime;
 }
 
-const GregorianDateTime* DateInstance::calculateGregorianDateTimeUTC(DateCache& cache) const
+ISO8601::PlainGregorianDateTime DateInstance::calculateGregorianDateTimeUTC(DateCache& cache) const
 {
     double milli = internalNumber();
     if (std::isnan(milli))
-        return nullptr;
-
-    if (!m_data)
-        m_data = cache.cachedDateInstanceData(milli);
-
-    if (m_data->m_gregorianDateTimeUTCCachedForMS != milli) {
-        cache.msToGregorianDateTime(milli, WTF::UTCTime, m_data->m_cachedGregorianDateTimeUTC);
-        m_data->m_gregorianDateTimeUTCCachedForMS = milli;
-    }
-    return &m_data->m_cachedGregorianDateTimeUTC;
+        return { };
+    m_cachedGregorianDateTimeUTC = cache.msToGregorianDateTime(milli, WTF::UTCTime);
+    return m_cachedGregorianDateTimeUTC;
 }
 
 } // namespace JSC

@@ -3738,12 +3738,14 @@ auto ByteCodeParser::handleIntrinsicCall(Node* callee, Operand resultOperand, Ca
             return CallOptimizationResult::Inlined;
         }
 
-        case DatePrototypeGetTimeIntrinsic: {
+        case DatePrototypeGetTimeIntrinsic:
+        case DatePrototypeGetUTCMillisecondsIntrinsic:
+        case DatePrototypeGetMillisecondsIntrinsic: {
             if (!is64Bit())
                 return CallOptimizationResult::DidNothing;
             insertChecks();
             Node* base = get(virtualRegisterForArgumentIncludingThis(0, registerOffset));
-            setResult(addToGraph(DateGetTime, OpInfo(intrinsic), OpInfo(), base));
+            setResult(addToGraph(DateGetTime, OpInfo(intrinsic), OpInfo(prediction), base));
             return CallOptimizationResult::Inlined;
         }
 
@@ -3763,29 +3765,37 @@ auto ByteCodeParser::handleIntrinsicCall(Node* callee, Operand resultOperand, Ca
             return CallOptimizationResult::Inlined;
         }
 
-        case DatePrototypeGetFullYearIntrinsic:
         case DatePrototypeGetUTCFullYearIntrinsic:
-        case DatePrototypeGetMonthIntrinsic:
         case DatePrototypeGetUTCMonthIntrinsic:
-        case DatePrototypeGetDateIntrinsic:
         case DatePrototypeGetUTCDateIntrinsic:
-        case DatePrototypeGetDayIntrinsic:
         case DatePrototypeGetUTCDayIntrinsic:
-        case DatePrototypeGetHoursIntrinsic:
         case DatePrototypeGetUTCHoursIntrinsic:
-        case DatePrototypeGetMinutesIntrinsic:
         case DatePrototypeGetUTCMinutesIntrinsic:
+        case DatePrototypeGetUTCSecondsIntrinsic: {
+            if (!is64Bit())
+                return CallOptimizationResult::DidNothing;
+            insertChecks();
+            Node* base = get(virtualRegisterForArgumentIncludingThis(0, registerOffset));
+            Node* storage = addToGraph(DateGetStorage, OpInfo(/* isUTC */ true), OpInfo(), base);
+            setResult(addToGraph(DateGetInt32OrNaN, OpInfo(intrinsic), OpInfo(prediction), storage));
+            return CallOptimizationResult::Inlined;
+        }
+
+        case DatePrototypeGetFullYearIntrinsic:
+        case DatePrototypeGetMonthIntrinsic:
+        case DatePrototypeGetDateIntrinsic:
+        case DatePrototypeGetDayIntrinsic:
+        case DatePrototypeGetHoursIntrinsic:
+        case DatePrototypeGetMinutesIntrinsic:
         case DatePrototypeGetSecondsIntrinsic:
-        case DatePrototypeGetUTCSecondsIntrinsic:
-        case DatePrototypeGetMillisecondsIntrinsic:
-        case DatePrototypeGetUTCMillisecondsIntrinsic:
         case DatePrototypeGetTimezoneOffsetIntrinsic:
         case DatePrototypeGetYearIntrinsic: {
             if (!is64Bit())
                 return CallOptimizationResult::DidNothing;
             insertChecks();
             Node* base = get(virtualRegisterForArgumentIncludingThis(0, registerOffset));
-            setResult(addToGraph(DateGetInt32OrNaN, OpInfo(intrinsic), OpInfo(prediction), base));
+            Node* storage = addToGraph(DateGetStorage, OpInfo(/* isUTC */ false), OpInfo(), base);
+            setResult(addToGraph(DateGetInt32OrNaN, OpInfo(intrinsic), OpInfo(prediction), storage));
             return CallOptimizationResult::Inlined;
         }
 

@@ -65,6 +65,7 @@
 #include "FTLSnippetParams.h"
 #include "FTLThunks.h"
 #include "FTLWeightedTarget.h"
+#include "ISO8601.h"
 #include "JITAddGenerator.h"
 #include "JITBitAndGenerator.h"
 #include "JITBitOrGenerator.h"
@@ -1816,12 +1817,17 @@ private:
         case FilterSetPrivateBrandStatus:
             compileFilterICStatus();
             break;
+        case DateGetStorage:
+            compileDateGetStorage();
+            break;
         case DateGetInt32OrNaN:
+            compileDateGetInt32OrNaN();
+            break;
         case DateGetTime:
-            compileDateGet();
+            compileDateGetTime();
             break;
         case DateSetTime:
-            compileDateSet();
+            compileDateSetTime();
             break;
         case DataViewGetInt:
         case DataViewGetFloat:
@@ -18644,40 +18650,117 @@ IGNORE_CLANG_WARNINGS_END
         }
     }
 
-    void compileDateGet()
+    void compileDateGetStorage()
     {
-        LValue base = lowDateObject(m_node->child1());
+        LBasicBlock slowCase = m_out.newBlock();
+        LBasicBlock continuation = m_out.newBlock();
 
-        auto emitGetCodeWithCallback = [&] (const AbstractHeap& cachedDoubleOffset, const AbstractHeap& cachedDataOffset, auto* operation, auto callback) {
+        LValue base = lowDateObject(m_node->child1());
+        LValue data = m_out.load64(base, m_node->isUTC() ? m_heaps.DateInstance_cachedGregorianDateTimeUTC : m_heaps.DateInstance_cachedGregorianDateTime);
+
+        ValueFromBlock fastResult = m_out.anchor(data);
+        m_out.branch(m_out.notZero64(data), unsure(continuation), unsure(slowCase));
+
+        LBasicBlock lastNext = m_out.appendTo(slowCase, continuation);
+        ValueFromBlock slowResult = m_out.anchor(vmCall(Int64, m_node->isUTC() ? operationDateGetStorageUTC : operationDateGetStorage, m_vmValue, base));
+        m_out.jump(continuation);
+
+        m_out.appendTo(continuation, lastNext);
+        setStorage(m_out.phi(Int64, fastResult, slowResult));
+    }
+
+    void compileDateGetInt32OrNaN()
+    {
+        LValue data = lowStorage(m_node->child1());
+
+        auto emitGetCodeWithCallback = [&](ptrdiff_t fieldOffset, ptrdiff_t fieldMask, ptrdiff_t fieldWidth, bool isSigned, auto callback) {
             LBasicBlock dataExistsCase = m_out.newBlock();
-            LBasicBlock fastCase = m_out.newBlock();
-            LBasicBlock slowCase = m_out.newBlock();
             LBasicBlock continuation = m_out.newBlock();
 
-            LValue data = m_out.loadPtr(base, m_heaps.DateInstance_data);
-            m_out.branch(m_out.notZero64(data), unsure(dataExistsCase), unsure(slowCase));
+            ValueFromBlock slowResult = m_out.anchor(m_out.constInt64(JSValue::encode(jsNaN())));
+            m_out.branch(m_out.notZero64(data), usually(dataExistsCase), rarely(continuation));
 
-            LBasicBlock lastNext = m_out.appendTo(dataExistsCase, fastCase);
-            LValue milliseconds = m_out.loadDouble(base, m_heaps.DateInstance_internalNumber);
-            LValue cachedMilliseconds = m_out.loadDouble(data, cachedDoubleOffset);
-            m_out.branch(m_out.doubleNotEqualOrUnordered(milliseconds, cachedMilliseconds), unsure(slowCase), unsure(fastCase));
-
-            m_out.appendTo(fastCase, slowCase);
-            ValueFromBlock fastResult = m_out.anchor(boxInt32(callback(m_out.load32(data, cachedDataOffset))));
-            m_out.jump(continuation);
-
-            m_out.appendTo(slowCase, continuation);
-            ValueFromBlock slowResult = m_out.anchor(vmCall(Int64, operation, m_vmValue, base));
+            LBasicBlock lastNext = m_out.appendTo(dataExistsCase, continuation);
+            LValue result = nullptr;
+            if (isSigned)
+                result = m_out.castToInt32(m_out.aShr(m_out.shl(data, m_out.constInt32(64 - fieldWidth - fieldOffset)), m_out.constInt32(64 - fieldWidth)));
+            else
+                result = m_out.castToInt32(m_out.bitAnd(m_out.lShr(data, m_out.constInt32(fieldOffset)), m_out.constInt64(fieldMask)));
+            ValueFromBlock fastResult = m_out.anchor(boxInt32(callback(result)));
             m_out.jump(continuation);
 
             m_out.appendTo(continuation, lastNext);
             setJSValue(m_out.phi(Int64, fastResult, slowResult));
         };
 
-        auto emitGetCode = [&] (const AbstractHeap& cachedDoubleOffset, const AbstractHeap& cachedDataOffset, auto* operation) {
-            emitGetCodeWithCallback(cachedDoubleOffset, cachedDataOffset, operation, [] (LValue value) { return value; });
+        auto emitGetCode = [&](auto&, ptrdiff_t fieldOffset, ptrdiff_t fieldMask, ptrdiff_t fieldWidth, bool isSigned, auto*) {
+            emitGetCodeWithCallback(fieldOffset, fieldMask, fieldWidth, isSigned, [](LValue value) { return value; });
         };
 
+        switch (m_node->intrinsic()) {
+        case DatePrototypeGetFullYearIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTime, ISO8601::PlainGregorianDateTime::yearOffset, ISO8601::PlainGregorianDateTime::yearMask, ISO8601::PlainGregorianDateTime::yearWidth, /* isSigned */ true, operationDateGetFullYear);
+            break;
+        case DatePrototypeGetUTCFullYearIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTimeUTC, ISO8601::PlainGregorianDateTime::yearOffset, ISO8601::PlainGregorianDateTime::yearMask, ISO8601::PlainGregorianDateTime::yearWidth, /* isSigned */ true, operationDateGetUTCFullYear);
+            break;
+        case DatePrototypeGetMonthIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTime, ISO8601::PlainGregorianDateTime::monthOffset, ISO8601::PlainGregorianDateTime::monthMask, ISO8601::PlainGregorianDateTime::monthWidth, /* isSigned */ false, operationDateGetMonth);
+            break;
+        case DatePrototypeGetUTCMonthIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTimeUTC, ISO8601::PlainGregorianDateTime::monthOffset, ISO8601::PlainGregorianDateTime::monthMask, ISO8601::PlainGregorianDateTime::monthWidth, /* isSigned */ false, operationDateGetUTCMonth);
+            break;
+        case DatePrototypeGetDateIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTime, ISO8601::PlainGregorianDateTime::monthDayOffset, ISO8601::PlainGregorianDateTime::monthDayMask, ISO8601::PlainGregorianDateTime::monthDayWidth, /* isSigned */ false, operationDateGetDate);
+            break;
+        case DatePrototypeGetUTCDateIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTimeUTC, ISO8601::PlainGregorianDateTime::monthDayOffset, ISO8601::PlainGregorianDateTime::monthDayMask, ISO8601::PlainGregorianDateTime::monthDayWidth, /* isSigned */ false, operationDateGetUTCDate);
+            break;
+        case DatePrototypeGetDayIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTime, ISO8601::PlainGregorianDateTime::weekDayOffset, ISO8601::PlainGregorianDateTime::weekDayMask, ISO8601::PlainGregorianDateTime::weekDayWidth, /* isSigned */ false, operationDateGetDay);
+            break;
+        case DatePrototypeGetUTCDayIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTimeUTC, ISO8601::PlainGregorianDateTime::weekDayOffset, ISO8601::PlainGregorianDateTime::weekDayMask, ISO8601::PlainGregorianDateTime::weekDayWidth, /* isSigned */ false, operationDateGetUTCDay);
+            break;
+        case DatePrototypeGetHoursIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTime, ISO8601::PlainGregorianDateTime::hourOffset, ISO8601::PlainGregorianDateTime::hourMask, ISO8601::PlainGregorianDateTime::hourWidth, /* isSigned */ false, operationDateGetHours);
+            break;
+        case DatePrototypeGetUTCHoursIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTimeUTC, ISO8601::PlainGregorianDateTime::hourOffset, ISO8601::PlainGregorianDateTime::hourMask, ISO8601::PlainGregorianDateTime::hourWidth, /* isSigned */ false, operationDateGetUTCHours);
+            break;
+        case DatePrototypeGetMinutesIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTime, ISO8601::PlainGregorianDateTime::minuteOffset, ISO8601::PlainGregorianDateTime::minuteMask, ISO8601::PlainGregorianDateTime::minuteWidth, /* isSigned */ false, operationDateGetMinutes);
+            break;
+        case DatePrototypeGetUTCMinutesIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTimeUTC, ISO8601::PlainGregorianDateTime::minuteOffset, ISO8601::PlainGregorianDateTime::minuteMask, ISO8601::PlainGregorianDateTime::minuteWidth, /* isSigned */ false, operationDateGetUTCMinutes);
+            break;
+        case DatePrototypeGetSecondsIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTime, ISO8601::PlainGregorianDateTime::secondOffset, ISO8601::PlainGregorianDateTime::secondMask, ISO8601::PlainGregorianDateTime::secondWidth, /* isSigned */ false, operationDateGetSeconds);
+            break;
+        case DatePrototypeGetUTCSecondsIntrinsic:
+            emitGetCode(m_heaps.DateInstance_cachedGregorianDateTimeUTC, ISO8601::PlainGregorianDateTime::secondOffset, ISO8601::PlainGregorianDateTime::secondMask, ISO8601::PlainGregorianDateTime::secondWidth, /* isSigned */ false, operationDateGetUTCSeconds);
+            break;
+
+        case DatePrototypeGetTimezoneOffsetIntrinsic:
+            emitGetCodeWithCallback(ISO8601::PlainGregorianDateTime::utcOffsetInMinuteOffset, ISO8601::PlainGregorianDateTime::utcOffsetInMinuteMask, ISO8601::PlainGregorianDateTime::utcOffsetInMinuteWidth, /* isSigned */ true, [&](LValue offset) {
+                return m_out.neg(offset);
+            });
+            break;
+
+        case DatePrototypeGetYearIntrinsic:
+            emitGetCodeWithCallback(ISO8601::PlainGregorianDateTime::yearOffset, ISO8601::PlainGregorianDateTime::yearMask, ISO8601::PlainGregorianDateTime::yearWidth, /* isSigned */ true, [&](LValue year) {
+                return m_out.sub(year, m_out.constInt32(1900));
+            });
+            break;
+
+        default:
+            RELEASE_ASSERT_NOT_REACHED();
+        }
+    }
+
+    void compileDateGetTime()
+    {
+        LValue base = lowDateObject(m_node->child1());
         switch (m_node->intrinsic()) {
         case DatePrototypeGetTimeIntrinsic:
             setDouble(m_out.loadDouble(base, m_heaps.DateInstance_internalNumber));
@@ -18693,73 +18776,20 @@ IGNORE_CLANG_WARNINGS_END
             break;
         }
 
-        case DatePrototypeGetFullYearIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_year, operationDateGetFullYear);
-            break;
-        case DatePrototypeGetUTCFullYearIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_year, operationDateGetUTCFullYear);
-            break;
-        case DatePrototypeGetMonthIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_month, operationDateGetMonth);
-            break;
-        case DatePrototypeGetUTCMonthIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_month, operationDateGetUTCMonth);
-            break;
-        case DatePrototypeGetDateIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_monthDay, operationDateGetDate);
-            break;
-        case DatePrototypeGetUTCDateIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_monthDay, operationDateGetUTCDate);
-            break;
-        case DatePrototypeGetDayIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_weekDay, operationDateGetDay);
-            break;
-        case DatePrototypeGetUTCDayIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_weekDay, operationDateGetUTCDay);
-            break;
-        case DatePrototypeGetHoursIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_hour, operationDateGetHours);
-            break;
-        case DatePrototypeGetUTCHoursIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_hour, operationDateGetUTCHours);
-            break;
-        case DatePrototypeGetMinutesIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_minute, operationDateGetMinutes);
-            break;
-        case DatePrototypeGetUTCMinutesIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_minute, operationDateGetUTCMinutes);
-            break;
-        case DatePrototypeGetSecondsIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_second, operationDateGetSeconds);
-            break;
-        case DatePrototypeGetUTCSecondsIntrinsic:
-            emitGetCode(m_heaps.DateInstanceData_gregorianDateTimeUTCCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTimeUTC_second, operationDateGetUTCSeconds);
-            break;
-
-        case DatePrototypeGetTimezoneOffsetIntrinsic:
-            emitGetCodeWithCallback(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_utcOffsetInMinute, operationDateGetTimezoneOffset, [&] (LValue offset) {
-                return m_out.neg(offset);
-            });
-            break;
-
-        case DatePrototypeGetYearIntrinsic:
-            emitGetCodeWithCallback(m_heaps.DateInstanceData_gregorianDateTimeCachedForMS, m_heaps.DateInstanceData_cachedGregorianDateTime_year, operationDateGetYear, [&] (LValue year) {
-                return m_out.sub(year, m_out.constInt32(1900));
-            });
-            break;
-
         default:
             RELEASE_ASSERT_NOT_REACHED();
         }
     }
 
-    void compileDateSet()
+    void compileDateSetTime()
     {
         LValue base = lowDateObject(m_node->child1());
         LValue arg = lowDouble(m_node->child2());
         LValue time = m_out.add(m_out.doubleTrunc(arg), m_out.constDouble(0));
         LValue result = m_out.select(m_out.doubleGreaterThanOrUnordered(m_out.doubleAbs(arg), m_out.constDouble(WTF::maxECMAScriptTime)), m_out.constDouble(PNaN), time);
         m_out.storeDouble(result, base, m_heaps.DateInstance_internalNumber);
+        m_out.store64(m_out.constInt64(0), base, m_heaps.DateInstance_cachedGregorianDateTime);
+        m_out.store64(m_out.constInt64(0), base, m_heaps.DateInstance_cachedGregorianDateTimeUTC);
         setDouble(result);
     }
 

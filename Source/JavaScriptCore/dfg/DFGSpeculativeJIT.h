@@ -1776,8 +1776,10 @@ public:
     void compileStringCodePointAt(Node*);
     void compileStringLocaleCompare(Node*);
     void compileStringIndexOf(Node*);
-    void compileDateGet(Node*);
-    void compileDateSet(Node*);
+    void compileDateGetStorage(Node*);
+    void compileDateGetInt32OrNaN(Node*);
+    void compileDateGetTime(Node*);
+    void compileDateSetTime(Node*);
     void compileGlobalIsNaN(Node*);
     void compileNumberIsNaN(Node*);
     void compileToIntegerOrInfinity(Node*);

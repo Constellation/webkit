@@ -334,6 +334,7 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node, bool igno
     case MatchStructure:
     case DateGetInt32OrNaN:
     case DateGetTime:
+    case DateGetStorage:
     case DataViewGetInt:
     case DataViewGetFloat:
     case ResolveRope:

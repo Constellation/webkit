@@ -73,6 +73,7 @@
 #include "JSDateMath.h"
 
 #include "ExceptionHelpers.h"
+#include "ISO8601.h"
 #include "VM.h"
 #include <limits>
 #include <wtf/DateMath.h>
@@ -324,10 +325,10 @@ LocalTimeOffset DateCache::DSTCache::localTimeOffset(DateCache& dateCache, int64
     return { };
 }
 
-double DateCache::gregorianDateTimeToMS(const GregorianDateTime& t, double milliseconds, WTF::TimeType inputTimeType)
+double DateCache::gregorianDateTimeToMS(int32_t year, int32_t month, int32_t monthDay, int32_t hour, int32_t minute, int32_t second, double milliseconds, WTF::TimeType inputTimeType)
 {
-    double day = dateToDaysFrom1970(t.year(), t.month(), t.monthDay());
-    double ms = timeToMS(t.hour(), t.minute(), t.second(), milliseconds);
+    double day = dateToDaysFrom1970(year, month, monthDay);
+    double ms = timeToMS(hour, minute, second, milliseconds);
     double localTimeResult = (day * WTF::msPerDay) + ms;
 
     if (inputTimeType == WTF::LocalTime && std::isfinite(localTimeResult))
@@ -342,7 +343,7 @@ double DateCache::localTimeToMS(double milliseconds, WTF::TimeType inputTimeType
     return milliseconds;
 }
 
-std::tuple<int32_t, int32_t, int32_t> DateCache::yearMonthDayFromDaysWithCache(int32_t days)
+ALWAYS_INLINE std::tuple<int32_t, int32_t, int32_t> DateCache::yearMonthDayFromDaysWithCache(int32_t days)
 {
     if (m_yearMonthDayCache) {
         // Check conservatively if the given 'days' has
@@ -362,24 +363,25 @@ std::tuple<int32_t, int32_t, int32_t> DateCache::yearMonthDayFromDaysWithCache(i
 }
 
 // input is UTC
-void DateCache::msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType, GregorianDateTime& tm)
+ISO8601::PlainGregorianDateTime DateCache::msToGregorianDateTime(double millisecondsFromEpoch, WTF::TimeType outputTimeType)
 {
     LocalTimeOffset localTime;
     if (outputTimeType == WTF::LocalTime && std::isfinite(millisecondsFromEpoch)) {
         localTime = localTimeOffset(static_cast<int64_t>(millisecondsFromEpoch));
         millisecondsFromEpoch += localTime.offset;
     }
-    if (std::isfinite(millisecondsFromEpoch)) {
-        WTF::Int64Milliseconds timeClipped(static_cast<int64_t>(millisecondsFromEpoch));
-        int32_t days = WTF::msToDays(timeClipped);
-        int32_t timeInDayMS = WTF::timeInDay(timeClipped, days);
-        auto [year, month, day] = yearMonthDayFromDaysWithCache(days);
-        int32_t hour = timeInDayMS / (60 * 60 * 1000);
-        int32_t minute = (timeInDayMS / (60 * 1000)) % 60;
-        int32_t second = (timeInDayMS / 1000) % 60;
-        tm = GregorianDateTime(year, month, dayInYear(year, month, day), day, WTF::weekDay(days), hour, minute, second, localTime.offset / WTF::Int64Milliseconds::msPerMinute, localTime.isDST);
-    } else
-        tm = GregorianDateTime(millisecondsFromEpoch, localTime);
+
+    if (!std::isfinite(millisecondsFromEpoch))
+        return { };
+
+    WTF::Int64Milliseconds timeClipped(static_cast<int64_t>(millisecondsFromEpoch));
+    int32_t days = WTF::msToDays(timeClipped);
+    int32_t timeInDayMS = WTF::timeInDay(timeClipped, days);
+    auto [year, month, day] = yearMonthDayFromDaysWithCache(days);
+    int32_t hour = timeInDayMS / (60 * 60 * 1000);
+    int32_t minute = (timeInDayMS / (60 * 1000)) % 60;
+    int32_t second = (timeInDayMS / 1000) % 60;
+    return ISO8601::PlainGregorianDateTime(year, month, day, WTF::weekDay(days), hour, minute, second, localTime.offset / WTF::Int64Milliseconds::msPerMinute, localTime.isDST);
 }
 
 double DateCache::parseDate(JSGlobalObject* globalObject, VM& vm, const String& date)
@@ -473,11 +475,6 @@ DateCache::DateCache()
 
 DateCache::~DateCache() = default;
 
-Ref<DateInstanceData> DateCache::cachedDateInstanceData(double millisecondsFromEpoch)
-{
-    return *m_dateInstanceCache.add(millisecondsFromEpoch);
-}
-
 void DateCache::timeZoneCacheSlow()
 {
     ASSERT(!m_timeZoneCache);
@@ -519,7 +516,6 @@ void DateCache::resetIfNecessarySlow()
     m_yearMonthDayCache = std::nullopt;
     m_cachedDateString = String();
     m_cachedDateStringValue = std::numeric_limits<double>::quiet_NaN();
-    m_dateInstanceCache.reset();
     m_timeZoneStandardDisplayNameCache = String();
     m_timeZoneDSTDisplayNameCache = String();
 }

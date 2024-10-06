@@ -5456,13 +5456,29 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         break;
     }
 
+    case DateGetStorage: {
+        clearForNode(node);
+        break;
+    }
+
     case DateGetInt32OrNaN: {
         setNonCellTypeForNode(node, SpecInt32Only | SpecDoublePureNaN);
         break;
     }
 
     case DateGetTime: {
-        setNonCellTypeForNode(node, SpecFullDouble);
+        switch (node->intrinsic()) {
+        case DatePrototypeGetTimeIntrinsic:
+            setNonCellTypeForNode(node, SpecFullDouble);
+            break;
+        case DatePrototypeGetUTCMillisecondsIntrinsic:
+        case DatePrototypeGetMillisecondsIntrinsic:
+            setNonCellTypeForNode(node, SpecInt32Only | SpecDoublePureNaN);
+            break;
+        default:
+            DFG_CRASH(m_graph, node, "Unexpected intrinsic");
+            break;
+        }
         break;
     }
 

@@ -267,6 +267,7 @@ bool doesGC(Graph& graph, Node* node)
     case FilterSetPrivateBrandStatus:
     case DateGetInt32OrNaN:
     case DateGetTime:
+    case DateGetStorage:
     case DataViewGetInt:
     case DataViewGetFloat:
     case DataViewSet:

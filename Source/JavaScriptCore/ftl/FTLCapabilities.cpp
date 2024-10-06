@@ -469,6 +469,7 @@ inline CapabilityLevel canCompile(Node* node)
     case DataViewGetInt:
     case DataViewGetFloat:
     case DataViewSet:
+    case DateGetStorage:
     case DateGetInt32OrNaN:
     case DateGetTime:
     case DateSetTime:

@@ -2259,10 +2259,20 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         def(PureValue(node, node->validRadixConstant()));
         return;
 
-    case DateGetTime:
-    case DateGetInt32OrNaN: {
+    case DateGetStorage: {
         read(JSDateFields);
-        def(HeapLocation(DateFieldLoc, AbstractHeap(JSDateFields, static_cast<uint64_t>(node->intrinsic())), node->child1()), LazyNode(node));
+        def(HeapLocation(DateFieldLoc, AbstractHeap(JSDateFields, static_cast<int64_t>(node->isUTC() ? 1 : 0)), node->child1()), LazyNode(node));
+        return;
+    }
+
+    case DateGetTime: {
+        read(JSDateFields);
+        def(HeapLocation(DateFieldLoc, AbstractHeap(JSDateFields, static_cast<int64_t>(node->intrinsic()) + 2), node->child1()), LazyNode(node));
+        return;
+    }
+
+    case DateGetInt32OrNaN: {
+        def(PureValue(node, static_cast<uint64_t>(node->intrinsic())));
         return;
     }
 

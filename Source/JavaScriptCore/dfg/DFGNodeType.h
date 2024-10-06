@@ -607,6 +607,7 @@ namespace JSC { namespace DFG {
     macro(DataViewGetFloat, NodeMustGenerate | NodeResultDouble) \
     macro(DataViewSet, NodeMustGenerate | NodeMustGenerate | NodeHasVarArgs) \
     /* Date access */ \
+    macro(DateGetStorage, NodeResultStorage) \
     macro(DateGetInt32OrNaN, NodeResultJS) \
     macro(DateGetTime, NodeResultDouble) \
     macro(DateSetTime, NodeMustGenerate | NodeResultDouble) \

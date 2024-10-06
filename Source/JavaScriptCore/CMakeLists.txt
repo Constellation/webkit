@@ -980,7 +980,6 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     runtime/DOMAttributeGetterSetter.h
     runtime/DataView.h
     runtime/DateInstance.h
-    runtime/DateInstanceCache.h
     runtime/DeferTermination.h
     runtime/DeferredWorkTimer.h
     runtime/DefinePropertyAttributes.h

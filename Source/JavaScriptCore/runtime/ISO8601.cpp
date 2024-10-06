@@ -1555,5 +1555,74 @@ bool isYearWithinLimits(double year)
     return year >= minYear && year <= maxYear;
 }
 
+PlainGregorianDateTime::PlainGregorianDateTime(int32_t year, uint8_t month, uint8_t monthDay, uint8_t weekDay, uint8_t hour, uint8_t minute, uint8_t second, int32_t utcOffsetInMinute, bool isDST)
+{
+    ASSERT(year >= minYear && year <= maxYear);
+    ASSERT(month >= 1 && month <= 12);
+    ASSERT(monthDay >= 1 && monthDay <= 31);
+    ASSERT(weekDay >= 0 && weekDay <= 6);
+    ASSERT(hour >= 0 && hour <= 23);
+    ASSERT(minute >= 0 && minute <= 59);
+    ASSERT(second >= 0 && second <= 59);
+    ASSERT(utcOffsetInMinute >= -(60 * 48) && utcOffsetInMinute <= (60 * 48));
+
+    uint64_t payload = 0;
+    payload |= bitwise_cast<uint64_t>(static_cast<int64_t>(year) << yearOffset);
+    payload |= static_cast<uint64_t>(month) << monthOffset;
+    payload |= static_cast<uint64_t>(monthDay) << monthDayOffset;
+    payload |= static_cast<uint64_t>(weekDay) << weekDayOffset;
+    payload |= static_cast<uint64_t>(hour) << hourOffset;
+    payload |= static_cast<uint64_t>(minute) << minuteOffset;
+    payload |= static_cast<uint64_t>(second) << secondOffset;
+    payload |= static_cast<uint64_t>((static_cast<uint32_t>(utcOffsetInMinute) & utcOffsetInMinuteMask)) << utcOffsetInMinuteOffset;
+    payload |= static_cast<uint64_t>(isDST) << isDSTOffset;
+    m_payload = payload;
+
+    ASSERT(year == this->year());
+    ASSERT(month == this->month());
+    ASSERT(monthDay == this->monthDay());
+    ASSERT(weekDay == this->weekDay());
+    ASSERT(hour == this->hour());
+    ASSERT(minute == this->minute());
+    ASSERT(second == this->second());
+    ASSERT(utcOffsetInMinute == this->utcOffsetInMinute());
+    ASSERT(isDST == this->isDST());
+}
+
+PlainGregorianDateTime PlainGregorianDateTime::tryCreate(double ms, LocalTimeOffset localTime)
+{
+    if (!std::isfinite(ms))
+        return { };
+
+    WTF::Int64Milliseconds timeClipped(static_cast<int64_t>(ms));
+    int32_t days = WTF::msToDays(timeClipped);
+    int32_t timeInDayMS = WTF::timeInDay(timeClipped, days);
+    auto [year, month, monthDay] = WTF::yearMonthDayFromDays(days);
+    int32_t hour = timeInDayMS / (60 * 60 * 1000);
+    int32_t minute = (timeInDayMS / (60 * 1000)) % 60;
+    int32_t second = (timeInDayMS / 1000) % 60;
+    int32_t weekDay = WTF::weekDay(days);
+    int32_t utcOffsetInMinute = static_cast<int32_t>(localTime.offset / WTF::Int64Milliseconds::msPerMinute);
+
+    if (!(year >= minYear && year <= maxYear))
+        return { };
+    if (!(month >= 1 && month <= 12))
+        return { };
+    if (!(monthDay >= 1 && monthDay <= 31))
+        return { };
+    if (!(weekDay >= 0 && weekDay <= 6))
+        return { };
+    if (!(hour >= 0 && hour <= 23))
+        return { };
+    if (!(minute >= 0 && minute <= 59))
+        return { };
+    if (!(second >= 0 && second <= 59))
+        return { };
+    if (!(utcOffsetInMinute >= -(60 * 48) && utcOffsetInMinute <= (60 * 48)))
+        return { };
+
+    return PlainGregorianDateTime(year, month, monthDay, weekDay, hour, minute, second, utcOffsetInMinute, localTime.isDST);
+}
+
 } // namespace ISO8601
 } // namespace JSC
