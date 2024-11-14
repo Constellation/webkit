@@ -733,6 +733,35 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearch(
             }
         }
     } else {
+        if (regExp->hasValidAtom() && callData.type == CallData::Type::None) {
+            if (replacementString.isEmpty() || replacementString.find('$') == notFound) {
+                if (global) {
+                } else {
+                    auto& pattern = regExp->atom();
+                    auto result = StringView(source).find(vm.adaptiveStringSearcherTables(), pattern);
+                    if (result == notFound)
+                        return string;
+
+                    if (result) {
+                        if (UNLIKELY(!sourceRanges.tryConstructAndAppend(startPosition, result)))
+                            OUT_OF_MEMORY(globalObject, scope);
+                        replacements.append(replacementString);
+                    }
+
+                    startPosition = result + pattern.length();
+                    if (startPosition < sourceLen) {
+                        if (UNLIKELY(!sourceRanges.tryConstructAndAppend(startPosition, sourceLen))) {
+                            OUT_OF_MEMORY(globalObject, scope);
+                        }
+                    }
+
+                    // Record the last matching.
+                    globalObject->regExpGlobalData().recordMatch(vm, globalObject, regExp, string, MatchResult { static_cast<unsigned>(result), static_cast<unsigned>(result + pattern.length()) });
+                    RELEASE_AND_RETURN(scope, jsSpliceSubstringsWithSeparators(globalObject, string, source, sourceRanges.data(), sourceRanges.size(), replacements.data(), replacements.size()));
+                }
+            }
+        }
+
         do {
             int* ovector;
             MatchResult result = globalObject->regExpGlobalData().performMatch(globalObject, regExp, string, source, startPosition, &ovector);
