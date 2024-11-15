@@ -738,26 +738,18 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearch(
                 if (global) {
                 } else {
                     auto& pattern = regExp->atom();
-                    auto result = StringView(source).find(vm.adaptiveStringSearcherTables(), pattern);
-                    if (result == notFound)
+                    auto matchStart = StringView(source).find(vm.adaptiveStringSearcherTables(), pattern);
+                    if (matchStart == notFound)
                         return string;
-
-                    if (result) {
-                        if (UNLIKELY(!sourceRanges.tryConstructAndAppend(startPosition, result)))
-                            OUT_OF_MEMORY(globalObject, scope);
-                        replacements.append(replacementString);
-                    }
-
-                    startPosition = result + pattern.length();
-                    if (startPosition < sourceLen) {
-                        if (UNLIKELY(!sourceRanges.tryConstructAndAppend(startPosition, sourceLen))) {
-                            OUT_OF_MEMORY(globalObject, scope);
-                        }
-                    }
-
+                    size_t patternLength = pattern.length();
+                    size_t matchEnd = matchStart + patternLength;
                     // Record the last matching.
-                    globalObject->regExpGlobalData().recordMatch(vm, globalObject, regExp, string, MatchResult { static_cast<unsigned>(result), static_cast<unsigned>(result + pattern.length()) });
-                    RELEASE_AND_RETURN(scope, jsSpliceSubstringsWithSeparators(globalObject, string, source, sourceRanges.data(), sourceRanges.size(), replacements.data(), replacements.size()));
+                    globalObject->regExpGlobalData().recordMatch(vm, globalObject, regExp, string, MatchResult { static_cast<unsigned>(matchStart), static_cast<unsigned>(matchEnd) });
+                    auto result = tryMakeString(StringView(source).substring(0, matchStart), replacementString, StringView(source).substring(matchEnd, sourceLen - matchEnd));
+                    if (UNLIKELY(!result))
+                        OUT_OF_MEMORY(globalObject, scope);
+
+                    return jsString(vm, WTFMove(result));
                 }
             }
         }
