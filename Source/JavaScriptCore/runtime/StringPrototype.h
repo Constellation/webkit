@@ -54,7 +54,7 @@ JSC_DECLARE_JIT_OPERATION(operationStringProtoFuncReplaceGeneric, JSCell*, (JSGl
 JSC_DECLARE_JIT_OPERATION(operationStringProtoFuncReplaceRegExpEmptyStr, JSCell*, (JSGlobalObject*, JSString* thisValue, RegExpObject* searchValue));
 JSC_DECLARE_JIT_OPERATION(operationStringProtoFuncReplaceRegExpString, JSCell*, (JSGlobalObject*, JSString* thisValue, RegExpObject* searchValue, JSString* replaceValue));
 
-void substituteBackreferences(StringBuilder& result, const String& replacement, StringView source, const int* ovector, RegExp*);
+bool substituteBackreferences(StringBuilder& result, const String& replacement, StringView source, const int* ovector, RegExp*);
 void substituteBackreferencesSlow(StringBuilder& result, StringView replacement, StringView source, const int* ovector, RegExp*, size_t firstDollarSignPosition);
 
 JSC_DECLARE_HOST_FUNCTION(stringProtoFuncRepeatCharacter);

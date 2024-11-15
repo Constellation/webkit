@@ -1029,8 +1029,10 @@ private:
                     builder.appendSubstring(string, lastIndex, result.start - lastIndex);
                     if (replLen) {
                         StringBuilder replacement;
-                        substituteBackreferences(replacement, replace, string, ovector.data(), regExp);
-                        builder.append(replacement);
+                        if (UNLIKELY(substituteBackreferences(replacement, replace, string, ovector.data(), regExp)))
+                            builder.append(replacement);
+                        else
+                            builder.append(replace);
                     }
                 }
 

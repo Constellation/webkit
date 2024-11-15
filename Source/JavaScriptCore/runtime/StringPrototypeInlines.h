@@ -281,7 +281,8 @@ ALWAYS_INLINE JSString* stringReplaceAllStringString(JSGlobalObject* globalObjec
         resultBuilder.append(StringView(string).substring(lastMatchEnd, start - lastMatchEnd));
         if constexpr (substitutions == StringReplaceSubstitutions::Yes) {
             int ovector[2] = { static_cast<int>(start), static_cast<int>(start + searchLength) };
-            substituteBackreferences(resultBuilder, replacement, string, ovector, nullptr);
+            if (LIKELY(!substituteBackreferences(resultBuilder, replacement, string, ovector, nullptr)))
+                resultBuilder.append(replacement);
         } else
             resultBuilder.append(replacement);
         lastMatchEnd = start + searchLength;

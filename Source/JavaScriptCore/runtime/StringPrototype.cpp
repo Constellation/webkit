@@ -267,18 +267,14 @@ NEVER_INLINE void substituteBackreferencesSlow(StringBuilder& result, StringView
         result.append(replacement.substring(offset));
 }
 
-inline void substituteBackreferencesInline(StringBuilder& result, const String& replacement, StringView source, const int* ovector, RegExp* reg)
+bool substituteBackreferences(StringBuilder& result, const String& replacement, StringView source, const int* ovector, RegExp* reg)
 {
     size_t i = replacement.find('$');
-    if (UNLIKELY(i != notFound))
-        return substituteBackreferencesSlow(result, replacement, source, ovector, reg, i);
+    if (LIKELY(i == notFound))
+        return false;
 
-    result.append(replacement);
-}
-
-void substituteBackreferences(StringBuilder& result, const String& replacement, StringView source, const int* ovector, RegExp* reg)
-{
-    substituteBackreferencesInline(result, replacement, source, ovector, reg);
+    substituteBackreferencesSlow(result, replacement, source, ovector, reg, i);
+    return true;
 }
 
 static ALWAYS_INLINE JSString* jsSpliceSubstrings(JSGlobalObject* globalObject, JSString* sourceVal, const String& source, std::span<const Range<int32_t>> substringRanges)
@@ -830,10 +826,12 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearch(
 
                     if (replLen) {
                         StringBuilder replacement(OverflowPolicy::RecordOverflow);
-                        substituteBackreferences(replacement, replacementString, source, ovector, regExp);
-                        if (UNLIKELY(replacement.hasOverflowed()))
-                            OUT_OF_MEMORY(globalObject, scope);
-                        replacements.append(replacement.toString());
+                        if (UNLIKELY(substituteBackreferences(replacement, replacementString, source, ovector, regExp))) {
+                            if (UNLIKELY(replacement.hasOverflowed()))
+                                OUT_OF_MEMORY(globalObject, scope);
+                            replacements.append(replacement.toString());
+                        } else
+                            replacements.append(replacementString);
                     } else
                         replacements.append(String());
                 }
