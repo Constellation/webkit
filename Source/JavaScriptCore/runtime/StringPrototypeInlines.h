@@ -111,6 +111,9 @@ ALWAYS_INLINE JSString* jsSpliceSubstringsWithSeparators(JSGlobalObject* globalO
     VM& vm = getVM(globalObject);
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    if (rangeCount == 0 && separatorCount == 0)
+        return jsEmptyString(vm);
+
     if (rangeCount == 1 && separatorCount == 0) {
         int sourceSize = source.length();
         int position = substringRanges[0].begin();

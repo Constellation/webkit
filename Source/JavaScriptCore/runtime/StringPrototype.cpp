@@ -731,8 +731,7 @@ static ALWAYS_INLINE JSString* replaceUsingRegExpSearch(
     } else {
         if (regExp->hasValidAtom() && callData.type == CallData::Type::None) {
             if (replacementString.isEmpty() || replacementString.find('$') == notFound) {
-                if (global) {
-                } else {
+                if (!global) {
                     auto& pattern = regExp->atom();
                     auto matchStart = StringView(source).find(vm.adaptiveStringSearcherTables(), pattern);
                     if (matchStart == notFound)
