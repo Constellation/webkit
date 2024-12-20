@@ -40,7 +40,7 @@ CHECKER_MAP = {
     'Unsafe cast': 'MemoryUnsafeCastChecker',
 }
 
-PROJECTS = ['JavaScriptCore', 'WebCore', 'WebDriver', 'WebGPU', 'WebInspectorUI', 'WebKit', 'WebKitLegacy', 'WTF']
+PROJECTS = ['WebCore', 'WebDriver', 'WebGPU', 'WebInspectorUI', 'WebKit', 'WebKitLegacy', 'WTF']
 DERIVED_SOURCES_RE = r'.*\/DerivedSources\/.*\/JS.*'
 
 

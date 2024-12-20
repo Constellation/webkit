@@ -27,7 +27,7 @@ import argparse
 EXPECTATIONS_PATH = '../../Source/{project}/SaferCPPExpectations/{checker_type}Expectations'
 CHECKERS = ['MemoryUnsafeCastChecker', 'NoUncountedMemberChecker', 'NoUncheckedPtrMemberChecker', 'RefCntblBaseVirtualDtor',
     'UncheckedCallArgsChecker', 'UncheckedLocalVarsChecker', 'UncountedCallArgsChecker', 'UncountedLambdaCapturesChecker', 'UncountedLocalVarsChecker']
-PROJECTS = ['JavaScriptCore', 'WebCore', 'WebDriver', 'WebGPU', 'WebInspectorUI', 'WebKit', 'WebKitLegacy', 'WTF']
+PROJECTS = ['WebCore', 'WebDriver', 'WebGPU', 'WebInspectorUI', 'WebKit', 'WebKitLegacy', 'WTF']
 
 
 def parser():

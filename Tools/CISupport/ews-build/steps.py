@@ -1311,7 +1311,6 @@ class CheckChangeRelevance(AnalyzeChange):
         re.compile(rb'Source/WebKit', re.IGNORECASE),
         re.compile(rb'Source/WebKitLegacy', re.IGNORECASE),
         re.compile(rb'Source/WTF', re.IGNORECASE),
-        re.compile(rb'Source/JavaScriptCore', re.IGNORECASE),
         re.compile(rb'Tools/Scripts/build-and-analyze', re.IGNORECASE),
         re.compile(rb'Tools/Scripts/generate-dirty-files', re.IGNORECASE),
         re.compile(rb'Tools/Scripts/compare-static-analysis-results', re.IGNORECASE),
